@@ -1,0 +1,144 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_html/flutter_html.dart';
+import 'package:get/get.dart';
+import 'package:intl/intl.dart';
+import 'package:tronskins_app/api/model/help/help_models.dart';
+
+class HelpDetailPage extends StatelessWidget {
+  const HelpDetailPage({super.key});
+
+  String _formatTime(int? value) {
+    if (value == null) return '--';
+    final ts = value < 1000000000000 ? value * 1000 : value;
+    return DateFormat('yyyy-MM-dd HH:mm:ss')
+        .format(DateTime.fromMillisecondsSinceEpoch(ts));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final arg = Get.arguments;
+    HelpItem? item;
+    if (arg is HelpItem) {
+      item = arg;
+    } else if (arg is Map) {
+      item = HelpItem.fromJson(Map<String, dynamic>.from(arg));
+    }
+    final title = item?.title ?? 'app.user.server.help'.tr;
+    return Scaffold(
+      appBar: AppBar(title: Text(title)),
+      body: item == null
+          ? Center(child: Text('app.common.no_data'.tr))
+          : ListView(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+              children: [
+                Card(
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.title ?? '',
+                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.w700,
+                              ),
+                        ),
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 12,
+                          runSpacing: 6,
+                          children: [
+                            if ((item.author ?? '').isNotEmpty)
+                              _MetaChip(
+                                icon: Icons.person_outline,
+                                label:
+                                    '${'app.system.notice.author'.tr}: ${item.author ?? ''}',
+                              ),
+                            if (item.time != null)
+                              _MetaChip(
+                                icon: Icons.schedule,
+                                label:
+                                    '${'app.system.notice.publish_time'.tr}: ${_formatTime(item.time)}',
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .outlineVariant
+                          .withOpacity(0.4),
+                    ),
+                  ),
+                  padding: const EdgeInsets.all(16),
+                  child: Html(
+                    data: item.content ?? '',
+                    style: {
+                      'body': Style(
+                        margin: Margins.zero,
+                        color: Theme.of(context).colorScheme.onSurface,
+                        fontSize: FontSize(15),
+                        lineHeight: const LineHeight(1.6),
+                      ),
+                      'h1': Style(fontSize: FontSize(22)),
+                      'h2': Style(fontSize: FontSize(20)),
+                      'h3': Style(fontSize: FontSize(18)),
+                      'p': Style(margin: Margins.only(bottom: 10)),
+                      'a': Style(
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                    },
+                  ),
+                ),
+              ],
+            ),
+    );
+  }
+}
+
+class _MetaChip extends StatelessWidget {
+  const _MetaChip({
+    required this.icon,
+    required this.label,
+  });
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceVariant,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: theme.colorScheme.onSurfaceVariant),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
