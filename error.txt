@@ -1,98 +1,10 @@
-Performing hot restart...
-Syncing files to device ADA AL00...
-Restarted application in 1,179ms.
-[GETX] Instance "UseTheme" has been created
-[GETX] Instance "UseTheme" has been initialized
-[GETX] Instance "UseLocale" has been created
-[GETX] Instance "UseLocale" has been initialized
-I/flutter (16023): -------------------------------------------------------------------------------
-I/flutter (16023): The Shorebird Updater is unavailable in the current environment.
-I/flutter (16023): -------------------------------------------------------------------------------
-I/flutter (16023): This occurs when using pkg:shorebird_code_push in an app that does not
-I/flutter (16023): contain the Shorebird Engine. Most commonly this is due to building with
-I/flutter (16023): `flutter build` or `flutter run` instead of `shorebird release` or `shorebird preview`.
-I/flutter (16023): It can also occur when running on an unsupported platform (e.g. web).
-I/flutter (16023): ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-I/flutter (16023): │ #0   _checkForShorebirdUpdate (package:tronskins_app/main.dart:37:24)
-I/flutter (16023): │ #1   <asynchronous suspension>
-I/flutter (16023): ├┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
-I/flutter (16023): │ ! Shorebird update status unknown.
-I/flutter (16023): └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-[GETX] Instance "GetMaterialController" has been created
-[GETX] Instance "GetMaterialController" has been initialized
-[GETX] GOING TO ROUTE /
-I/flutter (16023): ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-I/flutter (16023): │ #0   UserBinding.dependencies (package:tronskins_app/bindings/user/user_binding.dart:10:12)
-I/flutter (16023): │ #1   GetPageRoute._getChild (package:get/get_navigation/src/routes/default_route.dart:105:17)
-I/flutter (16023): ├┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄
-I/flutter (16023): │ 🐛 UserBinding dependencies() 执行了！
-I/flutter (16023): └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-[GETX] Instance "HomeController" has been created
-[GETX] Instance "HomeController" has been initialized
-I/flutter (16023): ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-I/flutter (16023): │ 💡 ┌─ REQUEST ─────────────────────────────────────
-I/flutter (16023): └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-I/flutter (16023): ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-I/flutter (16023): │ 💡 │ POST https://www.etopmarket.com/api/public/mall/sell/730/news
-I/flutter (16023): └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-I/flutter (16023): ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-I/flutter (16023): │ 💡 │ Headers: {content-type: application/json, App-Type: app, Platform: android, Accept-Language: zh-CN, Cookie: locale=zh_CN;}
-I/flutter (16023): └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-I/flutter (16023): ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-I/flutter (16023): │ 💡 │ Body: {appId: 730, page: 1, pageSize: 10}
-I/flutter (16023): └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-I/flutter (16023): ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-I/flutter (16023): │ 💡 ┌─ REQUEST ─────────────────────────────────────
-I/flutter (16023): └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-I/flutter (16023): ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-I/flutter (16023): │ 💡 │ POST https://www.etopmarket.com/api/public/mall/hots
-I/flutter (16023): └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-I/flutter (16023): ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-I/flutter (16023): │ 💡 │ Headers: {content-type: application/json, App-Type: app, Platform: android, Accept-Language: zh-CN, Cookie: locale=zh_CN;}
-I/flutter (16023): └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-I/flutter (16023): ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-I/flutter (16023): │ 💡 │ Body: {appId: 730, page: 1, pageSize: 20}
-I/flutter (16023): └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-I/HwViewRootImpl(16023): removeInvalidNode all the node in jank list is out of time
-I/flutter (16023): ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-I/flutter (16023): │ ⛔ └─ ERROR ───────────────────────────────────────
-I/flutter (16023): └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-I/flutter (16023): ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-I/flutter (16023): │ ⛔ │ null https://www.etopmarket.com/api/public/mall/sell/730/news
-I/flutter (16023): └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-I/flutter (16023): ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-I/flutter (16023): │ ⛔ │ The request took longer than 0:00:15.000000 to receive data. It was aborted. To get rid of this exception, try raising the RequestOptions.receiveTimeout above the duration of 0:00:15.000000 or improve the response time of the server.
-I/flutter (16023): └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-I/flutter (16023): ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-I/flutter (16023): │ ⛔ │ Type: DioExceptionType.receiveTimeout
-I/flutter (16023): └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-I/flutter (16023): ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-I/flutter (16023): │ ⛔ HTTP Error [null]: 连接超时，请检查网络
-I/flutter (16023): └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-I/flutter (16023): ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-I/flutter (16023): │ ⛔ └─ ERROR ───────────────────────────────────────
-I/flutter (16023): └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-I/flutter (16023): ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-I/flutter (16023): │ ⛔ │ null https://www.etopmarket.com/api/public/mall/hots
-I/flutter (16023): └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-I/flutter (16023): ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-I/flutter (16023): │ ⛔ │ The request took longer than 0:00:15.000000 to receive data. It was aborted. To get rid of this exception, try raising the RequestOptions.receiveTimeout above the duration of 0:00:15.000000 or improve the response time of the server.
-I/flutter (16023): └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-I/flutter (16023): ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-I/flutter (16023): │ ⛔ │ Type: DioExceptionType.receiveTimeout
-I/flutter (16023): └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-I/flutter (16023): ┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-I/flutter (16023): │ ⛔ HTTP Error [null]: 连接超时，请检查网络
-I/flutter (16023): └───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-E/flutter (16023): [ERROR:flutter/runtime/dart_vm_initializer.cc(40)] Unhandled Exception: HttpException: 连接超时，请检查网络
-E/flutter (16023): #0      HttpHelper.request (package:tronskins_app/common/http/http_helper.dart:82:7)
-E/flutter (16023): <asynchronous suspension>
-E/flutter (16023): #1      ApiMarketServer.marketNews (package:tronskins_app/api/market.dart:14:22)
-E/flutter (16023): <asynchronous suspension>
-E/flutter (16023): #2      HomeController.fetchLatest (package:tronskins_app/controllers/home_controller.dart:57:19)
-E/flutter (16023): <asynchronous suspension>
-E/flutter (16023): #3      Future.wait.<anonymous closure> (dart:async/future.dart:546:21)
-E/flutter (16023): <asynchronous suspension>
-E/flutter (16023): #4      HomeController.refreshAll (package:tronskins_app/controllers/home_controller.dart:31:5)
-E/flutter (16023): <asynchronous suspension>
-E/flutter (16023):
+----
+
+您好，感谢光临小店，你购买的订单编号是3270780804570702083
+以下是发货内容：
+使用方法：https://ycn0fzzbzq3b.feishu.cn/wiki/T1hEweoPZiyMqkkhgwicsEo9nMe?from=from_copylink
+兑换码：2d33489d5414e5f22ab08612c2ed3f83
+有不懂的可以联系客服，客服看到消息后会第一时间回复~ 请不要着急！
+请宝子们一定要先看CODEX配置教程大全，客服会在下午2点进行统一回复和帮忙解决问题与提供远程帮助
+
+----
