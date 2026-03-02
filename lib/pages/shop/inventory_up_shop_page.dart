@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:tronskins_app/api/model/shop/shop_models.dart';
 import 'package:tronskins_app/api/shop_product.dart';
 import 'package:tronskins_app/api/steam.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
 import 'package:tronskins_app/components/game_item/game_item_image.dart';
 import 'package:tronskins_app/components/game_item/game_item_models.dart';
@@ -282,12 +283,71 @@ class _InventoryUpShopPageState extends State<InventoryUpShopPage> {
     return total - fee;
   }
 
+  double _totalAppraise() {
+    double total = 0;
+    for (final item in _items) {
+      final reference = _extractReference(_lookupSchema(item));
+      if (reference <= 0) {
+        continue;
+      }
+      total += reference * (item.count ?? 1);
+    }
+    return total;
+  }
+
   int _totalCount() {
     int count = 0;
     for (final item in _items) {
       count += item.count ?? 1;
     }
     return count;
+  }
+
+  int _itemCount(InventoryItem item) {
+    return item.count ?? 1;
+  }
+
+  double _itemTotalPrice(InventoryItem item) {
+    final id = item.id;
+    if (id == null) {
+      return 0;
+    }
+    final price = _prices[id] ?? 0;
+    return price * _itemCount(item);
+  }
+
+  double _itemAppraise(InventoryItem item) {
+    final reference = _extractReference(_lookupSchema(item));
+    if (reference <= 0) {
+      return 0;
+    }
+    return reference * _itemCount(item);
+  }
+
+  double _itemFee(InventoryItem item) {
+    if (_loadingParams) {
+      return 0;
+    }
+    final total = _itemTotalPrice(item);
+    if (total <= 0) {
+      return 0;
+    }
+    final fee = total * _feeRate;
+    if (fee < _minFee) {
+      return _minFee;
+    }
+    return fee;
+  }
+
+  double _itemIncome(InventoryItem item) {
+    if (_loadingParams) {
+      return 0;
+    }
+    final total = _itemTotalPrice(item);
+    if (total <= 0) {
+      return 0;
+    }
+    return total - _itemFee(item);
   }
 
   void _applyReferencePrice() {
@@ -504,6 +564,737 @@ class _InventoryUpShopPageState extends State<InventoryUpShopPage> {
     }
   }
 
+  Widget _buildSummaryStat({
+    required BuildContext context,
+    required IconData icon,
+    required String label,
+    required Widget value,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: colorScheme.surface.withValues(alpha: 0.74),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 14, color: colorScheme.primary),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 1),
+                value,
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeaderCard(BuildContext context, CurrencyController currency) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Card(
+      margin: const EdgeInsets.fromLTRB(16, 6, 16, 4),
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.4),
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              colorScheme.primaryContainer.withValues(alpha: 0.42),
+              colorScheme.surface,
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final amountStyle = Theme.of(
+                  context,
+                ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600);
+
+                if (constraints.maxWidth >= 560) {
+                  return Row(
+                    children: [
+                      Expanded(
+                        child: _buildSummaryStat(
+                          context: context,
+                          icon: Icons.inventory_2_outlined,
+                          label: 'app.inventory.upshop.nums'.tr,
+                          value: Text('${_totalCount()}', style: amountStyle),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _buildSummaryStat(
+                          context: context,
+                          icon: Icons.receipt_long_outlined,
+                          label: 'app.inventory.upshop.handling_charge'.tr,
+                          value: _loadingParams
+                              ? Text('--', style: amountStyle)
+                              : Obx(
+                                  () => Text(
+                                    currency.format(_totalFee()),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: amountStyle,
+                                  ),
+                                ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _buildSummaryStat(
+                          context: context,
+                          icon: Icons.insights_outlined,
+                          label: 'app.inventory.price_appraise'.tr,
+                          value: Obx(
+                            () => Text(
+                              currency.format(_totalAppraise()),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: amountStyle,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _buildSummaryStat(
+                          context: context,
+                          icon: Icons.payments_outlined,
+                          label: 'app.inventory.upshop.expected_income'.tr,
+                          value: Obx(
+                            () => Text(
+                              currency.format(_totalIncome()),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: amountStyle,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                }
+
+                return Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildSummaryStat(
+                            context: context,
+                            icon: Icons.inventory_2_outlined,
+                            label: 'app.inventory.upshop.nums'.tr,
+                            value: Text('${_totalCount()}', style: amountStyle),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _buildSummaryStat(
+                            context: context,
+                            icon: Icons.receipt_long_outlined,
+                            label: 'app.inventory.upshop.handling_charge'.tr,
+                            value: _loadingParams
+                                ? Text('--', style: amountStyle)
+                                : Obx(
+                                    () => Text(
+                                      currency.format(_totalFee()),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: amountStyle,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildSummaryStat(
+                            context: context,
+                            icon: Icons.insights_outlined,
+                            label: 'app.inventory.price_appraise'.tr,
+                            value: Obx(
+                              () => Text(
+                                currency.format(_totalAppraise()),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: amountStyle,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _buildSummaryStat(
+                            context: context,
+                            icon: Icons.payments_outlined,
+                            label: 'app.inventory.upshop.expected_income'.tr,
+                            value: Obx(
+                              () => Text(
+                                currency.format(_totalIncome()),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: amountStyle,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<String> _collectTagLabels(List<TagInfo?> tags) {
+    final labels = <String>[];
+    for (final tag in tags) {
+      final label = tag?.label?.trim();
+      if (label == null || label.isEmpty || labels.contains(label)) {
+        continue;
+      }
+      labels.add(label);
+    }
+    return labels;
+  }
+
+  Future<void> _showImagePreview({
+    required String imageUrl,
+    required String title,
+  }) async {
+    if (imageUrl.isEmpty) {
+      return;
+    }
+    await Get.dialog<void>(
+      Dialog(
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.16),
+                blurRadius: 18,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () => Get.back(),
+                    icon: const Icon(Icons.close_rounded),
+                  ),
+                ],
+              ),
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.68,
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest
+                        .withValues(alpha: 0.35),
+                    child: InteractiveViewer(
+                      minScale: 1,
+                      maxScale: 4,
+                      child: CachedNetworkImage(
+                        imageUrl: imageUrl,
+                        fit: BoxFit.contain,
+                        placeholder: (context, _) => const SizedBox(
+                          height: 260,
+                          child: Center(
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ),
+                        errorWidget: (context, _, __) => const SizedBox(
+                          height: 260,
+                          child: Center(
+                            child: Icon(Icons.image_not_supported_outlined),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMetaChip({
+    required BuildContext context,
+    required IconData icon,
+    required String label,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: colorScheme.primary),
+          const SizedBox(width: 4),
+          Text(label, style: Theme.of(context).textTheme.bodySmall),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildItemStatCell({
+    required BuildContext context,
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.38),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.4),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 14, color: colorScheme.primary),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 1),
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildItemCard(
+    BuildContext context,
+    CurrencyController currency,
+    InventoryItem item,
+  ) {
+    final schema = _lookupSchema(item);
+    final imageUrl = item.imageUrl ?? schema?.imageUrl ?? '';
+    final title =
+        item.marketName ?? schema?.marketName ?? item.marketHashName ?? '-';
+    final controller = _controllers[item.id!]!;
+    final tags = schema?.raw['tags'];
+    final rarity = TagInfo.fromRaw(tags is Map ? tags['rarity'] : null);
+    final quality = TagInfo.fromRaw(tags is Map ? tags['quality'] : null);
+    final exterior = TagInfo.fromRaw(tags is Map ? tags['exterior'] : null);
+    final tagLabels = _collectTagLabels([rarity, quality, exterior]);
+    final asset = _resolveAsset(item);
+    final stickers = parseStickerList(
+      asset?['stickers'] ?? item.raw['stickers'],
+    );
+    final gems = parseGemList(
+      asset?['gemList'] ??
+          asset?['gems'] ??
+          item.raw['gemList'] ??
+          item.raw['gems'],
+    );
+    final wearValue =
+        item.paintWear ?? _extractDouble(asset, ['paint_wear', 'paintWear']);
+    final wearText = wearValue?.toStringAsFixed(4);
+    final paintSeed =
+        item.paintSeed ?? _extractText(asset, ['paint_seed', 'paintSeed']);
+    final phase = item.phase ?? _extractText(asset, ['phase']);
+    final percentage = _extractText(asset, ['percentage']);
+    final currentPrice = _prices[item.id!] ?? 0;
+    final itemCount = _itemCount(item);
+    final itemAppraise = _itemAppraise(item);
+    final itemFee = _itemFee(item);
+    final itemIncome = _itemIncome(item);
+    final showWarning = currentPrice > 0 && _isPriceWarning(item, currentPrice);
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Card(
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+        side: BorderSide(
+          color: Theme.of(context).dividerColor.withValues(alpha: 0.35),
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                GestureDetector(
+                  onTap: imageUrl.isEmpty
+                      ? null
+                      : () =>
+                            _showImagePreview(imageUrl: imageUrl, title: title),
+                  child: Container(
+                    width: 118,
+                    height: 76,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      color: colorScheme.surfaceContainerHighest.withValues(
+                        alpha: 0.45,
+                      ),
+                      border: Border.all(
+                        color: colorScheme.primary.withValues(alpha: 0.2),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.08),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Stack(
+                      children: [
+                        Positioned.fill(
+                          child: GameItemImage(
+                            imageUrl: imageUrl,
+                            appId: item.appId,
+                            rarity: rarity,
+                            quality: quality,
+                            exterior: exterior,
+                            paintSeed: paintSeed,
+                            phase: phase,
+                            percentage: percentage,
+                            count: item.count,
+                            stickers: stickers,
+                            gems: gems,
+                          ),
+                        ),
+                        Positioned(
+                          right: 6,
+                          bottom: 6,
+                          child: IgnorePointer(
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withValues(alpha: 0.5),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.zoom_out_map_rounded,
+                                size: 14,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (tagLabels.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: tagLabels
+                              .map(
+                                (label) => _buildMetaChip(
+                                  context: context,
+                                  icon: Icons.sell_outlined,
+                                  label: label,
+                                ),
+                              )
+                              .toList(),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (wearValue != null) ...[
+              const SizedBox(height: 10),
+              Text(
+                '${'app.market.csgo.abradability'.tr}: $wearText',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              const SizedBox(height: 6),
+              WearProgressBar(paintWear: wearValue),
+            ],
+            if (stickers.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              StickerRow(stickers: stickers, size: 18),
+            ],
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+              decoration: InputDecoration(
+                labelText: 'app.inventory.price_selling'.tr,
+                hintText: 'app.inventory.selling_placeholder'.tr,
+                prefixIcon: const Icon(Icons.sell_outlined, size: 20),
+                filled: true,
+                fillColor: colorScheme.surfaceContainerHighest.withValues(
+                  alpha: 0.2,
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 12,
+                ),
+              ),
+              onChanged: (value) => _handlePriceChanged(item.id!, value),
+              onEditingComplete: () => _normalizeInputOnBlur(item.id!),
+            ),
+            const SizedBox(height: 10),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                const spacing = 8.0;
+                final itemWidth = (constraints.maxWidth - spacing) / 2;
+                return Wrap(
+                  spacing: spacing,
+                  runSpacing: spacing,
+                  children: [
+                    SizedBox(
+                      width: itemWidth,
+                      child: _buildItemStatCell(
+                        context: context,
+                        icon: Icons.inventory_2_outlined,
+                        label: 'app.inventory.upshop.nums'.tr,
+                        value: '$itemCount',
+                      ),
+                    ),
+                    SizedBox(
+                      width: itemWidth,
+                      child: _buildItemStatCell(
+                        context: context,
+                        icon: Icons.insights_outlined,
+                        label: 'app.inventory.price_appraise'.tr,
+                        value: currency.format(itemAppraise),
+                      ),
+                    ),
+                    SizedBox(
+                      width: itemWidth,
+                      child: _buildItemStatCell(
+                        context: context,
+                        icon: Icons.receipt_long_outlined,
+                        label: 'app.inventory.upshop.handling_charge'.tr,
+                        value: _loadingParams ? '--' : currency.format(itemFee),
+                      ),
+                    ),
+                    SizedBox(
+                      width: itemWidth,
+                      child: _buildItemStatCell(
+                        context: context,
+                        icon: Icons.payments_outlined,
+                        label: 'app.inventory.upshop.expected_income'.tr,
+                        value: _loadingParams
+                            ? '--'
+                            : currency.format(itemIncome),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+            if (showWarning) ...[
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: colorScheme.errorContainer.withValues(alpha: 0.6),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.warning_amber_rounded,
+                      size: 16,
+                      color: colorScheme.error,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'app.inventory.pricing_abnormal'.tr,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: colorScheme.error,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBottomBar(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.surface,
+          border: Border(
+            top: BorderSide(
+              color: Theme.of(context).dividerColor.withValues(alpha: 0.5),
+              width: 0.5,
+            ),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.04),
+              blurRadius: 10,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            const Spacer(),
+            FilledButton(
+              onPressed: _isSubmitting ? null : _submit,
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 13,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: _isSubmitting
+                  ? Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const SizedBox(
+                          height: 16,
+                          width: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        const SizedBox(width: 8),
+                        Text('app.inventory.upshop.text'.tr),
+                      ],
+                    )
+                  : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.check_circle_outline, size: 18),
+                        const SizedBox(width: 8),
+                        Text('app.inventory.upshop.text'.tr),
+                      ],
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final currency = Get.find<CurrencyController>();
@@ -511,201 +1302,34 @@ class _InventoryUpShopPageState extends State<InventoryUpShopPage> {
       appBar: AppBar(
         title: Text('app.inventory.upshop.text'.tr),
         actions: [
-          TextButton(
-            onPressed: _applyReferencePrice,
-            child: Text('app.inventory.pricing'.tr),
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: TextButton(
+              onPressed: _applyReferencePrice,
+              style: TextButton.styleFrom(
+                visualDensity: VisualDensity.compact,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text('app.inventory.pricing'.tr),
+            ),
           ),
         ],
       ),
       body: Column(
         children: [
+          _buildHeaderCard(context, currency),
           Expanded(
             child: ListView.separated(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
               itemCount: _items.length,
               separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (context, index) {
-                final item = _items[index];
-                final schema = _lookupSchema(item);
-                final imageUrl = item.imageUrl ?? schema?.imageUrl ?? '';
-                final title =
-                    item.marketName ??
-                    schema?.marketName ??
-                    item.marketHashName ??
-                    '-';
-                final reference = _extractReference(schema);
-                final controller = _controllers[item.id!]!;
-                final tags = schema?.raw['tags'];
-                final rarity = TagInfo.fromRaw(
-                  tags is Map ? tags['rarity'] : null,
-                );
-                final quality = TagInfo.fromRaw(
-                  tags is Map ? tags['quality'] : null,
-                );
-                final exterior = TagInfo.fromRaw(
-                  tags is Map ? tags['exterior'] : null,
-                );
-                final asset = _resolveAsset(item);
-                final stickers = parseStickerList(
-                  asset?['stickers'] ?? item.raw['stickers'],
-                );
-                final gems = parseGemList(
-                  asset?['gemList'] ??
-                      asset?['gems'] ??
-                      item.raw['gemList'] ??
-                      item.raw['gems'],
-                );
-                final wearValue =
-                    item.paintWear ??
-                    _extractDouble(asset, ['paint_wear', 'paintWear']);
-                final wearText = wearValue?.toStringAsFixed(4);
-                final paintSeed =
-                    item.paintSeed ??
-                    _extractText(asset, ['paint_seed', 'paintSeed']);
-                final phase = item.phase ?? _extractText(asset, ['phase']);
-                final percentage = _extractText(asset, ['percentage']);
-                return Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            SizedBox(
-                              width: 72,
-                              height: 43,
-                              child: GameItemImage(
-                                imageUrl: imageUrl,
-                                appId: item.appId,
-                                rarity: rarity,
-                                quality: quality,
-                                exterior: exterior,
-                                paintSeed: paintSeed,
-                                phase: phase,
-                                percentage: percentage,
-                                count: item.count,
-                                stickers: stickers,
-                                gems: gems,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(title, maxLines: 2),
-                                  const SizedBox(height: 4),
-                                  if (reference > 0)
-                                    Obx(
-                                      () => Text(
-                                        '${'app.inventory.price_appraise'.tr}: '
-                                        '${currency.format(reference)}',
-                                        style: Theme.of(
-                                          context,
-                                        ).textTheme.bodySmall,
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        if (wearValue != null) ...[
-                          const SizedBox(height: 10),
-                          Text(
-                            '${'app.market.csgo.abradability'.tr}: $wearText',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                          const SizedBox(height: 6),
-                          WearProgressBar(paintWear: wearValue),
-                        ],
-                        if (stickers.isNotEmpty) ...[
-                          const SizedBox(height: 10),
-                          StickerRow(stickers: stickers, size: 18),
-                        ],
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: controller,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
-                          ),
-                          decoration: InputDecoration(
-                            labelText: 'app.inventory.price_selling'.tr,
-                            hintText: 'app.inventory.selling_placeholder'.tr,
-                          ),
-                          onChanged: (value) =>
-                              _handlePriceChanged(item.id!, value),
-                          onEditingComplete: () =>
-                              _normalizeInputOnBlur(item.id!),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-          SafeArea(
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                border: Border(
-                  top: BorderSide(
-                    color: Theme.of(context).dividerColor,
-                    width: 0.5,
-                  ),
-                ),
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        '${'app.inventory.upshop.nums'.tr}: ${_totalCount()}',
-                      ),
-                      const Spacer(),
-                      if (!_loadingParams)
-                        Obx(
-                          () => Text(
-                            '${'app.inventory.upshop.handling_charge'.tr}: '
-                            '${currency.format(_totalFee())}',
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Obx(
-                        () => Text(
-                          '${'app.inventory.upshop.expected_income'.tr}: '
-                          '${currency.format(_totalIncome())}',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      ),
-                      const Spacer(),
-                      FilledButton(
-                        onPressed: _isSubmitting ? null : _submit,
-                        child: _isSubmitting
-                            ? const SizedBox(
-                                height: 18,
-                                width: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : Text('app.inventory.upshop.text'.tr),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+              itemBuilder: (context, index) =>
+                  _buildItemCard(context, currency, _items[index]),
             ),
           ),
         ],
       ),
+      bottomNavigationBar: _buildBottomBar(context),
     );
   }
 }

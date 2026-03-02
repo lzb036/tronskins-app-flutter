@@ -27,12 +27,16 @@ class PriceSortFilterResult {
     required this.sortAsc,
     this.priceMin,
     this.priceMax,
+    this.sellableOnly = false,
+    this.coolingOnly = false,
   });
 
   final String sortField;
   final bool sortAsc;
   final double? priceMin;
   final double? priceMax;
+  final bool sellableOnly;
+  final bool coolingOnly;
 }
 
 @immutable

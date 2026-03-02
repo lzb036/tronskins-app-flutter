@@ -275,20 +275,6 @@ class _MarketDetailPageState extends State<MarketDetailPage>
     final referencePrice = templateSchema?.referencePrice ?? item.marketPrice ?? 0;
     final sellNum = templateSchema?.sellNum;
     final buyNum = templateSchema?.buyNum;
-    
-    // Check if current item belongs to user (placeholder logic as item usually is schema)
-    // We check if item.userId matches current user. 
-    // Note: item is usually a MarketItemEntity which might be a template.
-    // If it has a specific userId, we can check.
-    final currentUser = UserStorage.getUserInfo();
-    final isOwner = item.id != null && currentUser != null; 
-    // Real logic would depend on whether 'item' is a specific instance with owner info.
-    // For now we assume if it's passed with a valid ID and we are logged in, we check against a hypothetical owner field 
-    // or just default to "Buy" since this is usually the aggregate page.
-    
-    // However, per user request, we need to show different buttons.
-    // We will implement the UI for both states and toggle based on a condition.
-    // Assuming this page is mostly for BUYING (Aggregate), so default is BUY.
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF1B1C20) : const Color(0xFFF5F5F5),
@@ -1057,6 +1043,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
     );
     final avatar = _resolveAvatar(user?.avatar);
     final canBuy = item.id != null && item.price != null;
+    final isOwn = _isOwnOnSaleItem(item);
 
     return Card(
       color: isDark ? const Color(0xFF26272B) : Colors.white,
@@ -1142,17 +1129,70 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                     ),
                   ),
                   const SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: canBuy ? () => _purchaseItem(item) : null,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF4C81E7),
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(60, 32),
-                      padding: EdgeInsets.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  if (!isOwn)
+                    ElevatedButton(
+                      onPressed: canBuy ? () => _purchaseItem(item) : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF4C81E7),
+                        foregroundColor: Colors.white,
+                        minimumSize: const Size(60, 32),
+                        padding: EdgeInsets.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: Text('app.trade.buy.text'.tr),
                     ),
-                    child: Text('app.trade.buy.text'.tr),
-                  ),
+                  if (isOwn)
+                    Column(
+                      children: [
+                        SizedBox(
+                          height: 32,
+                          child: OutlinedButton(
+                            onPressed: () => _changePriceOnSaleItem(
+                              item: item,
+                              schema: schema,
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size(74, 32),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 0,
+                              ),
+                              side: BorderSide(
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                            child: Text(
+                              'app.inventory.price_change'.tr,
+                              style: const TextStyle(fontSize: 11),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        SizedBox(
+                          height: 32,
+                          child: OutlinedButton(
+                            onPressed: () => _delistOnSaleItem(item),
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size(74, 32),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 0,
+                              ),
+                              foregroundColor: Theme.of(context).colorScheme.error,
+                              side: BorderSide(
+                                color: Theme.of(context).colorScheme.error,
+                              ),
+                            ),
+                            child: Text(
+                              'app.inventory.delist'.tr,
+                              style: const TextStyle(fontSize: 11),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                 ],
               ),
               if (appId == 730 && paintWearValue != null) ...[
@@ -1187,6 +1227,130 @@ class _MarketDetailPageState extends State<MarketDetailPage>
         ),
       ),
     );
+  }
+
+  bool _isOwnOnSaleItem(MarketListItem item) {
+    if (item.own == true) {
+      return true;
+    }
+    final currentUser = UserStorage.getUserInfo();
+    final currentUserId = _asInt(currentUser?.id);
+    final currentShopId = _asInt(currentUser?.shop?.id);
+    final sellerId = item.userId;
+    if (sellerId == null) {
+      return false;
+    }
+    return sellerId == currentUserId || sellerId == currentShopId;
+  }
+
+  Future<void> _changePriceOnSaleItem({
+    required MarketListItem item,
+    required MarketSchemaInfo? schema,
+  }) async {
+    final id = item.id;
+    if (id == null) {
+      return;
+    }
+
+    final raw = Map<String, dynamic>.from(item.raw);
+    final shopItem = ShopItemAsset(
+      raw: raw,
+      id: id,
+      appId: item.appId ?? controller.appId,
+      schemaId: item.schemaId,
+      marketName:
+          schema?.marketName ??
+          raw['market_name']?.toString() ??
+          raw['marketName']?.toString(),
+      marketHashName: schema?.marketHashName ?? item.marketHashName,
+      imageUrl:
+          schema?.imageUrl ??
+          raw['image_url']?.toString() ??
+          raw['imageUrl']?.toString(),
+      price: item.price,
+      count: _asInt(raw['count']) ?? 1,
+      userId: item.userId,
+      status: _asInt(raw['status']),
+      statusName: raw['statusName']?.toString() ?? raw['status_name']?.toString(),
+      createTime: _asInt(raw['create_time'] ?? raw['createTime']),
+    );
+
+    final schemaMap = <String, ShopSchemaInfo>{};
+    if (schema != null && schema.raw.isNotEmpty) {
+      try {
+        final mappedSchema = ShopSchemaInfo.fromJson(
+          Map<String, dynamic>.from(schema.raw),
+        );
+        final hash = mappedSchema.marketHashName;
+        if (hash != null && hash.isNotEmpty) {
+          schemaMap[hash] = mappedSchema;
+        }
+        final schemaId = item.schemaId;
+        if (schemaId != null) {
+          schemaMap[schemaId.toString()] = mappedSchema;
+        }
+      } catch (_) {}
+    }
+
+    await Get.toNamed(
+      Routers.SHOP_PRICE_CHANGE,
+      arguments: <String, dynamic>{
+        'items': <ShopItemAsset>[shopItem],
+        'schemas': schemaMap,
+        'appId': item.appId ?? controller.appId,
+      },
+    );
+    await controller.loadOnSale(reset: true);
+  }
+
+  Future<void> _delistOnSaleItem(MarketListItem item) async {
+    final id = item.id;
+    if (id == null) {
+      return;
+    }
+
+    final confirm = await Get.dialog<bool>(
+      AlertDialog(
+        title: Text('app.system.tips.title'.tr),
+        content: Text('app.inventory.message.confirm_delist'.tr),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: Text('app.common.cancel'.tr),
+          ),
+          TextButton(
+            onPressed: () => Get.back(result: true),
+            child: Text('app.common.confirm'.tr),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) {
+      return;
+    }
+
+    try {
+      final res = await _shopProductApi.orderItemRemoved(ids: <int>[id]);
+      if (res.success) {
+        Get.snackbar(
+          'app.system.tips.title'.tr,
+          'app.system.message.success'.tr,
+        );
+      } else {
+        Get.snackbar(
+          'app.system.tips.title'.tr,
+          res.message.isNotEmpty ? res.message : 'app.trade.filter.failed'.tr,
+        );
+      }
+    } catch (_) {
+      Get.snackbar(
+        'app.system.tips.title'.tr,
+        'app.trade.filter.failed'.tr,
+      );
+    }
+
+    await controller.loadOnSale(reset: true);
+    await controller.loadTransactions(reset: true);
   }
 
   Widget _buildPriceTrendTab() {
@@ -1706,7 +1870,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
     if (item.appId == 570 && raw['dota2Asset'] is Map<String, dynamic>) {
       return raw['dota2Asset'] as Map<String, dynamic>;
     }
-    return raw is Map<String, dynamic> ? raw : null;
+    return raw;
   }
 
   String? _extractText(dynamic raw, List<String> keys) {

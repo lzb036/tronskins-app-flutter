@@ -262,6 +262,7 @@ class MarketListItem {
   final int? appId;
   final int? schemaId;
   final int? userId;
+  final bool? own;
   final String? marketHashName;
   final double? price;
   final String? typeName;
@@ -273,6 +274,7 @@ class MarketListItem {
     this.appId,
     this.schemaId,
     this.userId,
+    this.own,
     this.marketHashName,
     this.price,
     this.typeName,
@@ -286,6 +288,7 @@ class MarketListItem {
       appId: _asInt(json['app_id'] ?? json['appId']),
       schemaId: _asInt(json['schema_id'] ?? json['schemaId']),
       userId: _asInt(json['userId'] ?? json['user_id']),
+      own: _asBool(json['own']),
       marketHashName: json['market_hash_name']?.toString(),
       price: _asDouble(json['price']),
       typeName: json['typeName']?.toString(),
@@ -503,4 +506,18 @@ double? _asDouble(dynamic value) {
     return value.toDouble();
   }
   return double.tryParse(value.toString());
+}
+
+bool _asBool(dynamic value) {
+  if (value == null) {
+    return false;
+  }
+  if (value is bool) {
+    return value;
+  }
+  if (value is num) {
+    return value != 0;
+  }
+  final text = value.toString().toLowerCase();
+  return text == 'true' || text == '1';
 }

@@ -10,6 +10,7 @@ import 'package:tronskins_app/common/storage/game_storage.dart';
 class InventoryController extends GetxController {
   final ApiInventoryServer _inventoryApi = ApiInventoryServer();
   final ApiShopProductServer _shopApi = ApiShopProductServer();
+  static const int maxUpShopSelection = 20;
 
   final RxList<InventoryItem> items = <InventoryItem>[].obs;
   final RxMap<String, ShopSchemaInfo> schemas = <String, ShopSchemaInfo>{}.obs;
@@ -179,6 +180,8 @@ class InventoryController extends GetxController {
     bool? asc,
     double? minPrice,
     double? maxPrice,
+    bool? sellableOnlyFlag,
+    bool? coolingOnlyFlag,
   }) async {
     if (field != null) {
       sortField.value = field;
@@ -188,6 +191,15 @@ class InventoryController extends GetxController {
     }
     priceMin.value = minPrice;
     priceMax.value = maxPrice;
+    if (sellableOnlyFlag != null) {
+      sellableOnly.value = sellableOnlyFlag;
+    }
+    if (coolingOnlyFlag != null) {
+      coolingOnly.value = coolingOnlyFlag;
+    }
+    if (sellableOnly.value && coolingOnly.value) {
+      coolingOnly.value = false;
+    }
     clearSelection();
     await refreshList();
   }
@@ -226,13 +238,21 @@ class InventoryController extends GetxController {
     await refreshList();
   }
 
-  void toggleSelection(int itemId) {
+  bool toggleSelection(int itemId, {int? maxSelection}) {
     if (selectedIds.contains(itemId)) {
       selectedIds.remove(itemId);
-    } else {
-      selectedIds.add(itemId);
+      selectedIds.refresh();
+      return true;
     }
+
+    final limit = maxSelection ?? 0;
+    if (limit > 0 && selectedIds.length >= limit) {
+      return false;
+    }
+
+    selectedIds.add(itemId);
     selectedIds.refresh();
+    return true;
   }
 
   void clearSelection() {

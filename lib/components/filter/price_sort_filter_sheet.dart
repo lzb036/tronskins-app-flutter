@@ -10,6 +10,7 @@ class PriceSortFilterSheet extends StatefulWidget {
     this.titleKey = 'app.market.filter.text',
     this.showPriceRange = true,
     this.showSort = true,
+    this.showInventoryStateFilters = false,
   });
 
   final List<SortOption> sortOptions;
@@ -17,6 +18,7 @@ class PriceSortFilterSheet extends StatefulWidget {
   final String titleKey;
   final bool showPriceRange;
   final bool showSort;
+  final bool showInventoryStateFilters;
 
   @override
   State<PriceSortFilterSheet> createState() => _PriceSortFilterSheetState();
@@ -25,6 +27,8 @@ class PriceSortFilterSheet extends StatefulWidget {
 class _PriceSortFilterSheetState extends State<PriceSortFilterSheet> {
   late String _sortField;
   late bool _sortAsc;
+  late bool _sellableOnly;
+  late bool _coolingOnly;
   late final TextEditingController _minController;
   late final TextEditingController _maxController;
 
@@ -33,6 +37,8 @@ class _PriceSortFilterSheetState extends State<PriceSortFilterSheet> {
     super.initState();
     _sortField = widget.initial.sortField;
     _sortAsc = widget.initial.sortAsc;
+    _sellableOnly = widget.initial.sellableOnly;
+    _coolingOnly = widget.initial.coolingOnly;
     _minController = TextEditingController(
       text: widget.initial.priceMin?.toString() ?? '',
     );
@@ -54,6 +60,8 @@ class _PriceSortFilterSheetState extends State<PriceSortFilterSheet> {
           ? widget.sortOptions.first.field
           : _sortField;
       _sortAsc = false;
+      _sellableOnly = false;
+      _coolingOnly = false;
       _minController.text = '';
       _maxController.text = '';
     });
@@ -68,6 +76,8 @@ class _PriceSortFilterSheetState extends State<PriceSortFilterSheet> {
         sortAsc: _sortAsc,
         priceMin: min,
         priceMax: max,
+        sellableOnly: _sellableOnly,
+        coolingOnly: _coolingOnly,
       ),
     );
   }
@@ -101,7 +111,7 @@ class _PriceSortFilterSheetState extends State<PriceSortFilterSheet> {
                 ),
                 const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
-                  value: _sortField,
+                  initialValue: _sortField,
                   items: widget.sortOptions
                       .map(
                         (option) => DropdownMenuItem<String>(
@@ -158,6 +168,43 @@ class _PriceSortFilterSheetState extends State<PriceSortFilterSheet> {
                       ),
                     ),
                   ],
+                ),
+              ],
+              if (widget.showInventoryStateFilters) ...[
+                const SizedBox(height: 8),
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  title: Text('app.market.product.sellable'.tr),
+                  value: _sellableOnly,
+                  onChanged: (value) {
+                    if (value == null) {
+                      return;
+                    }
+                    setState(() {
+                      _sellableOnly = value;
+                      if (value) {
+                        _coolingOnly = false;
+                      }
+                    });
+                  },
+                ),
+                CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  title: Text('app.market.product.cooling'.tr),
+                  value: _coolingOnly,
+                  onChanged: (value) {
+                    if (value == null) {
+                      return;
+                    }
+                    setState(() {
+                      _coolingOnly = value;
+                      if (value) {
+                        _sellableOnly = false;
+                      }
+                    });
+                  },
                 ),
               ],
               const SizedBox(height: 16),

@@ -111,12 +111,13 @@ final Map<String, String> en_US = {
   "app.user.login.confirm": "Confirm login",
   "app.user.login.token_loss": "Token Lost",
   "app.user.login.tronskins": "Login TronSkins",
-  "app.user.login.email_placeholder": "Please enter your email address",
+  "app.user.login.email_placeholder": "Please enter your email address",
   "app.steam.session.username_placeholder": "Please enter your username",
   "app.user.login.browser_confirm": "TronSkins browser login confirmation",
   "app.user.login.enter_captcha": "Please enter your email verification code.",
   "app.user.login.forget_password": "Forget Password",
-  "app.user.login.forget_password_desc": "Enter your email to receive a verification code",
+  "app.user.login.forget_password_desc":
+      "Enter your email to receive a verification code",
   "app.user.login.token_loss_desc": "Recover your account token securely",
   "app.user.login.reset_password": "Reset Password",
   "app.user.login.reacquire": "Reacquire",
@@ -125,9 +126,11 @@ final Map<String, String> en_US = {
   "app.user.login.password_strong": "Strong",
   "app.user.login.password_placeholder": "Please enter your password",
   "app.user.login.authorization_success": "Authorization login successful!",
-  "app.user.login.enter_2fa_captcha": "Please enter the 2FA code",
-  "app.steam.placeholder.code": "Please enter your Steam Mobile Authenticator code.",
-  "app.steam.verify.title": "We need to verify your identity. Please enter the 5-digit verification code displayed on your mobile token.",
+  "app.user.login.enter_2fa_captcha": "Please enter the 2FA code",
+  "app.steam.placeholder.code":
+      "Please enter your Steam Mobile Authenticator code.",
+  "app.steam.verify.title":
+      "We need to verify your identity. Please enter the 5-digit verification code displayed on your mobile token.",
   "app.steam.code.number": "Please enter the 5-digit verification code.",
   "app.user.login.message.send_captcha":
       "We have sent the verification code to your email address {0}, please enter it correctly.",
@@ -138,12 +141,14 @@ final Map<String, String> en_US = {
       "Get it again after the countdown",
   "app.user.login.message.success": "Login successful!",
   "app.user.login.message.error": "Login failed!",
-  "app.user.login.message.email_error": "The mailbox cannot be empty!",
+  "app.user.login.message.email_error": "The mailbox cannot be empty!",
   "app.steam.session.message.username_error": "Username cannot be empty!",
-  "app.user.login.message.email_format_error": "Please enter a valid email address.",
+  "app.user.login.message.email_format_error":
+      "Please enter a valid email address.",
   "app.user.login.message.password_error": "Password cannot be empty!",
   "app.user.login.message.code_error": "The verification code cannot be empty!",
-  "app.user.login.message.code_length_error": "Incorrect verification code length",
+  "app.user.login.message.code_length_error":
+      "Incorrect verification code length",
   "app.user.login.logout": "Log Out",
   "app.user.login.logout_confirm": "Are you sure you want to log out?",
   "app.user.login.nologin": "Go Login",
@@ -152,10 +157,12 @@ final Map<String, String> en_US = {
   "app.user.guard.set_tips":
       "You haven't set up 2FA validator yet, do you want to go to Settings?",
   "app.user.guard.bind_tips": "Sync 2FA token",
-  "app.user.guard.open_2fa_first": "Please enable 2FA on the website first, then sync.",
+  "app.user.guard.open_2fa_first":
+      "Please enable 2FA on the website first, then sync.",
   "app.user.guard.get_captcha": "Get the verification code",
   "app.user.guard.captcha_been_sent": "The verification code has been sent",
-  "app.user.guard.captcha_send_failed": "Failed to send verification code. Please try again.",
+  "app.user.guard.captcha_send_failed":
+      "Failed to send verification code. Please try again.",
   "app.user.shop.setting": "Shop Setup",
   "app.user.shop.status": "Shop Status",
   "app.user.shop.online_title": "Shop Online",
@@ -261,7 +268,8 @@ final Map<String, String> en_US = {
       "Feedback submitted successfully!",
   "app.user.feedback.message.solve_confirm": "Mark this feedback as resolved?",
   "app.user.feedback.message.solve_success": "Marked as resolved successfully!",
-  "app.user.feedback.message.reply_success": "Additional feedback submitted successfully!",
+  "app.user.feedback.message.reply_success":
+      "Additional feedback submitted successfully!",
   "app.user.feedback.message.fill_feedback":
       "Please fill in the feedback information!",
   "app.user.feedback.message.image_upload_success":
@@ -312,13 +320,15 @@ final Map<String, String> en_US = {
   "app.user.setting.server_ip_placeholder": "Please enter the IP address.",
   "app.user.setting.server_switching_confirm":
       "Switching servers will restart the app. Confirm switch to",
-  "app.user.setting.server_switching_restart_highlight":"restart the app",
-  "app.user.setting.server_connectivity_testing":"Testing server connectivity...",
-  "app.user.setting.server_connectivity_success":"Server is reachable",
-  "app.user.setting.server_connectivity_failed":"Server is unreachable. Unable to switch.",
-  "app.user.setting.about":"About",
-  "app.user.setting.website":"Official Website",
-  "app.user.setting.server_exists":"Server address already exists",
+  "app.user.setting.server_switching_restart_highlight": "restart the app",
+  "app.user.setting.server_connectivity_testing":
+      "Testing server connectivity...",
+  "app.user.setting.server_connectivity_success": "Server is reachable",
+  "app.user.setting.server_connectivity_failed":
+      "Server is unreachable. Unable to switch.",
+  "app.user.setting.about": "About",
+  "app.user.setting.website": "Official Website",
+  "app.user.setting.server_exists": "Server address already exists",
   "app.user.setting.version": "Version",
   "app.user.setting.cache_clear": "Clear cache",
   "app.user.setting.nickname_not_set": "Nickname Not Set",
@@ -627,6 +637,8 @@ final Map<String, String> en_US = {
   "app.common.unlimited": "Unlimited",
   "app.common.no_data": "No Data",
   "app.common.refresh": "Refresh",
+  "app.common.select_all": "Select All",
+  "app.common.deselect_all": "Deselect All",
   "app.common.confirm": "Confirm",
   "app.common.cancel": "Cancel",
   "app.common.delete": "Delete",
@@ -665,21 +677,10 @@ final Map<String, String> en_US = {
   "app.system.message.copy_success": "The content has been copied!",
   "app.system.message.order_shipping": "Delivery Notice",
   "app.system.message.order_receiving": "Delivery Notice",
-  "app.steam.message.loading_steam_id":"Loading Steam ID...",
-"app.steam.message.loading_account_status":"Loading account status...",
-"app.steam.message.verify_success":"Verification successful!",
-"app.system.message.success": "Operation successful!",
+  "app.steam.message.loading_steam_id": "Loading Steam ID...",
+  "app.steam.message.loading_account_status": "Loading account status...",
+  "app.steam.message.verify_success": "Verification successful!",
+  "app.system.message.success": "Operation successful!",
   "app.system.version.latest_discover": "Discover the latest version",
   "app.system.version.download_failed": "Failed to download the update package",
 };
-
-
-
-
-
-
-
-
-
-
-

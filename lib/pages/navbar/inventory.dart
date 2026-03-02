@@ -53,7 +53,10 @@ class _InventoryPageState extends State<InventoryPage> {
       final tokenRes = await _steamApi.getTemporaryToken();
       final token = tokenRes.datas;
       if (!tokenRes.success || token == null || token.isEmpty) {
-        Get.snackbar('app.system.tips.title'.tr, 'app.user.login.message.error'.tr);
+        Get.snackbar(
+          'app.system.tips.title'.tr,
+          'app.user.login.message.error'.tr,
+        );
         return;
       }
       if (!Get.isRegistered<SteamController>()) {
@@ -61,7 +64,10 @@ class _InventoryPageState extends State<InventoryPage> {
       }
       Get.toNamed(Routers.STEAM_BIND, arguments: token);
     } catch (_) {
-      Get.snackbar('app.system.tips.title'.tr, 'app.user.login.message.error'.tr);
+      Get.snackbar(
+        'app.system.tips.title'.tr,
+        'app.user.login.message.error'.tr,
+      );
     }
   }
 
@@ -199,6 +205,14 @@ class _InventoryPageState extends State<InventoryPage> {
     controller.search(_searchController.text);
   }
 
+  bool _isItemSelectable(InventoryItem item) {
+    final isTradable = item.tradable ?? true;
+    final isCooling = item.coolingDown ?? false;
+    final isOnSale = item.status == 1;
+    final isInSupply = item.status == 2;
+    return isTradable && !isCooling && !isOnSale && !isInSupply;
+  }
+
   Future<void> _openFilterSheet() async {
     final result = await showModalBottomSheet<PriceSortFilterResult>(
       context: context,
@@ -208,11 +222,14 @@ class _InventoryPageState extends State<InventoryPage> {
           SortOption(labelKey: 'app.market.filter.price', field: 'price'),
           SortOption(labelKey: 'app.market.filter.time', field: 'time'),
         ],
+        showInventoryStateFilters: controller.currentAppId.value != 440,
         initial: PriceSortFilterResult(
           sortField: controller.sortField.value,
           sortAsc: controller.sortAsc.value,
           priceMin: controller.priceMin.value,
           priceMax: controller.priceMax.value,
+          sellableOnly: controller.sellableOnly.value,
+          coolingOnly: controller.coolingOnly.value,
         ),
       ),
     );
@@ -222,6 +239,8 @@ class _InventoryPageState extends State<InventoryPage> {
         asc: result.sortAsc,
         minPrice: result.priceMin,
         maxPrice: result.priceMax,
+        sellableOnlyFlag: result.sellableOnly,
+        coolingOnlyFlag: result.coolingOnly,
       );
     }
   }
@@ -279,51 +298,11 @@ class _InventoryPageState extends State<InventoryPage> {
                             style: Theme.of(context).textTheme.titleLarge
                                 ?.copyWith(fontWeight: FontWeight.bold),
                           ),
-                          Row(
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.refresh),
-                                onPressed: () async {
-                                  final canContinue =
-                                      await _checkSteamSessionIfNeeded();
-                                  if (!canContinue) {
-                                    return;
-                                  }
-                                  await controller.refreshInventory();
-                                },
-                              ),
-                              const SizedBox(width: 8),
-                              _buildGameIcon(),
-                            ],
-                          ),
+                          Row(children: [_buildGameIcon()]),
                         ],
                       ),
                     ),
                     _buildSearchBar(),
-                    const SizedBox(height: 8),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Obx(() {
-                        if (controller.currentAppId.value == 440) {
-                          return const SizedBox.shrink();
-                        }
-                        return Wrap(
-                          spacing: 8,
-                          children: [
-                            FilterChip(
-                              label: Text('app.market.product.sellable'.tr),
-                              selected: controller.sellableOnly.value,
-                              onSelected: (_) => controller.toggleSellable(),
-                            ),
-                            FilterChip(
-                              label: Text('app.market.product.cooling'.tr),
-                              selected: controller.coolingOnly.value,
-                              onSelected: (_) => controller.toggleCooling(),
-                            ),
-                          ],
-                        );
-                      }),
-                    ),
                     const SizedBox(height: 8),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -384,17 +363,11 @@ class _InventoryPageState extends State<InventoryPage> {
                                   controller.schemas,
                                   item,
                                 );
-                                final selected = controller.selectedIds
-                                    .contains(item.id);
                                 final isTradable = item.tradable ?? true;
                                 final isCooling = item.coolingDown ?? false;
                                 final isOnSale = item.status == 1;
                                 final isInSupply = item.status == 2;
-                                final disabled =
-                                    !isTradable ||
-                                    isCooling ||
-                                    isOnSale ||
-                                    isInSupply;
+                                final disabled = !_isItemSelectable(item);
                                 final disabledLabel = !isTradable
                                     ? 'app.trade.non_tradable'.tr
                                     : isCooling
@@ -404,34 +377,50 @@ class _InventoryPageState extends State<InventoryPage> {
                                     : isInSupply
                                     ? 'app.inventory.in_supply'.tr
                                     : null;
-                                return InventoryItemCard(
-                                  item: item,
-                                  schema: schema,
-                                  selected: selected,
-                                  disabledLabel: disabled
-                                      ? disabledLabel
-                                      : null,
-                                  onTap: () {
-                                    if (item.id == null) {
-                                      return;
-                                    }
-                                    if (disabled) {
-                                      Get.snackbar(
-                                        'app.system.tips.title'.tr,
-                                        !isTradable
-                                            ? 'app.inventory.message.non_tradable'
-                                                  .tr
-                                            : isCooling
-                                            ? 'app.market.product.cooling'.tr
-                                            : isOnSale
-                                            ? 'app.inventory.on_sale'.tr
-                                            : 'app.inventory.in_supply'.tr,
-                                      );
-                                      return;
-                                    }
-                                    controller.toggleSelection(item.id!);
-                                  },
-                                );
+                                return Obx(() {
+                                  final selected = controller.selectedIds
+                                      .contains(item.id ?? -1);
+                                  return InventoryItemCard(
+                                    item: item,
+                                    schema: schema,
+                                    selected: selected,
+                                    disabledLabel: disabled
+                                        ? disabledLabel
+                                        : null,
+                                    onTap: () {
+                                      if (item.id == null) {
+                                        return;
+                                      }
+                                      if (disabled) {
+                                        Get.snackbar(
+                                          'app.system.tips.title'.tr,
+                                          !isTradable
+                                              ? 'app.inventory.message.non_tradable'
+                                                    .tr
+                                              : isCooling
+                                              ? 'app.market.product.cooling'.tr
+                                              : isOnSale
+                                              ? 'app.inventory.on_sale'.tr
+                                              : 'app.inventory.in_supply'.tr,
+                                        );
+                                        return;
+                                      }
+                                      final changed = controller
+                                          .toggleSelection(
+                                            item.id!,
+                                            maxSelection: InventoryController
+                                                .maxUpShopSelection,
+                                          );
+                                      if (!changed) {
+                                        Get.snackbar(
+                                          'app.system.tips.title'.tr,
+                                          '${'app.trade.supply.message.more_than_needed'.tr}'
+                                          ' (${InventoryController.maxUpShopSelection})',
+                                        );
+                                      }
+                                    },
+                                  );
+                                });
                               },
                             ),
                           ),
@@ -478,7 +467,10 @@ class _InventoryPageState extends State<InventoryPage> {
             child: Row(
               children: [
                 Text(
-                  '${'app.inventory.count'.tr}: ${controller.selectedIds.length}',
+                  '${'app.inventory.count'.tr}: '
+                  '${controller.selectedIds.length}/'
+                  '${InventoryController.maxUpShopSelection}',
+                  overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
                 const Spacer(),
@@ -490,6 +482,15 @@ class _InventoryPageState extends State<InventoryPage> {
                 FilledButton(
                   onPressed: () {
                     if (controller.selectedIds.isEmpty) {
+                      return;
+                    }
+                    if (controller.selectedIds.length >
+                        InventoryController.maxUpShopSelection) {
+                      Get.snackbar(
+                        'app.system.tips.title'.tr,
+                        '${'app.trade.supply.message.more_than_needed'.tr}'
+                        ' (${InventoryController.maxUpShopSelection})',
+                      );
                       return;
                     }
                     final selectedItems = controller.items
@@ -572,10 +573,6 @@ class _InventoryPageState extends State<InventoryPage> {
                   hintText: 'app.market.filter.search'.tr,
                   hintStyle: TextStyle(color: hintColor, fontSize: 14),
                   prefixIcon: Icon(Icons.search, color: hintColor, size: 20),
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.send, size: 18),
-                    onPressed: _search,
-                  ),
                   filled: true,
                   fillColor: fillColor,
                   contentPadding: EdgeInsets.zero,
@@ -596,17 +593,11 @@ class _InventoryPageState extends State<InventoryPage> {
             ),
           ),
           const SizedBox(width: 8),
-          Obx(() {
-            return IconButton(
-              tooltip: 'app.market.filter.sort'.tr,
-              icon: Icon(
-                controller.sortAsc.value
-                    ? Icons.arrow_upward
-                    : Icons.arrow_downward,
-              ),
-              onPressed: controller.toggleSortAsc,
-            );
-          }),
+          IconButton(
+            tooltip: 'app.market.filter.search'.tr,
+            icon: const Icon(Icons.send),
+            onPressed: _search,
+          ),
           IconButton(
             tooltip: 'app.market.filter.text'.tr,
             icon: const Icon(Icons.filter_alt_outlined),
