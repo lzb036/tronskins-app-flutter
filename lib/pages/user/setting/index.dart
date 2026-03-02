@@ -21,9 +21,7 @@ class UserSetting extends StatelessWidget {
     final currencyCtrl = Get.find<CurrencyController>();
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('app.user.setting.title'.tr),
-      ),
+      appBar: AppBar(title: Text('app.user.setting.title'.tr)),
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: 12),
         children: [
@@ -35,13 +33,10 @@ class UserSetting extends StatelessWidget {
                 final nickname = userCtrl.nickname;
                 final value = loggedIn
                     ? (nickname.isNotEmpty
-                        ? nickname
-                        : 'app.user.setting.nickname_not_set'.tr)
+                          ? nickname
+                          : 'app.user.setting.nickname_not_set'.tr)
                     : 'app.user.login.nologin'.tr;
-                return _buildInfoItem(
-                  'app.user.setting.nickname'.tr,
-                  value,
-                );
+                return _buildInfoItem('app.user.setting.nickname'.tr, value);
               }),
               Obx(() {
                 final loggedIn = userCtrl.isLoggedIn.value;
@@ -49,10 +44,7 @@ class UserSetting extends StatelessWidget {
                 final value = loggedIn && email.isNotEmpty
                     ? email
                     : 'app.user.login.nologin'.tr;
-                return _buildInfoItem(
-                  'app.user.setting.email'.tr,
-                  value,
-                );
+                return _buildInfoItem('app.user.setting.email'.tr, value);
               }),
             ],
           ),
@@ -76,35 +68,39 @@ class UserSetting extends StatelessWidget {
               ),
               _buildActionItem(
                 'app.user.setting.multilingual'.tr,
-                trailing: Obx(() => Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Image.asset(
-                          useLocale.getCurrentLanguageIcon(),
-                          width: 24,
-                          height: 24,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(useLocale.getLanguageName(useLocale.currentLocale)),
-                      ],
-                    )),
+                trailing: Obx(
+                  () => Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Image.asset(
+                        useLocale.getCurrentLanguageIcon(),
+                        width: 24,
+                        height: 24,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(useLocale.getLanguageName(useLocale.currentLocale)),
+                    ],
+                  ),
+                ),
                 onTap: () => _showLanguageSheet(context, useLocale),
               ),
               _buildActionItem(
                 'app.user.setting.exchange_rate'.tr,
-                trailing: Obx(() => Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Image.asset(
-                          currencyCtrl.currentCurrencyIcon,
-                          width: 24,
-                          height: 24,
-                          errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(currencyCtrl.code),
-                      ],
-                    )),
+                trailing: Obx(
+                  () => Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Image.asset(
+                        currencyCtrl.currentCurrencyIcon,
+                        width: 24,
+                        height: 24,
+                        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(currencyCtrl.code),
+                    ],
+                  ),
+                ),
                 onTap: () => Get.toNamed(Routers.USER_SETTING_RATE),
               ),
               _buildActionItem(
@@ -119,6 +115,10 @@ class UserSetting extends StatelessWidget {
                 'app.user.setting.about'.tr,
                 onTap: () => Get.toNamed(Routers.USER_ABOUT),
               ),
+              _buildActionItem(
+                '认证测试中心',
+                onTap: () => Get.toNamed(Routers.USER_AUTH_TEST),
+              ),
             ],
           ),
           const SizedBox(height: 24),
@@ -130,9 +130,15 @@ class UserSetting extends StatelessWidget {
               final isDark = theme.brightness == Brightness.dark;
               final error = theme.colorScheme.error;
               final errorContainer = theme.colorScheme.errorContainer;
-              final disabledBg = isDark ? const Color(0xFF2A2D33) : const Color(0xFFF1F2F4);
-              final disabledBorder = isDark ? const Color(0xFF3A3E45) : const Color(0xFFE0E3E8);
-              final disabledFg = isDark ? const Color(0xFF8A8F98) : const Color(0xFF8C9199);
+              final disabledBg = isDark
+                  ? const Color(0xFF2A2D33)
+                  : const Color(0xFFF1F2F4);
+              final disabledBorder = isDark
+                  ? const Color(0xFF3A3E45)
+                  : const Color(0xFFE0E3E8);
+              final disabledFg = isDark
+                  ? const Color(0xFF8A8F98)
+                  : const Color(0xFF8C9199);
               final gradient = LinearGradient(
                 colors: [
                   Color.lerp(error, const Color(0xFFB00020), 0.15) ?? error,
@@ -160,31 +166,34 @@ class UserSetting extends StatelessWidget {
                         : null,
                   ),
                   child: FilledButton(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      foregroundColor: Colors.white,
-                      disabledBackgroundColor: Colors.transparent,
-                      disabledForegroundColor: disabledFg,
-                      minimumSize: const Size.fromHeight(48),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      textStyle: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.2,
-                      ),
-                    ).copyWith(
-                      overlayColor: MaterialStateProperty.resolveWith((states) {
-                        if (states.contains(MaterialState.pressed)) {
-                          return Colors.white.withOpacity(0.12);
-                        }
-                        if (states.contains(MaterialState.hovered)) {
-                          return Colors.white.withOpacity(0.06);
-                        }
-                        return null;
-                      }),
-                    ),
+                    style:
+                        FilledButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          foregroundColor: Colors.white,
+                          disabledBackgroundColor: Colors.transparent,
+                          disabledForegroundColor: disabledFg,
+                          minimumSize: const Size.fromHeight(48),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          textStyle: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.2,
+                          ),
+                        ).copyWith(
+                          overlayColor: MaterialStateProperty.resolveWith((
+                            states,
+                          ) {
+                            if (states.contains(MaterialState.pressed)) {
+                              return Colors.white.withOpacity(0.12);
+                            }
+                            if (states.contains(MaterialState.hovered)) {
+                              return Colors.white.withOpacity(0.06);
+                            }
+                            return null;
+                          }),
+                        ),
                     onPressed: loggedIn ? userCtrl.logout : null,
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -268,11 +277,12 @@ class UserSetting extends StatelessWidget {
     return ListTile(
       title: Text(title),
       trailing: trailing ?? const Icon(Icons.chevron_right),
-      onTap: onTap ??
+      onTap:
+          onTap ??
           () => Get.snackbar(
-                'app.system.tips.title'.tr,
-                'app.system.message.not_open'.tr,
-              ),
+            'app.system.tips.title'.tr,
+            'app.system.message.not_open'.tr,
+          ),
     );
   }
 
@@ -285,7 +295,8 @@ class UserSetting extends StatelessWidget {
             itemCount: useLocale.supportedLanguages.length,
             itemBuilder: (context, index) {
               final lang = useLocale.supportedLanguages[index];
-              final isSelected = lang['code'] == useLocale.currentLocale.languageCode &&
+              final isSelected =
+                  lang['code'] == useLocale.currentLocale.languageCode &&
                   lang['country'] == useLocale.currentLocale.countryCode;
               return ListTile(
                 leading: Image.asset(
@@ -294,7 +305,9 @@ class UserSetting extends StatelessWidget {
                   height: 32,
                 ),
                 title: Text(useLocale.getLocalizedLanguageName(lang)),
-                trailing: isSelected ? const Icon(Icons.check, color: Colors.blue) : null,
+                trailing: isSelected
+                    ? const Icon(Icons.check, color: Colors.blue)
+                    : null,
                 onTap: () {
                   useLocale.changeLanguage(
                     lang['code'] ?? 'en',
@@ -318,9 +331,11 @@ class UserSetting extends StatelessWidget {
           child: Obx(() {
             final current = useTheme.themeMode;
             final brightness = Theme.of(context).brightness;
-            final isLightSelected = current == ThemeMode.light ||
+            final isLightSelected =
+                current == ThemeMode.light ||
                 (current == ThemeMode.system && brightness == Brightness.light);
-            final isDarkSelected = current == ThemeMode.dark ||
+            final isDarkSelected =
+                current == ThemeMode.dark ||
                 (current == ThemeMode.system && brightness == Brightness.dark);
             return Column(
               mainAxisSize: MainAxisSize.min,

@@ -1,5 +1,6 @@
 // ignore_for_file: file_names
 
+import 'package:dio/dio.dart';
 import 'package:tronskins_app/api/model/loginModel.dart';
 import 'package:tronskins_app/api/model/entity/user/user_info_entity.dart';
 import 'package:tronskins_app/api/model/loginRequest.dart';
@@ -11,7 +12,13 @@ class ApiLoginServer {
 
   /// 登录
   Future<BaseHttpResponse<LoginEntity>> loginApi(LoginParams params) async {
-    final response = await http.post('/api/app/auth', data: params.toJson());
+    final response = await http.post(
+      '/api/app/auth',
+      data: params.toJson(),
+      options: Options(
+        extra: <String, dynamic>{'skip_token': true, 'skip_auth_refresh': true},
+      ),
+    );
     final raw = response.data as Map<String, dynamic>;
     final code = raw['code'] as int? ?? -1;
     final datasMessage = raw['datas'];
@@ -142,6 +149,9 @@ class ApiLoginServer {
     final response = await http.post(
       '/api/public/sso/login_sso',
       data: {'callback': callback, 'udid': udid},
+      options: Options(
+        extra: <String, dynamic>{'skip_token': true, 'skip_auth_refresh': true},
+      ),
     );
     return BaseHttpResponse.fromJson(
       response.data as Map<String, dynamic>,
@@ -151,10 +161,28 @@ class ApiLoginServer {
 
   /// 退出
   Future<BaseHttpResponse<dynamic>> logoutApi() async {
-    final response = await http.post('api/app/user/logout');
+    final response = await http.post(
+      'api/app/user/logout',
+      options: Options(extra: <String, dynamic>{'skip_auth_refresh': true}),
+    );
     return BaseHttpResponse.fromJson(
       response.data as Map<String, dynamic>,
       (json) => json,
+    );
+  }
+
+  /// 刷新 Access Token（Refresh Token 通过 Cookie 传递）
+  Future<BaseHttpResponse<Map<String, dynamic>>> refreshAccessToken() async {
+    final response = await http.post(
+      '/api/app/auth/refresh',
+      data: const <String, dynamic>{},
+      options: Options(
+        extra: <String, dynamic>{'skip_token': true, 'skip_auth_refresh': true},
+      ),
+    );
+    return BaseHttpResponse.fromJson(
+      response.data as Map<String, dynamic>,
+      (json) => json as Map<String, dynamic>,
     );
   }
 

@@ -38,6 +38,7 @@ import 'package:tronskins_app/pages/help/feedback_list_page.dart';
 import 'package:tronskins_app/pages/help/feedback_detail_page.dart';
 import 'package:tronskins_app/pages/help/feedback_create_page.dart';
 import 'package:tronskins_app/pages/system/server_list_page.dart';
+import 'package:tronskins_app/pages/system/auth_test_page.dart';
 import 'package:tronskins_app/pages/system/about_page.dart';
 import 'package:tronskins_app/pages/wallet/wallet_flow_page.dart';
 import 'package:tronskins_app/pages/wallet/wallet_locked_detail_page.dart';
@@ -83,6 +84,7 @@ class RoutersConfig {
     GetPage(name: Routers.FEEDBACK_CREATE, page: () => FeedbackCreatePage()),
     GetPage(name: Routers.USER_SETTING_SERVER, page: () => ServerListPage()),
     GetPage(name: Routers.USER_ABOUT, page: () => AboutPage()),
+    GetPage(name: Routers.USER_AUTH_TEST, page: () => AuthTestPage()),
     GetPage(name: Routers.LOGIN, page: () => LoginScreen()),
     GetPage(name: Routers.FORGET_PASSWORD, page: () => ForgetPasswordPage()),
     GetPage(name: Routers.TOKEN_RECOVERY, page: () => TokenRecoveryPage()),

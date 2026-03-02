@@ -21,7 +21,8 @@ class _SteamLoginPageState extends State<SteamLoginPage> {
   String? _lastCallback;
   String? _pendingCallback;
 
-  String get _loginUrl => '${HttpHelper.baseUrl}api/public/steam/auth/login/validate';
+  String get _loginUrl =>
+      '${HttpHelper.baseUrl}api/public/steam/auth/login/validate';
 
   @override
   void initState() {
@@ -60,7 +61,9 @@ class _SteamLoginPageState extends State<SteamLoginPage> {
     final rawCallback = _extractCallbackRaw(sanitized);
 
     // 只有在 URL 包含有效的 callback 参数时才保存
-    if (rawCallback != null && rawCallback.isNotEmpty && _isValidCallback(rawCallback)) {
+    if (rawCallback != null &&
+        rawCallback.isNotEmpty &&
+        _isValidCallback(rawCallback)) {
       _pendingCallback = rawCallback;
     }
 
@@ -135,19 +138,32 @@ class _SteamLoginPageState extends State<SteamLoginPage> {
       );
 
       if (!result.success || result.datas == null) {
-        _showError(result.message.isNotEmpty
-            ? result.message
-            : 'app.user.login.message.error'.tr);
+        _showError(
+          result.message.isNotEmpty
+              ? result.message
+              : 'app.user.login.message.error'.tr,
+        );
         return;
       }
 
-      final tokenValue = result.datas?['token']?.toString() ?? '';
+      final payload = result.datas!;
+      final tokenValue =
+          payload['accessToken']?.toString() ??
+          payload['token']?.toString() ??
+          '';
       if (tokenValue.isEmpty) {
         _showError('app.user.login.message.error'.tr);
         return;
       }
 
-      await AuthInterceptor.setToken(tokenValue);
+      await AuthInterceptor.setAccessToken(
+        accessToken: tokenValue,
+        accessTokenExpireTime: _toInt(payload['accessTokenExpireTime']),
+        refreshTokenExpireTime:
+            _toInt(payload['refreshTokenExpireTime']) ??
+            _toInt(payload['refreshExpireTime']),
+        header: payload['header']?.toString(),
+      );
       if (!mounted) {
         return;
       }
@@ -177,6 +193,19 @@ class _SteamLoginPageState extends State<SteamLoginPage> {
     );
   }
 
+  int? _toInt(dynamic value) {
+    if (value is int) {
+      return value;
+    }
+    if (value is num) {
+      return value.toInt();
+    }
+    if (value is String) {
+      return int.tryParse(value.trim());
+    }
+    return null;
+  }
+
   Future<void> _reload() async {
     if (!mounted) {
       return;
@@ -198,7 +227,10 @@ class _SteamLoginPageState extends State<SteamLoginPage> {
         backgroundColor: const Color(0xFF171A21),
         title: Text(
           'app.steam.login.title'.tr,
-          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -213,7 +245,10 @@ class _SteamLoginPageState extends State<SteamLoginPage> {
               children: [
                 Text(
                   '1.${'app.steam.message.load_error'.tr}',
-                  style: const TextStyle(fontSize: 14, color: Color(0xFF1C1C1E)),
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF1C1C1E),
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Row(
@@ -221,7 +256,10 @@ class _SteamLoginPageState extends State<SteamLoginPage> {
                     Expanded(
                       child: Text(
                         '2.${'app.steam.message.load_error_2'.tr}',
-                        style: const TextStyle(fontSize: 14, color: Color(0xFF1C1C1E)),
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF1C1C1E),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -230,13 +268,19 @@ class _SteamLoginPageState extends State<SteamLoginPage> {
                       style: TextButton.styleFrom(
                         foregroundColor: const Color(0xFF171A21),
                         backgroundColor: const Color(0xFFE9EDF3),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
                         minimumSize: const Size(0, 0),
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
                       child: Text(
                         'app.common.refresh'.tr,
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ],
@@ -249,12 +293,17 @@ class _SteamLoginPageState extends State<SteamLoginPage> {
               children: [
                 WebViewWidget(controller: _controller),
                 if (_isPageLoading)
-                  const LinearProgressIndicator(minHeight: 2, color: Color(0xFF74BCFF)),
+                  const LinearProgressIndicator(
+                    minHeight: 2,
+                    color: Color(0xFF74BCFF),
+                  ),
                 if (_isSubmitting)
                   Container(
                     color: Colors.black12,
                     child: const Center(
-                      child: CircularProgressIndicator(color: Color(0xFF171A21)),
+                      child: CircularProgressIndicator(
+                        color: Color(0xFF171A21),
+                      ),
                     ),
                   ),
               ],

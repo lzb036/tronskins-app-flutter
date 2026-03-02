@@ -5,6 +5,8 @@ import 'package:tronskins_app/common/hooks/locale/use_locale.dart';
 import 'package:tronskins_app/common/storage/session_storage.dart';
 
 class HeaderInterceptor extends Interceptor {
+  static const String _refreshEndpoint = 'api/app/auth/refresh';
+
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     // 公共 header
@@ -21,19 +23,52 @@ class HeaderInterceptor extends Interceptor {
         : '${locale.languageCode}_${locale.countryCode}';
     final skipCookie = options.extra['skip_cookie'] == true;
     if (!skipCookie) {
+      final cookiePairs = <String>['locale=$localeTag'];
+      final authCookies = SessionStorage.getAuthCookies();
       final webId = SessionStorage.getWebId();
-      final cookies = <String>['locale=$localeTag'];
       if (webId != null && webId.isNotEmpty) {
-        // 兼容历史后端：JSESSIONI
-        cookies.add('JSESSIONI=$webId');
-        // 兼容标准命名：JSESSIONID
-        cookies.add('JSESSIONID=$webId');
-        // 兼容后端直接读取 WEBID
-        cookies.add('WEBID=$webId');
+        authCookies.putIfAbsent('WEBID', () => webId);
+        authCookies.putIfAbsent('JSESSIONID', () => webId);
+        authCookies.putIfAbsent('JSESSIONI', () => webId);
       }
-      options.headers['Cookie'] = '${cookies.join(';')};';
+      final orderedKeys = <String>[
+        'WEBID',
+        'JSESSIONID',
+        'JSESSIONI',
+        'refresh_token',
+      ];
+      final includeRefreshCookie =
+          options.extra['include_refresh_cookie'] == true ||
+          _isRefreshRequest(options.path);
+      for (final key in orderedKeys) {
+        if (key == 'refresh_token' && !includeRefreshCookie) {
+          continue;
+        }
+        final value = authCookies[key];
+        if (value == null || value.isEmpty) {
+          continue;
+        }
+        cookiePairs.add('$key=$value');
+      }
+      options.headers['Cookie'] = '${cookiePairs.join(';')};';
     }
 
     super.onRequest(options, handler);
+  }
+
+  bool _isRefreshRequest(String path) {
+    final normalized = _normalizePath(path);
+    return normalized.contains(_refreshEndpoint);
+  }
+
+  String _normalizePath(String path) {
+    var normalized = path.trim();
+    if (normalized.startsWith('http')) {
+      normalized = Uri.parse(normalized).path;
+    }
+    if (normalized.startsWith('/')) {
+      normalized = normalized.substring(1);
+    }
+    return normalized;
   }
 }

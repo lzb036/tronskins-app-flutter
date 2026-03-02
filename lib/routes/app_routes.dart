@@ -54,6 +54,8 @@ class Routers {
   // ignore: non_constant_identifier_names
   static String USER_ABOUT = '/user/about';
   // ignore: non_constant_identifier_names
+  static String USER_AUTH_TEST = '/user/setting/auth-test';
+  // ignore: non_constant_identifier_names
   static String BALANCE_DETAIL = '/user/balance/detail';
   // ignore: non_constant_identifier_names
   static String WALLET = '/wallet';

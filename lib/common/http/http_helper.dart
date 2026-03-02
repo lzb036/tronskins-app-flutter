@@ -36,6 +36,7 @@ class HttpHelper {
     );
 
     _dio = Dio(options);
+    AuthInterceptor.bindDio(_dio);
 
     // 安卓/iOS 抓包支持（仅限非 Release）
     (_dio.httpClientAdapter as IOHttpClientAdapter).createHttpClient = () {
@@ -83,11 +84,12 @@ class HttpHelper {
       );
     }
     try {
+      final requestOptions = (options ?? Options()).copyWith(method: method);
       return await _dio.request<T>(
         path,
         data: data,
         queryParameters: queryParameters,
-        options: options ?? Options(method: method),
+        options: requestOptions,
         cancelToken: cancelToken,
       );
     } on DioException catch (e) {
@@ -121,11 +123,13 @@ class HttpHelper {
     String path, {
     dynamic data,
     Map<String, dynamic>? queryParameters,
+    Options? options,
   }) => request(
     path,
     method: 'POST',
     data: data,
     queryParameters: queryParameters,
+    options: options,
   );
 
   // 错误统一处理 + 401 清理登录态
@@ -184,9 +188,7 @@ class HttpHelper {
   }
 }
 
-const Set<String> _authFreePaths = {
-  'api/app/auth',
-};
+const Set<String> _authFreePaths = {'api/app/auth', 'api/app/auth/refresh'};
 
 class HttpException implements Exception {
   final String message;

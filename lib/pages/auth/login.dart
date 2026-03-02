@@ -43,15 +43,13 @@ class _LoginScreenState extends State<LoginScreen>
         curve: const Interval(0.2, 0.9, curve: Curves.easeOut),
       ),
     );
-    _titleSlide = Tween<Offset>(
-      begin: const Offset(0, 0.08),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _brandAnim,
-        curve: const Interval(0.2, 1.0, curve: Curves.easeOutCubic),
-      ),
-    );
+    _titleSlide = Tween<Offset>(begin: const Offset(0, 0.08), end: Offset.zero)
+        .animate(
+          CurvedAnimation(
+            parent: _brandAnim,
+            curve: const Interval(0.2, 1.0, curve: Curves.easeOutCubic),
+          ),
+        );
     _brandAnim.forward();
   }
 
@@ -67,11 +65,17 @@ class _LoginScreenState extends State<LoginScreen>
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // 高级感配色方案
-    final backgroundColor = isDark ? const Color(0xFF0F1115) : const Color(0xFFF5F7FA);
+    final backgroundColor = isDark
+        ? const Color(0xFF0F1115)
+        : const Color(0xFFF5F7FA);
     final primaryColor = const Color(0xFF007AFF);
     final textColor = isDark ? Colors.white : const Color(0xFF1D1D1F);
-    final subTextColor = isDark ? const Color(0xFF86868B) : const Color(0xFF8E8E93);
-    final inputFillColor = isDark ? const Color(0xFF2C2E34) : const Color(0xFFF2F2F7);
+    final subTextColor = isDark
+        ? const Color(0xFF86868B)
+        : const Color(0xFF8E8E93);
+    final inputFillColor = isDark
+        ? const Color(0xFF2C2E34)
+        : const Color(0xFFF2F2F7);
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -82,9 +86,7 @@ class _LoginScreenState extends State<LoginScreen>
             return SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24.0),
               child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight,
-                ),
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
                 child: IntrinsicHeight(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
@@ -94,13 +96,17 @@ class _LoginScreenState extends State<LoginScreen>
                       Align(
                         alignment: Alignment.centerLeft,
                         child: IconButton(
-                          icon: Icon(Icons.arrow_back_ios_new, color: textColor, size: 20),
+                          icon: Icon(
+                            Icons.arrow_back_ios_new,
+                            color: textColor,
+                            size: 20,
+                          ),
                           onPressed: () => Get.back(),
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(),
                         ),
                       ),
-                      
+
                       const Spacer(flex: 2), // 弹性间距
 
                       FadeTransition(
@@ -135,7 +141,6 @@ class _LoginScreenState extends State<LoginScreen>
                       ),
 
                       const Spacer(flex: 3), // 弹性间距，使标题略微偏上
-
                       // 表单区域
                       Column(
                         children: [
@@ -180,7 +185,9 @@ class _LoginScreenState extends State<LoginScreen>
                                 }
                               },
                               error: _passwordTouched
-                                  ? _passwordErrorText(controller.password.value)
+                                  ? _passwordErrorText(
+                                      controller.password.value,
+                                    )
                                   : null,
                             ),
                           ),
@@ -189,7 +196,8 @@ class _LoginScreenState extends State<LoginScreen>
                               return const SizedBox.shrink();
                             }
 
-                            final isEmail = controller.isEmailVerification.value;
+                            final isEmail =
+                                controller.isEmailVerification.value;
                             final hint = isEmail
                                 ? 'app.user.login.enter_captcha'.tr
                                 : 'app.user.login.enter_2fa_captcha'.tr;
@@ -208,7 +216,7 @@ class _LoginScreenState extends State<LoginScreen>
                                     textColor: textColor,
                                     hintColor: subTextColor,
                                     inputFormatters: [
-                                      FilteringTextInputFormatter.digitsOnly
+                                      FilteringTextInputFormatter.digitsOnly,
                                     ],
                                     onChanged: (v) {
                                       final wasTouched = _codeTouched;
@@ -218,7 +226,9 @@ class _LoginScreenState extends State<LoginScreen>
                                         setState(() {});
                                       }
                                     },
-                                    suffix: isEmail ? _buildResendButton() : null,
+                                    suffix: isEmail
+                                        ? _buildResendButton()
+                                        : null,
                                     error: _codeTouched
                                         ? _codeErrorText(
                                             controller.code.value,
@@ -234,7 +244,6 @@ class _LoginScreenState extends State<LoginScreen>
                       ),
 
                       const Spacer(flex: 3), // 弹性间距
-
                       // 登录按钮
                       ScaleButton(
                         key: const ValueKey('login_btn'),
@@ -287,42 +296,54 @@ class _LoginScreenState extends State<LoginScreen>
                           height: 54,
                           child: OutlinedButton.icon(
                             onPressed: null, // 事件由 ScaleButton 处理
-                            icon: Icon(Icons.sports_esports, 
-                              size: 24, 
-                              color: isDark ? Colors.white : const Color(0xFF171A21)
+                            icon: Icon(
+                              Icons.sports_esports,
+                              size: 24,
+                              color: isDark
+                                  ? Colors.white
+                                  : const Color(0xFF171A21),
                             ),
                             label: Text(
                               'app.steam.login.title'.tr,
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
-                                color: isDark ? Colors.white : const Color(0xFF171A21),
+                                color: isDark
+                                    ? Colors.white
+                                    : const Color(0xFF171A21),
                               ),
                             ),
                             style: ButtonStyle(
                               backgroundColor: MaterialStateProperty.all(
-                                isDark ? const Color(0xFF2C2E34) : Colors.transparent
+                                isDark
+                                    ? const Color(0xFF2C2E34)
+                                    : Colors.transparent,
                               ),
                               foregroundColor: MaterialStateProperty.all(
-                                isDark ? Colors.white : const Color(0xFF171A21)
+                                isDark ? Colors.white : const Color(0xFF171A21),
                               ),
                               side: MaterialStateProperty.all(
                                 BorderSide(
-                                  color: isDark ? Colors.transparent : const Color(0xFF171A21),
-                                  width: 1.5
-                                )
+                                  color: isDark
+                                      ? Colors.transparent
+                                      : const Color(0xFF171A21),
+                                  width: 1.5,
+                                ),
                               ),
                               shape: MaterialStateProperty.all(
-                                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))
+                                RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
                               ),
-                              overlayColor: MaterialStateProperty.all(Colors.transparent),
+                              overlayColor: MaterialStateProperty.all(
+                                Colors.transparent,
+                              ),
                             ),
                           ),
                         ),
                       ),
 
                       const Spacer(flex: 2), // 弹性间距
-
                       // 底部功能链接
                       Padding(
                         padding: const EdgeInsets.only(bottom: 24.0),
@@ -330,7 +351,8 @@ class _LoginScreenState extends State<LoginScreen>
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             TextButton(
-                              onPressed: () => Get.toNamed(Routers.FORGET_PASSWORD),
+                              onPressed: () =>
+                                  Get.toNamed(Routers.FORGET_PASSWORD),
                               child: Text(
                                 'app.user.login.forget_password'.tr,
                                 style: TextStyle(
@@ -344,10 +366,13 @@ class _LoginScreenState extends State<LoginScreen>
                               width: 1,
                               height: 12,
                               color: subTextColor.withOpacity(0.3),
-                              margin: const EdgeInsets.symmetric(horizontal: 16),
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                              ),
                             ),
                             TextButton(
-                              onPressed: () => Get.toNamed(Routers.TOKEN_RECOVERY),
+                              onPressed: () =>
+                                  Get.toNamed(Routers.TOKEN_RECOVERY),
                               child: Text(
                                 'app.user.login.token_loss'.tr,
                                 style: TextStyle(
@@ -438,10 +463,7 @@ class _LoginScreenState extends State<LoginScreen>
     return null;
   }
 
-  String? _codeErrorText(
-    String value, {
-    required bool isEmailVerification,
-  }) {
+  String? _codeErrorText(String value, {required bool isEmailVerification}) {
     final trimmed = value.trim();
     if (trimmed.isEmpty) {
       return isEmailVerification
@@ -530,27 +552,37 @@ class _LoginScreenState extends State<LoginScreen>
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: Color(0xFF007AFF), width: 1.5),
+              borderSide: const BorderSide(
+                color: Color(0xFF007AFF),
+                width: 1.5,
+              ),
             ),
           ),
         ),
         if (error != null)
           Padding(
             padding: const EdgeInsets.only(left: 12, top: 8),
-              child: Row(
-                children: [
-                  const Icon(Icons.error_outline, size: 14, color: Colors.redAccent),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      error,
-                      softWrap: true,
-                      style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.error_outline,
+                  size: 14,
+                  color: Colors.redAccent,
+                ),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    error,
+                    softWrap: true,
+                    style: const TextStyle(
+                      color: Colors.redAccent,
+                      fontSize: 12,
                     ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
+          ),
       ],
     );
   }
@@ -574,7 +606,10 @@ class _LoginScreenState extends State<LoginScreen>
             minimumSize: const Size(0, 0),
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
-          child: Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+          child: Text(
+            label,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+          ),
         ),
       );
     });
@@ -688,14 +723,19 @@ class _LoginScreenState extends State<LoginScreen>
       final data = result.datas!;
       final currentVerifyType = data.verifyType ?? 0;
       if (currentVerifyType == 0) {
-        final token = data.token;
-        if (token == null || token.isEmpty) {
+        final accessToken = data.effectiveAccessToken;
+        if (accessToken == null || accessToken.isEmpty) {
           _showError('app.user.login.message.error'.tr);
           return;
         }
 
         controller.resetVerification();
-        await AuthInterceptor.setToken(token);
+        await AuthInterceptor.setAccessToken(
+          accessToken: accessToken,
+          accessTokenExpireTime: data.accessTokenExpireTime,
+          refreshTokenExpireTime: data.effectiveRefreshTokenExpireTime,
+          header: data.header,
+        );
         final userId = data.userId ?? '';
         final appUse = data.appUse ?? '';
         if (userId.isNotEmpty && appUse.isNotEmpty) {
@@ -741,6 +781,7 @@ class _LoginScreenState extends State<LoginScreen>
                 : 'app.user.login.message.error'.tr);
       _showError(fallbackMessage);
     } catch (e) {
+      debugPrint('login failed: $e');
       _showError('app.user.login.message.error'.tr);
     } finally {
       if (mounted) setState(() => _isLoading = false);
