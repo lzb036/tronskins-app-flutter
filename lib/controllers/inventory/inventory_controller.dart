@@ -10,7 +10,6 @@ import 'package:tronskins_app/common/storage/game_storage.dart';
 class InventoryController extends GetxController {
   final ApiInventoryServer _inventoryApi = ApiInventoryServer();
   final ApiShopProductServer _shopApi = ApiShopProductServer();
-  static const int maxUpShopSelection = 20;
 
   final RxList<InventoryItem> items = <InventoryItem>[].obs;
   final RxMap<String, ShopSchemaInfo> schemas = <String, ShopSchemaInfo>{}.obs;
@@ -263,16 +262,11 @@ class InventoryController extends GetxController {
     await refreshList();
   }
 
-  bool toggleSelection(int itemId, {int? maxSelection}) {
+  bool toggleSelection(int itemId) {
     if (selectedIds.contains(itemId)) {
       selectedIds.remove(itemId);
       selectedIds.refresh();
       return true;
-    }
-
-    final limit = maxSelection ?? 0;
-    if (limit > 0 && selectedIds.length >= limit) {
-      return false;
     }
 
     selectedIds.add(itemId);

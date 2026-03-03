@@ -219,6 +219,20 @@ class _InventoryPageState extends State<InventoryPage> {
     return isTradable && !isCooling && !isOnSale && !isInSupply;
   }
 
+  void _toggleSelectAllSellable(Set<int> sellableIds) {
+    if (sellableIds.isEmpty) {
+      return;
+    }
+    final selectedIds = controller.selectedIds;
+    final allSelected = sellableIds.every(selectedIds.contains);
+    if (allSelected) {
+      selectedIds.removeAll(sellableIds);
+    } else {
+      selectedIds.addAll(sellableIds);
+    }
+    selectedIds.refresh();
+  }
+
   Future<void> _openFilterSheet() async {
     final result = await MarketFilterSheet.showFromRight(
       context: context,
@@ -292,8 +306,8 @@ class _InventoryPageState extends State<InventoryPage> {
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.05),
-                      offset: const Offset(0, 4),
-                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                      blurRadius: 6,
                     ),
                   ],
                 ),
@@ -302,15 +316,15 @@ class _InventoryPageState extends State<InventoryPage> {
                   children: [
                     Padding(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
+                        horizontal: 12,
+                        vertical: 4,
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
                             'app.inventory.title'.tr,
-                            style: Theme.of(context).textTheme.titleLarge
+                            style: Theme.of(context).textTheme.titleMedium
                                 ?.copyWith(fontWeight: FontWeight.bold),
                           ),
                           _buildTopRightActions(),
@@ -318,12 +332,12 @@ class _InventoryPageState extends State<InventoryPage> {
                       ),
                     ),
                     _buildSearchBar(),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
                       child: _buildInventorySummaryBar(currency),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                   ],
                 ),
               ),
@@ -403,19 +417,7 @@ class _InventoryPageState extends State<InventoryPage> {
                                         );
                                         return;
                                       }
-                                      final changed = controller
-                                          .toggleSelection(
-                                            item.id!,
-                                            maxSelection: InventoryController
-                                                .maxUpShopSelection,
-                                          );
-                                      if (!changed) {
-                                        Get.snackbar(
-                                          'app.system.tips.title'.tr,
-                                          '${'app.trade.supply.message.more_than_needed'.tr}'
-                                          ' (${InventoryController.maxUpShopSelection})',
-                                        );
-                                      }
+                                      controller.toggleSelection(item.id!);
                                     },
                                   );
                                 });
@@ -450,6 +452,15 @@ class _InventoryPageState extends State<InventoryPage> {
             controller.selectedIds.isEmpty) {
           return const SizedBox.shrink();
         }
+        final sellableIds = controller.items
+            .where(_isItemSelectable)
+            .map((item) => item.id)
+            .whereType<int>()
+            .toSet();
+        final sellableTotal = sellableIds.length;
+        final allSellableSelected =
+            sellableTotal > 0 &&
+            sellableIds.every(controller.selectedIds.contains);
         return SafeArea(
           child: Container(
             padding: const EdgeInsets.all(12),
@@ -464,10 +475,15 @@ class _InventoryPageState extends State<InventoryPage> {
             ),
             child: Row(
               children: [
+                _buildSelectAllToggle(
+                  selected: allSellableSelected,
+                  enabled: sellableTotal > 0,
+                  onTap: () => _toggleSelectAllSellable(sellableIds),
+                ),
+                const SizedBox(width: 8),
                 Text(
                   '${'app.inventory.count'.tr}: '
-                  '${controller.selectedIds.length}/'
-                  '${InventoryController.maxUpShopSelection}',
+                  '${controller.selectedIds.length}/$sellableTotal',
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodyMedium,
                 ),
@@ -480,15 +496,6 @@ class _InventoryPageState extends State<InventoryPage> {
                 FilledButton(
                   onPressed: () {
                     if (controller.selectedIds.isEmpty) {
-                      return;
-                    }
-                    if (controller.selectedIds.length >
-                        InventoryController.maxUpShopSelection) {
-                      Get.snackbar(
-                        'app.system.tips.title'.tr,
-                        '${'app.trade.supply.message.more_than_needed'.tr}'
-                        ' (${InventoryController.maxUpShopSelection})',
-                      );
                       return;
                     }
                     final selectedItems = controller.items
@@ -519,6 +526,44 @@ class _InventoryPageState extends State<InventoryPage> {
     );
   }
 
+  Widget _buildSelectAllToggle({
+    required bool selected,
+    required bool enabled,
+    required VoidCallback onTap,
+  }) {
+    final colors = Theme.of(context).colorScheme;
+    final borderColor = colors.outline.withValues(alpha: 0.45);
+    final backgroundColor = colors.surface;
+    return Opacity(
+      opacity: enabled ? 1.0 : 0.45,
+      child: Tooltip(
+        message: selected
+            ? 'app.common.deselect_all'.tr
+            : 'app.common.select_all'.tr,
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(6),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(6),
+            onTap: enabled ? onTap : null,
+            child: Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                color: backgroundColor,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: borderColor),
+              ),
+              child: selected
+                  ? Icon(Icons.check_rounded, color: colors.primary, size: 16)
+                  : const SizedBox.shrink(),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildTopRightActions() {
     return Obx(() {
       final showStateFilters = controller.currentAppId.value != 440;
@@ -527,7 +572,7 @@ class _InventoryPageState extends State<InventoryPage> {
         children: [
           if (showStateFilters) ...[
             _buildInventoryStateSwitcher(),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
           ],
           _buildGameIcon(),
         ],
@@ -620,14 +665,14 @@ class _InventoryPageState extends State<InventoryPage> {
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(8),
                   onTap: () => _openInventoryStateSwitchMenu(iconContext),
                   child: SizedBox(
-                    width: 40,
-                    height: 40,
+                    width: 34,
+                    height: 34,
                     child: Icon(
                       _inventoryStateIcon(filter),
-                      size: 22,
+                      size: 18,
                       color: iconColor,
                     ),
                   ),
@@ -647,6 +692,7 @@ class _InventoryPageState extends State<InventoryPage> {
         builder: (iconContext) {
           return GameIconButton(
             appId: appId,
+            size: 34,
             onTap: () async {
               final selected = await showGameSwitchMenu(
                 iconContext: iconContext,
@@ -676,20 +722,20 @@ class _InventoryPageState extends State<InventoryPage> {
 
     return Obx(() {
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [baseStart, baseEnd],
           ),
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(10),
           border: Border.all(color: borderColor),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: isDark ? 0.14 : 0.04),
-              offset: const Offset(0, 2),
-              blurRadius: 6,
+              color: Colors.black.withValues(alpha: isDark ? 0.10 : 0.03),
+              offset: const Offset(0, 1),
+              blurRadius: 3,
             ),
           ],
         ),
@@ -697,22 +743,18 @@ class _InventoryPageState extends State<InventoryPage> {
           children: [
             Expanded(
               child: _buildInventorySummaryMetric(
-                icon: Icons.inventory_2_outlined,
-                iconColor: colors.primary,
                 label: 'app.inventory.count'.tr,
                 value: '${controller.total.value}',
               ),
             ),
             Container(
               width: 1,
-              height: 34,
+              height: 22,
               color: borderColor,
-              margin: const EdgeInsets.symmetric(horizontal: 10),
+              margin: const EdgeInsets.symmetric(horizontal: 6),
             ),
             Expanded(
               child: _buildInventorySummaryMetric(
-                icon: Icons.payments_outlined,
-                iconColor: const Color(0xFFE2A400),
                 label: 'app.inventory.total_value'.tr,
                 value: currency.format(controller.totalPrice.value),
               ),
@@ -724,53 +766,43 @@ class _InventoryPageState extends State<InventoryPage> {
   }
 
   Widget _buildInventorySummaryMetric({
-    required IconData icon,
-    required Color iconColor,
     required String label,
     required String value,
   }) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    return Row(
-      children: [
-        Container(
-          width: 30,
-          height: 30,
-          decoration: BoxDecoration(
-            color: iconColor.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(8),
+    return SizedBox(
+      width: double.infinity,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: colors.onSurface.withValues(alpha: 0.68),
+              fontWeight: FontWeight.w500,
+              fontSize: 10.5,
+              height: 1.0,
+            ),
           ),
-          child: Icon(icon, size: 16, color: iconColor),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: colors.onSurface.withValues(alpha: 0.7),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: colors.onSurface,
-                ),
-              ),
-            ],
+          const SizedBox(height: 4),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: colors.onSurface,
+              height: 1.0,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -787,15 +819,15 @@ class _InventoryPageState extends State<InventoryPage> {
     final hasKeyword = _searchController.text.trim().isNotEmpty;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Row(
         children: [
           Expanded(
             child: SizedBox(
-              height: 40,
+              height: 36,
               child: Material(
                 color: fillColor,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(9),
                 child: TextField(
                   controller: _searchController,
                   onSubmitted: (_) => _search(),
@@ -807,11 +839,11 @@ class _InventoryPageState extends State<InventoryPage> {
                   textAlignVertical: TextAlignVertical.center,
                   decoration: InputDecoration(
                     hintText: 'app.market.filter.search'.tr,
-                    hintStyle: TextStyle(color: hintColor, fontSize: 14),
-                    prefixIcon: Icon(Icons.search, color: hintColor, size: 20),
+                    hintStyle: TextStyle(color: hintColor, fontSize: 13),
+                    prefixIcon: Icon(Icons.search, color: hintColor, size: 18),
                     suffixIcon: hasKeyword
                         ? IconButton(
-                            icon: const Icon(Icons.close, size: 18),
+                            icon: const Icon(Icons.close, size: 16),
                             onPressed: () {
                               _searchController.clear();
                               if (mounted) {
@@ -824,15 +856,15 @@ class _InventoryPageState extends State<InventoryPage> {
                     fillColor: fillColor,
                     contentPadding: EdgeInsets.zero,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(9),
                       borderSide: BorderSide.none,
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(9),
                       borderSide: BorderSide.none,
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(9),
                       borderSide: BorderSide.none,
                     ),
                   ),
@@ -840,13 +872,13 @@ class _InventoryPageState extends State<InventoryPage> {
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
           _buildActionButton(
             tooltip: 'app.market.filter.search'.tr,
             icon: Icons.send,
             onTap: _search,
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
           _buildActionButton(
             tooltip: 'app.market.filter.text'.tr,
             icon: Icons.filter_alt_outlined,
@@ -873,14 +905,14 @@ class _InventoryPageState extends State<InventoryPage> {
       message: tooltip,
       child: Material(
         color: baseColor,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(9),
         child: InkWell(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(9),
           onTap: onTap,
           child: SizedBox(
-            width: 40,
-            height: 40,
-            child: Icon(icon, color: iconColor, size: 20),
+            width: 36,
+            height: 36,
+            child: Icon(icon, color: iconColor, size: 18),
           ),
         ),
       ),

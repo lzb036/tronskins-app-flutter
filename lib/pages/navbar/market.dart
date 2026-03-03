@@ -125,13 +125,15 @@ class _MarketPageState extends State<MarketPage> {
               decoration: BoxDecoration(
                 color: isDark ? colors.surface : Colors.white,
                 border: Border(
-                  bottom: BorderSide(color: colors.outline.withOpacity(0.08)),
+                  bottom: BorderSide(
+                    color: colors.outline.withValues(alpha: 0.08),
+                  ),
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    offset: const Offset(0, 4),
-                    blurRadius: 8,
+                    color: Colors.black.withValues(alpha: 0.05),
+                    offset: const Offset(0, 3),
+                    blurRadius: 6,
                   ),
                 ],
               ),
@@ -140,15 +142,15 @@ class _MarketPageState extends State<MarketPage> {
                 children: [
                   Padding(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
+                      horizontal: 12,
+                      vertical: 4,
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
                           'app.market.product.title'.tr,
-                          style: Theme.of(context).textTheme.titleLarge
+                          style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         _buildGameIcon(),
@@ -156,7 +158,7 @@ class _MarketPageState extends State<MarketPage> {
                     ),
                   ),
                   _buildSearchBar(),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                 ],
               ),
             ),
@@ -174,6 +176,7 @@ class _MarketPageState extends State<MarketPage> {
         builder: (iconContext) {
           return GameIconButton(
             appId: appId,
+            size: 34,
             onTap: () async {
               final selected = await showGameSwitchMenu(
                 iconContext: iconContext,
@@ -196,23 +199,23 @@ class _MarketPageState extends State<MarketPage> {
     final colors = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
     final fillColor = isDark
-        ? Colors.white.withOpacity(0.08)
+        ? Colors.white.withValues(alpha: 0.08)
         : colors.surfaceVariant;
     final hintColor = isDark
         ? Colors.white38
-        : colors.onSurface.withOpacity(0.4);
+        : colors.onSurface.withValues(alpha: 0.4);
     final hasKeyword = _searchController.text.trim().isNotEmpty;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Row(
         children: [
           Expanded(
             child: SizedBox(
-              height: 40,
+              height: 36,
               child: Material(
                 color: fillColor,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(9),
                 child: TextField(
                   controller: _searchController,
                   readOnly: true,
@@ -220,11 +223,11 @@ class _MarketPageState extends State<MarketPage> {
                   textAlignVertical: TextAlignVertical.center,
                   decoration: InputDecoration(
                     hintText: 'app.market.filter.search'.tr,
-                    hintStyle: TextStyle(color: hintColor, fontSize: 14),
-                    prefixIcon: Icon(Icons.search, color: hintColor, size: 20),
+                    hintStyle: TextStyle(color: hintColor, fontSize: 13),
+                    prefixIcon: Icon(Icons.search, color: hintColor, size: 18),
                     suffixIcon: hasKeyword
                         ? IconButton(
-                            icon: const Icon(Icons.close, size: 18),
+                            icon: const Icon(Icons.close, size: 16),
                             onPressed: () async {
                               _searchController.clear();
                               await controller.search('');
@@ -238,15 +241,15 @@ class _MarketPageState extends State<MarketPage> {
                     fillColor: fillColor,
                     contentPadding: EdgeInsets.zero,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(9),
                       borderSide: BorderSide.none,
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(9),
                       borderSide: BorderSide.none,
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(9),
                       borderSide: BorderSide.none,
                     ),
                   ),
@@ -254,7 +257,7 @@ class _MarketPageState extends State<MarketPage> {
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
           _buildActionButton(
             tooltip: 'app.market.filter.text'.tr,
             icon: Icons.filter_alt_outlined,
@@ -275,22 +278,24 @@ class _MarketPageState extends State<MarketPage> {
     final colors = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
     final baseColor = isDark
-        ? Colors.white.withOpacity(0.08)
+        ? Colors.white.withValues(alpha: 0.08)
         : colors.surfaceVariant;
-    final background = active ? colors.primary.withOpacity(0.12) : baseColor;
+    final background = active
+        ? colors.primary.withValues(alpha: 0.12)
+        : baseColor;
     final iconColor = active ? colors.primary : colors.onSurfaceVariant;
     return Tooltip(
       message: tooltip,
       child: Material(
         color: background,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(9),
         child: InkWell(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(9),
           onTap: onTap,
           child: SizedBox(
-            width: 40,
-            height: 40,
-            child: Icon(icon, color: iconColor, size: 20),
+            width: 36,
+            height: 36,
+            child: Icon(icon, color: iconColor, size: 18),
           ),
         ),
       ),

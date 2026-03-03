@@ -164,13 +164,15 @@ class _HomePageState extends State<HomePage>
               decoration: BoxDecoration(
                 color: isDark ? colors.surface : Colors.white,
                 border: Border(
-                  bottom: BorderSide(color: colors.outline.withOpacity(0.08)),
+                  bottom: BorderSide(
+                    color: colors.outline.withValues(alpha: 0.08),
+                  ),
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    offset: const Offset(0, 4),
-                    blurRadius: 8,
+                    color: Colors.black.withValues(alpha: 0.05),
+                    offset: const Offset(0, 3),
+                    blurRadius: 6,
                   ),
                 ],
               ),
@@ -180,7 +182,7 @@ class _HomePageState extends State<HomePage>
                   Padding(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 4,
-                      vertical: 8,
+                      vertical: 4,
                     ),
                     child: LayoutBuilder(
                       builder: (context, constraints) {
@@ -188,8 +190,8 @@ class _HomePageState extends State<HomePage>
                         final scale = (maxWidth / 375)
                             .clamp(0.85, 1.0)
                             .toDouble();
-                        final gameIconSize = 40 * scale;
-                        final sidePadding = 12 * scale;
+                        final gameIconSize = 34 * scale;
+                        final sidePadding = 10 * scale;
 
                         return Row(
                           children: [
@@ -215,24 +217,52 @@ class _HomePageState extends State<HomePage>
                                     }
                                     _tabDragDx = 0;
                                   },
-                                  child: TabBar(
-                                    controller: _tabController,
-                                    isScrollable: false,
-                                    padding: EdgeInsets.zero,
-                                    indicatorSize: TabBarIndicatorSize.tab,
-                                    indicator: BoxDecoration(
-                                      color: colors.primary.withOpacity(0.12),
-                                      borderRadius: BorderRadius.circular(20),
+                                  child: Padding(
+                                    padding: const EdgeInsets.only(top: 3),
+                                    child: TabBar(
+                                      controller: _tabController,
+                                      isScrollable: false,
+                                      padding: EdgeInsets.zero,
+                                      indicatorSize: TabBarIndicatorSize.tab,
+                                      indicator: BoxDecoration(
+                                        color: colors.primary.withValues(
+                                          alpha: 0.12,
+                                        ),
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      labelColor: colors.primary,
+                                      unselectedLabelColor: colors.onSurface
+                                          .withValues(alpha: 0.6),
+                                      labelStyle: theme.textTheme.labelMedium
+                                          ?.copyWith(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                            height: 1,
+                                          ),
+                                      unselectedLabelStyle: theme
+                                          .textTheme
+                                          .labelMedium
+                                          ?.copyWith(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500,
+                                            height: 1,
+                                          ),
+                                      labelPadding: EdgeInsets.zero,
+                                      dividerColor: Colors.transparent,
+                                      splashBorderRadius: BorderRadius.circular(
+                                        16,
+                                      ),
+                                      tabs: [
+                                        Tab(
+                                          height: 30,
+                                          text: 'app.market.latest'.tr,
+                                        ),
+                                        Tab(
+                                          height: 30,
+                                          text: 'app.market.popular'.tr,
+                                        ),
+                                      ],
                                     ),
-                                    labelColor: colors.primary,
-                                    unselectedLabelColor: colors.onSurface
-                                        .withOpacity(0.6),
-                                    labelPadding: EdgeInsets.zero,
-                                    dividerColor: Colors.transparent,
-                                    tabs: [
-                                      Tab(text: 'app.market.latest'.tr),
-                                      Tab(text: 'app.market.popular'.tr),
-                                    ],
                                   ),
                                 ),
                               ),
@@ -243,8 +273,8 @@ class _HomePageState extends State<HomePage>
                                 builder: (iconContext) {
                                   return Padding(
                                     padding: EdgeInsets.only(
-                                      right: 16 * scale,
-                                      left: 8 * scale,
+                                      right: 12 * scale,
+                                      left: 6 * scale,
                                     ),
                                     child: GameIconButton(
                                       appId: appId,
@@ -285,8 +315,9 @@ class _HomePageState extends State<HomePage>
                       },
                     ),
                   ),
+                  const SizedBox(height: 6),
                   _buildSearchBar(),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                 ],
               ),
             ),
@@ -326,22 +357,22 @@ class _HomePageState extends State<HomePage>
     final colors = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
     final fillColor = isDark
-        ? Colors.white.withOpacity(0.08)
+        ? Colors.white.withValues(alpha: 0.08)
         : colors.surfaceVariant;
     final hintColor = isDark
         ? Colors.white38
-        : colors.onSurface.withOpacity(0.4);
+        : colors.onSurface.withValues(alpha: 0.4);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Row(
         children: [
           Expanded(
             child: SizedBox(
-              height: 40,
+              height: 36,
               child: Material(
                 color: fillColor,
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(9),
                 child: TextField(
                   controller: _searchController,
                   readOnly: true,
@@ -349,12 +380,12 @@ class _HomePageState extends State<HomePage>
                   textAlignVertical: TextAlignVertical.center,
                   decoration: InputDecoration(
                     hintText: 'app.market.filter.search'.tr,
-                    hintStyle: TextStyle(color: hintColor, fontSize: 14),
-                    prefixIcon: Icon(Icons.search, color: hintColor, size: 20),
+                    hintStyle: TextStyle(color: hintColor, fontSize: 13),
+                    prefixIcon: Icon(Icons.search, color: hintColor, size: 18),
                     suffixIcon: _searchController.text.trim().isEmpty
                         ? null
                         : IconButton(
-                            icon: const Icon(Icons.close, size: 18),
+                            icon: const Icon(Icons.close, size: 16),
                             onPressed: () {
                               setState(() => _searchController.clear());
                             },
@@ -363,15 +394,15 @@ class _HomePageState extends State<HomePage>
                     fillColor: fillColor,
                     contentPadding: EdgeInsets.zero,
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(9),
                       borderSide: BorderSide.none,
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(9),
                       borderSide: BorderSide.none,
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(9),
                       borderSide: BorderSide.none,
                     ),
                   ),
@@ -379,7 +410,7 @@ class _HomePageState extends State<HomePage>
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
           _buildActionButton(
             tooltip: 'app.market.filter.text'.tr,
             icon: Icons.filter_alt_outlined,
@@ -400,22 +431,24 @@ class _HomePageState extends State<HomePage>
     final colors = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
     final baseColor = isDark
-        ? Colors.white.withOpacity(0.08)
+        ? Colors.white.withValues(alpha: 0.08)
         : colors.surfaceVariant;
-    final background = active ? colors.primary.withOpacity(0.12) : baseColor;
+    final background = active
+        ? colors.primary.withValues(alpha: 0.12)
+        : baseColor;
     final iconColor = active ? colors.primary : colors.onSurfaceVariant;
     return Tooltip(
       message: tooltip,
       child: Material(
         color: background,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(9),
         child: InkWell(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(9),
           onTap: onTap,
           child: SizedBox(
-            width: 40,
-            height: 40,
-            child: Icon(icon, color: iconColor, size: 20),
+            width: 36,
+            height: 36,
+            child: Icon(icon, color: iconColor, size: 18),
           ),
         ),
       ),
