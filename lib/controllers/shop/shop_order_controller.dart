@@ -5,6 +5,7 @@ import 'package:tronskins_app/common/storage/game_storage.dart';
 
 class ShopOrderController extends GetxController {
   final ApiShopProductServer _api = ApiShopProductServer();
+  static const int _pageSize = 20;
 
   final RxList<ShopOrderItem> pendingShipments = <ShopOrderItem>[].obs;
   final RxList<ShopOrderItem> waitingReceipts = <ShopOrderItem>[].obs;
@@ -21,6 +22,8 @@ class ShopOrderController extends GetxController {
   final RxBool pendingSortAsc = false.obs;
   final Rx<DateTime?> pendingStartDate = Rx<DateTime?>(null);
   final Rx<DateTime?> pendingEndDate = Rx<DateTime?>(null);
+  final RxnString pendingItemName = RxnString();
+  final RxMap<String, dynamic> pendingTags = <String, dynamic>{}.obs;
 
   final RxString waitingKeywords = ''.obs;
   final RxString waitingSortField = 'time'.obs;
@@ -41,8 +44,23 @@ class ShopOrderController extends GetxController {
   bool _pendingHasMore = true;
   bool _waitingHasMore = true;
   bool _recordHasMore = true;
+  bool get pendingHasMore => _pendingHasMore;
 
   int get appId => GameStorage.getGameType();
+
+  bool _hasMoreData({
+    required int fetchedCount,
+    required int accumulatedCount,
+    required int? total,
+  }) {
+    if (fetchedCount <= 0) {
+      return false;
+    }
+    if (total != null && total > 0) {
+      return accumulatedCount < total;
+    }
+    return fetchedCount >= _pageSize;
+  }
 
   Future<void> refreshPending() async {
     _pendingPage = 1;
@@ -59,22 +77,28 @@ class ShopOrderController extends GetxController {
     try {
       final startTime = _toUnix(pendingStartDate.value);
       final endTime = _toUnix(pendingEndDate.value);
+      final tags = Map<String, dynamic>.from(pendingTags)
+        ..removeWhere((key, value) => value == null || value == '');
       final res = await _api.pendingShipmentList(
         params: {
           'appId': appId,
           'page': _pendingPage,
-          'pageSize': 20,
+          'pageSize': _pageSize,
           'field': pendingSortField.value,
           'asc': pendingSortAsc.value,
-          'keywords':
-              pendingKeywords.value.isEmpty ? null : pendingKeywords.value,
+          'keywords': pendingKeywords.value.isEmpty
+              ? null
+              : pendingKeywords.value,
+          'itemName': pendingItemName.value,
+          'tags': tags.isEmpty ? null : tags,
           'startTime': startTime,
           'endTime': endTime,
           'statusList': [2, 3, 9],
         },
       );
       final data = res.datas;
-      if (data == null || data.items.isEmpty) {
+      final fetchedCount = data?.items.length ?? 0;
+      if (data == null || fetchedCount == 0) {
         _pendingHasMore = false;
       } else {
         final userMap = data.users;
@@ -104,7 +128,14 @@ class ShopOrderController extends GetxController {
           );
         }).toList();
         pendingShipments.addAll(mapped);
-        _pendingPage += 1;
+        _pendingHasMore = _hasMoreData(
+          fetchedCount: fetchedCount,
+          accumulatedCount: pendingShipments.length,
+          total: data.total,
+        );
+        if (_pendingHasMore) {
+          _pendingPage += 1;
+        }
       }
       schemas.addAll(data?.schemas ?? const {});
       users.addAll(data?.users ?? const {});
@@ -132,21 +163,30 @@ class ShopOrderController extends GetxController {
         params: {
           'appId': appId,
           'page': _waitingPage,
-          'pageSize': 20,
+          'pageSize': _pageSize,
           'field': waitingSortField.value,
           'asc': waitingSortAsc.value,
-          'keywords':
-              waitingKeywords.value.isEmpty ? null : waitingKeywords.value,
+          'keywords': waitingKeywords.value.isEmpty
+              ? null
+              : waitingKeywords.value,
           'startTime': startTime,
           'endTime': endTime,
         },
       );
       final data = res.datas;
-      if (data == null || data.items.isEmpty) {
+      final fetchedCount = data?.items.length ?? 0;
+      if (data == null || fetchedCount == 0) {
         _waitingHasMore = false;
       } else {
         waitingReceipts.addAll(data.items);
-        _waitingPage += 1;
+        _waitingHasMore = _hasMoreData(
+          fetchedCount: fetchedCount,
+          accumulatedCount: waitingReceipts.length,
+          total: data.total,
+        );
+        if (_waitingHasMore) {
+          _waitingPage += 1;
+        }
       }
       schemas.addAll(data?.schemas ?? const {});
       users.addAll(data?.users ?? const {});
@@ -177,22 +217,31 @@ class ShopOrderController extends GetxController {
         params: {
           'appId': appId,
           'page': _recordPage,
-          'pageSize': 20,
+          'pageSize': _pageSize,
           'field': buyRecordSortField.value,
           'asc': buyRecordSortAsc.value,
-          'keywords':
-              buyRecordKeywords.value.isEmpty ? null : buyRecordKeywords.value,
+          'keywords': buyRecordKeywords.value.isEmpty
+              ? null
+              : buyRecordKeywords.value,
           'statusList': statusList,
           'startTime': startTime,
           'endTime': endTime,
         },
       );
       final data = res.datas;
-      if (data == null || data.items.isEmpty) {
+      final fetchedCount = data?.items.length ?? 0;
+      if (data == null || fetchedCount == 0) {
         _recordHasMore = false;
       } else {
         buyRecords.addAll(data.items);
-        _recordPage += 1;
+        _recordHasMore = _hasMoreData(
+          fetchedCount: fetchedCount,
+          accumulatedCount: buyRecords.length,
+          total: data.total,
+        );
+        if (_recordHasMore) {
+          _recordPage += 1;
+        }
       }
       schemas.addAll(data?.schemas ?? const {});
       users.addAll(data?.users ?? const {});
@@ -219,9 +268,21 @@ class ShopOrderController extends GetxController {
   Future<void> applyPendingFilter({
     DateTime? startDate,
     DateTime? endDate,
+    Map<String, dynamic>? tags,
+    String? itemName,
+    String? keyword,
   }) async {
+    if (keyword != null) {
+      pendingKeywords.value = keyword.trim();
+    }
     pendingStartDate.value = startDate;
     pendingEndDate.value = endDate;
+    if (tags != null) {
+      pendingTags.value = Map<String, dynamic>.from(tags);
+    }
+    if (itemName != null) {
+      pendingItemName.value = itemName.isEmpty ? null : itemName;
+    }
     await refreshPending();
   }
 

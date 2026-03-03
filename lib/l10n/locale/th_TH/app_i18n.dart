@@ -615,6 +615,7 @@ final Map<String, String> th_TH = {
   "app.common.none": "ไม่มี",
   "app.common.unlimited": "ไม่ จำกัด",
   "app.common.no_data": "ไม่มีข้อมูล",
+  "app.common.no_more_data": "ไม่มีข้อมูลเพิ่มเติม",
   "app.common.refresh": "รีเฟรช",
   "app.common.select_all": "เลือกทั้งหมด",
   "app.common.deselect_all": "ยกเลิกการเลือกทั้งหมด",

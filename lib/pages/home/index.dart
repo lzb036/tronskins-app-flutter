@@ -6,6 +6,7 @@ import 'package:tronskins_app/components/market/market_item_card.dart';
 import 'package:tronskins_app/components/filter/filter_models.dart';
 import 'package:tronskins_app/components/filter/market_filter_sheet.dart';
 import 'package:tronskins_app/components/market/market_search_sheet.dart';
+import 'package:tronskins_app/components/layout/list_end_tip.dart';
 import 'package:tronskins_app/controllers/home/home_controller.dart';
 import 'package:tronskins_app/controllers/market/market_list_controller.dart';
 import 'package:tronskins_app/controllers/navbar/nav_controller.dart';
@@ -509,6 +510,8 @@ class _HomePageState extends State<HomePage>
               ),
             ),
           ),
+          if (items.isNotEmpty && !isLoading && !hasMore)
+            const SliverToBoxAdapter(child: ListEndTip()),
         ],
       ),
     );

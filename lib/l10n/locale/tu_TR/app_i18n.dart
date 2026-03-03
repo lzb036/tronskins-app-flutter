@@ -628,6 +628,7 @@ final Map<String, String> tu_TR = {
   "app.common.none": "Hiçbir",
   "app.common.unlimited": "Sınırsız",
   "app.common.no_data": "Veri Yok",
+  "app.common.no_more_data": "Daha fazla veri yok",
   "app.common.refresh": "Yenileme",
   "app.common.select_all": "Tümünü seç",
   "app.common.deselect_all": "Tüm seçimi kaldır",

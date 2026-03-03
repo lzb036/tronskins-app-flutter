@@ -514,6 +514,7 @@ final Map<String, String> zh_CN = {
   "app.common.none": "无",
   "app.common.unlimited": "不限",
   "app.common.no_data": "无数据",
+  "app.common.no_more_data": "已经到底了",
   "app.common.refresh": "刷新",
   "app.common.select_all": "全选",
   "app.common.deselect_all": "取消全选",

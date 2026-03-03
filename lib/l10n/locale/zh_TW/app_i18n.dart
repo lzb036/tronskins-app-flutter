@@ -521,6 +521,7 @@ final Map<String, String> zh_TW = {
   "app.common.none": "無",
   "app.common.unlimited": "無限",
   "app.common.no_data": "無數據",
+  "app.common.no_more_data": "已經到底了",
   "app.common.refresh": "刷新",
   "app.common.select_all": "全選",
   "app.common.deselect_all": "取消全選",

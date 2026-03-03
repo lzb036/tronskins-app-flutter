@@ -8,6 +8,7 @@ import 'package:tronskins_app/components/game/game_switch_menu.dart';
 import 'package:tronskins_app/components/game_item/inventory_item_card.dart';
 import 'package:tronskins_app/components/filter/filter_models.dart';
 import 'package:tronskins_app/components/filter/market_filter_sheet.dart';
+import 'package:tronskins_app/components/layout/list_end_tip.dart';
 import 'package:tronskins_app/controllers/auth/steam_controller.dart';
 import 'package:tronskins_app/controllers/inventory/inventory_controller.dart';
 import 'package:tronskins_app/controllers/navbar/nav_controller.dart';
@@ -438,6 +439,10 @@ class _InventoryPageState extends State<InventoryPage> {
                             ),
                           ),
                         ),
+                        if (controller.items.isNotEmpty &&
+                            !controller.isLoading.value &&
+                            !controller.hasMore)
+                          const SliverToBoxAdapter(child: ListEndTip()),
                       ],
                     ),
                   );

@@ -30,6 +30,7 @@ class InventoryController extends GetxController {
 
   int _page = 1;
   bool _hasMore = true;
+  bool get hasMore => _hasMore;
   Worker? _logoutWorker;
   DateTime? _lastFetchedAt;
   bool _triedRemoteFreshForCurrentRefresh = false;

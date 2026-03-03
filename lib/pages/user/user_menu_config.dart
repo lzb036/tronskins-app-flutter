@@ -16,7 +16,7 @@ final userMenuItems = [
     Icons.shopping_bag_outlined,
     () => Get.toNamed(Routers.SHOP_PURCHASE),
   ),
-  UserMenuItem('app.user.menu.sale', Icons.sell_outlined),
+  UserMenuItem('app.user.menu.sale', Icons.receipt_long_outlined),
   UserMenuItem(
     'app.user.menu.purchase',
     Icons.search,

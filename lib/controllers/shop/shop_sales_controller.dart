@@ -5,6 +5,7 @@ import 'package:tronskins_app/common/storage/game_storage.dart';
 
 class ShopSalesController extends GetxController {
   final ApiShopProductServer _api = ApiShopProductServer();
+  static const int _pageSize = 20;
 
   final RxList<ShopItemAsset> onSaleItems = <ShopItemAsset>[].obs;
   final RxList<ShopOrderItem> sellRecords = <ShopOrderItem>[].obs;
@@ -18,6 +19,8 @@ class ShopSalesController extends GetxController {
   final RxBool onSaleSortAsc = false.obs;
   final RxnDouble onSalePriceMin = RxnDouble();
   final RxnDouble onSalePriceMax = RxnDouble();
+  final RxnString onSaleItemName = RxnString();
+  final RxMap<String, dynamic> onSaleTags = <String, dynamic>{}.obs;
 
   final RxString recordKeywords = ''.obs;
   final RxString recordSortField = 'time'.obs;
@@ -25,6 +28,8 @@ class ShopSalesController extends GetxController {
   final Rx<DateTime?> recordStartDate = Rx<DateTime?>(null);
   final Rx<DateTime?> recordEndDate = Rx<DateTime?>(null);
   final RxList<int> recordStatusList = <int>[].obs;
+  final RxnString recordItemName = RxnString();
+  final RxMap<String, dynamic> recordTags = <String, dynamic>{}.obs;
 
   final RxBool isLoadingOnSale = false.obs;
   final RxBool isLoadingRecords = false.obs;
@@ -33,8 +38,24 @@ class ShopSalesController extends GetxController {
   int _recordPage = 1;
   bool _onSaleHasMore = true;
   bool _recordHasMore = true;
+  bool get onSaleHasMore => _onSaleHasMore;
+  bool get recordHasMore => _recordHasMore;
 
   int get appId => GameStorage.getGameType();
+
+  bool _hasMoreData({
+    required int fetchedCount,
+    required int accumulatedCount,
+    required int? total,
+  }) {
+    if (fetchedCount <= 0) {
+      return false;
+    }
+    if (total != null && total > 0) {
+      return accumulatedCount < total;
+    }
+    return fetchedCount >= _pageSize;
+  }
 
   Future<void> refreshOnSale() async {
     _onSalePage = 1;
@@ -51,7 +72,8 @@ class ShopSalesController extends GetxController {
     }
     isLoadingOnSale.value = true;
     try {
-      final tags = <String, dynamic>{};
+      final tags = Map<String, dynamic>.from(onSaleTags)
+        ..removeWhere((key, value) => value == null || value == '');
       if (onSalePriceMin.value != null) {
         tags['priceMin'] = onSalePriceMin.value;
       }
@@ -61,21 +83,30 @@ class ShopSalesController extends GetxController {
       final params = {
         'appId': appId,
         'page': _onSalePage,
-        'pageSize': 20,
+        'pageSize': _pageSize,
         'keywords': onSaleKeywords.value.isEmpty ? null : onSaleKeywords.value,
         'field': onSaleSortField.value,
         'asc': onSaleSortAsc.value,
+        'itemName': onSaleItemName.value,
         'tags': tags.isEmpty ? null : tags,
         'minPrice': onSalePriceMin.value,
         'maxPrice': onSalePriceMax.value,
       }..removeWhere((key, value) => value == null || value == '');
       final res = await _api.shopOnSaleList(params: params);
       final data = res.datas;
-      if (data == null || data.items.isEmpty) {
+      final fetchedCount = data?.items.length ?? 0;
+      if (data == null || fetchedCount == 0) {
         _onSaleHasMore = false;
       } else {
         onSaleItems.addAll(data.items);
-        _onSalePage += 1;
+        _onSaleHasMore = _hasMoreData(
+          fetchedCount: fetchedCount,
+          accumulatedCount: onSaleItems.length,
+          total: data.total,
+        );
+        if (_onSaleHasMore) {
+          _onSalePage += 1;
+        }
       }
       totalOnSale.value = data?.total ?? totalOnSale.value;
       totalOnSalePrice.value = data?.totalPrice ?? totalOnSalePrice.value;
@@ -119,11 +150,23 @@ class ShopSalesController extends GetxController {
     required bool sortAsc,
     double? minPrice,
     double? maxPrice,
+    Map<String, dynamic>? tags,
+    String? itemName,
+    String? keyword,
   }) async {
     onSaleSortField.value = sortField;
     onSaleSortAsc.value = sortAsc;
+    if (keyword != null) {
+      onSaleKeywords.value = keyword.trim();
+    }
     onSalePriceMin.value = minPrice;
     onSalePriceMax.value = maxPrice;
+    if (tags != null) {
+      onSaleTags.value = Map<String, dynamic>.from(tags);
+    }
+    if (itemName != null) {
+      onSaleItemName.value = itemName.isEmpty ? null : itemName;
+    }
     await refreshOnSale();
   }
 
@@ -131,10 +174,26 @@ class ShopSalesController extends GetxController {
     List<int>? statusList,
     DateTime? startDate,
     DateTime? endDate,
+    bool? sortAsc,
+    String? sortField,
+    Map<String, dynamic>? tags,
+    String? itemName,
   }) async {
     recordStatusList.assignAll(statusList ?? <int>[]);
     recordStartDate.value = startDate;
     recordEndDate.value = endDate;
+    if (sortAsc != null) {
+      recordSortAsc.value = sortAsc;
+    }
+    if (sortField != null && sortField.isNotEmpty) {
+      recordSortField.value = sortField;
+    }
+    if (tags != null) {
+      recordTags.value = Map<String, dynamic>.from(tags);
+    }
+    if (itemName != null) {
+      recordItemName.value = itemName.isEmpty ? null : itemName;
+    }
     await refreshSellRecords();
   }
 
@@ -149,27 +208,39 @@ class ShopSalesController extends GetxController {
           : recordStatusList.toList();
       final startTime = _toUnix(recordStartDate.value);
       final endTime = _toUnix(recordEndDate.value);
+      final tags = Map<String, dynamic>.from(recordTags)
+        ..removeWhere((key, value) => value == null || value == '');
       final res = await _api.shopSellRecord(
         params: {
           'appId': appId,
           'page': _recordPage,
-          'pageSize': 20,
+          'pageSize': _pageSize,
           'field': recordSortField.value,
           'asc': recordSortAsc.value,
           'keywords': recordKeywords.value.isEmpty
               ? null
               : recordKeywords.value,
+          'itemName': recordItemName.value,
+          'tags': tags.isEmpty ? null : tags,
           'statusList': statusList,
           'startTime': startTime,
           'endTime': endTime,
         },
       );
       final data = res.datas;
-      if (data == null || data.items.isEmpty) {
+      final fetchedCount = data?.items.length ?? 0;
+      if (data == null || fetchedCount == 0) {
         _recordHasMore = false;
       } else {
         sellRecords.addAll(data.items);
-        _recordPage += 1;
+        _recordHasMore = _hasMoreData(
+          fetchedCount: fetchedCount,
+          accumulatedCount: sellRecords.length,
+          total: data.total,
+        );
+        if (_recordHasMore) {
+          _recordPage += 1;
+        }
       }
       schemas.addAll(data?.schemas ?? const {});
       stickers.addAll(data?.stickers ?? const {});

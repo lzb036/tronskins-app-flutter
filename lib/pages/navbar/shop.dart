@@ -10,17 +10,20 @@ import 'package:tronskins_app/common/storage/game_storage.dart';
 import 'package:tronskins_app/components/game/game_icon_button.dart';
 import 'package:tronskins_app/components/game/game_switch_menu.dart';
 import 'package:tronskins_app/components/filter/filter_models.dart';
+import 'package:tronskins_app/components/filter/market_filter_sheet.dart';
 import 'package:tronskins_app/components/filter/order_filter_sheet.dart';
-import 'package:tronskins_app/components/filter/price_sort_filter_sheet.dart';
 import 'package:tronskins_app/components/game_item/game_item_image.dart';
 import 'package:tronskins_app/components/game_item/game_item_models.dart';
 import 'package:tronskins_app/components/game_item/shop_sale_item_card.dart';
 import 'package:tronskins_app/components/game_item/wear_progress_bar.dart';
+import 'package:tronskins_app/components/layout/list_end_tip.dart';
 import 'package:tronskins_app/controllers/shop/shop_controller.dart';
 import 'package:tronskins_app/controllers/shop/shop_order_controller.dart';
 import 'package:tronskins_app/controllers/shop/shop_sales_controller.dart';
 import 'package:tronskins_app/controllers/user/user_controller.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
+
+enum _ShopTabFilter { onSale, pending, saleRecord }
 
 class ShopPage extends StatefulWidget {
   const ShopPage({super.key});
@@ -55,7 +58,6 @@ class _ShopPageState extends State<ShopPage>
   final TextEditingController _recordSearchController = TextEditingController();
   final Set<int> _selectedIds = <int>{};
   Worker? _loginWorker;
-
   static const List<StatusOption> _statusOptions = [
     StatusOption(
       labelKey: 'app.market.filter.all',
@@ -77,6 +79,9 @@ class _ShopPageState extends State<ShopPage>
     _onSaleScroll.addListener(_handleOnSaleScroll);
     _pendingScroll.addListener(_handlePendingScroll);
     _recordScroll.addListener(_handleRecordScroll);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      MarketFilterSheet.preload(appId: GameStorage.getGameType());
+    });
 
     if (userController.isLoggedIn.value) {
       salesController.refreshOnSale();
@@ -310,76 +315,340 @@ class _ShopPageState extends State<ShopPage>
   }
 
   Future<void> _openOnSaleFilterSheet() async {
-    final result = await showModalBottomSheet<PriceSortFilterResult>(
+    final result = await MarketFilterSheet.showFromRight(
       context: context,
-      isScrollControlled: true,
-      builder: (context) => PriceSortFilterSheet(
-        sortOptions: const [
-          SortOption(labelKey: 'app.market.filter.price', field: 'price'),
-          SortOption(labelKey: 'app.market.filter.hot', field: 'hot'),
-        ],
-        initial: PriceSortFilterResult(
-          sortField: salesController.onSaleSortField.value,
-          sortAsc: salesController.onSaleSortAsc.value,
-          priceMin: salesController.onSalePriceMin.value,
-          priceMax: salesController.onSalePriceMax.value,
-        ),
+      appId: GameStorage.getGameType(),
+      sortOptions: const [
+        SortOption(labelKey: 'app.market.filter.price', field: 'price'),
+        SortOption(labelKey: 'app.market.filter.hot', field: 'hot'),
+      ],
+      initial: MarketFilterResult(
+        sortField: salesController.onSaleSortField.value,
+        sortAsc: salesController.onSaleSortAsc.value,
+        priceMin: salesController.onSalePriceMin.value,
+        priceMax: salesController.onSalePriceMax.value,
+        tags: Map<String, dynamic>.from(salesController.onSaleTags),
+        itemName: salesController.onSaleItemName.value,
       ),
     );
     if (result != null) {
+      if (result.clearKeyword) {
+        _searchController.clear();
+      }
       await salesController.applyOnSaleFilter(
         sortField: result.sortField,
         sortAsc: result.sortAsc,
         minPrice: result.priceMin,
         maxPrice: result.priceMax,
+        tags: result.tags,
+        itemName: result.itemName,
+        keyword: result.clearKeyword ? '' : null,
       );
     }
   }
 
   Future<void> _openPendingFilterSheet() async {
-    final result = await showModalBottomSheet<OrderFilterResult>(
+    final result = await MarketFilterSheet.showFromRight(
       context: context,
-      isScrollControlled: true,
-      builder: (context) => OrderFilterSheet(
-        initial: OrderFilterResult(
-          startDate: orderController.pendingStartDate.value,
-          endDate: orderController.pendingEndDate.value,
-        ),
-        statusOptions: _statusOptions,
-        showStatus: false,
-        showDateRange: true,
+      appId: GameStorage.getGameType(),
+      sortOptions: const [
+        SortOption(labelKey: 'app.market.filter.time', field: 'time'),
+      ],
+      showSort: false,
+      showPriceRange: false,
+      initial: MarketFilterResult(
+        sortField: orderController.pendingSortField.value,
+        sortAsc: orderController.pendingSortAsc.value,
+        tags: Map<String, dynamic>.from(orderController.pendingTags),
+        itemName: orderController.pendingItemName.value,
       ),
     );
     if (result != null) {
+      if (result.clearKeyword) {
+        _pendingSearchController.clear();
+      }
       await orderController.applyPendingFilter(
-        startDate: result.startDate,
-        endDate: result.endDate,
+        tags: result.tags,
+        itemName: result.itemName,
+        keyword: result.clearKeyword ? '' : null,
       );
     }
   }
 
   Future<void> _openSellRecordFilterSheet() async {
-    final result = await showModalBottomSheet<OrderFilterResult>(
+    final result = await OrderFilterSheet.showFromRight(
       context: context,
-      isScrollControlled: true,
-      builder: (context) => OrderFilterSheet(
-        initial: OrderFilterResult(
-          statusList: salesController.recordStatusList.toList(),
-          startDate: salesController.recordStartDate.value,
-          endDate: salesController.recordEndDate.value,
-        ),
-        statusOptions: _statusOptions,
-        showStatus: true,
-        showDateRange: true,
+      initial: OrderFilterResult(
+        statusList: salesController.recordStatusList.toList(),
+        startDate: salesController.recordStartDate.value,
+        endDate: salesController.recordEndDate.value,
+        sortField: salesController.recordSortField.value,
+        sortAsc: salesController.recordSortAsc.value,
+        tags: Map<String, dynamic>.from(salesController.recordTags),
+        itemName: salesController.recordItemName.value,
       ),
+      statusOptions: _statusOptions,
+      showSort: false,
+      showStatus: true,
+      showDateRange: true,
+      enableAttributeFilter: true,
+      appId: GameStorage.getGameType(),
+      attributeShowSort: false,
+      attributeShowPriceRange: false,
+      attributeSortOptions: const [
+        SortOption(labelKey: 'app.market.filter.time', field: 'time'),
+      ],
     );
     if (result != null) {
       await salesController.applyRecordFilter(
         statusList: result.statusList,
         startDate: result.startDate,
         endDate: result.endDate,
+        sortAsc: result.sortAsc,
+        sortField: result.sortField,
+        tags: result.tags,
+        itemName: result.itemName,
       );
     }
+  }
+
+  _ShopTabFilter _currentShopTabFilter() {
+    switch (_activeTab) {
+      case 1:
+        return _ShopTabFilter.pending;
+      case 2:
+        return _ShopTabFilter.saleRecord;
+      case 0:
+      default:
+        return _ShopTabFilter.onSale;
+    }
+  }
+
+  String _shopTabLabelKey(_ShopTabFilter filter) {
+    switch (filter) {
+      case _ShopTabFilter.onSale:
+        return 'app.trade.onSale.text';
+      case _ShopTabFilter.pending:
+        return 'app.market.product.wait_for_sending';
+      case _ShopTabFilter.saleRecord:
+        return 'app.user.menu.sale';
+    }
+  }
+
+  IconData _shopTabIcon(_ShopTabFilter filter) {
+    switch (filter) {
+      case _ShopTabFilter.onSale:
+        return Icons.storefront_outlined;
+      case _ShopTabFilter.pending:
+        return Icons.local_shipping_outlined;
+      case _ShopTabFilter.saleRecord:
+        return Icons.receipt_long_outlined;
+    }
+  }
+
+  Future<void> _openShopTabSwitchMenu(BuildContext iconContext) async {
+    final currentFilter = _currentShopTabFilter();
+    final selected = await _showShopTabSwitchMenu(
+      iconContext: iconContext,
+      currentFilter: currentFilter,
+    );
+    if (selected == null || selected == currentFilter) {
+      return;
+    }
+
+    final targetIndex = switch (selected) {
+      _ShopTabFilter.onSale => 0,
+      _ShopTabFilter.pending => 1,
+      _ShopTabFilter.saleRecord => 2,
+    };
+    if (targetIndex != _tabController.index) {
+      _tabController.animateTo(targetIndex);
+    }
+  }
+
+  Widget _buildShopTabSwitcher() {
+    final colors = Theme.of(context).colorScheme;
+    final filter = _currentShopTabFilter();
+    return Builder(
+      builder: (iconContext) {
+        return Tooltip(
+          message: _shopTabLabelKey(filter).tr,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(8),
+              onTap: () => _openShopTabSwitchMenu(iconContext),
+              child: SizedBox(
+                width: 34,
+                height: 34,
+                child: Icon(
+                  _shopTabIcon(filter),
+                  size: 18,
+                  color: colors.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTopIconAction({
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback onTap,
+  }) {
+    final colors = Theme.of(context).colorScheme;
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: onTap,
+          child: SizedBox(
+            width: 34,
+            height: 34,
+            child: Icon(icon, size: 18, color: colors.onSurfaceVariant),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildShopSummaryBar(CurrencyController currency) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final baseStart = isDark ? colors.surfaceContainerHigh : Colors.white;
+    final baseEnd = isDark
+        ? colors.surfaceContainer
+        : colors.primary.withValues(alpha: 0.05);
+    final borderColor = colors.outline.withValues(alpha: 0.18);
+
+    return Obx(() {
+      final count = salesController.totalOnSale.value;
+      final totalValue = salesController.totalOnSalePrice.value;
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [baseStart, baseEnd],
+          ),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: borderColor),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.10 : 0.03),
+              offset: const Offset(0, 1),
+              blurRadius: 3,
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: _buildShopSummaryMetric(
+                label: 'app.inventory.count'.tr,
+                value: '$count',
+              ),
+            ),
+            Container(
+              width: 1,
+              height: 22,
+              color: borderColor,
+              margin: const EdgeInsets.symmetric(horizontal: 6),
+            ),
+            Expanded(
+              child: _buildShopSummaryMetric(
+                label: 'app.inventory.total_value'.tr,
+                value: currency.format(totalValue),
+              ),
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
+  Widget _buildShopSummaryMetric({
+    required String label,
+    required String value,
+  }) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    return SizedBox(
+      width: double.infinity,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: colors.onSurface.withValues(alpha: 0.68),
+              fontWeight: FontWeight.w500,
+              fontSize: 10.5,
+              height: 1.0,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: colors.onSurface,
+              height: 1.0,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOnSaleSelectAllToggle({
+    required bool selected,
+    required bool enabled,
+  }) {
+    final colors = Theme.of(context).colorScheme;
+    final borderColor = colors.outline.withValues(alpha: 0.45);
+    return Opacity(
+      opacity: enabled ? 1.0 : 0.45,
+      child: Tooltip(
+        message: selected
+            ? 'app.common.deselect_all'.tr
+            : 'app.common.select_all'.tr,
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(6),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(6),
+            onTap: enabled ? _toggleSelectAll : null,
+            child: Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                color: colors.surface,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: borderColor),
+              ),
+              child: selected
+                  ? Icon(Icons.check_rounded, color: colors.primary, size: 16)
+                  : const SizedBox.shrink(),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -407,8 +676,8 @@ class _ShopPageState extends State<ShopPage>
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.05),
-                      offset: const Offset(0, 4),
-                      blurRadius: 8,
+                      offset: const Offset(0, 3),
+                      blurRadius: 6,
                     ),
                   ],
                 ),
@@ -417,37 +686,31 @@ class _ShopPageState extends State<ShopPage>
                   children: [
                     Padding(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 4,
-                        vertical: 8,
+                        horizontal: 12,
+                        vertical: 4,
                       ),
                       child: Row(
                         children: [
-                          const SizedBox(width: 16),
                           Expanded(
                             child: Text(
                               'app.user.menu.shop'.tr,
-                              style: Theme.of(context).textTheme.titleLarge
+                              style: Theme.of(context).textTheme.titleMedium
                                   ?.copyWith(fontWeight: FontWeight.bold),
                             ),
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.receipt_long),
-                            onPressed: () => Get.toNamed(Routers.SHOP_PURCHASE),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
+                          _buildShopTabSwitcher(),
+                          const SizedBox(width: 6),
+                          _buildTopIconAction(
+                            icon: Icons.settings,
+                            tooltip: 'app.user.shop.setting'.tr,
+                            onTap: () => Get.toNamed(Routers.SHOP_SETTING),
                           ),
-                          const SizedBox(width: 12),
-                          IconButton(
-                            icon: const Icon(Icons.settings),
-                            onPressed: () => Get.toNamed(Routers.SHOP_SETTING),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                          ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 6),
                           Builder(
                             builder: (iconContext) {
                               return GameIconButton(
                                 appId: GameStorage.getGameType(),
+                                size: 34,
                                 onTap: () async {
                                   final selected = await showGameSwitchMenu(
                                     iconContext: iconContext,
@@ -465,38 +728,27 @@ class _ShopPageState extends State<ShopPage>
                               );
                             },
                           ),
-                          const SizedBox(width: 16),
                         ],
                       ),
                     ),
-                    Center(
-                      child: TabBar(
-                        controller: _tabController,
-                        isScrollable: true,
-                        tabAlignment: TabAlignment.center,
-                        indicatorSize: TabBarIndicatorSize.label,
-                        labelPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                        ),
-                        dividerColor: Colors.transparent,
-                        tabs: [
-                          Tab(text: 'app.trade.onSale.text'.tr),
-                          Tab(text: 'app.market.product.wait_for_sending'.tr),
-                          Tab(text: 'app.user.menu.sale'.tr),
-                        ],
+                    _buildSharedTabSearchBar(),
+                    const SizedBox(height: 6),
+                    if (_activeTab == 0) ...[
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: _buildShopSummaryBar(currency),
                       ),
-                    ),
+                      const SizedBox(height: 6),
+                    ],
                   ],
                 ),
               ),
-              const SizedBox(height: 12),
               _buildShopStatusBanner(),
-              _buildSharedTabSearchBar(),
               Expanded(
                 child: TabBarView(
                   controller: _tabController,
                   children: [
-                    _buildOnSaleTab(currency),
+                    _buildOnSaleTab(),
                     _buildPendingShipmentTab(currency),
                     _buildSellRecordTab(currency),
                   ],
@@ -535,11 +787,11 @@ class _ShopPageState extends State<ShopPage>
         return const SizedBox.shrink();
       }
       return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
         child: Card(
           color: Theme.of(context).colorScheme.errorContainer,
           child: Padding(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(10),
             child: Row(
               children: [
                 Icon(
@@ -571,75 +823,136 @@ class _ShopPageState extends State<ShopPage>
     required TextEditingController controller,
     required ValueChanged<String> onSubmitted,
     required VoidCallback onSearch,
-    required RxBool sortAsc,
-    required VoidCallback onToggleSort,
-    required String sortTooltipKey,
     required IconData filterIcon,
     required VoidCallback onFilter,
     String filterTooltipKey = 'app.market.filter.text',
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
     final fillColor = isDark
-        ? Colors.white.withOpacity(0.08)
-        : const Color(0xFFF5F5F5);
-    final hintColor = isDark ? Colors.white38 : Colors.grey[400];
+        ? Colors.white.withValues(alpha: 0.08)
+        : colors.surfaceVariant;
+    final hintColor = isDark
+        ? Colors.white38
+        : colors.onSurface.withValues(alpha: 0.4);
+    final hasKeyword = controller.text.trim().isNotEmpty;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Row(
         children: [
           Expanded(
             child: SizedBox(
-              height: 40,
-              child: TextField(
-                controller: controller,
-                onSubmitted: onSubmitted,
-                textAlignVertical: TextAlignVertical.center,
-                decoration: InputDecoration(
-                  hintText: 'app.market.filter.search'.tr,
-                  hintStyle: TextStyle(color: hintColor, fontSize: 14),
-                  prefixIcon: Icon(Icons.search, color: hintColor, size: 20),
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.send, size: 18),
-                    onPressed: onSearch,
-                  ),
-                  filled: true,
-                  fillColor: fillColor,
-                  contentPadding: EdgeInsets.zero,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(4),
-                    borderSide: BorderSide.none,
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(4),
-                    borderSide: BorderSide.none,
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(4),
-                    borderSide: BorderSide.none,
+              height: 36,
+              child: Material(
+                color: fillColor,
+                borderRadius: BorderRadius.circular(9),
+                child: TextField(
+                  controller: controller,
+                  onSubmitted: onSubmitted,
+                  onChanged: (_) {
+                    if (mounted) {
+                      setState(() {});
+                    }
+                  },
+                  textAlignVertical: TextAlignVertical.center,
+                  decoration: InputDecoration(
+                    hintText: 'app.market.filter.search'.tr,
+                    hintStyle: TextStyle(color: hintColor, fontSize: 13),
+                    prefixIcon: Icon(Icons.search, color: hintColor, size: 18),
+                    suffixIcon: hasKeyword
+                        ? IconButton(
+                            icon: const Icon(Icons.close, size: 16),
+                            onPressed: () {
+                              controller.clear();
+                              if (mounted) {
+                                setState(() {});
+                              }
+                            },
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: fillColor,
+                    contentPadding: EdgeInsets.zero,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(9),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(9),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(9),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-          const SizedBox(width: 8),
-          Obx(() {
-            return IconButton(
-              tooltip: sortTooltipKey.tr,
-              icon: Icon(
-                sortAsc.value ? Icons.arrow_upward : Icons.arrow_downward,
-              ),
-              onPressed: onToggleSort,
-            );
-          }),
-          IconButton(
+          const SizedBox(width: 6),
+          _buildSearchActionButton(
+            tooltip: 'app.market.filter.search'.tr,
+            icon: Icons.send,
+            onTap: onSearch,
+          ),
+          const SizedBox(width: 6),
+          _buildSearchActionButton(
             tooltip: filterTooltipKey.tr,
-            icon: Icon(filterIcon),
-            onPressed: onFilter,
+            icon: filterIcon,
+            onTap: onFilter,
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildSearchActionButton({
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback onTap,
+  }) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final baseColor = isDark
+        ? Colors.white.withValues(alpha: 0.08)
+        : colors.surfaceVariant;
+    final iconColor = colors.onSurfaceVariant;
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: baseColor,
+        borderRadius: BorderRadius.circular(9),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(9),
+          onTap: onTap,
+          child: SizedBox(
+            width: 36,
+            height: 36,
+            child: Icon(icon, color: iconColor, size: 18),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildListFooter({
+    required bool showLoading,
+    required bool showNoMore,
+  }) {
+    if (showLoading) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 16),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (showNoMore) {
+      return const ListEndTip();
+    }
+    return const SizedBox.shrink();
   }
 
   Widget _buildSharedTabSearchBar() {
@@ -649,9 +962,6 @@ class _ShopPageState extends State<ShopPage>
           controller: _searchController,
           onSubmitted: salesController.searchOnSale,
           onSearch: () => salesController.searchOnSale(_searchController.text),
-          sortAsc: salesController.onSaleSortAsc,
-          onToggleSort: salesController.toggleOnSaleSort,
-          sortTooltipKey: 'app.market.filter.sort',
           filterIcon: Icons.filter_alt_outlined,
           onFilter: _openOnSaleFilterSheet,
         );
@@ -661,9 +971,6 @@ class _ShopPageState extends State<ShopPage>
           onSubmitted: orderController.searchPending,
           onSearch: () =>
               orderController.searchPending(_pendingSearchController.text),
-          sortAsc: orderController.pendingSortAsc,
-          onToggleSort: orderController.togglePendingSort,
-          sortTooltipKey: 'app.market.filter.time',
           filterIcon: Icons.filter_alt_outlined,
           onFilter: _openPendingFilterSheet,
         );
@@ -673,9 +980,6 @@ class _ShopPageState extends State<ShopPage>
           onSubmitted: salesController.searchSellRecords,
           onSearch: () =>
               salesController.searchSellRecords(_recordSearchController.text),
-          sortAsc: salesController.recordSortAsc,
-          onToggleSort: salesController.toggleRecordSort,
-          sortTooltipKey: 'app.market.filter.time',
           filterIcon: Icons.filter_alt_outlined,
           onFilter: _openSellRecordFilterSheet,
         );
@@ -684,66 +988,35 @@ class _ShopPageState extends State<ShopPage>
     }
   }
 
-  Widget _buildOnSaleTab(CurrencyController currency) {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Obx(() {
-            final hasItems = salesController.onSaleItems.isNotEmpty;
-            final isAllSelected =
-                hasItems &&
-                _selectedIds.length == salesController.onSaleItems.length;
-            return Card(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Row(
-                  children: [
-                    Text(
-                      '${'app.inventory.count'.tr}: '
-                      '${salesController.totalOnSale.value}',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      '${'app.inventory.total_value'.tr}: '
-                      '${currency.format(salesController.totalOnSalePrice.value)}',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      icon: Icon(
-                        isAllSelected
-                            ? Icons.check_box
-                            : Icons.check_box_outline_blank,
-                      ),
-                      onPressed: hasItems ? _toggleSelectAll : null,
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }),
-        ),
-        Expanded(
-          child: Obx(() {
-            if (salesController.onSaleItems.isEmpty &&
-                salesController.isLoadingOnSale.value) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (salesController.onSaleItems.isEmpty) {
-              return Center(child: Text('app.common.no_data'.tr));
-            }
-            return RefreshIndicator(
-              onRefresh: salesController.refreshOnSale,
-              child: GridView.builder(
-                controller: _onSaleScroll,
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+  Widget _buildOnSaleTab() {
+    return Obx(() {
+      if (salesController.onSaleItems.isEmpty &&
+          salesController.isLoadingOnSale.value) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      if (salesController.onSaleItems.isEmpty) {
+        return Center(child: Text('app.common.no_data'.tr));
+      }
+      final showLoadingFooter =
+          salesController.isLoadingOnSale.value &&
+          salesController.onSaleItems.isNotEmpty;
+      final showNoMoreFooter =
+          salesController.onSaleItems.isNotEmpty &&
+          !salesController.isLoadingOnSale.value &&
+          !salesController.onSaleHasMore;
+      return RefreshIndicator(
+        onRefresh: salesController.refreshOnSale,
+        child: CustomScrollView(
+          controller: _onSaleScroll,
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.all(12),
+              sliver: SliverGrid.builder(
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
                   mainAxisSpacing: 12,
                   crossAxisSpacing: 12,
-                  childAspectRatio: 0.72,
+                  childAspectRatio: 0.74,
                 ),
                 itemCount: salesController.onSaleItems.length,
                 itemBuilder: (context, index) {
@@ -764,32 +1037,55 @@ class _ShopPageState extends State<ShopPage>
                   );
                 },
               ),
-            );
-          }),
+            ),
+            SliverToBoxAdapter(
+              child: _buildListFooter(
+                showLoading: showLoadingFooter,
+                showNoMore: showNoMoreFooter,
+              ),
+            ),
+          ],
         ),
-      ],
-    );
+      );
+    });
   }
 
   Widget _buildPendingShipmentTab(CurrencyController currency) {
     return Column(
       children: [
-        const SizedBox(height: 8),
         Expanded(
           child: Obx(() {
             if (orderController.pendingShipments.isEmpty &&
                 orderController.isLoadingPending.value) {
               return const Center(child: CircularProgressIndicator());
             }
+            if (orderController.pendingShipments.isEmpty) {
+              return Center(child: Text('app.common.no_data'.tr));
+            }
+            final pendingShipments = orderController.pendingShipments;
+            final showLoadingFooter =
+                orderController.isLoadingPending.value &&
+                pendingShipments.isNotEmpty;
+            final showNoMoreFooter =
+                pendingShipments.isNotEmpty &&
+                !orderController.isLoadingPending.value &&
+                !orderController.pendingHasMore;
+            final showFooter = showLoadingFooter || showNoMoreFooter;
             return RefreshIndicator(
               onRefresh: orderController.refreshPending,
               child: ListView.separated(
                 controller: _pendingScroll,
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                itemCount: orderController.pendingShipments.length,
+                padding: const EdgeInsets.all(12),
+                itemCount: pendingShipments.length + (showFooter ? 1 : 0),
                 separatorBuilder: (_, __) => const SizedBox(height: 12),
                 itemBuilder: (context, index) {
-                  final order = orderController.pendingShipments[index];
+                  if (index >= pendingShipments.length) {
+                    return _buildListFooter(
+                      showLoading: showLoadingFooter,
+                      showNoMore: showNoMoreFooter,
+                    );
+                  }
+                  final order = pendingShipments[index];
                   final totalPrice = _sumOrderPrice(order);
                   final totalCount = _sumOrderCount(order);
                   return Card(
@@ -870,7 +1166,7 @@ class _ShopPageState extends State<ShopPage>
                                   ],
                                 ),
                               );
-                            }).toList(),
+                            }),
                           Row(
                             children: [
                               Text(
@@ -934,22 +1230,39 @@ class _ShopPageState extends State<ShopPage>
   Widget _buildSellRecordTab(CurrencyController currency) {
     return Column(
       children: [
-        const SizedBox(height: 8),
         Expanded(
           child: Obx(() {
             if (salesController.sellRecords.isEmpty &&
                 salesController.isLoadingRecords.value) {
               return const Center(child: CircularProgressIndicator());
             }
+            if (salesController.sellRecords.isEmpty) {
+              return Center(child: Text('app.common.no_data'.tr));
+            }
+            final sellRecords = salesController.sellRecords;
+            final showLoadingFooter =
+                salesController.isLoadingRecords.value &&
+                sellRecords.isNotEmpty;
+            final showNoMoreFooter =
+                sellRecords.isNotEmpty &&
+                !salesController.isLoadingRecords.value &&
+                !salesController.recordHasMore;
+            final showFooter = showLoadingFooter || showNoMoreFooter;
             return RefreshIndicator(
               onRefresh: salesController.refreshSellRecords,
               child: ListView.separated(
                 controller: _recordScroll,
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                itemCount: salesController.sellRecords.length,
+                padding: const EdgeInsets.all(12),
+                itemCount: sellRecords.length + (showFooter ? 1 : 0),
                 separatorBuilder: (_, __) => const SizedBox(height: 12),
                 itemBuilder: (context, index) {
-                  final record = salesController.sellRecords[index];
+                  if (index >= sellRecords.length) {
+                    return _buildListFooter(
+                      showLoading: showLoadingFooter,
+                      showNoMore: showNoMoreFooter,
+                    );
+                  }
+                  final record = sellRecords[index];
                   final primary = record.details.isNotEmpty
                       ? record.details.first
                       : null;
@@ -1022,7 +1335,9 @@ class _ShopPageState extends State<ShopPage>
                                       vertical: 2,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.6),
+                                      color: Colors.black.withValues(
+                                        alpha: 0.6,
+                                      ),
                                       borderRadius: BorderRadius.circular(10),
                                     ),
                                     child: Text(
@@ -1099,6 +1414,13 @@ class _ShopPageState extends State<ShopPage>
   }
 
   Widget _buildOnSaleActions() {
+    final selectableIds = salesController.onSaleItems
+        .where((item) => item.id != null)
+        .map((item) => item.id!)
+        .toSet();
+    final selectableTotal = selectableIds.length;
+    final allSelected =
+        selectableTotal > 0 && selectableIds.every(_selectedIds.contains);
     return SafeArea(
       child: Container(
         padding: const EdgeInsets.all(12),
@@ -1110,8 +1432,13 @@ class _ShopPageState extends State<ShopPage>
         ),
         child: Row(
           children: [
+            _buildOnSaleSelectAllToggle(
+              selected: allSelected,
+              enabled: selectableTotal > 0,
+            ),
+            const SizedBox(width: 8),
             Text(
-              '${'app.inventory.count'.tr}: ${_selectedIds.length}',
+              '${'app.inventory.count'.tr}: ${_selectedIds.length}/$selectableTotal',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const Spacer(),
@@ -1165,6 +1492,183 @@ class _ShopPageState extends State<ShopPage>
           onDelivered: () => orderController.refreshPending(),
         );
       },
+    );
+  }
+}
+
+Future<_ShopTabFilter?> _showShopTabSwitchMenu({
+  required BuildContext iconContext,
+  required _ShopTabFilter currentFilter,
+}) {
+  final overlay =
+      Overlay.of(iconContext).context.findRenderObject() as RenderBox;
+  final box = iconContext.findRenderObject() as RenderBox;
+  final iconRect = box.localToGlobal(Offset.zero) & box.size;
+  final screenSize = overlay.size;
+  final alignX = ((iconRect.center.dx / screenSize.width) * 2 - 1).clamp(
+    -1.0,
+    1.0,
+  );
+  final alignment = Alignment(alignX.toDouble(), -1);
+  final panelTop = (iconRect.bottom + 8)
+      .clamp(0.0, screenSize.height)
+      .toDouble();
+
+  return showGeneralDialog<_ShopTabFilter>(
+    context: iconContext,
+    barrierDismissible: true,
+    barrierLabel: MaterialLocalizations.of(
+      iconContext,
+    ).modalBarrierDismissLabel,
+    barrierColor: Colors.black.withValues(alpha: 0.2),
+    transitionDuration: const Duration(milliseconds: 220),
+    pageBuilder: (_, __, ___) => const SizedBox.shrink(),
+    transitionBuilder: (context, animation, __, ___) {
+      return _ShopTabSwitchOverlay(
+        animation: animation,
+        alignment: alignment,
+        top: panelTop,
+        currentFilter: currentFilter,
+      );
+    },
+  );
+}
+
+class _ShopTabSwitchOverlay extends StatelessWidget {
+  const _ShopTabSwitchOverlay({
+    required this.animation,
+    required this.alignment,
+    required this.top,
+    required this.currentFilter,
+  });
+
+  final Animation<double> animation;
+  final Alignment alignment;
+  final double top;
+  final _ShopTabFilter currentFilter;
+
+  @override
+  Widget build(BuildContext context) {
+    final curved = CurvedAnimation(
+      parent: animation,
+      curve: Curves.easeOutCubic,
+    );
+    return Material(
+      type: MaterialType.transparency,
+      child: Stack(
+        children: [
+          Positioned(
+            top: top,
+            left: 0,
+            right: 0,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0, -0.05),
+                end: Offset.zero,
+              ).animate(curved),
+              child: ScaleTransition(
+                alignment: alignment,
+                scale: Tween<double>(begin: 0.2, end: 1).animate(curved),
+                child: FadeTransition(
+                  opacity: curved,
+                  child: Align(
+                    alignment: alignment,
+                    child: _ShopTabSwitchPanel(currentFilter: currentFilter),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ShopTabSwitchPanel extends StatelessWidget {
+  const _ShopTabSwitchPanel({required this.currentFilter});
+
+  final _ShopTabFilter currentFilter;
+
+  @override
+  Widget build(BuildContext context) {
+    final surface = Theme.of(context).colorScheme.surface;
+    final divider = Theme.of(context).dividerColor;
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minWidth: 168),
+      child: Material(
+        color: surface,
+        elevation: 8,
+        borderRadius: BorderRadius.circular(12),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _ShopTabSwitchOption(
+              filter: _ShopTabFilter.onSale,
+              icon: Icons.storefront_outlined,
+              labelKey: 'app.trade.onSale.text',
+              selected: currentFilter == _ShopTabFilter.onSale,
+            ),
+            Divider(height: 1, color: divider),
+            _ShopTabSwitchOption(
+              filter: _ShopTabFilter.pending,
+              icon: Icons.local_shipping_outlined,
+              labelKey: 'app.market.product.wait_for_sending',
+              selected: currentFilter == _ShopTabFilter.pending,
+            ),
+            Divider(height: 1, color: divider),
+            _ShopTabSwitchOption(
+              filter: _ShopTabFilter.saleRecord,
+              icon: Icons.receipt_long_outlined,
+              labelKey: 'app.user.menu.sale',
+              selected: currentFilter == _ShopTabFilter.saleRecord,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ShopTabSwitchOption extends StatelessWidget {
+  const _ShopTabSwitchOption({
+    required this.filter,
+    required this.icon,
+    required this.labelKey,
+    required this.selected,
+  });
+
+  final _ShopTabFilter filter;
+  final IconData icon;
+  final String labelKey;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    const selectedColor = Color(0xFFFFB800);
+    return InkWell(
+      onTap: () => Navigator.of(context).pop(filter),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Row(
+          children: [
+            Icon(icon, size: 18, color: selected ? selectedColor : null),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                labelKey.tr,
+                style: TextStyle(
+                  color: selected ? selectedColor : null,
+                  fontWeight: selected ? FontWeight.bold : null,
+                ),
+              ),
+            ),
+            if (selected)
+              const Icon(Icons.check, color: selectedColor, size: 18),
+          ],
+        ),
+      ),
     );
   }
 }

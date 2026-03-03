@@ -651,6 +651,7 @@ final Map<String, String> po_PT = {
   "app.common.none": "Nenhum",
   "app.common.unlimited": "ilimitado",
   "app.common.no_data": "Nenhum Dados",
+  "app.common.no_more_data": "Não há mais dados",
   "app.common.refresh": "Refreshar",
   "app.common.select_all": "Selecionar tudo",
   "app.common.deselect_all": "Desmarcar tudo",

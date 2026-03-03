@@ -647,6 +647,7 @@ final Map<String, String> it_IT = {
   "app.common.none": "Nessuno",
   "app.common.unlimited": "illimitato",
   "app.common.no_data": "Nessun Dati",
+  "app.common.no_more_data": "Nessun altro dato",
   "app.common.refresh": "Aggiornare",
   "app.common.select_all": "Seleziona tutto",
   "app.common.deselect_all": "Deseleziona tutto",

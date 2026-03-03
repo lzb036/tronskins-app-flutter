@@ -1,20 +1,14 @@
 import 'package:flutter/foundation.dart';
 
 class SortOption {
-  const SortOption({
-    required this.labelKey,
-    required this.field,
-  });
+  const SortOption({required this.labelKey, required this.field});
 
   final String labelKey;
   final String field;
 }
 
 class StatusOption {
-  const StatusOption({
-    required this.labelKey,
-    required this.values,
-  });
+  const StatusOption({required this.labelKey, required this.values});
 
   final String labelKey;
   final List<int> values;
@@ -45,11 +39,19 @@ class OrderFilterResult {
     this.statusList,
     this.startDate,
     this.endDate,
+    this.sortAsc,
+    this.sortField,
+    this.tags,
+    this.itemName,
   });
 
   final List<int>? statusList;
   final DateTime? startDate;
   final DateTime? endDate;
+  final bool? sortAsc;
+  final String? sortField;
+  final Map<String, dynamic>? tags;
+  final String? itemName;
 }
 
 @immutable

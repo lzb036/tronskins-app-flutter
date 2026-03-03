@@ -546,6 +546,7 @@ final Map<String, String> ja_JP = {
   "app.common.none": "なし",
   "app.common.unlimited": "無制限",
   "app.common.no_data": "データなし",
+  "app.common.no_more_data": "これ以上データはありません",
   "app.common.refresh": "リフレッシュ",
   "app.common.select_all": "すべて選択",
   "app.common.deselect_all": "すべて選択解除",

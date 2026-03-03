@@ -560,6 +560,7 @@ final Map<String, String> ko_KR = {
   "app.common.none": "없음",
   "app.common.unlimited": "무제한",
   "app.common.no_data": "데이터 없음",
+  "app.common.no_more_data": "더 이상 데이터가 없습니다",
   "app.common.refresh": "새로 고침",
   "app.common.select_all": "전체 선택",
   "app.common.deselect_all": "전체 선택 해제",

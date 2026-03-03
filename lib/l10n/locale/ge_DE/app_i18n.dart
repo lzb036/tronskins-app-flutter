@@ -655,6 +655,7 @@ final Map<String, String> ge_DE = {
   "app.common.none": "Keine",
   "app.common.unlimited": "Unbegrenzt",
   "app.common.no_data": "Keine Daten",
+  "app.common.no_more_data": "Keine weiteren Daten",
   "app.common.refresh": "Aktualisieren",
   "app.common.select_all": "Alle auswählen",
   "app.common.deselect_all": "Auswahl aufheben",

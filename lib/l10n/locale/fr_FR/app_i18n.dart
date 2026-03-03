@@ -659,6 +659,7 @@ final Map<String, String> fr_FR = {
   "app.common.none": "Aucun",
   "app.common.unlimited": "illimité",
   "app.common.no_data": "Aucune Donnée",
+  "app.common.no_more_data": "Plus de données",
   "app.common.refresh": "rafraîchir",
   "app.common.select_all": "Tout sélectionner",
   "app.common.deselect_all": "Tout désélectionner",

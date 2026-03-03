@@ -630,6 +630,7 @@ final Map<String, String> vi_VN = {
   "app.common.none": "Không có",
   "app.common.unlimited": "Không giới hạn",
   "app.common.no_data": "Không có dữ liệu",
+  "app.common.no_more_data": "Không còn dữ liệu",
   "app.common.refresh": "Làm mới",
   "app.common.select_all": "Chọn tất cả",
   "app.common.deselect_all": "Bỏ chọn tất cả",

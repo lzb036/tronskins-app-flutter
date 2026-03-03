@@ -21,6 +21,7 @@ class MarketListController extends GetxController {
 
   int _page = 1;
   bool _hasMore = true;
+  bool get hasMore => _hasMore;
 
   @override
   void onInit() {

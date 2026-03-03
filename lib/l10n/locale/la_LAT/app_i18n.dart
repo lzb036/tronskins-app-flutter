@@ -660,6 +660,7 @@ final Map<String, String> la_LAT = {
   "app.common.none": "Ninguno",
   "app.common.unlimited": "ilimitado",
   "app.common.no_data": "No hay datos",
+  "app.common.no_more_data": "No hay más datos",
   "app.common.refresh": "Actualizar",
   "app.common.select_all": "Seleccionar todo",
   "app.common.deselect_all": "Deseleccionar todo",

@@ -636,6 +636,7 @@ final Map<String, String> po_PL = {
   "app.common.none": "Żaden",
   "app.common.unlimited": "Nieograniczony",
   "app.common.no_data": "Brak danych",
+  "app.common.no_more_data": "Brak więcej danych",
   "app.common.refresh": "Odświeżyć",
   "app.common.select_all": "Zaznacz wszystko",
   "app.common.deselect_all": "Odznacz wszystko",

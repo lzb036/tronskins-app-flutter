@@ -640,6 +640,7 @@ final Map<String, String> in_ID = {
   "app.common.none": "Tidak ada",
   "app.common.unlimited": "Tidak terbatas",
   "app.common.no_data": "Tidak ada data",
+  "app.common.no_more_data": "Tidak ada data lagi",
   "app.common.refresh": "Pembaruan",
   "app.common.select_all": "Pilih semua",
   "app.common.deselect_all": "Hapus semua pilihan",

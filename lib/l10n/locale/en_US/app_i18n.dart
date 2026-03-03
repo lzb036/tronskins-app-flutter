@@ -636,6 +636,7 @@ final Map<String, String> en_US = {
   "app.common.none": "None",
   "app.common.unlimited": "Unlimited",
   "app.common.no_data": "No Data",
+  "app.common.no_more_data": "No more data",
   "app.common.refresh": "Refresh",
   "app.common.select_all": "Select All",
   "app.common.deselect_all": "Deselect All",

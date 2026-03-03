@@ -646,6 +646,7 @@ final Map<String, String> ru_RU = {
   "app.common.none": "Никакой",
   "app.common.unlimited": "Неограниченный",
   "app.common.no_data": "Нет данных",
+  "app.common.no_more_data": "Больше данных нет",
   "app.common.refresh": "Обновить",
   "app.common.select_all": "Выбрать все",
   "app.common.deselect_all": "Снять выделение со всего",

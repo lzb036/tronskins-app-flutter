@@ -4,6 +4,7 @@ import 'package:tronskins_app/components/game/game_icon_button.dart';
 import 'package:tronskins_app/components/game/game_switch_menu.dart';
 import 'package:tronskins_app/components/filter/filter_models.dart';
 import 'package:tronskins_app/components/filter/market_filter_sheet.dart';
+import 'package:tronskins_app/components/layout/list_end_tip.dart';
 import 'package:tronskins_app/components/market/market_item_card.dart';
 import 'package:tronskins_app/components/market/market_search_sheet.dart';
 import 'package:tronskins_app/controllers/market/market_list_controller.dart';
@@ -351,6 +352,10 @@ class _MarketPageState extends State<MarketPage> {
                 ),
               ),
             ),
+            if (controller.items.isNotEmpty &&
+                !controller.isLoading.value &&
+                !controller.hasMore)
+              const SliverToBoxAdapter(child: ListEndTip()),
           ],
         ),
       );
