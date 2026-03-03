@@ -14,6 +14,7 @@ class InventoryController extends GetxController {
 
   final RxList<InventoryItem> items = <InventoryItem>[].obs;
   final RxMap<String, ShopSchemaInfo> schemas = <String, ShopSchemaInfo>{}.obs;
+  final RxMap<String, dynamic> stickers = <String, dynamic>{}.obs;
   final RxBool isLoading = false.obs;
   final RxInt total = 0.obs;
   final RxDouble totalPrice = 0.0.obs;
@@ -44,6 +45,7 @@ class InventoryController extends GetxController {
     _logoutWorker = ever(AppEvents.userLogoutEvent, (_) {
       items.clear();
       schemas.clear();
+      stickers.clear();
       total.value = 0;
       totalPrice.value = 0;
       selectedIds.clear();
@@ -77,6 +79,7 @@ class InventoryController extends GetxController {
     if (!_hasToken) {
       items.clear();
       schemas.clear();
+      stickers.clear();
       total.value = 0;
       totalPrice.value = 0;
       _lastFetchedAt = null;
@@ -119,6 +122,7 @@ class InventoryController extends GetxController {
       }
 
       schemas.addAll(data?.schemas ?? const <String, ShopSchemaInfo>{});
+      stickers.addAll(data?.stickers ?? const <String, dynamic>{});
       total.value = data?.total ?? total.value;
       totalPrice.value = data?.totalPrice ?? totalPrice.value;
 

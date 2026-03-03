@@ -207,6 +207,16 @@ class _BuyingUpdatePricePageState extends State<BuyingUpdatePricePage> {
     }
   }
 
+  String? _rawText(List<String> keys) {
+    for (final key in keys) {
+      final value = _item.raw[key];
+      if (value != null) {
+        return value.toString();
+      }
+    }
+    return null;
+  }
+
   Future<void> _submit() async {
     if (_isSubmitting) {
       return;
@@ -285,8 +295,12 @@ class _BuyingUpdatePricePageState extends State<BuyingUpdatePricePage> {
         _schemaRaw['market_name']?.toString() ??
         _schemaRaw['market_hash_name']?.toString() ??
         '-';
-    final wearMin = _item.paintWearMin;
-    final wearMax = _item.paintWearMax;
+    final wearMin =
+        _rawText(const ['paint_wear_min', 'paintWearMin']) ??
+        _item.paintWearMin?.toString();
+    final wearMax =
+        _rawText(const ['paint_wear_max', 'paintWearMax']) ??
+        _item.paintWearMax?.toString();
     return Scaffold(
       appBar: AppBar(
         title: Text('app.trade.purchase.price_change'.tr),
@@ -338,8 +352,7 @@ class _BuyingUpdatePricePageState extends State<BuyingUpdatePricePage> {
                             padding: const EdgeInsets.only(top: 8),
                             child: Text(
                               '${'app.market.filter.csgo.wear_interval'.tr}: '
-                              '${wearMin.toStringAsFixed(2)} - '
-                              '${wearMax.toStringAsFixed(2)}',
+                              '$wearMin - $wearMax',
                               style: Theme.of(context).textTheme.bodySmall,
                             ),
                           ),

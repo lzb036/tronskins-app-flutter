@@ -6,11 +6,7 @@ class TagInfo {
   final String? label;
   final String? color;
 
-  const TagInfo({
-    this.name,
-    this.label,
-    this.color,
-  });
+  const TagInfo({this.name, this.label, this.color});
 
   bool get hasLabel => label != null && label!.isNotEmpty;
 
@@ -18,18 +14,15 @@ class TagInfo {
     if (tag == null) {
       return null;
     }
-    return TagInfo(
-      name: tag.name,
-      label: tag.localizedName,
-      color: tag.color,
-    );
+    return TagInfo(name: tag.name, label: tag.localizedName, color: tag.color);
   }
 
   static TagInfo? fromRaw(dynamic raw) {
     if (raw is Map<String, dynamic>) {
       return TagInfo(
         name: raw['name']?.toString(),
-        label: raw['localized_name']?.toString() ??
+        label:
+            raw['localized_name']?.toString() ??
             raw['localizedName']?.toString(),
         color: raw['color']?.toString(),
       );
@@ -48,19 +41,28 @@ class GameItemGem {
   final String imageUrl;
   final Color? borderColor;
 
-  const GameItemGem({
-    required this.imageUrl,
-    this.borderColor,
-  });
+  const GameItemGem({required this.imageUrl, this.borderColor});
 }
 
-List<GameItemSticker> parseStickerList(dynamic raw) {
+List<GameItemSticker> parseStickerList(
+  dynamic raw, {
+  Map<dynamic, dynamic>? schemaMap,
+  Map<dynamic, dynamic>? stickerMap,
+}) {
   if (raw is! List) {
     return const [];
   }
   final stickers = <GameItemSticker>[];
   for (final item in raw) {
-    final url = _extractImageUrl(item);
+    var url = _extractStickerImageUrl(item);
+    if (url == null || url.isEmpty) {
+      final stickerId = _extractStickerId(item);
+      if (stickerId != null) {
+        url =
+            _resolveStickerImageFromMap(stickerId, stickerMap) ??
+            _resolveStickerImageFromMap(stickerId, schemaMap);
+      }
+    }
     if (url == null || url.isEmpty) {
       continue;
     }
@@ -76,14 +78,16 @@ List<GameItemGem> parseGemList(dynamic raw) {
   final gems = <GameItemGem>[];
   for (final item in raw) {
     if (item is Map<String, dynamic>) {
-      final url = item['imageUrl']?.toString() ??
+      final url =
+          item['imageUrl']?.toString() ??
           item['image_url']?.toString() ??
           item['image']?.toString();
       if (url == null || url.isEmpty) {
         continue;
       }
-      final border = _parseColor(item['borderColor']?.toString() ??
-          item['border_color']?.toString());
+      final border = _parseColor(
+        item['borderColor']?.toString() ?? item['border_color']?.toString(),
+      );
       gems.add(GameItemGem(imageUrl: url, borderColor: border));
     } else if (item is String && item.isNotEmpty) {
       gems.add(GameItemGem(imageUrl: item));
@@ -92,16 +96,104 @@ List<GameItemGem> parseGemList(dynamic raw) {
   return gems;
 }
 
-String? _extractImageUrl(dynamic item) {
+String? _extractStickerImageUrl(dynamic item) {
   if (item is String) {
-    return item;
+    final value = item.trim();
+    if (value.isEmpty || _isLikelyStickerId(value)) {
+      return null;
+    }
+    return value;
   }
-  if (item is Map<String, dynamic>) {
-    return item['image_url']?.toString() ??
-        item['imageUrl']?.toString() ??
-        item['image']?.toString();
+  if (item is Map) {
+    return _extractMapImageUrl(item);
+  }
+  return _extractObjectImageUrl(item);
+}
+
+String? _extractStickerId(dynamic item) {
+  if (item is num) {
+    return item.toString();
+  }
+  if (item is String) {
+    final value = item.trim();
+    if (value.isEmpty || !_isLikelyStickerId(value)) {
+      return null;
+    }
+    return value;
+  }
+  if (item is Map) {
+    final id =
+        item['sticker_id'] ??
+        item['stickerId'] ??
+        item['schema_id'] ??
+        item['schemaId'] ??
+        item['id'];
+    final value = id?.toString().trim();
+    if (value == null || value.isEmpty) {
+      return null;
+    }
+    return value;
   }
   return null;
+}
+
+String? _resolveStickerImageFromMap(
+  String stickerId,
+  Map<dynamic, dynamic>? map,
+) {
+  if (map == null || map.isEmpty) {
+    return null;
+  }
+  dynamic value;
+  if (map.containsKey(stickerId)) {
+    value = map[stickerId];
+  }
+  if (value == null) {
+    final intKey = int.tryParse(stickerId);
+    if (intKey != null && map.containsKey(intKey)) {
+      value = map[intKey];
+    }
+  }
+  if (value == null) {
+    for (final entry in map.entries) {
+      if (entry.key.toString() == stickerId) {
+        value = entry.value;
+        break;
+      }
+    }
+  }
+  if (value == null) {
+    return null;
+  }
+  return _extractStickerImageUrl(value);
+}
+
+String? _extractMapImageUrl(Map item) {
+  return item['image_url']?.toString() ??
+      item['imageUrl']?.toString() ??
+      item['image']?.toString();
+}
+
+String? _extractObjectImageUrl(dynamic item) {
+  if (item is MarketSchemaInfo) {
+    return item.imageUrl;
+  }
+  try {
+    final dynamic dynamicValue = item;
+    final url =
+        dynamicValue.imageUrl ?? dynamicValue.image_url ?? dynamicValue.image;
+    return url?.toString();
+  } catch (_) {
+    return null;
+  }
+}
+
+bool _isLikelyStickerId(String value) {
+  if (value.isEmpty) {
+    return false;
+  }
+  final pattern = RegExp(r'^\d+$');
+  return pattern.hasMatch(value);
 }
 
 String _normalizeStickerUrl(String url) {

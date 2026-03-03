@@ -24,6 +24,7 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
   MarketSchemaInfo? _schema;
   MarketUserInfo? _user;
   Map<String, MarketSchemaInfo> _schemas = {};
+  Map<String, dynamic> _stickers = {};
 
   @override
   void initState() {
@@ -33,6 +34,7 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
     _schema = _parseSchema(args['schema']);
     _user = _parseUser(args['user']);
     _schemas = _parseSchemas(args['schemas']);
+    _stickers = _parseStickerMap(args['stickers']);
   }
 
   MarketListItem _parseItem(dynamic raw) {
@@ -72,9 +74,21 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
         if (value is MarketSchemaInfo) {
           map[key.toString()] = value;
         } else if (value is Map) {
-          map[key.toString()] =
-              MarketSchemaInfo.fromJson(Map<String, dynamic>.from(value));
+          map[key.toString()] = MarketSchemaInfo.fromJson(
+            Map<String, dynamic>.from(value),
+          );
         }
+      });
+      return map;
+    }
+    return {};
+  }
+
+  Map<String, dynamic> _parseStickerMap(dynamic raw) {
+    if (raw is Map) {
+      final map = <String, dynamic>{};
+      raw.forEach((key, value) {
+        map[key.toString()] = value;
       });
       return map;
     }
@@ -127,7 +141,11 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
   }
 
   List<GameItemSticker> _parseKeychains(dynamic raw) {
-    final fromRaw = parseStickerList(raw);
+    final fromRaw = parseStickerList(
+      raw,
+      schemaMap: _schemas,
+      stickerMap: _stickers,
+    );
     if (fromRaw.isNotEmpty) {
       return fromRaw;
     }
@@ -137,15 +155,15 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
     final list = <GameItemSticker>[];
     for (final entry in raw) {
       if (entry is Map) {
-        final image = entry['image_url']?.toString() ??
+        final image =
+            entry['image_url']?.toString() ??
             entry['imageUrl']?.toString() ??
             entry['image']?.toString();
         if (image != null && image.isNotEmpty) {
           list.add(GameItemSticker(image));
           continue;
         }
-        final schemaId =
-            entry['schema_id'] ?? entry['schemaId'] ?? entry['id'];
+        final schemaId = entry['schema_id'] ?? entry['schemaId'] ?? entry['id'];
         if (schemaId != null) {
           final schema = _schemas[schemaId.toString()];
           final url = schema?.imageUrl;
@@ -167,20 +185,14 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
   Future<void> _purchase() async {
     final user = UserStorage.getUserInfo();
     if (user == null) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.system.message.nologin'.tr,
-      );
+      Get.snackbar('app.system.tips.title'.tr, 'app.system.message.nologin'.tr);
       return;
     }
     final id = _item.id?.toString();
     final price = _item.price;
     final appId = _item.appId ?? _schema?.appId ?? 730;
     if (id == null || price == null) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.trade.filter.failed'.tr,
-      );
+      Get.snackbar('app.system.tips.title'.tr, 'app.trade.filter.failed'.tr);
       return;
     }
     try {
@@ -236,10 +248,7 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
         );
       }
     } catch (_) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.trade.filter.failed'.tr,
-      );
+      Get.snackbar('app.system.tips.title'.tr, 'app.trade.filter.failed'.tr);
     }
   }
 
@@ -279,11 +288,13 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
     final currency = Get.find<CurrencyController>();
     final appId = _item.appId ?? _schema?.appId ?? 730;
     final asset = _resolveAsset();
-    final imageUrl = _schema?.imageUrl ??
+    final imageUrl =
+        _schema?.imageUrl ??
         _extractText(asset, ['image_url', 'imageUrl']) ??
         _item.raw['image_url']?.toString() ??
         '';
-    final title = _schema?.marketName ??
+    final title =
+        _schema?.marketName ??
         _item.raw['market_name']?.toString() ??
         _item.marketHashName ??
         '-';
@@ -296,27 +307,32 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
     final slot = TagInfo.fromMarketTag(tags?.slot);
     final itemSet = TagInfo.fromMarketTag(tags?.itemSet);
 
-    final paintSeed =
-        _extractText(asset, ['paint_seed', 'paintSeed']);
+    final paintSeed = _extractText(asset, ['paint_seed', 'paintSeed']);
     final percentage = _extractText(asset, ['percentage']);
-    final paintIndex =
-        _extractText(asset, ['paint_index', 'paintIndex']);
+    final paintIndex = _extractText(asset, ['paint_index', 'paintIndex']);
     final phase = _extractText(asset, ['phase']);
     final tier = _extractText(asset, ['tier']);
     final fireIce = _extractText(asset, ['fire_ice', 'fireIce']);
-    final paintWearValue =
-        _extractDouble(asset, ['paint_wear', 'paintWear']);
+    final paintWearValue = _extractDouble(asset, ['paint_wear', 'paintWear']);
+    final paintWearText =
+        _extractText(asset, ['paint_wear', 'paintWear']) ??
+        _extractText(_item.raw, ['paint_wear', 'paintWear']) ??
+        paintWearValue?.toString();
 
-    final stickers =
-        parseStickerList(asset?['stickers'] ?? _item.raw['stickers']);
+    final stickers = parseStickerList(
+      asset?['stickers'] ?? _item.raw['stickers'],
+      schemaMap: _schemas,
+      stickerMap: _stickers,
+    );
     final gems = parseGemList(
       asset?['gemList'] ??
           asset?['gems'] ??
           _item.raw['gemList'] ??
           _item.raw['gems'],
     );
-    final keychains =
-        _parseKeychains(asset?['keychains'] ?? _item.raw['keychains']);
+    final keychains = _parseKeychains(
+      asset?['keychains'] ?? _item.raw['keychains'],
+    );
 
     final tagChips = <TagInfo>[];
     if (appId == 570) {
@@ -330,9 +346,7 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-      ),
+      appBar: AppBar(title: Text(title)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -347,9 +361,7 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
               paintSeed: paintSeed,
               phase: phase,
               percentage: percentage,
-              paintWearText: paintWearValue == null
-                  ? null
-                  : paintWearValue.toStringAsFixed(2),
+              paintWearText: paintWearText,
               stickers: stickers,
               gems: gems,
             ),
@@ -359,8 +371,7 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
             Wrap(
               spacing: 8,
               runSpacing: 6,
-              children:
-                  tagChips.map(_buildTagChip).toList(growable: false),
+              children: tagChips.map(_buildTagChip).toList(growable: false),
             ),
           if (appId == 570 && hero?.label?.isNotEmpty == true) ...[
             const SizedBox(height: 8),
@@ -393,11 +404,10 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ],
-            if (paintWearValue != null) ...[
+            if (paintWearValue != null && paintWearText != null) ...[
               const SizedBox(height: 10),
               Text(
-                '${'app.market.csgo.abradability'.tr}: '
-                '${paintWearValue.toStringAsFixed(2)}',
+                '${'app.market.csgo.abradability'.tr}: $paintWearText',
                 style: Theme.of(context).textTheme.bodySmall,
               ),
               const SizedBox(height: 6),
@@ -431,8 +441,7 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
             Wrap(
               spacing: 8,
               runSpacing: 6,
-              children:
-                  tagChips.map(_buildTagChip).toList(growable: false),
+              children: tagChips.map(_buildTagChip).toList(growable: false),
             ),
             if (exterior?.label?.isNotEmpty == true) ...[
               const SizedBox(height: 6),
@@ -472,9 +481,9 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
                   () => Text(
                     currency.format(_item.price ?? 0),
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: const Color(0xFFFFB800),
-                          fontWeight: FontWeight.w600,
-                        ),
+                      color: const Color(0xFFFFB800),
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),

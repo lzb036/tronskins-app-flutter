@@ -12,6 +12,8 @@ class InventoryItemCard extends StatelessWidget {
     super.key,
     required this.item,
     this.schema,
+    this.schemaMap,
+    this.stickerMap,
     this.selected = false,
     this.disabledLabel,
     this.onTap,
@@ -19,6 +21,8 @@ class InventoryItemCard extends StatelessWidget {
 
   final InventoryItem item;
   final ShopSchemaInfo? schema;
+  final Map<dynamic, dynamic>? schemaMap;
+  final Map<dynamic, dynamic>? stickerMap;
   final bool selected;
   final String? disabledLabel;
   final VoidCallback? onTap;
@@ -37,7 +41,10 @@ class InventoryItemCard extends StatelessWidget {
     final asset = _resolveAsset(item);
     final paintWearValue =
         item.paintWear ?? _extractDouble(asset, ['paint_wear', 'paintWear']);
-    final paintWearText = _formatWear(paintWearValue);
+    final paintWearText =
+        _extractText(asset, ['paint_wear', 'paintWear']) ??
+        _extractText(item.raw, ['paint_wear', 'paintWear']) ??
+        _formatWear(paintWearValue);
     final paintSeed =
         item.paintSeed ?? _extractText(asset, ['paint_seed', 'paintSeed']);
     final phase = item.phase ?? _extractText(asset, ['phase']);
@@ -46,6 +53,8 @@ class InventoryItemCard extends StatelessWidget {
     final showOnSaleBadge = item.status == 1 || item.status == 2;
     final stickers = parseStickerList(
       asset?['stickers'] ?? item.raw['stickers'],
+      schemaMap: schemaMap,
+      stickerMap: stickerMap,
     );
     final gems = parseGemList(
       asset?['gemList'] ??
@@ -153,7 +162,7 @@ String? _formatWear(double? wear) {
   if (wear == null) {
     return null;
   }
-  return wear.toStringAsFixed(4);
+  return wear.toString();
 }
 
 const double _minDisplayPrice = 0.02;

@@ -135,9 +135,11 @@ class ShopOrderDetail {
     return ShopOrderDetail(
       raw: json,
       schemaId: _asInt(json['schema_id'] ?? json['schemaId']),
-      marketName: json['market_name']?.toString() ?? json['marketName']?.toString(),
+      marketName:
+          json['market_name']?.toString() ?? json['marketName']?.toString(),
       marketHashName:
-          json['market_hash_name']?.toString() ?? json['marketHashName']?.toString(),
+          json['market_hash_name']?.toString() ??
+          json['marketHashName']?.toString(),
       imageUrl: json['image_url']?.toString() ?? json['imageUrl']?.toString(),
       price: _asDouble(json['price']),
       totalPrice: _asDouble(json['total_price']),
@@ -188,9 +190,9 @@ class ShopOrderItem {
   factory ShopOrderItem.fromJson(Map<String, dynamic> json) {
     final details = json['details'] is List
         ? (json['details'] as List)
-            .whereType<Map<String, dynamic>>()
-            .map(ShopOrderDetail.fromJson)
-            .toList()
+              .whereType<Map<String, dynamic>>()
+              .map(ShopOrderDetail.fromJson)
+              .toList()
         : <ShopOrderDetail>[];
     return ShopOrderItem(
       raw: json,
@@ -205,7 +207,8 @@ class ShopOrderItem {
       nums: _asInt(json['nums'] ?? json['count']),
       protectionTime: _asInt(json['protection_time']),
       type: _asInt(json['type']),
-      tradeOfferId: json['trade_offer_id']?.toString() ??
+      tradeOfferId:
+          json['trade_offer_id']?.toString() ??
           json['tradeOfferId']?.toString(),
       cancelDesc: json['cancel_desc']?.toString(),
       buyerId: json['buyer']?.toString() ?? json['buyer_id']?.toString(),
@@ -307,6 +310,7 @@ class ShopListResponse<T> {
   final List<T> items;
   final Map<String, ShopUserInfo> users;
   final Map<String, ShopSchemaInfo> schemas;
+  final Map<String, dynamic> stickers;
   final ShopPager? pager;
   final int? total;
   final double? totalPrice;
@@ -315,6 +319,7 @@ class ShopListResponse<T> {
     required this.items,
     required this.users,
     required this.schemas,
+    required this.stickers,
     this.pager,
     this.total,
     this.totalPrice,
@@ -327,10 +332,7 @@ class ShopListResponse<T> {
   }) {
     final rawList = json[listKey];
     final items = rawList is List
-        ? rawList
-            .whereType<Map<String, dynamic>>()
-            .map(mapper)
-            .toList()
+        ? rawList.whereType<Map<String, dynamic>>().map(mapper).toList()
         : <T>[];
 
     final rawUsers = json['users'];
@@ -353,6 +355,14 @@ class ShopListResponse<T> {
       });
     }
 
+    final rawStickers = json['stickers'];
+    final stickers = <String, dynamic>{};
+    if (rawStickers is Map) {
+      rawStickers.forEach((key, value) {
+        stickers[key.toString()] = value;
+      });
+    }
+
     final pager = json['pager'] is Map<String, dynamic>
         ? ShopPager.fromJson(json['pager'] as Map<String, dynamic>)
         : null;
@@ -361,6 +371,7 @@ class ShopListResponse<T> {
       items: items,
       users: users,
       schemas: schemas,
+      stickers: stickers,
       pager: pager,
       total: _asInt(json['total']) ?? pager?.total,
       totalPrice: _asDouble(json['totalPrice'] ?? json['total_price']),
@@ -419,7 +430,8 @@ class InventoryItem {
       coolingDown: _asBool(json['cd'] ?? json['cooling']),
       cooldown: json['cd']?.toString(),
       paintWear: _asDouble(json['paint_wear'] ?? json['paintWear']),
-      paintSeed: json['paint_seed']?.toString() ?? json['paintSeed']?.toString(),
+      paintSeed:
+          json['paint_seed']?.toString() ?? json['paintSeed']?.toString(),
       phase: json['phase']?.toString(),
       status: _asInt(json['status']),
       count: _asInt(json['count']) ?? 1,
@@ -430,6 +442,7 @@ class InventoryItem {
 class InventoryResponse {
   final List<InventoryItem> items;
   final Map<String, ShopSchemaInfo> schemas;
+  final Map<String, dynamic> stickers;
   final ShopPager? pager;
   final int? total;
   final double? totalPrice;
@@ -437,6 +450,7 @@ class InventoryResponse {
   const InventoryResponse({
     required this.items,
     required this.schemas,
+    required this.stickers,
     this.pager,
     this.total,
     this.totalPrice,
@@ -446,9 +460,9 @@ class InventoryResponse {
     final rawItems = json['assets'] ?? json['list'] ?? json['items'];
     final items = rawItems is List
         ? rawItems
-            .whereType<Map<String, dynamic>>()
-            .map(InventoryItem.fromJson)
-            .toList()
+              .whereType<Map<String, dynamic>>()
+              .map(InventoryItem.fromJson)
+              .toList()
         : <InventoryItem>[];
 
     final rawSchemas = json['schemas'];
@@ -461,6 +475,14 @@ class InventoryResponse {
       });
     }
 
+    final rawStickers = json['stickers'];
+    final stickers = <String, dynamic>{};
+    if (rawStickers is Map) {
+      rawStickers.forEach((key, value) {
+        stickers[key.toString()] = value;
+      });
+    }
+
     final pager = json['pager'] is Map<String, dynamic>
         ? ShopPager.fromJson(json['pager'] as Map<String, dynamic>)
         : null;
@@ -468,6 +490,7 @@ class InventoryResponse {
     return InventoryResponse(
       items: items,
       schemas: schemas,
+      stickers: stickers,
       pager: pager,
       total: _asInt(json['total']),
       totalPrice: _asDouble(json['total_price']),

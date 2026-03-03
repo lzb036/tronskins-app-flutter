@@ -9,6 +9,7 @@ class ShopSalesController extends GetxController {
   final RxList<ShopItemAsset> onSaleItems = <ShopItemAsset>[].obs;
   final RxList<ShopOrderItem> sellRecords = <ShopOrderItem>[].obs;
   final RxMap<String, ShopSchemaInfo> schemas = <String, ShopSchemaInfo>{}.obs;
+  final RxMap<String, dynamic> stickers = <String, dynamic>{}.obs;
   final RxMap<String, ShopUserInfo> users = <String, ShopUserInfo>{}.obs;
   final RxInt totalOnSale = 0.obs;
   final RxDouble totalOnSalePrice = 0.0.obs;
@@ -79,6 +80,7 @@ class ShopSalesController extends GetxController {
       totalOnSale.value = data?.total ?? totalOnSale.value;
       totalOnSalePrice.value = data?.totalPrice ?? totalOnSalePrice.value;
       schemas.addAll(data?.schemas ?? const {});
+      stickers.addAll(data?.stickers ?? const {});
       users.addAll(data?.users ?? const {});
     } finally {
       isLoadingOnSale.value = false;
@@ -154,8 +156,9 @@ class ShopSalesController extends GetxController {
           'pageSize': 20,
           'field': recordSortField.value,
           'asc': recordSortAsc.value,
-          'keywords':
-              recordKeywords.value.isEmpty ? null : recordKeywords.value,
+          'keywords': recordKeywords.value.isEmpty
+              ? null
+              : recordKeywords.value,
           'statusList': statusList,
           'startTime': startTime,
           'endTime': endTime,
@@ -169,6 +172,7 @@ class ShopSalesController extends GetxController {
         _recordPage += 1;
       }
       schemas.addAll(data?.schemas ?? const {});
+      stickers.addAll(data?.stickers ?? const {});
       users.addAll(data?.users ?? const {});
     } finally {
       isLoadingRecords.value = false;

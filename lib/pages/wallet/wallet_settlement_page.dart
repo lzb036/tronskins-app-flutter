@@ -65,6 +65,14 @@ class _WalletSettlementPageState extends State<WalletSettlementPage> {
     return null;
   }
 
+  String? _paintWearText(WalletSettlementDetail detail) {
+    final value = detail.raw['paint_wear'] ?? detail.raw['paintWear'];
+    if (value != null) {
+      return value.toString();
+    }
+    return detail.paintWear?.toString();
+  }
+
   void _openSettlementDetail(WalletSettlementRecord record) {
     Get.to(
       () => WalletSettlementDetailPage(
@@ -175,6 +183,7 @@ class _WalletSettlementPageState extends State<WalletSettlementPage> {
     if (details.length <= 1) {
       final detail = details.isNotEmpty ? details.first : null;
       final schema = detail == null ? null : _findSchema(detail);
+      final wearText = detail == null ? null : _paintWearText(detail);
       final imageUrl = schema?.imageUrl ?? detail?.imageUrl ?? '';
       final name =
           schema?.marketName ?? detail?.marketName ?? detail?.marketHashName;
@@ -187,12 +196,11 @@ class _WalletSettlementPageState extends State<WalletSettlementPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(name ?? '-', maxLines: 2, overflow: TextOverflow.ellipsis),
-                if (detail?.paintWear != null)
+                if (wearText != null)
                   Padding(
                     padding: const EdgeInsets.only(top: 4),
                     child: Text(
-                      '${'app.market.csgo.abradability'.tr}: '
-                      '${detail?.paintWear?.toStringAsFixed(2)}',
+                      '${'app.market.csgo.abradability'.tr}: $wearText',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ),

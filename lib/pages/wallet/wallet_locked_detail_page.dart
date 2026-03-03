@@ -126,6 +126,17 @@ class _WalletLockedDetailPageState extends State<WalletLockedDetailPage> {
     return userId == sellerId;
   }
 
+  String? _schemaPaintWearText(WalletSchemaInfo? schema) {
+    final raw = schema?.raw;
+    if (raw != null) {
+      final value = raw['paint_wear'] ?? raw['paintWear'];
+      if (value != null) {
+        return value.toString();
+      }
+    }
+    return schema?.paintWear?.toString();
+  }
+
   Future<void> _openDeliverDrawer(WalletLockedOrder order) async {
     final buyerId = order.buyerId?.trim() ?? '';
     if (buyerId.isEmpty) {
@@ -425,6 +436,7 @@ class _WalletLockedDetailPageState extends State<WalletLockedDetailPage> {
     final name = schema?.marketName ?? schema?.marketHashName ?? '-';
     final sellMin = schema?.sellMin;
     final buyMax = schema?.buyMax;
+    final paintWearText = _schemaPaintWearText(schema);
     return Card(
       elevation: 0,
       shape: WalletUi.cardShape(context),
@@ -445,12 +457,11 @@ class _WalletLockedDetailPageState extends State<WalletLockedDetailPage> {
                 '${'app.market.detail.purchase_highest'.tr} '
                 '${currency.formatUsd(buyMax)}',
               ),
-            if (schema?.paintWear != null)
+            if (paintWearText != null)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(
-                  '${'app.market.csgo.abradability'.tr}: '
-                  '${schema?.paintWear?.toStringAsFixed(2)}',
+                  '${'app.market.csgo.abradability'.tr}: $paintWearText',
                 ),
               ),
           ],

@@ -5,9 +5,8 @@ import 'package:tronskins_app/api/model/shop/shop_models.dart';
 import 'package:tronskins_app/common/storage/user_storage.dart';
 
 class MarketDetailController extends GetxController {
-  MarketDetailController({
-    ApiMarketServer? api,
-  }) : _api = api ?? ApiMarketServer();
+  MarketDetailController({ApiMarketServer? api})
+    : _api = api ?? ApiMarketServer();
 
   final ApiMarketServer _api;
 
@@ -17,7 +16,9 @@ class MarketDetailController extends GetxController {
   final RxList<MarketListItem> transactionItems = <MarketListItem>[].obs;
   final RxList<MarketPricePoint> pricePoints = <MarketPricePoint>[].obs;
   final RxMap<String, MarketUserInfo> users = <String, MarketUserInfo>{}.obs;
-  final RxMap<String, MarketSchemaInfo> schemas = <String, MarketSchemaInfo>{}.obs;
+  final RxMap<String, MarketSchemaInfo> schemas =
+      <String, MarketSchemaInfo>{}.obs;
+  final RxMap<String, dynamic> stickers = <String, dynamic>{}.obs;
   final RxList<BuyRequestItem> buyRequests = <BuyRequestItem>[].obs;
   final RxMap<String, ShopUserInfo> buyUsers = <String, ShopUserInfo>{}.obs;
   final RxMap<String, ShopSchemaInfo> buySchemas =
@@ -58,6 +59,7 @@ class MarketDetailController extends GetxController {
   }
 
   Future<void> refreshAll() async {
+    stickers.clear();
     await Future.wait([
       loadTrend(reset: true),
       loadOnSale(reset: true),
@@ -119,6 +121,7 @@ class MarketDetailController extends GetxController {
       }
       users.addAll(data?.users ?? const {});
       schemas.addAll(data?.schemas ?? const {});
+      stickers.addAll(data?.stickers ?? const {});
     } finally {
       isLoadingOnSale.value = false;
     }
@@ -153,6 +156,7 @@ class MarketDetailController extends GetxController {
       }
       users.addAll(data?.users ?? const {});
       schemas.addAll(data?.schemas ?? const {});
+      stickers.addAll(data?.stickers ?? const {});
     } finally {
       isLoadingTransactions.value = false;
     }

@@ -35,12 +35,12 @@ class _ShopPageState extends State<ShopPage>
       : Get.put(ShopController());
   final ShopSalesController salesController =
       Get.isRegistered<ShopSalesController>()
-          ? Get.find<ShopSalesController>()
-          : Get.put(ShopSalesController());
+      ? Get.find<ShopSalesController>()
+      : Get.put(ShopSalesController());
   final ShopOrderController orderController =
       Get.isRegistered<ShopOrderController>()
-          ? Get.find<ShopOrderController>()
-          : Get.put(ShopOrderController());
+      ? Get.find<ShopOrderController>()
+      : Get.put(ShopOrderController());
   final UserController userController = Get.find<UserController>();
 
   late final TabController _tabController;
@@ -49,7 +49,8 @@ class _ShopPageState extends State<ShopPage>
   final ScrollController _pendingScroll = ScrollController();
   final ScrollController _recordScroll = ScrollController();
   final TextEditingController _searchController = TextEditingController();
-  final TextEditingController _pendingSearchController = TextEditingController();
+  final TextEditingController _pendingSearchController =
+      TextEditingController();
   final TextEditingController _recordSearchController = TextEditingController();
   final Set<int> _selectedIds = <int>{};
   Worker? _loginWorker;
@@ -380,7 +381,6 @@ class _ShopPageState extends State<ShopPage>
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     final currency = Get.find<CurrencyController>();
@@ -408,19 +408,17 @@ class _ShopPageState extends State<ShopPage>
                   children: [
                     Padding(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 4, vertical: 8),
+                        horizontal: 4,
+                        vertical: 8,
+                      ),
                       child: Row(
                         children: [
                           const SizedBox(width: 16),
                           Expanded(
                             child: Text(
                               'app.user.menu.shop'.tr,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleLarge
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(fontWeight: FontWeight.bold),
                             ),
                           ),
                           IconButton(
@@ -475,8 +473,9 @@ class _ShopPageState extends State<ShopPage>
                         isScrollable: true,
                         tabAlignment: TabAlignment.center,
                         indicatorSize: TabBarIndicatorSize.label,
-                        labelPadding:
-                            const EdgeInsets.symmetric(horizontal: 12),
+                        labelPadding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                        ),
                         dividerColor: Colors.transparent,
                         tabs: [
                           Tab(text: 'app.trade.onSale.text'.tr),
@@ -578,8 +577,9 @@ class _ShopPageState extends State<ShopPage>
     String filterTooltipKey = 'app.market.filter.text',
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final fillColor =
-        isDark ? Colors.white.withOpacity(0.08) : const Color(0xFFF5F5F5);
+    final fillColor = isDark
+        ? Colors.white.withOpacity(0.08)
+        : const Color(0xFFF5F5F5);
     final hintColor = isDark ? Colors.white38 : Colors.grey[400];
 
     return Padding(
@@ -690,7 +690,8 @@ class _ShopPageState extends State<ShopPage>
           child: Obx(() {
             final hasItems = salesController.onSaleItems.isNotEmpty;
             final isAllSelected =
-                hasItems && _selectedIds.length == salesController.onSaleItems.length;
+                hasItems &&
+                _selectedIds.length == salesController.onSaleItems.length;
             return Card(
               child: Padding(
                 padding: const EdgeInsets.all(12),
@@ -754,6 +755,8 @@ class _ShopPageState extends State<ShopPage>
                   return ShopSaleItemCard(
                     item: item,
                     schema: schema,
+                    schemaMap: salesController.schemas,
+                    stickerMap: salesController.stickers,
                     selected: selected,
                     onTap: () => _toggleSelection(item),
                   );
@@ -824,7 +827,8 @@ class _ShopPageState extends State<ShopPage>
                               final appId = _resolveDetailAppId(detail, schema);
                               final imageUrl =
                                   detail.imageUrl ?? schema?.imageUrl ?? '';
-                              final title = detail.marketName ??
+                              final title =
+                                  detail.marketName ??
                                   schema?.marketName ??
                                   detail.marketHashName ??
                                   '-';
@@ -857,9 +861,9 @@ class _ShopPageState extends State<ShopPage>
                                     if (count > 1)
                                       Text(
                                         'x$count',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodySmall,
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.bodySmall,
                                       ),
                                   ],
                                 ),
@@ -875,13 +879,11 @@ class _ShopPageState extends State<ShopPage>
                               Obx(
                                 () => Text(
                                   currency.format(totalPrice),
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleSmall
+                                  style: Theme.of(context).textTheme.titleSmall
                                       ?.copyWith(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .primary,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary,
                                         fontWeight: FontWeight.w600,
                                       ),
                                 ),
@@ -895,8 +897,9 @@ class _ShopPageState extends State<ShopPage>
                                 Expanded(
                                   child: Text(
                                     order.user?.nickname ?? '',
-                                    style:
-                                        Theme.of(context).textTheme.bodySmall,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodySmall,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
@@ -945,8 +948,9 @@ class _ShopPageState extends State<ShopPage>
                 separatorBuilder: (_, __) => const SizedBox(height: 12),
                 itemBuilder: (context, index) {
                   final record = salesController.sellRecords[index];
-                  final primary =
-                      record.details.isNotEmpty ? record.details.first : null;
+                  final primary = record.details.isNotEmpty
+                      ? record.details.first
+                      : null;
                   final schema = primary == null
                       ? null
                       : _lookupSchema(
@@ -955,16 +959,24 @@ class _ShopPageState extends State<ShopPage>
                           primary.schemaId,
                         );
                   final imageUrl = primary?.imageUrl ?? schema?.imageUrl ?? '';
-                  final title = primary?.marketName ?? schema?.marketName ?? '-';
+                  final title =
+                      primary?.marketName ?? schema?.marketName ?? '-';
                   final totalPrice = _sumOrderPrice(record);
-                  final wearValue = primary?.paintWear ??
+                  final wearValue =
+                      primary?.paintWear ??
                       (primary == null
                           ? null
-                          : _detailDouble(primary, ['paint_wear', 'paintWear']));
-                  final wearText =
-                      wearValue != null ? wearValue.toStringAsFixed(4) : null;
-                  final extraCount =
-                      record.details.length > 1 ? record.details.length - 1 : 0;
+                          : _detailDouble(primary, [
+                              'paint_wear',
+                              'paintWear',
+                            ]));
+                  final wearText = primary == null
+                      ? null
+                      : _detailText(primary, ['paint_wear', 'paintWear']) ??
+                            wearValue?.toString();
+                  final extraCount = record.details.length > 1
+                      ? record.details.length - 1
+                      : 0;
                   final appId = primary == null
                       ? GameStorage.getGameType()
                       : _resolveDetailAppId(primary, schema);
@@ -1034,12 +1046,13 @@ class _ShopPageState extends State<ShopPage>
                                   _formatTime(record.createTime),
                                   style: Theme.of(context).textTheme.bodySmall,
                                 ),
-                                if (wearValue != null) ...[
+                                if (wearValue != null && wearText != null) ...[
                                   const SizedBox(height: 6),
                                   Text(
                                     '${'app.market.csgo.abradability'.tr}: $wearText',
-                                    style:
-                                        Theme.of(context).textTheme.bodySmall,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodySmall,
                                   ),
                                   const SizedBox(height: 4),
                                   WearProgressBar(paintWear: wearValue),
@@ -1054,13 +1067,11 @@ class _ShopPageState extends State<ShopPage>
                               Obx(
                                 () => Text(
                                   currency.format(totalPrice),
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleSmall
+                                  style: Theme.of(context).textTheme.titleSmall
                                       ?.copyWith(
-                                        color: Theme.of(context)
-                                            .colorScheme
-                                            .primary,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary,
                                         fontWeight: FontWeight.w600,
                                       ),
                                 ),
@@ -1092,10 +1103,7 @@ class _ShopPageState extends State<ShopPage>
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
           border: Border(
-            top: BorderSide(
-              color: Theme.of(context).dividerColor,
-              width: 0.5,
-            ),
+            top: BorderSide(color: Theme.of(context).dividerColor, width: 0.5),
           ),
         ),
         child: Row(
@@ -1110,9 +1118,7 @@ class _ShopPageState extends State<ShopPage>
                   ? null
                   : () async {
                       final selectedItems = salesController.onSaleItems
-                          .where(
-                            (item) => _selectedIds.contains(item.id ?? -1),
-                          )
+                          .where((item) => _selectedIds.contains(item.id ?? -1))
                           .toList();
                       if (selectedItems.isEmpty) {
                         return;
@@ -1196,10 +1202,7 @@ class _DeliverSheetState extends State<_DeliverSheet> {
       return;
     }
     if (widget.order.id == null) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.trade.filter.failed'.tr,
-      );
+      Get.snackbar('app.system.tips.title'.tr, 'app.trade.filter.failed'.tr);
       return;
     }
     setState(() => _isSubmitting = true);
@@ -1243,16 +1246,11 @@ class _DeliverSheetState extends State<_DeliverSheet> {
       } else {
         Get.snackbar(
           'app.system.tips.title'.tr,
-          res.message.isNotEmpty
-              ? res.message
-              : 'app.trade.filter.failed'.tr,
+          res.message.isNotEmpty ? res.message : 'app.trade.filter.failed'.tr,
         );
       }
     } catch (_) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.trade.filter.failed'.tr,
-      );
+      Get.snackbar('app.system.tips.title'.tr, 'app.trade.filter.failed'.tr);
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);
@@ -1328,9 +1326,11 @@ class _DeliverSheetState extends State<_DeliverSheet> {
                         width: 18,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : Text(order.status == 2
-                        ? 'app.market.product.deliver'.tr
-                        : 'app.trade.deliver.message.go_steam'.tr),
+                    : Text(
+                        order.status == 2
+                            ? 'app.market.product.deliver'.tr
+                            : 'app.trade.deliver.message.go_steam'.tr,
+                      ),
               ),
             ),
           ],

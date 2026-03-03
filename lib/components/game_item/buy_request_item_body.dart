@@ -23,7 +23,8 @@ class BuyRequestItemBody extends StatelessWidget {
   Widget build(BuildContext context) {
     final currency = Get.find<CurrencyController>();
     final appId = item.appId;
-    final title = schema?.marketName ??
+    final title =
+        schema?.marketName ??
         schema?.marketHashName ??
         item.raw['market_name']?.toString() ??
         '-';
@@ -32,8 +33,12 @@ class BuyRequestItemBody extends StatelessWidget {
     final rarity = TagInfo.fromRaw(tags is Map ? tags['rarity'] : null);
     final quality = TagInfo.fromRaw(tags is Map ? tags['quality'] : null);
     final exterior = TagInfo.fromRaw(tags is Map ? tags['exterior'] : null);
-    final wearMin = item.paintWearMin;
-    final wearMax = item.paintWearMax;
+    final wearMin =
+        _rawText(item.raw, const ['paint_wear_min', 'paintWearMin']) ??
+        item.paintWearMin?.toString();
+    final wearMax =
+        _rawText(item.raw, const ['paint_wear_max', 'paintWearMax']) ??
+        item.paintWearMax?.toString();
     final phase = item.phase;
     const imageWidth = 72.0;
     const imageHeight = imageWidth * 0.6;
@@ -67,9 +72,7 @@ class BuyRequestItemBody extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(top: 6),
                   child: Text(
-                    '${'app.market.csgo.wear'.tr}: '
-                    '${wearMin.toStringAsFixed(2)} - '
-                    '${wearMax.toStringAsFixed(2)}',
+                    '${'app.market.csgo.wear'.tr}: $wearMin - $wearMax',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ),
@@ -96,9 +99,9 @@ class BuyRequestItemBody extends StatelessWidget {
                     () => Text(
                       currency.format(item.price ?? 0),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Theme.of(context).colorScheme.primary,
-                            fontWeight: FontWeight.w600,
-                          ),
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ],
@@ -106,11 +109,18 @@ class BuyRequestItemBody extends StatelessWidget {
             ],
           ),
         ),
-        if (trailing != null) ...[
-          const SizedBox(width: 12),
-          trailing!,
-        ],
+        if (trailing != null) ...[const SizedBox(width: 12), trailing!],
       ],
     );
+  }
+
+  String? _rawText(Map<String, dynamic> raw, List<String> keys) {
+    for (final key in keys) {
+      final value = raw[key];
+      if (value != null) {
+        return value.toString();
+      }
+    }
+    return null;
   }
 }

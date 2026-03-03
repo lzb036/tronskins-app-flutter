@@ -4,12 +4,7 @@ class MarketItemTag {
   final String? color;
   final String? key;
 
-  const MarketItemTag({
-    this.name,
-    this.localizedName,
-    this.color,
-    this.key,
-  });
+  const MarketItemTag({this.name, this.localizedName, this.color, this.key});
 
   factory MarketItemTag.fromJson(Map<String, dynamic> json) {
     final define = json['define'];
@@ -107,8 +102,9 @@ class MarketItemEntity {
 
   factory MarketItemEntity.fromJson(Map<String, dynamic> json) {
     final csgoAsset = json['csgoAsset'];
-    final csgoMap =
-        csgoAsset is Map<String, dynamic> ? csgoAsset : <String, dynamic>{};
+    final csgoMap = csgoAsset is Map<String, dynamic>
+        ? csgoAsset
+        : <String, dynamic>{};
 
     dynamic pickValue(List<String> keys) {
       for (final key in keys) {
@@ -150,10 +146,7 @@ class MarketPricePoint {
   final int time;
   final double price;
 
-  const MarketPricePoint({
-    required this.time,
-    required this.price,
-  });
+  const MarketPricePoint({required this.time, required this.price});
 
   factory MarketPricePoint.fromJson(Map<String, dynamic> json) {
     return MarketPricePoint(
@@ -166,17 +159,15 @@ class MarketPricePoint {
 class MarketPriceTrendData {
   final List<MarketPricePoint> priceInfos;
 
-  const MarketPriceTrendData({
-    required this.priceInfos,
-  });
+  const MarketPriceTrendData({required this.priceInfos});
 
   factory MarketPriceTrendData.fromJson(Map<String, dynamic> json) {
     final raw = json['priceInfos'];
     final list = raw is List
         ? raw
-            .whereType<Map<String, dynamic>>()
-            .map(MarketPricePoint.fromJson)
-            .toList()
+              .whereType<Map<String, dynamic>>()
+              .map(MarketPricePoint.fromJson)
+              .toList()
         : <MarketPricePoint>[];
     return MarketPriceTrendData(priceInfos: list);
   }
@@ -207,11 +198,7 @@ class MarketUserInfo {
   final String? nickname;
   final String? uuid;
 
-  const MarketUserInfo({
-    this.avatar,
-    this.nickname,
-    this.uuid,
-  });
+  const MarketUserInfo({this.avatar, this.nickname, this.uuid});
 
   factory MarketUserInfo.fromJson(Map<String, dynamic> json) {
     return MarketUserInfo(
@@ -301,12 +288,14 @@ class MarketListResponse {
   final List<MarketListItem> items;
   final Map<String, MarketUserInfo> users;
   final Map<String, MarketSchemaInfo> schemas;
+  final Map<String, dynamic> stickers;
   final MarketPager? pager;
 
   const MarketListResponse({
     required this.items,
     required this.users,
     required this.schemas,
+    required this.stickers,
     this.pager,
   });
 
@@ -317,9 +306,9 @@ class MarketListResponse {
     final rawList = json[listKey];
     final items = rawList is List
         ? rawList
-            .whereType<Map<String, dynamic>>()
-            .map(MarketListItem.fromJson)
-            .toList()
+              .whereType<Map<String, dynamic>>()
+              .map(MarketListItem.fromJson)
+              .toList()
         : <MarketListItem>[];
 
     final rawUsers = json['users'];
@@ -342,14 +331,24 @@ class MarketListResponse {
       });
     }
 
+    final rawStickers = json['stickers'];
+    final stickers = <String, dynamic>{};
+    if (rawStickers is Map) {
+      rawStickers.forEach((key, value) {
+        stickers[key.toString()] = value;
+      });
+    }
+
     final rawPager = json['pager'];
-    final pager =
-        rawPager is Map<String, dynamic> ? MarketPager.fromJson(rawPager) : null;
+    final pager = rawPager is Map<String, dynamic>
+        ? MarketPager.fromJson(rawPager)
+        : null;
 
     return MarketListResponse(
       items: items,
       users: users,
       schemas: schemas,
+      stickers: stickers,
       pager: pager,
     );
   }
@@ -359,22 +358,20 @@ class MarketSchemaListResponse {
   final List<MarketItemEntity> items;
   final MarketPager? pager;
 
-  const MarketSchemaListResponse({
-    required this.items,
-    this.pager,
-  });
+  const MarketSchemaListResponse({required this.items, this.pager});
 
   factory MarketSchemaListResponse.fromJson(Map<String, dynamic> json) {
     final rawList = json['list'];
     final items = rawList is List
         ? rawList
-            .whereType<Map<String, dynamic>>()
-            .map(MarketItemEntity.fromJson)
-            .toList()
+              .whereType<Map<String, dynamic>>()
+              .map(MarketItemEntity.fromJson)
+              .toList()
         : <MarketItemEntity>[];
     final rawPager = json['pager'];
-    final pager =
-        rawPager is Map<String, dynamic> ? MarketPager.fromJson(rawPager) : null;
+    final pager = rawPager is Map<String, dynamic>
+        ? MarketPager.fromJson(rawPager)
+        : null;
     return MarketSchemaListResponse(items: items, pager: pager);
   }
 }
@@ -466,10 +463,7 @@ class BuyRemainInfo {
   final int? purchaseNum;
   final int? remainNum;
 
-  const BuyRemainInfo({
-    this.purchaseNum,
-    this.remainNum,
-  });
+  const BuyRemainInfo({this.purchaseNum, this.remainNum});
 
   factory BuyRemainInfo.fromJson(Map<String, dynamic> json) {
     return BuyRemainInfo(

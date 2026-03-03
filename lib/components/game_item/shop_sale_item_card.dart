@@ -12,12 +12,16 @@ class ShopSaleItemCard extends StatelessWidget {
     super.key,
     required this.item,
     this.schema,
+    this.schemaMap,
+    this.stickerMap,
     this.selected = false,
     this.onTap,
   });
 
   final ShopItemAsset item;
   final ShopSchemaInfo? schema;
+  final Map<dynamic, dynamic>? schemaMap;
+  final Map<dynamic, dynamic>? stickerMap;
   final bool selected;
   final VoidCallback? onTap;
 
@@ -27,10 +31,8 @@ class ShopSaleItemCard extends StatelessWidget {
     final appId = item.appId;
     final asset = item.asset ?? item.raw['asset'];
     final imageUrl = item.imageUrl ?? schema?.imageUrl ?? '';
-    final title = item.marketName ??
-        schema?.marketName ??
-        item.marketHashName ??
-        '-';
+    final title =
+        item.marketName ?? schema?.marketName ?? item.marketHashName ?? '-';
     final tags = schema?.raw['tags'];
     final quality = TagInfo.fromRaw(tags is Map ? tags['quality'] : null);
     final rarity = TagInfo.fromRaw(tags is Map ? tags['rarity'] : null);
@@ -41,8 +43,17 @@ class ShopSaleItemCard extends StatelessWidget {
     final phase = _extractText(asset, ['phase']);
     final percentage = _extractText(asset, ['percentage']);
     final cooldown = _extractText(asset, ['cd']);
-    final stickers = parseStickerList(_extractRaw(asset, 'stickers'));
-    final gems = parseGemList(_extractRaw(asset, 'gemList') ?? _extractRaw(asset, 'gems'));
+    final stickers = parseStickerList(
+      _extractRaw(asset, 'stickers') ?? item.raw['stickers'],
+      schemaMap: schemaMap,
+      stickerMap: stickerMap,
+    );
+    final gems = parseGemList(
+      _extractRaw(asset, 'gemList') ??
+          _extractRaw(asset, 'gems') ??
+          item.raw['gemList'] ??
+          item.raw['gems'],
+    );
     final showQualityRibbon = appId != 570 && _shouldShowQualityRibbon(quality);
 
     return Card(
@@ -82,7 +93,8 @@ class ShopSaleItemCard extends StatelessWidget {
                 ],
               ),
             ),
-            if (paintWearValue != null) WearProgressBar(paintWear: paintWearValue),
+            if (paintWearValue != null)
+              WearProgressBar(paintWear: paintWearValue),
             if (paintWearValue == null && appId == 730)
               const SizedBox(height: 8),
             Padding(
@@ -100,9 +112,9 @@ class ShopSaleItemCard extends StatelessWidget {
                 () => Text(
                   currency.format(item.price ?? 0),
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.primary,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    color: Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),

@@ -44,7 +44,8 @@ class NotifyTradeDeliverSheet extends StatefulWidget {
   });
 
   @override
-  State<NotifyTradeDeliverSheet> createState() => _NotifyTradeDeliverSheetState();
+  State<NotifyTradeDeliverSheet> createState() =>
+      _NotifyTradeDeliverSheetState();
 }
 
 class _NotifyTradeDeliverSheetState extends State<NotifyTradeDeliverSheet> {
@@ -156,6 +157,14 @@ class _NotifyTradeDeliverSheetState extends State<NotifyTradeDeliverSheet> {
     return null;
   }
 
+  String? _paintWearText(ShopOrderDetail detail) {
+    final value = detail.raw['paint_wear'] ?? detail.raw['paintWear'];
+    if (value != null) {
+      return value.toString();
+    }
+    return detail.paintWear?.toString();
+  }
+
   String _formatTime(int? timestamp) {
     if (timestamp == null) return '--';
     final date = DateTime.fromMillisecondsSinceEpoch(timestamp * 1000);
@@ -257,7 +266,8 @@ class _NotifyTradeDeliverSheetState extends State<NotifyTradeDeliverSheet> {
   @override
   Widget build(BuildContext context) {
     final buyerInfo = _buyerInfo();
-    final status = widget.status ?? (_orders.isNotEmpty ? _orders.first.status : null);
+    final status =
+        widget.status ?? (_orders.isNotEmpty ? _orders.first.status : null);
     final maxHeight = MediaQuery.of(context).size.height * 0.8;
     final currency = Get.find<CurrencyController>();
     return SafeArea(
@@ -295,9 +305,9 @@ class _NotifyTradeDeliverSheetState extends State<NotifyTradeDeliverSheet> {
                       Text(
                         'app.trade.order.seller_tips_3'.tr,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Colors.orange.shade700,
-                              fontWeight: FontWeight.w600,
-                            ),
+                          color: Colors.orange.shade700,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Row(
@@ -342,7 +352,9 @@ class _NotifyTradeDeliverSheetState extends State<NotifyTradeDeliverSheet> {
                                 ? const SizedBox(
                                     width: 16,
                                     height: 16,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
                                   )
                                 : const Icon(Icons.refresh),
                           ),
@@ -362,140 +374,151 @@ class _NotifyTradeDeliverSheetState extends State<NotifyTradeDeliverSheet> {
                 child: _loading
                     ? const Center(child: CircularProgressIndicator())
                     : _orders.isEmpty
-                        ? Center(child: Text('app.common.no_data'.tr))
-                        : ListView.separated(
-                            itemCount: _orders.length,
-                            separatorBuilder: (_, __) => const SizedBox(height: 12),
-                            itemBuilder: (context, index) {
-                              final order = _orders[index];
-                              return Card(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(12),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                    ? Center(child: Text('app.common.no_data'.tr))
+                    : ListView.separated(
+                        itemCount: _orders.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          final order = _orders[index];
+                          return Card(
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text(
-                                            '${'app.trade.order.number'.tr}: ${order.id ?? '--'}',
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodySmall,
-                                          ),
-                                          Text(
-                                            _formatTime(order.createTime),
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodySmall,
-                                          ),
-                                        ],
+                                      Text(
+                                        '${'app.trade.order.number'.tr}: ${order.id ?? '--'}',
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.bodySmall,
                                       ),
-                                      const SizedBox(height: 8),
-                                      ...order.details.map((detail) {
-                                        final schema = _lookupSchema(detail);
-                                        final imageUrl =
-                                            detail.imageUrl ?? schema?.imageUrl ?? '';
-                                        final title =
-                                            detail.marketName ?? schema?.marketName ?? '-';
-                                        final count = detail.count ?? 1;
-                                        final price = detail.price ?? 0;
-                                        return Padding(
-                                          padding: const EdgeInsets.only(top: 8),
-                                          child: Row(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              ClipRRect(
-                                                borderRadius:
-                                                    BorderRadius.circular(8),
-                                                child: CachedNetworkImage(
-                                                  imageUrl: imageUrl,
-                                                  width: 48,
-                                                  height: 48,
-                                                  fit: BoxFit.cover,
-                                                  placeholder: (context, _) =>
-                                                      const SizedBox(
+                                      Text(
+                                        _formatTime(order.createTime),
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.bodySmall,
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  ...order.details.map((detail) {
+                                    final schema = _lookupSchema(detail);
+                                    final imageUrl =
+                                        detail.imageUrl ??
+                                        schema?.imageUrl ??
+                                        '';
+                                    final title =
+                                        detail.marketName ??
+                                        schema?.marketName ??
+                                        '-';
+                                    final count = detail.count ?? 1;
+                                    final price = detail.price ?? 0;
+                                    final wearText = _paintWearText(detail);
+                                    return Padding(
+                                      padding: const EdgeInsets.only(top: 8),
+                                      child: Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          ClipRRect(
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                            child: CachedNetworkImage(
+                                              imageUrl: imageUrl,
+                                              width: 48,
+                                              height: 48,
+                                              fit: BoxFit.cover,
+                                              placeholder: (context, _) =>
+                                                  const SizedBox(
                                                     width: 48,
                                                     height: 48,
                                                     child: Center(
-                                                      child: CircularProgressIndicator(
-                                                        strokeWidth: 2,
-                                                      ),
+                                                      child:
+                                                          CircularProgressIndicator(
+                                                            strokeWidth: 2,
+                                                          ),
                                                     ),
                                                   ),
-                                                  errorWidget: (context, _, __) =>
-                                                      const Icon(Icons
-                                                          .image_not_supported_outlined),
-                                                ),
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Expanded(
-                                                child: Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(title, maxLines: 2),
-                                                    const SizedBox(height: 4),
-                                                    Text(
-                                                      '${'app.inventory.count'.tr}: $count',
-                                                      style: Theme.of(context)
-                                                          .textTheme
-                                                          .bodySmall,
-                                                    ),
-                                                    if (detail.paintWear != null)
-                                                      Text(
-                                                        '${'app.market.csgo.abradability'.tr}: ${detail.paintWear}',
-                                                        style: Theme.of(context)
-                                                            .textTheme
-                                                            .bodySmall,
-                                                      ),
-                                                  ],
-                                                ),
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Text(
-                                                currency.format(price),
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .titleSmall
-                                                    ?.copyWith(
-                                                      color: Theme.of(context)
-                                                          .colorScheme
-                                                          .primary,
-                                                      fontWeight: FontWeight.w600,
-                                                    ),
-                                              ),
-                                            ],
+                                              errorWidget: (context, _, __) =>
+                                                  const Icon(
+                                                    Icons
+                                                        .image_not_supported_outlined,
+                                                  ),
+                                            ),
                                           ),
-                                        );
-                                      }),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
+                                          const SizedBox(width: 8),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(title, maxLines: 2),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  '${'app.inventory.count'.tr}: $count',
+                                                  style: Theme.of(
+                                                    context,
+                                                  ).textTheme.bodySmall,
+                                                ),
+                                                if (wearText != null)
+                                                  Text(
+                                                    '${'app.market.csgo.abradability'.tr}: $wearText',
+                                                    style: Theme.of(
+                                                      context,
+                                                    ).textTheme.bodySmall,
+                                                  ),
+                                              ],
+                                            ),
+                                          ),
+                                          const SizedBox(width: 8),
+                                          Text(
+                                            currency.format(price),
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .titleSmall
+                                                ?.copyWith(
+                                                  color: Theme.of(
+                                                    context,
+                                                  ).colorScheme.primary,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
               ),
               const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(
-                onPressed: status == 2 && !_submitting
-                    ? _submit
-                    : status == 3
-                        ? () => Navigator.of(context).pop()
-                        : null,
+                  onPressed: status == 2 && !_submitting
+                      ? _submit
+                      : status == 3
+                      ? () => Navigator.of(context).pop()
+                      : null,
                   child: _submitting
                       ? const SizedBox(
                           height: 18,
                           width: 18,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : Text(status == 2
-                          ? 'app.market.product.deliver'.tr
-                          : 'app.trade.deliver.message.go_steam'.tr),
+                      : Text(
+                          status == 2
+                              ? 'app.market.product.deliver'.tr
+                              : 'app.trade.deliver.message.go_steam'.tr,
+                        ),
                 ),
               ),
             ],

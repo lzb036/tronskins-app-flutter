@@ -383,6 +383,8 @@ class _InventoryPageState extends State<InventoryPage> {
                                   return InventoryItemCard(
                                     item: item,
                                     schema: schema,
+                                    schemaMap: controller.schemas,
+                                    stickerMap: controller.stickers,
                                     selected: selected,
                                     disabledLabel: disabled
                                         ? disabledLabel

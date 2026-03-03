@@ -28,6 +28,14 @@ class WalletSettlementDetailPage extends StatelessWidget {
     return null;
   }
 
+  String? _paintWearText(WalletSettlementDetail detail) {
+    final value = detail.raw['paint_wear'] ?? detail.raw['paintWear'];
+    if (value != null) {
+      return value.toString();
+    }
+    return detail.paintWear?.toString();
+  }
+
   Widget _buildItemImage(String url) {
     if (url.isEmpty) {
       return Container(
@@ -106,6 +114,7 @@ class WalletSettlementDetailPage extends StatelessWidget {
                 detail.marketHashName;
             final image = detail.imageUrl ?? schema?.imageUrl ?? '';
             final linePrice = detail.price ?? 0;
+            final wearText = _paintWearText(detail);
             return Card(
               margin: const EdgeInsets.only(bottom: 10),
               elevation: 0,
@@ -121,11 +130,11 @@ class WalletSettlementDetailPage extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(name ?? '-', maxLines: 2),
-                          if (detail.paintWear != null)
+                          if (wearText != null)
                             Padding(
                               padding: const EdgeInsets.only(top: 6),
                               child: Text(
-                                '${'app.market.csgo.abradability'.tr}: ${detail.paintWear!.toStringAsFixed(2)}',
+                                '${'app.market.csgo.abradability'.tr}: $wearText',
                                 style: Theme.of(context).textTheme.bodySmall,
                               ),
                             ),

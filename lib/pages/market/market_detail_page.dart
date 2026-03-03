@@ -118,10 +118,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
   Future<void> _openBuying() async {
     final user = UserStorage.getUserInfo();
     if (user == null) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.system.message.nologin'.tr,
-      );
+      Get.snackbar('app.system.tips.title'.tr, 'app.system.message.nologin'.tr);
       return;
     }
     final uuid = user.uuid ?? user.shop?.uuid;
@@ -272,12 +269,15 @@ class _MarketDetailPageState extends State<MarketDetailPage>
     final displayTags = templateSchema?.tags ?? item.tags;
     final displayName = templateSchema?.marketName ?? item.marketName ?? '';
     final displayImage = templateSchema?.imageUrl ?? item.imageUrl ?? '';
-    final referencePrice = templateSchema?.referencePrice ?? item.marketPrice ?? 0;
+    final referencePrice =
+        templateSchema?.referencePrice ?? item.marketPrice ?? 0;
     final sellNum = templateSchema?.sellNum;
     final buyNum = templateSchema?.buyNum;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF1B1C20) : const Color(0xFFF5F5F5),
+      backgroundColor: isDark
+          ? const Color(0xFF1B1C20)
+          : const Color(0xFFF5F5F5),
       body: Stack(
         children: [
           NestedScrollView(
@@ -286,7 +286,9 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                 SliverAppBar(
                   expandedHeight: 320,
                   pinned: true,
-                  backgroundColor: isDark ? const Color(0xFF1B1C20) : Colors.white,
+                  backgroundColor: isDark
+                      ? const Color(0xFF1B1C20)
+                      : Colors.white,
                   elevation: 0,
                   titleSpacing: 0,
                   title: ShaderMask(
@@ -375,14 +377,12 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                             Obx(
                               () => Text(
                                 currency.format(referencePrice),
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
+                                style: Theme.of(context).textTheme.bodySmall
                                     ?.copyWith(
                                       fontWeight: FontWeight.w600,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .primary,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
                                     ),
                               ),
                             ),
@@ -391,22 +391,27 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                         const SizedBox(height: 8),
                         if (displayTags?.rarity?.localizedName != null)
                           Container(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
                             decoration: BoxDecoration(
-                              color: _getRarityColor(displayTags?.rarity?.color)
-                                  .withOpacity(0.2),
+                              color: _getRarityColor(
+                                displayTags?.rarity?.color,
+                              ).withOpacity(0.2),
                               borderRadius: BorderRadius.circular(4),
                               border: Border.all(
-                                color: _getRarityColor(displayTags?.rarity?.color)
-                                    .withOpacity(0.5),
+                                color: _getRarityColor(
+                                  displayTags?.rarity?.color,
+                                ).withOpacity(0.5),
                               ),
                             ),
                             child: Text(
                               displayTags?.rarity?.localizedName ?? '',
                               style: TextStyle(
-                                color:
-                                    _getRarityColor(displayTags?.rarity?.color),
+                                color: _getRarityColor(
+                                  displayTags?.rarity?.color,
+                                ),
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -428,14 +433,16 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                                   children: [
                                     Text(
                                       '${sellNum ?? 0}${'app.market.unit_qty'.tr}',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleSmall,
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.titleSmall,
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
                                       'app.trade.onSale.text'.tr,
-                                      style: Theme.of(context).textTheme.bodySmall,
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall,
                                     ),
                                   ],
                                 ),
@@ -446,14 +453,16 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                                   children: [
                                     Text(
                                       '${buyNum ?? 0}${'app.market.unit_qty'.tr}',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleSmall,
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.titleSmall,
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
                                       'app.trade.purchase.text'.tr,
-                                      style: Theme.of(context).textTheme.bodySmall,
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall,
                                     ),
                                   ],
                                 ),
@@ -481,7 +490,9 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                         Tab(text: 'app.market.detail.trade_record'.tr),
                       ],
                     ),
-                    backgroundColor: isDark ? const Color(0xFF1B1C20) : Colors.white,
+                    backgroundColor: isDark
+                        ? const Color(0xFF1B1C20)
+                        : Colors.white,
                   ),
                   pinned: true,
                 ),
@@ -524,14 +535,16 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Obx(() => Text(
-                          currency.format(referencePrice),
-                          style: const TextStyle(
-                            color: Color(0xFFFFB800), // Gold color
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
+                        Obx(
+                          () => Text(
+                            currency.format(referencePrice),
+                            style: const TextStyle(
+                              color: Color(0xFFFFB800), // Gold color
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        )),
+                        ),
                         Text(
                           'app.market.price_reference'.tr,
                           style: TextStyle(
@@ -545,10 +558,10 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                     // Action Buttons
                     // Currently we default to "Buy" / "Release Purchase" as this is likely the aggregation page
                     // But mimicking the requested UI structure:
-                    
+
                     // If Own Item (Mock logic):
                     // Expanded(child: Row(children: [Expanded(child: Button('下架')), SizedBox(width:8), Expanded(child: Button('改价'))]))
-                    
+
                     // Default (Others):
                     SizedBox(
                       height: 44,
@@ -564,7 +577,8 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                           elevation: 0,
                         ),
                         child: Text(
-                          'app.market.detail.release_purchase'.tr, // "购买" or "发布求购"
+                          'app.market.detail.release_purchase'
+                              .tr, // "购买" or "发布求购"
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -609,13 +623,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 14,
-            ),
-          ),
+          Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 14)),
           const SizedBox(width: 8),
           Text(
             value,
@@ -679,10 +687,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
 
     if (paintWear != null) {
       rows.add(
-        _buildAttributeRow(
-          'app.market.csgo.abradability'.tr,
-          paintWear,
-        ),
+        _buildAttributeRow('app.market.csgo.abradability'.tr, paintWear),
       );
     }
 
@@ -723,10 +728,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
       children: [
         Text(
           'app.market.detail.attribute'.tr,
-          style: TextStyle(
-            color: Colors.grey[600],
-            fontSize: 14,
-          ),
+          style: TextStyle(color: Colors.grey[600], fontSize: 14),
         ),
         if (hasTags) ...[
           const SizedBox(height: 8),
@@ -742,21 +744,12 @@ class _MarketDetailPageState extends State<MarketDetailPage>
           const SizedBox(height: 8),
           Text(
             '${'app.market.filter.appearance'.tr}: $exterior',
-            style: TextStyle(
-              color: textColor,
-              fontSize: 13,
-            ),
+            style: TextStyle(color: textColor, fontSize: 13),
           ),
         ],
         if (hasItemSet) ...[
           const SizedBox(height: 6),
-          Text(
-            itemSet,
-            style: TextStyle(
-              color: textColor,
-              fontSize: 13,
-            ),
-          ),
+          Text(itemSet, style: TextStyle(color: textColor, fontSize: 13)),
         ],
       ],
     );
@@ -924,11 +917,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                 ),
                 if (showSwap) ...[
                   const SizedBox(width: 4),
-                  Icon(
-                    Icons.swap_horiz,
-                    size: 14,
-                    color: textColor,
-                  ),
+                  Icon(Icons.swap_horiz, size: 14, color: textColor),
                 ],
               ],
             ),
@@ -962,7 +951,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
     }
     return '${currency.symbol} ${price.toString()}';
   }
-  
+
   Color _getRarityColor(String? colorHex) {
     if (colorHex == null || colorHex.isEmpty) return Colors.grey;
     try {
@@ -987,8 +976,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
   }
 
   Widget _buildOnSaleTab(CurrencyController currency) {
-    if (controller.isLoadingOnSale.value &&
-        controller.onSaleItems.isEmpty) {
+    if (controller.isLoadingOnSale.value && controller.onSaleItems.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
     if (controller.onSaleItems.isEmpty) {
@@ -1007,13 +995,19 @@ class _MarketDetailPageState extends State<MarketDetailPage>
       },
     );
   }
-  
-  Widget _buildItemCard(MarketListItem item, MarketUserInfo? user, CurrencyController currency) {
+
+  Widget _buildItemCard(
+    MarketListItem item,
+    MarketUserInfo? user,
+    CurrencyController currency,
+  ) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final schema = _lookupMarketSchema(item);
     final appId = item.appId ?? controller.appId;
-    final imageUrl = schema?.imageUrl ?? item.raw['image_url']?.toString() ?? '';
-    final title = schema?.marketName ??
+    final imageUrl =
+        schema?.imageUrl ?? item.raw['image_url']?.toString() ?? '';
+    final title =
+        schema?.marketName ??
         schema?.marketHashName ??
         item.marketHashName ??
         '-';
@@ -1022,15 +1016,19 @@ class _MarketDetailPageState extends State<MarketDetailPage>
     final quality = TagInfo.fromMarketTag(tags?.quality);
     final exterior = TagInfo.fromMarketTag(tags?.exterior);
     final asset = _resolveAsset(item);
-    final paintWearValue =
-        _extractDouble(asset, ['paint_wear', 'paintWear']);
+    final paintWearValue = _extractDouble(asset, ['paint_wear', 'paintWear']);
     final paintWearText =
-        paintWearValue == null ? null : paintWearValue.toStringAsFixed(2);
+        _extractText(asset, ['paint_wear', 'paintWear']) ??
+        _extractText(item.raw, ['paint_wear', 'paintWear']) ??
+        paintWearValue?.toString();
     final paintSeed = _extractText(asset, ['paint_seed', 'paintSeed']);
     final phase = _extractText(asset, ['phase']);
     final percentage = _extractText(asset, ['percentage']);
-    final stickers =
-        parseStickerList(asset?['stickers'] ?? item.raw['stickers']);
+    final stickers = parseStickerList(
+      asset?['stickers'] ?? item.raw['stickers'],
+      schemaMap: controller.schemas,
+      stickerMap: controller.stickers,
+    );
     final gems = parseGemList(
       asset?['gemList'] ??
           asset?['gems'] ??
@@ -1040,6 +1038,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
     final keychains = _parseKeychains(
       asset?['keychains'] ?? item.raw['keychains'],
       controller.schemas,
+      controller.stickers,
     );
     final avatar = _resolveAvatar(user?.avatar);
     final canBuy = item.id != null && item.price != null;
@@ -1117,8 +1116,9 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                                 Expanded(
                                   child: Text(
                                     user?.nickname ?? '',
-                                    style:
-                                        Theme.of(context).textTheme.bodySmall,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodySmall,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
@@ -1180,7 +1180,9 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                                 horizontal: 8,
                                 vertical: 0,
                               ),
-                              foregroundColor: Theme.of(context).colorScheme.error,
+                              foregroundColor: Theme.of(
+                                context,
+                              ).colorScheme.error,
                               side: BorderSide(
                                 color: Theme.of(context).colorScheme.error,
                               ),
@@ -1195,16 +1197,20 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                     ),
                 ],
               ),
-              if (appId == 730 && paintWearValue != null) ...[
+              if (appId == 730 &&
+                  paintWearValue != null &&
+                  paintWearText != null) ...[
                 const SizedBox(height: 8),
                 Text(
-                  '${'app.market.csgo.wear'.tr}: ${paintWearValue.toStringAsFixed(2)}',
+                  '${'app.market.csgo.wear'.tr}: $paintWearText',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
                 const SizedBox(height: 4),
                 WearProgressBar(paintWear: paintWearValue),
               ],
-              if (gems.isNotEmpty || stickers.isNotEmpty || keychains.isNotEmpty)
+              if (gems.isNotEmpty ||
+                  stickers.isNotEmpty ||
+                  keychains.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: Row(
@@ -1216,8 +1222,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                       if (keychains.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(left: 6),
-                          child:
-                              StickerRow(stickers: keychains, size: 16),
+                          child: StickerRow(stickers: keychains, size: 16),
                         ),
                     ],
                   ),
@@ -1271,7 +1276,8 @@ class _MarketDetailPageState extends State<MarketDetailPage>
       count: _asInt(raw['count']) ?? 1,
       userId: item.userId,
       status: _asInt(raw['status']),
-      statusName: raw['statusName']?.toString() ?? raw['status_name']?.toString(),
+      statusName:
+          raw['statusName']?.toString() ?? raw['status_name']?.toString(),
       createTime: _asInt(raw['create_time'] ?? raw['createTime']),
     );
 
@@ -1343,10 +1349,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
         );
       }
     } catch (_) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.trade.filter.failed'.tr,
-      );
+      Get.snackbar('app.system.tips.title'.tr, 'app.trade.filter.failed'.tr);
     }
 
     await controller.loadOnSale(reset: true);
@@ -1369,10 +1372,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
               180,
               'app.market.detail.price_trend.last_half_year'.tr,
             ),
-            _buildDayChip(
-              365,
-              'app.market.detail.price_trend.last_year'.tr,
-            ),
+            _buildDayChip(365, 'app.market.detail.price_trend.last_year'.tr),
           ],
         ),
         const SizedBox(height: 16),
@@ -1404,7 +1404,8 @@ class _MarketDetailPageState extends State<MarketDetailPage>
         final schema = _lookupBuySchema(item);
         final user = _lookupBuyUser(item);
         final avatar = _resolveAvatar(user?.avatar);
-        final title = schema?.marketName ??
+        final title =
+            schema?.marketName ??
             schema?.marketHashName ??
             item.raw['market_name']?.toString() ??
             '-';
@@ -1413,8 +1414,14 @@ class _MarketDetailPageState extends State<MarketDetailPage>
         final rarity = TagInfo.fromRaw(tags is Map ? tags['rarity'] : null);
         final quality = TagInfo.fromRaw(tags is Map ? tags['quality'] : null);
         final exterior = TagInfo.fromRaw(tags is Map ? tags['exterior'] : null);
-        final wearMin = item.paintWearMin;
-        final wearMax = item.paintWearMax;
+        final wearMinText =
+            item.raw['paint_wear_min']?.toString() ??
+            item.raw['paintWearMin']?.toString() ??
+            item.paintWearMin?.toString();
+        final wearMaxText =
+            item.raw['paint_wear_max']?.toString() ??
+            item.raw['paintWearMax']?.toString() ??
+            item.paintWearMax?.toString();
         final need = item.need ?? item.nums ?? 0;
         final isOwn = item.own == true;
         final canSupply = need > 0;
@@ -1449,7 +1456,9 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                         title,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(color: isDark ? Colors.white : Colors.black87),
+                        style: TextStyle(
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
                       ),
                       const SizedBox(height: 6),
                       Obx(
@@ -1461,13 +1470,12 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                           ),
                         ),
                       ),
-                      if (wearMin != null && wearMax != null)
+                      if (wearMinText != null && wearMaxText != null)
                         Padding(
                           padding: const EdgeInsets.only(top: 6),
                           child: Text(
                             '${'app.market.csgo.wear'.tr}: '
-                            '${wearMin.toStringAsFixed(2)} - '
-                            '${wearMax.toStringAsFixed(2)}',
+                            '$wearMinText - $wearMaxText',
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                         ),
@@ -1496,9 +1504,9 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                                   Expanded(
                                     child: Text(
                                       user?.nickname ?? '',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall,
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall,
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
@@ -1517,36 +1525,36 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                       FilledButton(
                         onPressed: canSupply
                             ? () async {
-                          final user = UserStorage.getUserInfo();
-                          if (user == null) {
-                            Get.snackbar(
-                              'app.system.tips.title'.tr,
-                              'app.system.message.nologin'.tr,
-                            );
-                            return;
-                          }
-                          final result = await Get.toNamed(
-                            Routers.BUYING_SUPPLY,
-                            arguments: {'item': item, 'schema': schema},
-                          );
-                          if (result == true) {
-                            await controller.loadBuyRequests(reset: true);
-                            await Get.dialog<void>(
-                              AlertDialog(
-                                title: Text('app.system.tips.title'.tr),
-                                content: Text(
-                                  'app.trade.supply.message.confirm'.tr,
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Get.back(),
-                                    child: Text('app.common.confirm'.tr),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }
-                        }
+                                final user = UserStorage.getUserInfo();
+                                if (user == null) {
+                                  Get.snackbar(
+                                    'app.system.tips.title'.tr,
+                                    'app.system.message.nologin'.tr,
+                                  );
+                                  return;
+                                }
+                                final result = await Get.toNamed(
+                                  Routers.BUYING_SUPPLY,
+                                  arguments: {'item': item, 'schema': schema},
+                                );
+                                if (result == true) {
+                                  await controller.loadBuyRequests(reset: true);
+                                  await Get.dialog<void>(
+                                    AlertDialog(
+                                      title: Text('app.system.tips.title'.tr),
+                                      content: Text(
+                                        'app.trade.supply.message.confirm'.tr,
+                                      ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () => Get.back(),
+                                          child: Text('app.common.confirm'.tr),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }
+                              }
                             : null,
                         child: Text('app.trade.supply.text'.tr),
                       ),
@@ -1591,10 +1599,8 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                             return;
                           }
                           try {
-                            final res =
-                                await _shopProductApi.orderItemCancelBuy(
-                              id: id,
-                            );
+                            final res = await _shopProductApi
+                                .orderItemCancelBuy(id: id);
                             if (res.success) {
                               Get.snackbar(
                                 'app.system.tips.title'.tr,
@@ -1646,7 +1652,8 @@ class _MarketDetailPageState extends State<MarketDetailPage>
         final user = controller.users[item.userId?.toString() ?? ''];
         final schema = _lookupMarketSchema(item);
         final imageUrl = schema?.imageUrl ?? '';
-        final title = schema?.marketName ??
+        final title =
+            schema?.marketName ??
             schema?.marketHashName ??
             item.marketHashName ??
             '-';
@@ -1656,10 +1663,14 @@ class _MarketDetailPageState extends State<MarketDetailPage>
         final quality = TagInfo.fromMarketTag(tags?.quality);
         final exterior = TagInfo.fromMarketTag(tags?.exterior);
         final asset = _resolveAsset(item);
-        final paintWearValue =
-            _extractDouble(asset, ['paint_wear', 'paintWear']);
+        final paintWearValue = _extractDouble(asset, [
+          'paint_wear',
+          'paintWear',
+        ]);
         final paintWearText =
-            paintWearValue == null ? null : paintWearValue.toStringAsFixed(2);
+            _extractText(asset, ['paint_wear', 'paintWear']) ??
+            _extractText(item.raw, ['paint_wear', 'paintWear']) ??
+            paintWearValue?.toString();
         final isDark = Theme.of(context).brightness == Brightness.dark;
         return Card(
           color: isDark ? const Color(0xFF26272B) : Colors.white,
@@ -1724,8 +1735,9 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                                 Expanded(
                                   child: Text(
                                     user?.nickname ?? '',
-                                    style:
-                                        Theme.of(context).textTheme.bodySmall,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodySmall,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
@@ -1771,6 +1783,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
         'schema': schema,
         'user': user,
         'schemas': Map<String, MarketSchemaInfo>.from(controller.schemas),
+        'stickers': Map<String, dynamic>.from(controller.stickers),
       },
     );
     if (result == true) {
@@ -1782,20 +1795,14 @@ class _MarketDetailPageState extends State<MarketDetailPage>
   Future<void> _purchaseItem(MarketListItem item) async {
     final user = UserStorage.getUserInfo();
     if (user == null) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.system.message.nologin'.tr,
-      );
+      Get.snackbar('app.system.tips.title'.tr, 'app.system.message.nologin'.tr);
       return;
     }
     final id = item.id?.toString();
     final price = item.price;
     final appId = item.appId ?? controller.appId;
     if (id == null || price == null) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.trade.filter.failed'.tr,
-      );
+      Get.snackbar('app.system.tips.title'.tr, 'app.trade.filter.failed'.tr);
       return;
     }
     try {
@@ -1852,10 +1859,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
         );
       }
     } catch (_) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.trade.filter.failed'.tr,
-      );
+      Get.snackbar('app.system.tips.title'.tr, 'app.trade.filter.failed'.tr);
     }
   }
 
@@ -1907,8 +1911,13 @@ class _MarketDetailPageState extends State<MarketDetailPage>
   List<GameItemSticker> _parseKeychains(
     dynamic raw,
     Map<String, MarketSchemaInfo> schemas,
+    Map<String, dynamic> stickerMap,
   ) {
-    final fromRaw = parseStickerList(raw);
+    final fromRaw = parseStickerList(
+      raw,
+      schemaMap: schemas,
+      stickerMap: stickerMap,
+    );
     if (fromRaw.isNotEmpty) {
       return fromRaw;
     }
@@ -1918,15 +1927,15 @@ class _MarketDetailPageState extends State<MarketDetailPage>
     final list = <GameItemSticker>[];
     for (final entry in raw) {
       if (entry is Map) {
-        final image = entry['image_url']?.toString() ??
+        final image =
+            entry['image_url']?.toString() ??
             entry['imageUrl']?.toString() ??
             entry['image']?.toString();
         if (image != null && image.isNotEmpty) {
           list.add(GameItemSticker(image));
           continue;
         }
-        final schemaId =
-            entry['schema_id'] ?? entry['schemaId'] ?? entry['id'];
+        final schemaId = entry['schema_id'] ?? entry['schemaId'] ?? entry['id'];
         if (schemaId != null) {
           final schema = schemas[schemaId.toString()];
           final url = schema?.imageUrl;
@@ -1986,11 +1995,7 @@ class _TagChipData {
 }
 
 class _WearOption {
-  const _WearOption({
-    required this.id,
-    required this.label,
-    this.price,
-  });
+  const _WearOption({required this.id, required this.label, this.price});
 
   final int id;
   final String label;
@@ -2010,7 +2015,11 @@ class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
   double get maxExtent => _tabBar.preferredSize.height;
 
   @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
     return Container(
       color: backgroundColor ?? Theme.of(context).scaffoldBackgroundColor,
       child: _tabBar,
