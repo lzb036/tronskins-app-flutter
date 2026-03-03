@@ -68,7 +68,7 @@ class UserPage extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
                       child: Obx(() => _BalanceSection(
                             balance: currency.formatUsd(userCtrl.balanceValue),
                             gift: currency.formatUsd(userCtrl.giftValue),
@@ -199,7 +199,7 @@ class _BalanceSection extends StatelessWidget {
     // final text = Theme.of(context).extension<AppTextTheme>()!;
 
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 12),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
@@ -212,15 +212,42 @@ class _BalanceSection extends StatelessWidget {
         ],
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildBalanceItem(context, 'app.user.wallet.assets_total'.tr, balance),
+          Expanded(
+            flex: 15,
+            child: _buildBalanceItem(
+              context,
+              'app.user.wallet.assets_total'.tr,
+              balance,
+            ),
+          ),
           _buildVerticalDivider(context),
-          _buildBalanceItem(context, 'app.user.wallet.gift'.tr, gift),
+          Expanded(
+            flex: 10,
+            child: _buildBalanceItem(
+              context,
+              'app.user.wallet.gift'.tr,
+              gift,
+            ),
+          ),
           _buildVerticalDivider(context),
-          _buildBalanceItem(context, 'app.user.wallet.lock_amount'.tr, locked),
+          Expanded(
+            flex: 10,
+            child: _buildBalanceItem(
+              context,
+              'app.user.wallet.lock_amount'.tr,
+              locked,
+            ),
+          ),
           _buildVerticalDivider(context),
-          _buildBalanceItem(context, 'app.user.wallet.unsettled'.tr, unsettled),
+          Expanded(
+            flex: 10,
+            child: _buildBalanceItem(
+              context,
+              'app.user.wallet.unsettled'.tr,
+              unsettled,
+            ),
+          ),
         ],
       ),
     );
@@ -230,6 +257,7 @@ class _BalanceSection extends StatelessWidget {
     return Container(
       height: 24,
       width: 1,
+      margin: const EdgeInsets.symmetric(horizontal: 8),
       color: Theme.of(context).dividerColor.withOpacity(0.5),
     );
   }
@@ -240,19 +268,36 @@ class _BalanceSection extends StatelessWidget {
       // final text = Theme.of(ctx).extension<AppTextTheme>()!;
       final child = Column(
         children: [
-          Text(
-            value,
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
+          SizedBox(
+            width: double.infinity,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.center,
+              child: Text(
+                value,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+              ),
+            ),
           ),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.7),
-                ),
+          const SizedBox(height: 4),
+          SizedBox(
+            width: double.infinity,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.center,
+              child: Text(
+                label,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontSize: 11,
+                      color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.7),
+                    ),
+              ),
+            ),
           ),
         ],
       );

@@ -8,6 +8,7 @@ import 'package:tronskins_app/controllers/market/market_list_controller.dart';
 import 'package:tronskins_app/controllers/navbar/nav_controller.dart';
 import 'package:tronskins_app/controllers/shop/shop_order_controller.dart';
 import 'package:tronskins_app/controllers/shop/shop_sales_controller.dart';
+import 'package:tronskins_app/controllers/shop/shop_shipping_notice_controller.dart';
 import 'package:tronskins_app/controllers/user/user_controller.dart';
 import 'package:tronskins_app/pages/home/index.dart';
 import 'package:tronskins_app/pages/navbar/market.dart';
@@ -25,6 +26,7 @@ class CustomNavBar extends StatefulWidget {
 class _CustomNavBarState extends State<CustomNavBar> {
   static const int _tabCount = 5;
   late final NavController navController;
+  late final ShopShippingNoticeController shippingNoticeController;
   late final Worker _navWorker;
   late final Worker _localeWorker;
 
@@ -102,10 +104,52 @@ class _CustomNavBarState extends State<CustomNavBar> {
         if (Get.isRegistered<ShopOrderController>()) {
           Get.find<ShopOrderController>().refreshPending();
         }
+        shippingNoticeController.refreshPendingTotals();
         break;
       default:
         break;
     }
+  }
+
+  Widget _buildNavIconWithBadge({
+    required IconData icon,
+    required int badgeCount,
+  }) {
+    final showBadge = badgeCount > 0;
+    final badgeText = badgeCount > 99 ? '99+' : '$badgeCount';
+    final badgeColor = Colors.orange.shade600;
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Icon(icon),
+        if (showBadge)
+          Positioned(
+            right: -13,
+            top: -6,
+            child: Container(
+              constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: badgeColor,
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: Colors.white, width: 1),
+              ),
+              child: Text(
+                badgeText,
+                maxLines: 1,
+                overflow: TextOverflow.clip,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  height: 1,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
   }
 
   @override
@@ -115,6 +159,9 @@ class _CustomNavBarState extends State<CustomNavBar> {
     navController = Get.isRegistered<NavController>()
         ? Get.find<NavController>()
         : Get.put(NavController(), permanent: true);
+    shippingNoticeController = Get.isRegistered<ShopShippingNoticeController>()
+        ? Get.find<ShopShippingNoticeController>()
+        : Get.put(ShopShippingNoticeController(), permanent: true);
     _ensurePage(navController.currentIndex.value);
     _navWorker = ever<int>(navController.currentIndex, (index) {
       _ensurePage(index);
@@ -168,6 +215,14 @@ class _CustomNavBarState extends State<CustomNavBar> {
         // 监听语言变化，触发底部导航重建
         useLocale.currentLocale;
         final index = navController.currentIndex.value;
+        final userCtrl = Get.find<UserController>();
+        final pendingTotals = shippingNoticeController.pendingTotalsByGame;
+        final sellBadgeCount = userCtrl.isLoggedIn.value
+            ? pendingTotals.values.fold<int>(
+                0,
+                (total, count) => total + (count > 0 ? count : 0),
+              )
+            : 0;
         return BottomNavigationBar(
           type: BottomNavigationBarType.fixed,
           currentIndex: index,
@@ -191,7 +246,10 @@ class _CustomNavBarState extends State<CustomNavBar> {
               label: 'app.tabbar.inventory'.tr,
             ),
             BottomNavigationBarItem(
-              icon: const Icon(Icons.shopping_cart_outlined),
+              icon: _buildNavIconWithBadge(
+                icon: Icons.shopping_cart_outlined,
+                badgeCount: sellBadgeCount,
+              ),
               label: 'app.tabbar.sell'.tr,
             ),
             BottomNavigationBarItem(

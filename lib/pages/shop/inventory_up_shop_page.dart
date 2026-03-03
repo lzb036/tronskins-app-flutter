@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:tronskins_app/api/model/market/market_models.dart';
 import 'package:tronskins_app/api/model/shop/shop_models.dart';
 import 'package:tronskins_app/api/shop_product.dart';
 import 'package:tronskins_app/api/steam.dart';
@@ -98,6 +99,49 @@ class _InventoryUpShopPageState extends State<InventoryUpShopPage> {
     return null;
   }
 
+  int? _parseIntValue(dynamic value) {
+    if (value is num) {
+      return value.toInt();
+    }
+    return int.tryParse(value?.toString() ?? '');
+  }
+
+  MarketItemEntity _toMarketDetailItem(InventoryItem item) {
+    final schema = _lookupSchema(item);
+    final schemaId = item.schemaId ?? _parseIntValue(schema?.raw['id']);
+    final appId =
+        item.appId ??
+        _parseIntValue(schema?.raw['app_id'] ?? schema?.raw['appId']);
+
+    final raw = Map<String, dynamic>.from(item.raw);
+    if (schemaId != null) {
+      raw['schema_id'] ??= schemaId;
+      raw['id'] ??= schemaId;
+    }
+    if (appId != null) {
+      raw['app_id'] ??= appId;
+    }
+    raw['market_name'] ??= item.marketName ?? schema?.marketName;
+    raw['market_hash_name'] ??= item.marketHashName ?? schema?.marketHashName;
+    raw['image_url'] ??= item.imageUrl ?? schema?.imageUrl;
+    raw['market_price'] ??=
+        schema?.raw['market_price'] ??
+        schema?.raw['reference_price'] ??
+        item.price;
+    raw['tags'] ??= schema?.raw['tags'];
+
+    return MarketItemEntity.fromJson(raw);
+  }
+
+  void _openMarketDetail(InventoryItem item) {
+    final marketItem = _toMarketDetailItem(item);
+    final schemaId = marketItem.schemaId ?? marketItem.id;
+    if (schemaId == null) {
+      return;
+    }
+    Get.toNamed(Routers.MARKET_DETAIL, arguments: marketItem);
+  }
+
   Map<String, dynamic>? _resolveAsset(InventoryItem item) {
     final raw = item.raw;
     if (item.appId == 730 && raw['csgoAsset'] is Map<String, dynamic>) {
@@ -182,49 +226,20 @@ class _InventoryUpShopPageState extends State<InventoryUpShopPage> {
     return rounded;
   }
 
-  String _stableSignature(dynamic value) {
-    if (value == null) {
-      return '';
-    }
-    if (value is Map) {
-      final keys = value.keys.map((key) => key.toString()).toList()..sort();
-      final pairs = keys.map((key) {
-        return '$key:${_stableSignature(value[key])}';
-      });
-      return '{${pairs.join(',')}}';
-    }
-    if (value is List) {
-      return '[${value.map(_stableSignature).join(',')}]';
-    }
-    return value.toString();
-  }
-
   String _itemMergeKey(InventoryItem item) {
-    final asset = _resolveAsset(item);
-    final wearText = _extractWearText(item, asset) ?? '';
-    final paintSeed =
-        item.paintSeed ??
-        _extractText(asset, ['paint_seed', 'paintSeed']) ??
-        '';
-    final phase = item.phase ?? _extractText(asset, ['phase']) ?? '';
-    final percentage = _extractText(asset, ['percentage']) ?? '';
-    final stickersRaw = asset?['stickers'] ?? item.raw['stickers'];
-    final gemsRaw =
-        asset?['gemList'] ??
-        asset?['gems'] ??
-        item.raw['gemList'] ??
-        item.raw['gems'];
-    return [
-      item.appId?.toString() ?? '',
-      item.schemaId?.toString() ?? '',
-      item.marketHashName ?? '',
-      wearText,
-      paintSeed,
-      phase,
-      percentage,
-      _stableSignature(stickersRaw),
-      _stableSignature(gemsRaw),
-    ].join('|');
+    final schemaId = item.schemaId;
+    if (schemaId != null) {
+      return 'schema:$schemaId';
+    }
+    final marketHashName = item.marketHashName;
+    if (marketHashName != null && marketHashName.isNotEmpty) {
+      return 'hash:$marketHashName';
+    }
+    final id = item.id;
+    if (id != null) {
+      return 'id:$id';
+    }
+    return 'raw:${item.raw.hashCode}';
   }
 
   List<_InventoryMergeGroup> _buildMergedGroups() {
@@ -413,14 +428,30 @@ class _InventoryUpShopPageState extends State<InventoryUpShopPage> {
       if (ids.length <= 1) {
         continue;
       }
-      final leadId = ids.first;
-      final leadText = _controllers[leadId]?.text ?? '';
-      final leadPrice = _prices[leadId] ?? 0;
-      for (final id in ids.skip(1)) {
-        _prices[id] = leadPrice;
+
+      var mergedPrice = 0.0;
+      var mergedText = '';
+      for (final id in ids) {
+        final currentText = _controllers[id]?.text.trim() ?? '';
+        final currentPrice = _prices[id] ?? double.tryParse(currentText) ?? 0;
+        if (currentPrice > mergedPrice) {
+          mergedPrice = currentPrice;
+          mergedText = currentText;
+        }
+      }
+
+      if (mergedPrice <= 0) {
+        mergedPrice = 0;
+        mergedText = '';
+      } else if (mergedText.isEmpty) {
+        mergedText = mergedPrice.toStringAsFixed(2);
+      }
+
+      for (final id in ids) {
+        _prices[id] = mergedPrice;
         final controller = _controllers[id];
-        if (controller != null && controller.text != leadText) {
-          controller.text = leadText;
+        if (controller != null && controller.text != mergedText) {
+          controller.text = mergedText;
         }
       }
     }
@@ -1266,14 +1297,62 @@ class _InventoryUpShopPageState extends State<InventoryUpShopPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(
+                                context,
+                              ).textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          if (_mergeSameItems)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 2),
+                              child: Text(
+                                'x$itemCount',
+                                style: Theme.of(
+                                  context,
+                                ).textTheme.labelMedium?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                  color: colorScheme.primary,
+                                ),
+                              ),
+                            )
+                          else
+                            const SizedBox.shrink(),
+                        ],
                       ),
+                      if (!_mergeSameItems) ...[
+                        const SizedBox(height: 4),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton(
+                            onPressed: () => _openMarketDetail(item),
+                            style: TextButton.styleFrom(
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              visualDensity: VisualDensity.compact,
+                              padding: EdgeInsets.zero,
+                            ),
+                            child: Text(
+                              '${'app.market.view'.tr}>',
+                              style: Theme.of(context).textTheme.labelSmall
+                                  ?.copyWith(
+                                    color: colorScheme.primary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),

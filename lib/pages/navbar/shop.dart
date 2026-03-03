@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -20,6 +22,7 @@ import 'package:tronskins_app/components/layout/list_end_tip.dart';
 import 'package:tronskins_app/controllers/shop/shop_controller.dart';
 import 'package:tronskins_app/controllers/shop/shop_order_controller.dart';
 import 'package:tronskins_app/controllers/shop/shop_sales_controller.dart';
+import 'package:tronskins_app/controllers/shop/shop_shipping_notice_controller.dart';
 import 'package:tronskins_app/controllers/user/user_controller.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
 
@@ -45,6 +48,10 @@ class _ShopPageState extends State<ShopPage>
       Get.isRegistered<ShopOrderController>()
       ? Get.find<ShopOrderController>()
       : Get.put(ShopOrderController());
+  final ShopShippingNoticeController shippingNoticeController =
+      Get.isRegistered<ShopShippingNoticeController>()
+      ? Get.find<ShopShippingNoticeController>()
+      : Get.put(ShopShippingNoticeController(), permanent: true);
   final UserController userController = Get.find<UserController>();
 
   late final TabController _tabController;
@@ -87,6 +94,7 @@ class _ShopPageState extends State<ShopPage>
       salesController.refreshOnSale();
       orderController.refreshPending();
       salesController.refreshSellRecords();
+      shippingNoticeController.refreshPendingTotals();
     }
 
     _loginWorker = ever<bool>(userController.isLoggedIn, (loggedIn) {
@@ -94,6 +102,7 @@ class _ShopPageState extends State<ShopPage>
         salesController.refreshOnSale();
         orderController.refreshPending();
         salesController.refreshSellRecords();
+        shippingNoticeController.refreshPendingTotals();
       }
     });
   }
@@ -314,6 +323,38 @@ class _ShopPageState extends State<ShopPage>
     return total;
   }
 
+  Widget _buildSellRecordDetailImage({
+    required ShopOrderDetail detail,
+    required Map<String, ShopSchemaInfo> schemas,
+  }) {
+    final schema = _lookupSchema(schemas, detail.marketHashName, detail.schemaId);
+    final appId = _resolveDetailAppId(detail, schema);
+    final imageUrl = detail.imageUrl ?? schema?.imageUrl ?? '';
+    final rarity = _schemaTag(schema, 'rarity');
+    final quality = _schemaTag(schema, 'quality');
+    final phase = _detailText(detail, ['phase']);
+    final percentage = _detailText(detail, ['percentage']);
+    final count = detail.count ?? 1;
+    return SizedBox(
+      width: 72,
+      height: 43,
+      child: GameItemImage(
+        imageUrl: imageUrl,
+        appId: appId,
+        rarity: rarity,
+        quality: quality,
+        phase: phase,
+        percentage: percentage,
+        count: count > 1 ? count : null,
+      ),
+    );
+  }
+
+  bool _showRecordCountdown(ShopOrderItem record) {
+    final protectionTime = record.protectionTime;
+    return protectionTime != null && protectionTime > 0 && record.status == 5;
+  }
+
   Future<void> _openOnSaleFilterSheet() async {
     final result = await MarketFilterSheet.showFromRight(
       context: context,
@@ -517,6 +558,37 @@ class _ShopPageState extends State<ShopPage>
     );
   }
 
+  Widget _buildTopActionWithDot({
+    required Widget child,
+    required Color dotColor,
+    required bool visible,
+  }) {
+    if (!visible) {
+      return child;
+    }
+    return Stack(
+      children: [
+        child,
+        Positioned(
+          right: 2,
+          top: 2,
+          child: Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: dotColor,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Theme.of(context).colorScheme.surface,
+                width: 1,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildShopSummaryBar(CurrencyController currency) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
@@ -662,6 +734,7 @@ class _ShopPageState extends State<ShopPage>
         if (!userController.isLoggedIn.value) {
           return _buildLoginPrompt();
         }
+        final isShopOnline = shopController.shop.value?.isOnline ?? false;
         return SafeArea(
           child: Column(
             children: [
@@ -700,31 +773,51 @@ class _ShopPageState extends State<ShopPage>
                           ),
                           _buildShopTabSwitcher(),
                           const SizedBox(width: 6),
-                          _buildTopIconAction(
-                            icon: Icons.settings,
-                            tooltip: 'app.user.shop.setting'.tr,
-                            onTap: () => Get.toNamed(Routers.SHOP_SETTING),
+                          _buildTopActionWithDot(
+                            visible: true,
+                            dotColor: isShopOnline
+                                ? const Color(0xFF22C55E)
+                                : colors.outlineVariant,
+                            child: _buildTopIconAction(
+                              icon: Icons.settings,
+                              tooltip: 'app.user.shop.setting'.tr,
+                              onTap: () => Get.toNamed(Routers.SHOP_SETTING),
+                            ),
                           ),
                           const SizedBox(width: 6),
                           Builder(
                             builder: (iconContext) {
-                              return GameIconButton(
-                                appId: GameStorage.getGameType(),
-                                size: 34,
-                                onTap: () async {
-                                  final selected = await showGameSwitchMenu(
-                                    iconContext: iconContext,
-                                    currentAppId: GameStorage.getGameType(),
+                              final currentAppId = GameStorage.getGameType();
+                              final hasOtherGameShippingNotice =
+                                  shippingNoticeController.hasOtherPending(
+                                    currentAppId,
                                   );
-                                  if (selected == null) {
-                                    return;
-                                  }
-                                  await GameStorage.setGameType(selected);
-                                  salesController.refreshOnSale();
-                                  orderController.refreshPending();
-                                  salesController.refreshSellRecords();
-                                  setState(() {});
-                                },
+                              return _buildTopActionWithDot(
+                                visible: hasOtherGameShippingNotice,
+                                dotColor: Colors.orange.shade600,
+                                child: GameIconButton(
+                                  appId: currentAppId,
+                                  size: 34,
+                                  onTap: () async {
+                                    final selected = await showGameSwitchMenu(
+                                      iconContext: iconContext,
+                                      currentAppId: currentAppId,
+                                      pendingTotalsByAppId:
+                                          shippingNoticeController
+                                              .snapshotTotals(),
+                                    );
+                                    if (selected == null) {
+                                      return;
+                                    }
+                                    await GameStorage.setGameType(selected);
+                                    salesController.refreshOnSale();
+                                    orderController.refreshPending();
+                                    salesController.refreshSellRecords();
+                                    shippingNoticeController
+                                        .refreshPendingTotals();
+                                    setState(() {});
+                                  },
+                                ),
                               );
                             },
                           ),
@@ -1273,7 +1366,6 @@ class _ShopPageState extends State<ShopPage>
                           primary.marketHashName,
                           primary.schemaId,
                         );
-                  final imageUrl = primary?.imageUrl ?? schema?.imageUrl ?? '';
                   final title =
                       primary?.marketName ?? schema?.marketName ?? '-';
                   final totalPrice = _sumOrderPrice(record);
@@ -1289,114 +1381,125 @@ class _ShopPageState extends State<ShopPage>
                       ? null
                       : _detailText(primary, ['paint_wear', 'paintWear']) ??
                             wearValue?.toString();
-                  final extraCount = record.details.length > 1
-                      ? record.details.length - 1
-                      : 0;
-                  final appId = primary == null
-                      ? GameStorage.getGameType()
-                      : _resolveDetailAppId(primary, schema);
-                  final rarity = _schemaTag(schema, 'rarity');
-                  final quality = _schemaTag(schema, 'quality');
-                  final phase = primary == null
-                      ? null
-                      : _detailText(primary, ['phase']);
-                  final percentage = primary == null
-                      ? null
-                      : _detailText(primary, ['percentage']);
-                  final count = primary?.count ?? 1;
+                  final hasMultipleDetails = record.details.length > 1;
+                  final totalCount = _sumOrderCount(record);
+                  final showCountdown = _showRecordCountdown(record);
                   return Card(
                     child: Padding(
                       padding: const EdgeInsets.all(12),
-                      child: Row(
+                      child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Stack(
+                          if (hasMultipleDetails) ...[
+                            Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: record.details
+                                  .map(
+                                    (detail) => _buildSellRecordDetailImage(
+                                      detail: detail,
+                                      schemas: salesController.schemas,
+                                    ),
+                                  )
+                                  .toList(growable: false),
+                            ),
+                            const SizedBox(height: 10),
+                          ],
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              SizedBox(
-                                width: 72,
-                                height: 43,
-                                child: GameItemImage(
-                                  imageUrl: imageUrl,
-                                  appId: appId,
-                                  rarity: rarity,
-                                  quality: quality,
-                                  phase: phase,
-                                  percentage: percentage,
-                                  count: count > 1 ? count : null,
+                              if (!hasMultipleDetails) ...[
+                                if (primary != null)
+                                  _buildSellRecordDetailImage(
+                                    detail: primary,
+                                    schemas: salesController.schemas,
+                                  )
+                                else
+                                  Container(
+                                    width: 72,
+                                    height: 43,
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.surfaceContainerHighest,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    alignment: Alignment.center,
+                                    child: const Icon(
+                                      Icons.image_not_supported_outlined,
+                                      size: 18,
+                                    ),
+                                  ),
+                                const SizedBox(width: 12),
+                              ],
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      hasMultipleDetails
+                                          ? '$title  x$totalCount'
+                                          : title,
+                                      maxLines: 2,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      _formatTime(record.createTime),
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall,
+                                    ),
+                                    if (!hasMultipleDetails &&
+                                        wearValue != null &&
+                                        wearText != null) ...[
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        '${'app.market.csgo.abradability'.tr}: $wearText',
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.bodySmall,
+                                      ),
+                                      const SizedBox(height: 4),
+                                      WearProgressBar(paintWear: wearValue),
+                                    ],
+                                  ],
                                 ),
                               ),
-                              if (extraCount > 0)
-                                Positioned(
-                                  right: 0,
-                                  top: 0,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 6,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withValues(
-                                        alpha: 0.6,
-                                      ),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: Text(
-                                      '+$extraCount',
-                                      style: const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 10,
+                              const SizedBox(width: 8),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  if (showCountdown) ...[
+                                    _RecordProtectionCountdownText(
+                                      endTimeSeconds: record.protectionTime!,
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall?.copyWith(
+                                        color: Colors.orange.shade600,
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(title, maxLines: 2),
-                                const SizedBox(height: 4),
-                                Text(
-                                  _formatTime(record.createTime),
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
-                                if (wearValue != null && wearText != null) ...[
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    '${'app.market.csgo.abradability'.tr}: $wearText',
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodySmall,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  WearProgressBar(paintWear: wearValue),
-                                ],
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Obx(
-                                () => Text(
-                                  currency.format(totalPrice),
-                                  style: Theme.of(context).textTheme.titleSmall
-                                      ?.copyWith(
+                                    const SizedBox(height: 4),
+                                  ],
+                                  Obx(
+                                    () => Text(
+                                      currency.format(totalPrice),
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.titleSmall?.copyWith(
                                         color: Theme.of(
                                           context,
                                         ).colorScheme.primary,
                                         fontWeight: FontWeight.w600,
                                       ),
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                record.statusName ?? '',
-                                style: Theme.of(context).textTheme.bodySmall,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    record.statusName ?? '',
+                                    style: Theme.of(context).textTheme.bodySmall,
+                                  ),
+                                ],
                               ),
                             ],
                           ),
@@ -1670,6 +1773,129 @@ class _ShopTabSwitchOption extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _RecordProtectionCountdownText extends StatefulWidget {
+  const _RecordProtectionCountdownText({
+    required this.endTimeSeconds,
+    this.style,
+  });
+
+  final int endTimeSeconds;
+  final TextStyle? style;
+
+  @override
+  State<_RecordProtectionCountdownText> createState() =>
+      _RecordProtectionCountdownTextState();
+}
+
+class _RecordProtectionCountdownTextState
+    extends State<_RecordProtectionCountdownText> {
+  Timer? _timer;
+  String _remainText = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _tick();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
+  }
+
+  @override
+  void didUpdateWidget(covariant _RecordProtectionCountdownText oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.endTimeSeconds != widget.endTimeSeconds) {
+      _tick();
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _tick() {
+    final next = _formatRemainText(widget.endTimeSeconds);
+    if (!mounted) {
+      return;
+    }
+    if (_remainText != next) {
+      setState(() => _remainText = next);
+    }
+    if (next.isEmpty) {
+      _timer?.cancel();
+    }
+  }
+
+  String _formatRemainText(int endTimeSeconds) {
+    final nowSeconds = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    final totalTimeLeft = endTimeSeconds - nowSeconds;
+    if (totalTimeLeft <= 0) {
+      return '';
+    }
+
+    var days = totalTimeLeft ~/ (24 * 60 * 60);
+    final hoursTotal = totalTimeLeft ~/ (60 * 60);
+    final minutes = (totalTimeLeft % (60 * 60)) ~/ 60;
+    final formattedMinutes = minutes.toString().padLeft(2, '0');
+    var remainingHours = hoursTotal - days * 24 + (minutes > 0 ? 1 : 0);
+
+    if (remainingHours % 24 == 0) {
+      days += 1;
+      remainingHours -= 24;
+    }
+
+    final localeTag = Get.locale?.toLanguageTag().toLowerCase() ?? '';
+    final isCjkLocale =
+        localeTag.startsWith('zh') ||
+        localeTag.startsWith('ja') ||
+        localeTag.startsWith('zh-hk');
+
+    if (days > 0) {
+      if (isCjkLocale) {
+        return '$days${'app.common.day'.tr}$remainingHours${'app.common.hours'.tr}';
+      }
+      final dayKey = days > 1 ? 'app.common.days' : 'app.common.day';
+      final hourKey = remainingHours > 1
+          ? 'app.common.hours'
+          : 'app.common.hour';
+      return '$days${dayKey.tr}$remainingHours${hourKey.tr}';
+    }
+
+    if (remainingHours > 0) {
+      if (isCjkLocale) {
+        return '$remainingHours${'app.common.hours'.tr}$formattedMinutes${'app.common.minutes'.tr}';
+      }
+      final hourKey = remainingHours > 1
+          ? 'app.common.hours'
+          : 'app.common.hour';
+      final minuteKey = minutes > 1
+          ? 'app.common.minutes'
+          : 'app.common.minute';
+      return '$remainingHours${hourKey.tr}$formattedMinutes${minuteKey.tr}';
+    }
+
+    if (minutes > 0) {
+      if (isCjkLocale) {
+        return '$formattedMinutes${'app.common.minutes'.tr}';
+      }
+      final minuteKey = minutes > 1
+          ? 'app.common.minutes'
+          : 'app.common.minute';
+      return '$formattedMinutes ${minuteKey.tr}';
+    }
+
+    return '';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_remainText.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return Text(_remainText, style: widget.style);
   }
 }
 

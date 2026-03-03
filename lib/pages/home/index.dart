@@ -496,20 +496,13 @@ class _HomePageState extends State<HomePage>
                 },
               ),
             ),
-          SliverToBoxAdapter(
-            child: AnimatedOpacity(
-              opacity: isLoading && hasMore ? 1 : 0,
-              duration: const Duration(milliseconds: 300),
+          if (isLoading && hasMore)
+            const SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                child: Center(
-                  child: isLoading && hasMore
-                      ? const CircularProgressIndicator()
-                      : const SizedBox.shrink(),
-                ),
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Center(child: CircularProgressIndicator()),
               ),
             ),
-          ),
           if (items.isNotEmpty && !isLoading && !hasMore)
             const SliverToBoxAdapter(child: ListEndTip()),
         ],

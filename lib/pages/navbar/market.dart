@@ -338,20 +338,13 @@ class _MarketPageState extends State<MarketPage> {
                   },
                 ),
               ),
-            SliverToBoxAdapter(
-              child: AnimatedOpacity(
-                opacity: controller.isLoading.value ? 1 : 0,
-                duration: const Duration(milliseconds: 300),
+            if (controller.isLoading.value)
+              const SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  child: Center(
-                    child: controller.isLoading.value
-                        ? const CircularProgressIndicator()
-                        : const SizedBox.shrink(),
-                  ),
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                  child: Center(child: CircularProgressIndicator()),
                 ),
               ),
-            ),
             if (controller.items.isNotEmpty &&
                 !controller.isLoading.value &&
                 !controller.hasMore)

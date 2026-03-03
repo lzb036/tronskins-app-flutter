@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 
 Future<int?> showGameSwitchMenu({
   required BuildContext iconContext,
   required int currentAppId,
+  Map<int, int>? pendingTotalsByAppId,
 }) {
   final overlay = Overlay.of(iconContext).context.findRenderObject() as RenderBox;
   final box = iconContext.findRenderObject() as RenderBox;
@@ -28,6 +30,7 @@ Future<int?> showGameSwitchMenu({
         alignment: alignment,
         top: panelTop,
         currentAppId: currentAppId,
+        pendingTotalsByAppId: pendingTotalsByAppId,
       );
     },
   );
@@ -39,12 +42,14 @@ class _GameSwitchOverlay extends StatelessWidget {
     required this.alignment,
     required this.top,
     required this.currentAppId,
+    required this.pendingTotalsByAppId,
   });
 
   final Animation<double> animation;
   final Alignment alignment;
   final double top;
   final int currentAppId;
+  final Map<int, int>? pendingTotalsByAppId;
 
   @override
   Widget build(BuildContext context) {
@@ -67,7 +72,10 @@ class _GameSwitchOverlay extends StatelessWidget {
                 scale: Tween<double>(begin: 0.2, end: 1).animate(curved),
                 child: FadeTransition(
                   opacity: curved,
-                  child: _GameSwitchPanel(currentAppId: currentAppId),
+                  child: _GameSwitchPanel(
+                    currentAppId: currentAppId,
+                    pendingTotalsByAppId: pendingTotalsByAppId,
+                  ),
                 ),
               ),
             ),
@@ -79,9 +87,13 @@ class _GameSwitchOverlay extends StatelessWidget {
 }
 
 class _GameSwitchPanel extends StatelessWidget {
-  const _GameSwitchPanel({required this.currentAppId});
+  const _GameSwitchPanel({
+    required this.currentAppId,
+    required this.pendingTotalsByAppId,
+  });
 
   final int currentAppId;
+  final Map<int, int>? pendingTotalsByAppId;
 
   @override
   Widget build(BuildContext context) {
@@ -93,11 +105,29 @@ class _GameSwitchPanel extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _GameOption(appId: 730, name: 'CS2', selected: currentAppId == 730),
+          _GameOption(
+            appId: 730,
+            name: 'CS2',
+            selected: currentAppId == 730,
+            pendingTotal: pendingTotalsByAppId?[730] ?? 0,
+            dividerColor: divider,
+          ),
           Divider(height: 1, color: divider),
-          _GameOption(appId: 440, name: 'TF2', selected: currentAppId == 440),
+          _GameOption(
+            appId: 440,
+            name: 'TF2',
+            selected: currentAppId == 440,
+            pendingTotal: pendingTotalsByAppId?[440] ?? 0,
+            dividerColor: divider,
+          ),
           Divider(height: 1, color: divider),
-          _GameOption(appId: 570, name: 'DOTA2', selected: currentAppId == 570),
+          _GameOption(
+            appId: 570,
+            name: 'DOTA2',
+            selected: currentAppId == 570,
+            pendingTotal: pendingTotalsByAppId?[570] ?? 0,
+            dividerColor: divider,
+          ),
         ],
       ),
     );
@@ -109,14 +139,20 @@ class _GameOption extends StatelessWidget {
     required this.appId,
     required this.name,
     required this.selected,
+    required this.pendingTotal,
+    required this.dividerColor,
   });
 
   final int appId;
   final String name;
   final bool selected;
+  final int pendingTotal;
+  final Color dividerColor;
 
   @override
   Widget build(BuildContext context) {
+    final hasPending = pendingTotal > 0;
+    final colors = Theme.of(context).colorScheme;
     return InkWell(
       onTap: () => Navigator.of(context).pop(appId),
       child: Padding(
@@ -138,7 +174,63 @@ class _GameOption extends StatelessWidget {
                 ),
               ),
             ),
-            if (selected)
+            if (hasPending)
+              Container(
+                margin: const EdgeInsets.only(left: 10),
+                padding: const EdgeInsets.only(left: 10),
+                decoration: BoxDecoration(
+                  border: Border(
+                    left: BorderSide(
+                      color: dividerColor.withValues(alpha: 0.7),
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFF9800),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 88),
+                      child: Text(
+                        'app.system.tips.pending'.tr,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFF9800),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        '$pendingTotal',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else if (selected)
               const Icon(Icons.check, color: Color(0xFFFFB800), size: 18),
           ],
         ),
