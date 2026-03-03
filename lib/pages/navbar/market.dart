@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:tronskins_app/components/game/game_icon_button.dart';
 import 'package:tronskins_app/components/game/game_switch_menu.dart';
 import 'package:tronskins_app/components/filter/filter_models.dart';
 import 'package:tronskins_app/components/filter/market_filter_sheet.dart';
@@ -18,8 +19,8 @@ class MarketPage extends StatefulWidget {
 class _MarketPageState extends State<MarketPage> {
   final MarketListController controller =
       Get.isRegistered<MarketListController>()
-          ? Get.find<MarketListController>()
-          : Get.put(MarketListController());
+      ? Get.find<MarketListController>()
+      : Get.put(MarketListController());
 
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
@@ -124,9 +125,7 @@ class _MarketPageState extends State<MarketPage> {
               decoration: BoxDecoration(
                 color: isDark ? colors.surface : Colors.white,
                 border: Border(
-                  bottom: BorderSide(
-                    color: colors.outline.withOpacity(0.08),
-                  ),
+                  bottom: BorderSide(color: colors.outline.withOpacity(0.08)),
                 ),
                 boxShadow: [
                   BoxShadow(
@@ -140,15 +139,17 @@ class _MarketPageState extends State<MarketPage> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
                           'app.market.product.title'.tr,
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.bold),
                         ),
                         _buildGameIcon(),
                       ],
@@ -171,7 +172,8 @@ class _MarketPageState extends State<MarketPage> {
       final appId = controller.appId.value;
       return Builder(
         builder: (iconContext) {
-          return GestureDetector(
+          return GameIconButton(
+            appId: appId,
             onTap: () async {
               final selected = await showGameSwitchMenu(
                 iconContext: iconContext,
@@ -183,27 +185,22 @@ class _MarketPageState extends State<MarketPage> {
               MarketFilterSheet.preload(appId: selected);
               await controller.changeGame(selected);
             },
-            child: Image.asset(
-              'assets/images/game/icon/$appId.png',
-              width: 40,
-              height: 40,
-              errorBuilder: (context, error, stackTrace) {
-                return const Icon(Icons.videogame_asset);
-              },
-            ),
           );
         },
       );
     });
   }
 
-
   Widget _buildSearchBar() {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
-    final fillColor = isDark ? Colors.white.withOpacity(0.08) : colors.surfaceVariant;
-    final hintColor = isDark ? Colors.white38 : colors.onSurface.withOpacity(0.4);
+    final fillColor = isDark
+        ? Colors.white.withOpacity(0.08)
+        : colors.surfaceVariant;
+    final hintColor = isDark
+        ? Colors.white38
+        : colors.onSurface.withOpacity(0.4);
     final hasKeyword = _searchController.text.trim().isNotEmpty;
 
     return Padding(
@@ -258,16 +255,6 @@ class _MarketPageState extends State<MarketPage> {
             ),
           ),
           const SizedBox(width: 8),
-          Obx(() {
-            final asc = controller.sortAsc.value;
-            return _buildActionButton(
-              tooltip: 'app.market.filter.sort'.tr,
-              icon: asc ? Icons.arrow_upward : Icons.arrow_downward,
-              active: asc,
-              onTap: () => controller.applyFilter(asc: !asc),
-            );
-          }),
-          const SizedBox(width: 8),
           _buildActionButton(
             tooltip: 'app.market.filter.text'.tr,
             icon: Icons.filter_alt_outlined,
@@ -287,10 +274,10 @@ class _MarketPageState extends State<MarketPage> {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
-    final baseColor =
-        isDark ? Colors.white.withOpacity(0.08) : colors.surfaceVariant;
-    final background =
-        active ? colors.primary.withOpacity(0.12) : baseColor;
+    final baseColor = isDark
+        ? Colors.white.withOpacity(0.08)
+        : colors.surfaceVariant;
+    final background = active ? colors.primary.withOpacity(0.12) : baseColor;
     final iconColor = active ? colors.primary : colors.onSurfaceVariant;
     return Tooltip(
       message: tooltip,
@@ -339,10 +326,8 @@ class _MarketPageState extends State<MarketPage> {
                     final item = controller.items[index];
                     return MarketItemCard(
                       item: item,
-                      onTap: () => Get.toNamed(
-                        Routers.MARKET_DETAIL,
-                        arguments: item,
-                      ),
+                      onTap: () =>
+                          Get.toNamed(Routers.MARKET_DETAIL, arguments: item),
                     );
                   },
                 ),

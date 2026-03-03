@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:tronskins_app/components/game/game_icon_button.dart';
 import 'package:tronskins_app/components/game/game_switch_menu.dart';
 import 'package:tronskins_app/components/market/market_item_card.dart';
 import 'package:tronskins_app/components/filter/filter_models.dart';
@@ -8,9 +9,6 @@ import 'package:tronskins_app/components/market/market_search_sheet.dart';
 import 'package:tronskins_app/controllers/home/home_controller.dart';
 import 'package:tronskins_app/controllers/market/market_list_controller.dart';
 import 'package:tronskins_app/controllers/navbar/nav_controller.dart';
-import 'package:tronskins_app/pages/navbar/inventory.dart';
-import 'package:tronskins_app/pages/navbar/market.dart';
-import 'package:tronskins_app/pages/navbar/shop.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
 import 'package:tronskins_app/api/model/market/market_models.dart';
 
@@ -94,9 +92,12 @@ class _HomePageState extends State<HomePage>
         _sortAsc = result.sortAsc;
         _priceMin = result.priceMin;
         _priceMax = result.priceMax;
-        _tags = result.tags == null || result.tags!.isEmpty ? null : result.tags;
-        _itemName =
-            (result.itemName == null || result.itemName!.isEmpty) ? null : result.itemName;
+        _tags = result.tags == null || result.tags!.isEmpty
+            ? null
+            : result.tags;
+        _itemName = (result.itemName == null || result.itemName!.isEmpty)
+            ? null
+            : result.itemName;
       });
       _switchToMarketWithArgs({
         'keyword': _searchController.text.trim(),
@@ -163,9 +164,7 @@ class _HomePageState extends State<HomePage>
               decoration: BoxDecoration(
                 color: isDark ? colors.surface : Colors.white,
                 border: Border(
-                  bottom: BorderSide(
-                    color: colors.outline.withOpacity(0.08),
-                  ),
+                  bottom: BorderSide(color: colors.outline.withOpacity(0.08)),
                 ),
                 boxShadow: [
                   BoxShadow(
@@ -179,12 +178,16 @@ class _HomePageState extends State<HomePage>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 8,
+                    ),
                     child: LayoutBuilder(
                       builder: (context, constraints) {
                         final maxWidth = constraints.maxWidth;
-                        final scale =
-                            (maxWidth / 375).clamp(0.85, 1.0).toDouble();
+                        final scale = (maxWidth / 375)
+                            .clamp(0.85, 1.0)
+                            .toDouble();
                         final gameIconSize = 40 * scale;
                         final sidePadding = 12 * scale;
 
@@ -222,8 +225,8 @@ class _HomePageState extends State<HomePage>
                                       borderRadius: BorderRadius.circular(20),
                                     ),
                                     labelColor: colors.primary,
-                                    unselectedLabelColor:
-                                        colors.onSurface.withOpacity(0.6),
+                                    unselectedLabelColor: colors.onSurface
+                                        .withOpacity(0.6),
                                     labelPadding: EdgeInsets.zero,
                                     dividerColor: Colors.transparent,
                                     tabs: [
@@ -238,43 +241,40 @@ class _HomePageState extends State<HomePage>
                               final appId = controller.appId.value;
                               return Builder(
                                 builder: (iconContext) {
-                                  return GestureDetector(
-                                    onTap: () async {
-                                      final selected =
-                                          await showGameSwitchMenu(
-                                        iconContext: iconContext,
-                                        currentAppId: controller.appId.value,
-                                      );
-                                      if (selected == null) {
-                                        return;
-                                      }
-                                      await controller.changeGame(selected);
-                                      MarketFilterSheet.preload(appId: selected);
-                                      if (!mounted) {
-                                        return;
-                                      }
-                                      setState(() {
-                                        _sortField = 'price';
-                                        _sortAsc = false;
-                                        _priceMin = null;
-                                        _priceMax = null;
-                                        _tags = null;
-                                        _itemName = null;
-                                      });
-                                    },
-                                    child: Padding(
-                                      padding: EdgeInsets.only(
-                                        right: 16 * scale,
-                                        left: 8 * scale,
-                                      ),
-                                      child: Image.asset(
-                                        'assets/images/game/icon/$appId.png',
-                                        width: gameIconSize,
-                                        height: gameIconSize,
-                                        errorBuilder: (context, error, stackTrace) {
-                                          return const Icon(Icons.videogame_asset);
-                                        },
-                                      ),
+                                  return Padding(
+                                    padding: EdgeInsets.only(
+                                      right: 16 * scale,
+                                      left: 8 * scale,
+                                    ),
+                                    child: GameIconButton(
+                                      appId: appId,
+                                      size: gameIconSize,
+                                      onTap: () async {
+                                        final selected =
+                                            await showGameSwitchMenu(
+                                              iconContext: iconContext,
+                                              currentAppId:
+                                                  controller.appId.value,
+                                            );
+                                        if (selected == null) {
+                                          return;
+                                        }
+                                        await controller.changeGame(selected);
+                                        MarketFilterSheet.preload(
+                                          appId: selected,
+                                        );
+                                        if (!mounted) {
+                                          return;
+                                        }
+                                        setState(() {
+                                          _sortField = 'price';
+                                          _sortAsc = false;
+                                          _priceMin = null;
+                                          _priceMax = null;
+                                          _tags = null;
+                                          _itemName = null;
+                                        });
+                                      },
                                     ),
                                   );
                                 },
@@ -325,8 +325,12 @@ class _HomePageState extends State<HomePage>
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
-    final fillColor = isDark ? Colors.white.withOpacity(0.08) : colors.surfaceVariant;
-    final hintColor = isDark ? Colors.white38 : colors.onSurface.withOpacity(0.4);
+    final fillColor = isDark
+        ? Colors.white.withOpacity(0.08)
+        : colors.surfaceVariant;
+    final hintColor = isDark
+        ? Colors.white38
+        : colors.onSurface.withOpacity(0.4);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -395,10 +399,10 @@ class _HomePageState extends State<HomePage>
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
-    final baseColor =
-        isDark ? Colors.white.withOpacity(0.08) : colors.surfaceVariant;
-    final background =
-        active ? colors.primary.withOpacity(0.12) : baseColor;
+    final baseColor = isDark
+        ? Colors.white.withOpacity(0.08)
+        : colors.surfaceVariant;
+    final background = active ? colors.primary.withOpacity(0.12) : baseColor;
     final iconColor = active ? colors.primary : colors.onSurfaceVariant;
     return Tooltip(
       message: tooltip,
@@ -417,7 +421,6 @@ class _HomePageState extends State<HomePage>
       ),
     );
   }
-
 
   Widget _buildGrid(
     List<MarketItemEntity> items,
@@ -453,10 +456,8 @@ class _HomePageState extends State<HomePage>
                   final item = items[index];
                   return MarketItemCard(
                     item: item,
-                    onTap: () => Get.toNamed(
-                      Routers.MARKET_DETAIL,
-                      arguments: item,
-                    ),
+                    onTap: () =>
+                        Get.toNamed(Routers.MARKET_DETAIL, arguments: item),
                   );
                 },
               ),

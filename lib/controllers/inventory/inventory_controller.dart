@@ -24,6 +24,8 @@ class InventoryController extends GetxController {
   final RxBool sortAsc = false.obs;
   final RxnDouble priceMin = RxnDouble();
   final RxnDouble priceMax = RxnDouble();
+  final RxnString itemName = RxnString();
+  final RxMap<String, dynamic> tags = <String, dynamic>{}.obs;
   final RxBool sellableOnly = false.obs;
   final RxBool coolingOnly = false.obs;
 
@@ -49,6 +51,8 @@ class InventoryController extends GetxController {
       total.value = 0;
       totalPrice.value = 0;
       selectedIds.clear();
+      itemName.value = null;
+      tags.clear();
       _page = 1;
       _hasMore = true;
       _lastFetchedAt = null;
@@ -138,12 +142,13 @@ class InventoryController extends GetxController {
   }
 
   Future<InventoryResponse?> _fetchInventoryPage(int page) async {
-    final tags = <String, dynamic>{};
+    final tagPayload = Map<String, dynamic>.from(tags)
+      ..removeWhere((key, value) => value == null || value == '');
     if (priceMin.value != null) {
-      tags['priceMin'] = priceMin.value;
+      tagPayload['priceMin'] = priceMin.value;
     }
     if (priceMax.value != null) {
-      tags['priceMax'] = priceMax.value;
+      tagPayload['priceMax'] = priceMax.value;
     }
 
     final res = await _inventoryApi.inventoryList(
@@ -153,7 +158,8 @@ class InventoryController extends GetxController {
       field: sortField.value,
       asc: sortAsc.value,
       keywords: keywords.value.isEmpty ? null : keywords.value,
-      tags: tags.isEmpty ? null : tags,
+      tags: tagPayload.isEmpty ? null : tagPayload,
+      itemName: itemName.value,
       canSellOnly: sellableOnly.value ? true : null,
       status: coolingOnly.value ? 4 : null,
     );
@@ -175,6 +181,7 @@ class InventoryController extends GetxController {
 
   Future<void> search(String value) async {
     keywords.value = value.trim();
+    itemName.value = null;
     clearSelection();
     await refreshList();
   }
@@ -184,6 +191,9 @@ class InventoryController extends GetxController {
     bool? asc,
     double? minPrice,
     double? maxPrice,
+    Map<String, dynamic>? tags,
+    String? itemName,
+    String? keyword,
     bool? sellableOnlyFlag,
     bool? coolingOnlyFlag,
   }) async {
@@ -193,8 +203,17 @@ class InventoryController extends GetxController {
     if (asc != null) {
       sortAsc.value = asc;
     }
+    if (keyword != null) {
+      keywords.value = keyword.trim();
+    }
     priceMin.value = minPrice;
     priceMax.value = maxPrice;
+    if (tags != null) {
+      this.tags.value = Map<String, dynamic>.from(tags);
+    }
+    if (itemName != null) {
+      this.itemName.value = itemName.isEmpty ? null : itemName;
+    }
     if (sellableOnlyFlag != null) {
       sellableOnly.value = sellableOnlyFlag;
     }
@@ -238,6 +257,8 @@ class InventoryController extends GetxController {
     }
     currentAppId.value = newAppId;
     await GameStorage.setGameType(newAppId);
+    tags.clear();
+    itemName.value = null;
     clearSelection();
     await refreshList();
   }

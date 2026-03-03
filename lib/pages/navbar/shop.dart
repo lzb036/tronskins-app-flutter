@@ -7,6 +7,7 @@ import 'package:tronskins_app/api/steam.dart';
 import 'package:tronskins_app/api/tradeoffer.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
 import 'package:tronskins_app/common/storage/game_storage.dart';
+import 'package:tronskins_app/components/game/game_icon_button.dart';
 import 'package:tronskins_app/components/game/game_switch_menu.dart';
 import 'package:tronskins_app/components/filter/filter_models.dart';
 import 'package:tronskins_app/components/filter/order_filter_sheet.dart';
@@ -384,6 +385,9 @@ class _ShopPageState extends State<ShopPage>
   @override
   Widget build(BuildContext context) {
     final currency = Get.find<CurrencyController>();
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
     return Scaffold(
       body: Obx(() {
         if (!userController.isLoggedIn.value) {
@@ -394,10 +398,15 @@ class _ShopPageState extends State<ShopPage>
             children: [
               Container(
                 decoration: BoxDecoration(
-                  color: Theme.of(context).scaffoldBackgroundColor,
+                  color: isDark ? colors.surface : Colors.white,
+                  border: Border(
+                    bottom: BorderSide(
+                      color: colors.outline.withValues(alpha: 0.08),
+                    ),
+                  ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withValues(alpha: 0.05),
                       offset: const Offset(0, 4),
                       blurRadius: 8,
                     ),
@@ -437,7 +446,8 @@ class _ShopPageState extends State<ShopPage>
                           const SizedBox(width: 12),
                           Builder(
                             builder: (iconContext) {
-                              return GestureDetector(
+                              return GameIconButton(
+                                appId: GameStorage.getGameType(),
                                 onTap: () async {
                                   final selected = await showGameSwitchMenu(
                                     iconContext: iconContext,
@@ -452,14 +462,6 @@ class _ShopPageState extends State<ShopPage>
                                   salesController.refreshSellRecords();
                                   setState(() {});
                                 },
-                                child: Image.asset(
-                                  'assets/images/game/icon/${GameStorage.getGameType()}.png',
-                                  width: 40,
-                                  height: 40,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return const Icon(Icons.videogame_asset);
-                                  },
-                                ),
                               );
                             },
                           ),

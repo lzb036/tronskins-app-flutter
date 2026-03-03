@@ -3,15 +3,18 @@ import 'package:get/get.dart';
 import 'package:tronskins_app/api/model/shop/shop_models.dart';
 import 'package:tronskins_app/api/steam.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
+import 'package:tronskins_app/components/game/game_icon_button.dart';
 import 'package:tronskins_app/components/game/game_switch_menu.dart';
 import 'package:tronskins_app/components/game_item/inventory_item_card.dart';
 import 'package:tronskins_app/components/filter/filter_models.dart';
-import 'package:tronskins_app/components/filter/price_sort_filter_sheet.dart';
+import 'package:tronskins_app/components/filter/market_filter_sheet.dart';
 import 'package:tronskins_app/controllers/auth/steam_controller.dart';
 import 'package:tronskins_app/controllers/inventory/inventory_controller.dart';
 import 'package:tronskins_app/controllers/navbar/nav_controller.dart';
 import 'package:tronskins_app/controllers/user/user_controller.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
+
+enum _InventoryStateFilter { all, sellable, cooling }
 
 class InventoryPage extends StatefulWidget {
   const InventoryPage({super.key});
@@ -74,6 +77,9 @@ class _InventoryPageState extends State<InventoryPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      MarketFilterSheet.preload(appId: controller.currentAppId.value);
+    });
     if (userController.isLoggedIn.value) {
       controller.refreshIfStale();
       Future.microtask(_checkSteamSessionIfNeeded);
@@ -214,33 +220,34 @@ class _InventoryPageState extends State<InventoryPage> {
   }
 
   Future<void> _openFilterSheet() async {
-    final result = await showModalBottomSheet<PriceSortFilterResult>(
+    final result = await MarketFilterSheet.showFromRight(
       context: context,
-      isScrollControlled: true,
-      builder: (context) => PriceSortFilterSheet(
-        sortOptions: const [
-          SortOption(labelKey: 'app.market.filter.price', field: 'price'),
-          SortOption(labelKey: 'app.market.filter.time', field: 'time'),
-        ],
-        showInventoryStateFilters: controller.currentAppId.value != 440,
-        initial: PriceSortFilterResult(
-          sortField: controller.sortField.value,
-          sortAsc: controller.sortAsc.value,
-          priceMin: controller.priceMin.value,
-          priceMax: controller.priceMax.value,
-          sellableOnly: controller.sellableOnly.value,
-          coolingOnly: controller.coolingOnly.value,
-        ),
+      appId: controller.currentAppId.value,
+      sortOptions: const [
+        SortOption(labelKey: 'app.market.filter.price', field: 'price'),
+        SortOption(labelKey: 'app.market.filter.time', field: 'time'),
+      ],
+      initial: MarketFilterResult(
+        sortField: controller.sortField.value,
+        sortAsc: controller.sortAsc.value,
+        priceMin: controller.priceMin.value,
+        priceMax: controller.priceMax.value,
+        tags: Map<String, dynamic>.from(controller.tags),
+        itemName: controller.itemName.value,
       ),
     );
     if (result != null) {
+      if (result.clearKeyword) {
+        _searchController.clear();
+      }
       await controller.applyFilter(
         field: result.sortField,
         asc: result.sortAsc,
         minPrice: result.priceMin,
         maxPrice: result.priceMax,
-        sellableOnlyFlag: result.sellableOnly,
-        coolingOnlyFlag: result.coolingOnly,
+        tags: result.tags,
+        itemName: result.itemName,
+        keyword: result.clearKeyword ? '' : null,
       );
     }
   }
@@ -263,6 +270,9 @@ class _InventoryPageState extends State<InventoryPage> {
   @override
   Widget build(BuildContext context) {
     final currency = Get.find<CurrencyController>();
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
     return Scaffold(
       body: Obx(() {
         if (!userController.isLoggedIn.value) {
@@ -273,7 +283,12 @@ class _InventoryPageState extends State<InventoryPage> {
             children: [
               Container(
                 decoration: BoxDecoration(
-                  color: Theme.of(context).scaffoldBackgroundColor,
+                  color: isDark ? colors.surface : Colors.white,
+                  border: Border(
+                    bottom: BorderSide(
+                      color: colors.outline.withValues(alpha: 0.08),
+                    ),
+                  ),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.05),
@@ -298,7 +313,7 @@ class _InventoryPageState extends State<InventoryPage> {
                             style: Theme.of(context).textTheme.titleLarge
                                 ?.copyWith(fontWeight: FontWeight.bold),
                           ),
-                          Row(children: [_buildGameIcon()]),
+                          _buildTopRightActions(),
                         ],
                       ),
                     ),
@@ -306,26 +321,7 @@ class _InventoryPageState extends State<InventoryPage> {
                     const SizedBox(height: 8),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Obx(() {
-                        return Card(
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Row(
-                              children: [
-                                Text(
-                                  '${'app.inventory.count'.tr}: ${controller.total.value}',
-                                  style: Theme.of(context).textTheme.bodyMedium,
-                                ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  '${'app.inventory.total_value'.tr}: ${currency.format(controller.totalPrice.value)}',
-                                  style: Theme.of(context).textTheme.bodyMedium,
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }),
+                      child: _buildInventorySummaryBar(currency),
                     ),
                     const SizedBox(height: 8),
                   ],
@@ -523,12 +519,134 @@ class _InventoryPageState extends State<InventoryPage> {
     );
   }
 
+  Widget _buildTopRightActions() {
+    return Obx(() {
+      final showStateFilters = controller.currentAppId.value != 440;
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (showStateFilters) ...[
+            _buildInventoryStateSwitcher(),
+            const SizedBox(width: 8),
+          ],
+          _buildGameIcon(),
+        ],
+      );
+    });
+  }
+
+  _InventoryStateFilter _currentInventoryStateFilter() {
+    if (controller.sellableOnly.value) {
+      return _InventoryStateFilter.sellable;
+    }
+    if (controller.coolingOnly.value) {
+      return _InventoryStateFilter.cooling;
+    }
+    return _InventoryStateFilter.all;
+  }
+
+  String _inventoryStateLabelKey(_InventoryStateFilter filter) {
+    switch (filter) {
+      case _InventoryStateFilter.sellable:
+        return 'app.market.product.sellable';
+      case _InventoryStateFilter.cooling:
+        return 'app.market.product.cooling';
+      case _InventoryStateFilter.all:
+        return 'app.market.filter.all';
+    }
+  }
+
+  IconData _inventoryStateIcon(_InventoryStateFilter filter) {
+    switch (filter) {
+      case _InventoryStateFilter.sellable:
+        return Icons.sell_outlined;
+      case _InventoryStateFilter.cooling:
+        return Icons.timer_outlined;
+      case _InventoryStateFilter.all:
+        return Icons.apps_outlined;
+    }
+  }
+
+  Future<void> _openInventoryStateSwitchMenu(BuildContext iconContext) async {
+    if (controller.isLoading.value) {
+      return;
+    }
+    final currentFilter = _currentInventoryStateFilter();
+    final selected = await _showInventoryStateSwitchMenu(
+      iconContext: iconContext,
+      currentFilter: currentFilter,
+    );
+    if (selected == null || selected == currentFilter) {
+      return;
+    }
+
+    switch (selected) {
+      case _InventoryStateFilter.all:
+        if (controller.sellableOnly.value) {
+          await controller.toggleSellable();
+          return;
+        }
+        if (controller.coolingOnly.value) {
+          await controller.toggleCooling();
+        }
+        return;
+      case _InventoryStateFilter.sellable:
+        if (!controller.sellableOnly.value) {
+          await controller.toggleSellable();
+        }
+        return;
+      case _InventoryStateFilter.cooling:
+        if (!controller.coolingOnly.value) {
+          await controller.toggleCooling();
+        }
+        return;
+    }
+  }
+
+  Widget _buildInventoryStateSwitcher() {
+    final colors = Theme.of(context).colorScheme;
+    return Obx(() {
+      final loading = controller.isLoading.value;
+      final filter = _currentInventoryStateFilter();
+      final iconColor = colors.onSurfaceVariant;
+      final opacity = loading ? 0.45 : 1.0;
+
+      return Builder(
+        builder: (iconContext) {
+          return Opacity(
+            opacity: opacity,
+            child: Tooltip(
+              message: _inventoryStateLabelKey(filter).tr,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: () => _openInventoryStateSwitchMenu(iconContext),
+                  child: SizedBox(
+                    width: 40,
+                    height: 40,
+                    child: Icon(
+                      _inventoryStateIcon(filter),
+                      size: 22,
+                      color: iconColor,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      );
+    });
+  }
+
   Widget _buildGameIcon() {
     return Obx(() {
       final appId = controller.currentAppId.value;
       return Builder(
         builder: (iconContext) {
-          return GestureDetector(
+          return GameIconButton(
+            appId: appId,
             onTap: () async {
               final selected = await showGameSwitchMenu(
                 iconContext: iconContext,
@@ -537,28 +655,136 @@ class _InventoryPageState extends State<InventoryPage> {
               if (selected == null) {
                 return;
               }
+              MarketFilterSheet.preload(appId: selected);
               controller.changeGame(selected);
             },
-            child: Image.asset(
-              'assets/images/game/icon/$appId.png',
-              width: 40,
-              height: 40,
-              errorBuilder: (context, error, stackTrace) {
-                return const Icon(Icons.videogame_asset);
-              },
-            ),
           );
         },
       );
     });
   }
 
+  Widget _buildInventorySummaryBar(CurrencyController currency) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final baseStart = isDark ? colors.surfaceContainerHigh : Colors.white;
+    final baseEnd = isDark
+        ? colors.surfaceContainer
+        : colors.primary.withValues(alpha: 0.05);
+    final borderColor = colors.outline.withValues(alpha: 0.18);
+
+    return Obx(() {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [baseStart, baseEnd],
+          ),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: borderColor),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.14 : 0.04),
+              offset: const Offset(0, 2),
+              blurRadius: 6,
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: _buildInventorySummaryMetric(
+                icon: Icons.inventory_2_outlined,
+                iconColor: colors.primary,
+                label: 'app.inventory.count'.tr,
+                value: '${controller.total.value}',
+              ),
+            ),
+            Container(
+              width: 1,
+              height: 34,
+              color: borderColor,
+              margin: const EdgeInsets.symmetric(horizontal: 10),
+            ),
+            Expanded(
+              child: _buildInventorySummaryMetric(
+                icon: Icons.payments_outlined,
+                iconColor: const Color(0xFFE2A400),
+                label: 'app.inventory.total_value'.tr,
+                value: currency.format(controller.totalPrice.value),
+              ),
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
+  Widget _buildInventorySummaryMetric({
+    required IconData icon,
+    required Color iconColor,
+    required String label,
+    required String value,
+  }) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    return Row(
+      children: [
+        Container(
+          width: 30,
+          height: 30,
+          decoration: BoxDecoration(
+            color: iconColor.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, size: 16, color: iconColor),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: colors.onSurface.withValues(alpha: 0.7),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: colors.onSurface,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildSearchBar() {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
     final fillColor = isDark
         ? Colors.white.withValues(alpha: 0.08)
-        : const Color(0xFFF5F5F5);
-    final hintColor = isDark ? Colors.white38 : Colors.grey[400];
+        : colors.surfaceVariant;
+    final hintColor = isDark
+        ? Colors.white38
+        : colors.onSurface.withValues(alpha: 0.4);
+    final hasKeyword = _searchController.text.trim().isNotEmpty;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -567,45 +793,96 @@ class _InventoryPageState extends State<InventoryPage> {
           Expanded(
             child: SizedBox(
               height: 40,
-              child: TextField(
-                controller: _searchController,
-                onSubmitted: (_) => _search(),
-                textAlignVertical: TextAlignVertical.center,
-                decoration: InputDecoration(
-                  hintText: 'app.market.filter.search'.tr,
-                  hintStyle: TextStyle(color: hintColor, fontSize: 14),
-                  prefixIcon: Icon(Icons.search, color: hintColor, size: 20),
-                  filled: true,
-                  fillColor: fillColor,
-                  contentPadding: EdgeInsets.zero,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(4),
-                    borderSide: BorderSide.none,
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(4),
-                    borderSide: BorderSide.none,
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(4),
-                    borderSide: BorderSide.none,
+              child: Material(
+                color: fillColor,
+                borderRadius: BorderRadius.circular(10),
+                child: TextField(
+                  controller: _searchController,
+                  onSubmitted: (_) => _search(),
+                  onChanged: (_) {
+                    if (mounted) {
+                      setState(() {});
+                    }
+                  },
+                  textAlignVertical: TextAlignVertical.center,
+                  decoration: InputDecoration(
+                    hintText: 'app.market.filter.search'.tr,
+                    hintStyle: TextStyle(color: hintColor, fontSize: 14),
+                    prefixIcon: Icon(Icons.search, color: hintColor, size: 20),
+                    suffixIcon: hasKeyword
+                        ? IconButton(
+                            icon: const Icon(Icons.close, size: 18),
+                            onPressed: () {
+                              _searchController.clear();
+                              if (mounted) {
+                                setState(() {});
+                              }
+                            },
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: fillColor,
+                    contentPadding: EdgeInsets.zero,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
                 ),
               ),
             ),
           ),
           const SizedBox(width: 8),
-          IconButton(
+          _buildActionButton(
             tooltip: 'app.market.filter.search'.tr,
-            icon: const Icon(Icons.send),
-            onPressed: _search,
+            icon: Icons.send,
+            onTap: _search,
           ),
-          IconButton(
+          const SizedBox(width: 8),
+          _buildActionButton(
             tooltip: 'app.market.filter.text'.tr,
-            icon: const Icon(Icons.filter_alt_outlined),
-            onPressed: _openFilterSheet,
+            icon: Icons.filter_alt_outlined,
+            onTap: _openFilterSheet,
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback onTap,
+  }) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final baseColor = isDark
+        ? Colors.white.withValues(alpha: 0.08)
+        : colors.surfaceVariant;
+    final iconColor = colors.onSurfaceVariant;
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: baseColor,
+        borderRadius: BorderRadius.circular(10),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: onTap,
+          child: SizedBox(
+            width: 40,
+            height: 40,
+            child: Icon(icon, color: iconColor, size: 20),
+          ),
+        ),
       ),
     );
   }
@@ -622,6 +899,185 @@ class _InventoryPageState extends State<InventoryPage> {
             child: Text('app.user.login.nologin'.tr),
           ),
         ],
+      ),
+    );
+  }
+}
+
+Future<_InventoryStateFilter?> _showInventoryStateSwitchMenu({
+  required BuildContext iconContext,
+  required _InventoryStateFilter currentFilter,
+}) {
+  final overlay =
+      Overlay.of(iconContext).context.findRenderObject() as RenderBox;
+  final box = iconContext.findRenderObject() as RenderBox;
+  final iconRect = box.localToGlobal(Offset.zero) & box.size;
+  final screenSize = overlay.size;
+  final alignX = ((iconRect.center.dx / screenSize.width) * 2 - 1).clamp(
+    -1.0,
+    1.0,
+  );
+  final alignment = Alignment(alignX.toDouble(), -1);
+  final panelTop = (iconRect.bottom + 8)
+      .clamp(0.0, screenSize.height)
+      .toDouble();
+
+  return showGeneralDialog<_InventoryStateFilter>(
+    context: iconContext,
+    barrierDismissible: true,
+    barrierLabel: MaterialLocalizations.of(
+      iconContext,
+    ).modalBarrierDismissLabel,
+    barrierColor: Colors.black.withValues(alpha: 0.2),
+    transitionDuration: const Duration(milliseconds: 220),
+    pageBuilder: (_, __, ___) => const SizedBox.shrink(),
+    transitionBuilder: (context, animation, __, ___) {
+      return _InventoryStateSwitchOverlay(
+        animation: animation,
+        alignment: alignment,
+        top: panelTop,
+        currentFilter: currentFilter,
+      );
+    },
+  );
+}
+
+class _InventoryStateSwitchOverlay extends StatelessWidget {
+  const _InventoryStateSwitchOverlay({
+    required this.animation,
+    required this.alignment,
+    required this.top,
+    required this.currentFilter,
+  });
+
+  final Animation<double> animation;
+  final Alignment alignment;
+  final double top;
+  final _InventoryStateFilter currentFilter;
+
+  @override
+  Widget build(BuildContext context) {
+    final curved = CurvedAnimation(
+      parent: animation,
+      curve: Curves.easeOutCubic,
+    );
+    return Material(
+      type: MaterialType.transparency,
+      child: Stack(
+        children: [
+          Positioned(
+            top: top,
+            left: 0,
+            right: 0,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0, -0.05),
+                end: Offset.zero,
+              ).animate(curved),
+              child: ScaleTransition(
+                alignment: alignment,
+                scale: Tween<double>(begin: 0.2, end: 1).animate(curved),
+                child: FadeTransition(
+                  opacity: curved,
+                  child: Align(
+                    alignment: alignment,
+                    child: _InventoryStateSwitchPanel(
+                      currentFilter: currentFilter,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _InventoryStateSwitchPanel extends StatelessWidget {
+  const _InventoryStateSwitchPanel({required this.currentFilter});
+
+  final _InventoryStateFilter currentFilter;
+
+  @override
+  Widget build(BuildContext context) {
+    final surface = Theme.of(context).colorScheme.surface;
+    final divider = Theme.of(context).dividerColor;
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minWidth: 168),
+      child: Material(
+        color: surface,
+        elevation: 8,
+        borderRadius: BorderRadius.circular(12),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _InventoryStateOption(
+              filter: _InventoryStateFilter.all,
+              icon: Icons.apps_outlined,
+              labelKey: 'app.market.filter.all',
+              selected: currentFilter == _InventoryStateFilter.all,
+            ),
+            Divider(height: 1, color: divider),
+            _InventoryStateOption(
+              filter: _InventoryStateFilter.sellable,
+              icon: Icons.sell_outlined,
+              labelKey: 'app.market.product.sellable',
+              selected: currentFilter == _InventoryStateFilter.sellable,
+            ),
+            Divider(height: 1, color: divider),
+            _InventoryStateOption(
+              filter: _InventoryStateFilter.cooling,
+              icon: Icons.timer_outlined,
+              labelKey: 'app.market.product.cooling',
+              selected: currentFilter == _InventoryStateFilter.cooling,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _InventoryStateOption extends StatelessWidget {
+  const _InventoryStateOption({
+    required this.filter,
+    required this.icon,
+    required this.labelKey,
+    required this.selected,
+  });
+
+  final _InventoryStateFilter filter;
+  final IconData icon;
+  final String labelKey;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    const selectedColor = Color(0xFFFFB800);
+    return InkWell(
+      onTap: () => Navigator.of(context).pop(filter),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Row(
+          children: [
+            Icon(icon, size: 18, color: selected ? selectedColor : null),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                labelKey.tr,
+                style: TextStyle(
+                  color: selected ? selectedColor : null,
+                  fontWeight: selected ? FontWeight.bold : null,
+                ),
+              ),
+            ),
+            if (selected)
+              const Icon(Icons.check, color: selectedColor, size: 18),
+          ],
+        ),
       ),
     );
   }
