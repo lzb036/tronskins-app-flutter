@@ -2,6 +2,7 @@
 final Map<String, String> vi_VN = {
   "app.tabbar.home": "Trang chủ",
   "app.tabbar.inventory": "Tài kho",
+  "app.tabbar.market": "Thị trường phụ kiện",
   "app.tabbar.sell": "Bán",
   "app.tabbar.mine": "Mỏ",
   "app.market.price_total": "Tổng cộng",
@@ -309,6 +310,7 @@ final Map<String, String> vi_VN = {
   "app.user.setting.theme": "Chủ đề",
   "app.user.setting.theme_light": "Chế độ sáng",
   "app.user.setting.theme_dark": "Chế độ tối",
+  "app.user.setting.theme_system": "Theo hệ thống",
   "app.user.setting.server": "Chuyển đổi máy chủ",
   "app.user.setting.server_add": "Máy chủ mới được thêm",
   "app.user.setting.server_ip_placeholder": "Vui lòng nhập địa chỉ IP.",
@@ -441,6 +443,7 @@ final Map<String, String> vi_VN = {
   "app.inventory.pricing": "Giá cả",
   "app.inventory.pricing_reference": "Giá tham khảo",
   "app.inventory.pricing_abnormal": "Giá bất thường",
+  "app.inventory.view_overview": "View Overview",
   "app.inventory.upshop.text": "Trên bán",
   "app.inventory.upshop.confirm_title": "Xác nhận kệ",
   "app.inventory.upshop.nums": "Số kệ",

@@ -9,6 +9,7 @@ import 'package:tronskins_app/api/steam.dart';
 import 'package:tronskins_app/api/tradeoffer.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
 import 'package:tronskins_app/common/storage/game_storage.dart';
+import 'package:tronskins_app/common/utils/app_snackbar.dart';
 import 'package:tronskins_app/components/game/game_icon_button.dart';
 import 'package:tronskins_app/components/game/game_switch_menu.dart';
 import 'package:tronskins_app/components/filter/filter_models.dart';
@@ -18,6 +19,7 @@ import 'package:tronskins_app/components/game_item/game_item_models.dart';
 import 'package:tronskins_app/components/game_item/shop_sale_item_card.dart';
 import 'package:tronskins_app/components/game_item/wear_progress_bar.dart';
 import 'package:tronskins_app/components/layout/list_end_tip.dart';
+import 'package:tronskins_app/controllers/navbar/nav_controller.dart';
 import 'package:tronskins_app/controllers/shop/shop_controller.dart';
 import 'package:tronskins_app/controllers/shop/shop_order_controller.dart';
 import 'package:tronskins_app/controllers/shop/shop_sales_controller.dart';
@@ -64,6 +66,7 @@ class _ShopPageState extends State<ShopPage>
   final TextEditingController _recordSearchController = TextEditingController();
   final Set<int> _selectedIds = <int>{};
   Worker? _loginWorker;
+  Worker? _shopTargetTabWorker;
   static const List<StatusOption> _statusOptions = [
     StatusOption(
       labelKey: 'app.market.filter.all',
@@ -88,6 +91,28 @@ class _ShopPageState extends State<ShopPage>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       MarketFilterSheet.preload(appId: GameStorage.getGameType());
     });
+    final navController = Get.isRegistered<NavController>()
+        ? Get.find<NavController>()
+        : Get.put(NavController(), permanent: true);
+    _shopTargetTabWorker = ever<int?>(navController.pendingShopTabIndex, (
+      targetTab,
+    ) {
+      if (targetTab == null) {
+        return;
+      }
+      _switchToShopTab(targetTab);
+      navController.clearPendingShopTab();
+    });
+    final initialTargetTab = navController.pendingShopTabIndex.value;
+    if (initialTargetTab != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) {
+          return;
+        }
+        _switchToShopTab(initialTargetTab);
+        navController.clearPendingShopTab();
+      });
+    }
 
     if (userController.isLoggedIn.value) {
       salesController.refreshOnSale();
@@ -123,7 +148,16 @@ class _ShopPageState extends State<ShopPage>
     _pendingSearchController.dispose();
     _recordSearchController.dispose();
     _loginWorker?.dispose();
+    _shopTargetTabWorker?.dispose();
     super.dispose();
+  }
+
+  void _switchToShopTab(int targetTab) {
+    final safeIndex = targetTab.clamp(0, _tabController.length - 1).toInt();
+    if (_tabController.index == safeIndex) {
+      return;
+    }
+    _tabController.animateTo(safeIndex);
   }
 
   void _handleTabChange() {
@@ -212,9 +246,19 @@ class _ShopPageState extends State<ShopPage>
     if (confirmed != true) {
       return;
     }
-    await salesController.delistItems(_selectedIds.toList());
-    setState(_selectedIds.clear);
-    Get.snackbar('app.system.tips.title'.tr, 'app.system.message.success'.tr);
+    try {
+      final res = await salesController.delistItems(_selectedIds.toList());
+      if (res.success) {
+        setState(_selectedIds.clear);
+        AppSnackbar.success('app.system.message.success'.tr);
+      } else {
+        AppSnackbar.error(
+          res.message.isNotEmpty ? res.message : 'app.trade.filter.failed'.tr,
+        );
+      }
+    } catch (_) {
+      AppSnackbar.error('app.trade.filter.failed'.tr);
+    }
   }
 
   ShopSchemaInfo? _lookupSchema(
@@ -874,15 +918,15 @@ class _ShopPageState extends State<ShopPage>
             borderRadius: BorderRadius.circular(6),
             onTap: enabled ? _toggleSelectAll : null,
             child: Container(
-              width: 24,
-              height: 24,
+              width: 22,
+              height: 22,
               decoration: BoxDecoration(
                 color: colors.surface,
-                borderRadius: BorderRadius.circular(6),
+                borderRadius: BorderRadius.circular(5),
                 border: Border.all(color: borderColor),
               ),
               child: selected
-                  ? Icon(Icons.check_rounded, color: colors.primary, size: 16)
+                  ? Icon(Icons.check_rounded, color: colors.primary, size: 14)
                   : const SizedBox.shrink(),
             ),
           ),
@@ -1566,196 +1610,209 @@ class _ShopPageState extends State<ShopPage>
                       ? const Color(0xFFC22121)
                       : colorScheme.onSurfaceVariant;
                   return Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  _formatTime(record.createTime),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: textTheme.bodySmall?.copyWith(
-                                    color: colorScheme.onSurfaceVariant,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Flexible(
-                                child: Text(
-                                  statusText,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: textTheme.bodySmall?.copyWith(
-                                    color: statusColor,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          if (!hasMultipleDetails)
+                    clipBehavior: Clip.antiAlias,
+                    child: InkWell(
+                      onTap: () => _openSellRecordDetail(record),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                             Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (primary != null)
-                                  _buildSellRecordDetailImage(
-                                    detail: primary,
-                                    schemas: salesController.schemas,
-                                  )
-                                else
-                                  Container(
-                                    width: 72,
-                                    height: 43,
-                                    decoration: BoxDecoration(
-                                      color:
-                                          colorScheme.surfaceContainerHighest,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    alignment: Alignment.center,
-                                    child: const Icon(
-                                      Icons.image_not_supported_outlined,
-                                      size: 18,
-                                    ),
-                                  ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              title,
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: textTheme.titleSmall
-                                                  ?.copyWith(
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
-                                            ),
-                                            if (wearValue != null &&
-                                                wearText != null) ...[
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                '${'app.market.csgo.abradability'.tr}: $wearText',
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: textTheme.bodySmall
-                                                    ?.copyWith(
-                                                      color: colorScheme
-                                                          .onSurfaceVariant,
-                                                    ),
-                                              ),
-                                              const SizedBox(height: 4),
-                                              WearProgressBar(
-                                                paintWear: wearValue,
-                                              ),
-                                            ],
-                                          ],
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.end,
-                                        children: [
-                                          if (showCountdown) ...[
-                                            _RecordProtectionCountdownText(
-                                              endTimeSeconds:
-                                                  record.protectionTime!,
-                                              style: textTheme.bodySmall
-                                                  ?.copyWith(
-                                                    color:
-                                                        Colors.orange.shade600,
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
-                                            ),
-                                            const SizedBox(height: 4),
-                                          ],
-                                          Obx(
-                                            () => Text(
-                                              currency.format(totalPrice),
-                                              style: textTheme.titleSmall
-                                                  ?.copyWith(
-                                                    color: colorScheme.primary,
-                                                    fontWeight: FontWeight.w700,
-                                                  ),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            )
-                          else
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.center,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Expanded(
-                                  child: Row(
-                                    children: [
-                                      ...visibleDetailItems.map(
-                                        (detail) => Padding(
-                                          padding: const EdgeInsets.only(
-                                            right: 8,
-                                          ),
-                                          child: _buildSellRecordDetailImage(
-                                            detail: detail,
-                                            schemas: salesController.schemas,
-                                          ),
-                                        ),
-                                      ),
-                                      if (hiddenDetailCount > 0)
-                                        Text(
-                                          '+$hiddenDetailCount',
-                                          style: textTheme.bodySmall?.copyWith(
-                                            color: colorScheme.onSurfaceVariant,
-                                          ),
-                                        ),
-                                    ],
+                                  child: Text(
+                                    _formatTime(record.createTime),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: textTheme.bodySmall?.copyWith(
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(width: 8),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    if (showCountdown) ...[
-                                      _RecordProtectionCountdownText(
-                                        endTimeSeconds: record.protectionTime!,
-                                        style: textTheme.bodySmall?.copyWith(
-                                          color: Colors.orange.shade600,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                    ],
-                                    Obx(
-                                      () => Text(
-                                        currency.format(totalPrice),
-                                        style: textTheme.titleSmall?.copyWith(
-                                          color: colorScheme.primary,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
+                                Flexible(
+                                  child: Text(
+                                    statusText,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: textTheme.bodySmall?.copyWith(
+                                      color: statusColor,
+                                      fontWeight: FontWeight.w600,
                                     ),
-                                  ],
+                                  ),
                                 ),
                               ],
                             ),
-                        ],
+                            const SizedBox(height: 10),
+                            if (!hasMultipleDetails)
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (primary != null)
+                                    _buildSellRecordDetailImage(
+                                      detail: primary,
+                                      schemas: salesController.schemas,
+                                    )
+                                  else
+                                    Container(
+                                      width: 72,
+                                      height: 43,
+                                      decoration: BoxDecoration(
+                                        color:
+                                            colorScheme.surfaceContainerHighest,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: const Icon(
+                                        Icons.image_not_supported_outlined,
+                                        size: 18,
+                                      ),
+                                    ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                title,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: textTheme.titleSmall
+                                                    ?.copyWith(
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                    ),
+                                              ),
+                                              if (wearValue != null &&
+                                                  wearText != null) ...[
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  '${'app.market.csgo.abradability'.tr}: $wearText',
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: textTheme.bodySmall
+                                                      ?.copyWith(
+                                                        color: colorScheme
+                                                            .onSurfaceVariant,
+                                                      ),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                WearProgressBar(
+                                                  paintWear: wearValue,
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.end,
+                                          children: [
+                                            if (showCountdown) ...[
+                                              _RecordProtectionCountdownText(
+                                                endTimeSeconds:
+                                                    record.protectionTime!,
+                                                style: textTheme.bodySmall
+                                                    ?.copyWith(
+                                                      color: Colors
+                                                          .orange
+                                                          .shade600,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                    ),
+                                              ),
+                                              const SizedBox(height: 4),
+                                            ],
+                                            Obx(
+                                              () => Text(
+                                                currency.format(totalPrice),
+                                                style: textTheme.titleSmall
+                                                    ?.copyWith(
+                                                      color:
+                                                          colorScheme.primary,
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                    ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              )
+                            else
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Expanded(
+                                    child: Row(
+                                      children: [
+                                        ...visibleDetailItems.map(
+                                          (detail) => Padding(
+                                            padding: const EdgeInsets.only(
+                                              right: 8,
+                                            ),
+                                            child: _buildSellRecordDetailImage(
+                                              detail: detail,
+                                              schemas: salesController.schemas,
+                                            ),
+                                          ),
+                                        ),
+                                        if (hiddenDetailCount > 0)
+                                          Text(
+                                            '+$hiddenDetailCount',
+                                            style: textTheme.bodySmall
+                                                ?.copyWith(
+                                                  color: colorScheme
+                                                      .onSurfaceVariant,
+                                                ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      if (showCountdown) ...[
+                                        _RecordProtectionCountdownText(
+                                          endTimeSeconds:
+                                              record.protectionTime!,
+                                          style: textTheme.bodySmall?.copyWith(
+                                            color: Colors.orange.shade600,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                      ],
+                                      Obx(
+                                        () => Text(
+                                          currency.format(totalPrice),
+                                          style: textTheme.titleSmall?.copyWith(
+                                            color: colorScheme.primary,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                          ],
+                        ),
                       ),
                     ),
                   );
@@ -1791,43 +1848,99 @@ class _ShopPageState extends State<ShopPage>
               selected: allSelected,
               enabled: selectableTotal > 0,
             ),
-            const SizedBox(width: 8),
-            Text(
-              '${'app.inventory.count'.tr}: ${_selectedIds.length}/$selectableTotal',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const Spacer(),
-            OutlinedButton(
-              onPressed: _selectedIds.isEmpty
-                  ? null
-                  : () async {
-                      final selectedItems = salesController.onSaleItems
-                          .where((item) => _selectedIds.contains(item.id ?? -1))
-                          .toList();
-                      if (selectedItems.isEmpty) {
-                        return;
-                      }
-                      await Get.toNamed(
-                        Routers.SHOP_PRICE_CHANGE,
-                        arguments: {
-                          'items': selectedItems,
-                          'schemas': salesController.schemas,
-                          'appId': GameStorage.getGameType(),
-                        },
-                      );
-                      await salesController.refreshOnSale();
-                      setState(_selectedIds.clear);
-                    },
-              child: Text('app.inventory.price_change'.tr),
-            ),
-            const SizedBox(width: 12),
-            FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.error,
-                foregroundColor: Theme.of(context).colorScheme.onError,
+            const SizedBox(width: 4),
+            SizedBox(
+              width: 64,
+              child: Text(
+                '${_selectedIds.length}/$selectableTotal',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(fontSize: 12.5),
               ),
-              onPressed: _confirmDelist,
-              child: Text('app.inventory.delist'.tr),
+            ),
+            const SizedBox(width: 4),
+            Expanded(
+              child: SizedBox(
+                height: 42,
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerRight,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 10,
+                            ),
+                          ),
+                          onPressed: () {
+                            setState(() => _selectedIds.clear());
+                          },
+                          child: Text('app.common.cancel'.tr),
+                        ),
+                        const SizedBox(width: 4),
+                        OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 10,
+                            ),
+                          ),
+                          onPressed: _selectedIds.isEmpty
+                              ? null
+                              : () async {
+                                  final selectedItems = salesController
+                                      .onSaleItems
+                                      .where(
+                                        (item) => _selectedIds.contains(
+                                          item.id ?? -1,
+                                        ),
+                                      )
+                                      .toList();
+                                  if (selectedItems.isEmpty) {
+                                    return;
+                                  }
+                                  await Get.toNamed(
+                                    Routers.SHOP_PRICE_CHANGE,
+                                    arguments: {
+                                      'items': selectedItems,
+                                      'schemas': salesController.schemas,
+                                      'appId': GameStorage.getGameType(),
+                                    },
+                                  );
+                                  await salesController.refreshOnSale();
+                                  setState(_selectedIds.clear);
+                                },
+                          child: Text('app.inventory.price_change'.tr),
+                        ),
+                        const SizedBox(width: 4),
+                        FilledButton(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: Theme.of(
+                              context,
+                            ).colorScheme.error,
+                            foregroundColor: Theme.of(
+                              context,
+                            ).colorScheme.onError,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 10,
+                            ),
+                          ),
+                          onPressed: _confirmDelist,
+                          child: Text('app.inventory.delist'.tr),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ),
           ],
         ),
@@ -1846,6 +1959,18 @@ class _ShopPageState extends State<ShopPage>
           schemas: orderController.schemas,
           onDelivered: () => orderController.refreshPending(),
         );
+      },
+    );
+  }
+
+  Future<void> _openSellRecordDetail(ShopOrderItem record) async {
+    await Get.toNamed(
+      Routers.SHOP_ORDER_DETAIL,
+      arguments: {
+        'order': record,
+        'schemas': Map<String, ShopSchemaInfo>.from(salesController.schemas),
+        'users': Map<String, ShopUserInfo>.from(salesController.users),
+        'stickers': Map<String, dynamic>.from(salesController.stickers),
       },
     );
   }
@@ -1926,10 +2051,7 @@ class _ShopTabSwitchOverlay extends StatelessWidget {
                 scale: Tween<double>(begin: 0.2, end: 1).animate(curved),
                 child: FadeTransition(
                   opacity: curved,
-                  child: Align(
-                    alignment: alignment,
-                    child: _ShopTabSwitchPanel(currentFilter: currentFilter),
-                  ),
+                  child: _ShopTabSwitchPanel(currentFilter: currentFilter),
                 ),
               ),
             ),
@@ -1949,38 +2071,33 @@ class _ShopTabSwitchPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final surface = Theme.of(context).colorScheme.surface;
     final divider = Theme.of(context).dividerColor;
-    return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 168),
-      child: Material(
-        color: surface,
-        elevation: 8,
-        borderRadius: BorderRadius.circular(12),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _ShopTabSwitchOption(
-              filter: _ShopTabFilter.onSale,
-              icon: Icons.storefront_outlined,
-              labelKey: 'app.trade.onSale.text',
-              selected: currentFilter == _ShopTabFilter.onSale,
-            ),
-            Divider(height: 1, color: divider),
-            _ShopTabSwitchOption(
-              filter: _ShopTabFilter.pending,
-              icon: Icons.local_shipping_outlined,
-              labelKey: 'app.market.product.wait_for_sending',
-              selected: currentFilter == _ShopTabFilter.pending,
-            ),
-            Divider(height: 1, color: divider),
-            _ShopTabSwitchOption(
-              filter: _ShopTabFilter.saleRecord,
-              icon: Icons.receipt_long_outlined,
-              labelKey: 'app.user.menu.sale',
-              selected: currentFilter == _ShopTabFilter.saleRecord,
-            ),
-          ],
-        ),
+    return Material(
+      color: surface,
+      elevation: 8,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _ShopTabSwitchOption(
+            filter: _ShopTabFilter.onSale,
+            icon: Icons.storefront_outlined,
+            labelKey: 'app.trade.onSale.text',
+            selected: currentFilter == _ShopTabFilter.onSale,
+          ),
+          Divider(height: 1, color: divider),
+          _ShopTabSwitchOption(
+            filter: _ShopTabFilter.pending,
+            icon: Icons.local_shipping_outlined,
+            labelKey: 'app.market.product.wait_for_sending',
+            selected: currentFilter == _ShopTabFilter.pending,
+          ),
+          Divider(height: 1, color: divider),
+          _ShopTabSwitchOption(
+            filter: _ShopTabFilter.saleRecord,
+            icon: Icons.receipt_long_outlined,
+            labelKey: 'app.user.menu.sale',
+            selected: currentFilter == _ShopTabFilter.saleRecord,
+          ),
+        ],
       ),
     );
   }
@@ -2005,7 +2122,7 @@ class _ShopTabSwitchOption extends StatelessWidget {
     return InkWell(
       onTap: () => Navigator.of(context).pop(filter),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
             Icon(icon, size: 18, color: selected ? selectedColor : null),

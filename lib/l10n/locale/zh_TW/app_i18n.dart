@@ -2,6 +2,7 @@
 final Map<String, String> zh_TW = {
   "app.tabbar.home": "家",
   "app.tabbar.inventory": "庫存",
+  "app.tabbar.market": "配件市場",
   "app.tabbar.sell": "賣",
   "app.tabbar.mine": "我的",
   "app.market.price_total": "總計",
@@ -261,6 +262,7 @@ final Map<String, String> zh_TW = {
   "app.user.setting.theme": "主題",
   "app.user.setting.theme_light": "淺色模式",
   "app.user.setting.theme_dark": "暗色模式",
+  "app.user.setting.theme_system": "跟隨系統",
   "app.user.setting.server": "伺服器切換",
   "app.user.setting.server_add": "已添加新服務器",
   "app.user.setting.server_ip_placeholder": "請輸入IP地址。",
@@ -375,6 +377,7 @@ final Map<String, String> zh_TW = {
   "app.inventory.pricing": "定價",
   "app.inventory.pricing_reference": "參攷定價",
   "app.inventory.pricing_abnormal": "定價异常",
+  "app.inventory.view_overview": "查看總覽",
   "app.inventory.upshop.text": "促銷中",
   "app.inventory.upshop.confirm_title": "貨架確認",
   "app.inventory.upshop.nums": "貨架數量",

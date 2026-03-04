@@ -4,6 +4,7 @@ import 'package:tronskins_app/api/model/shop/shop_models.dart';
 import 'package:tronskins_app/api/shop_product.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
 import 'package:tronskins_app/common/storage/game_storage.dart';
+import 'package:tronskins_app/common/utils/app_snackbar.dart';
 import 'package:tronskins_app/components/game_item/game_item_image.dart';
 import 'package:tronskins_app/components/game_item/game_item_models.dart';
 import 'package:tronskins_app/components/game_item/sticker_row.dart';
@@ -590,10 +591,7 @@ class _ShopPriceChangePageState extends State<ShopPriceChangePage> {
       final id = item.id!;
       final price = _prices[id] ?? 0;
       if (price <= 0) {
-        Get.snackbar(
-          'app.system.tips.title'.tr,
-          'app.inventory.message.price_and_num_error'.tr,
-        );
+        AppSnackbar.error('app.inventory.message.price_and_num_error'.tr);
         return;
       }
       payload.add({'id': id, 'price': price, 'nums': item.count ?? 1});
@@ -626,18 +624,14 @@ class _ShopPriceChangePageState extends State<ShopPriceChangePage> {
       );
       if (res.success) {
         Get.back();
-        Get.snackbar(
-          'app.system.tips.title'.tr,
-          'app.system.message.success'.tr,
-        );
+        AppSnackbar.success('app.system.message.success'.tr);
       } else {
-        Get.snackbar(
-          'app.system.tips.title'.tr,
+        AppSnackbar.error(
           res.message.isNotEmpty ? res.message : 'app.trade.filter.failed'.tr,
         );
       }
     } catch (_) {
-      Get.snackbar('app.system.tips.title'.tr, 'app.trade.filter.failed'.tr);
+      AppSnackbar.error('app.trade.filter.failed'.tr);
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);
@@ -1308,7 +1302,7 @@ class _ShopPriceChangePageState extends State<ShopPriceChangePage> {
                 visualDensity: VisualDensity.compact,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              child: const Text('查看总览'),
+              child: Text('app.inventory.view_overview'.tr),
             ),
           ),
           Padding(

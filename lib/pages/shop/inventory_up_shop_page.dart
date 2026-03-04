@@ -5,6 +5,7 @@ import 'package:tronskins_app/api/model/shop/shop_models.dart';
 import 'package:tronskins_app/api/shop_product.dart';
 import 'package:tronskins_app/api/steam.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
+import 'package:tronskins_app/common/utils/app_snackbar.dart';
 import 'package:tronskins_app/components/game_item/game_item_image.dart';
 import 'package:tronskins_app/components/game_item/game_item_models.dart';
 import 'package:tronskins_app/components/game_item/sticker_row.dart';
@@ -124,10 +125,12 @@ class _InventoryUpShopPageState extends State<InventoryUpShopPage> {
     raw['market_name'] ??= item.marketName ?? schema?.marketName;
     raw['market_hash_name'] ??= item.marketHashName ?? schema?.marketHashName;
     raw['image_url'] ??= item.imageUrl ?? schema?.imageUrl;
-    raw['market_price'] ??=
-        schema?.raw['market_price'] ??
-        schema?.raw['reference_price'] ??
-        item.price;
+    final displayPrice = _extractReference(item, schema);
+    if (displayPrice > 0) {
+      raw['market_price'] ??= displayPrice;
+    }
+    raw['buff_min_price'] ??= schema?.raw['buff_min_price'];
+    raw['reference_price'] ??= schema?.raw['reference_price'];
     raw['tags'] ??= schema?.raw['tags'];
 
     return MarketItemEntity.fromJson(raw);
@@ -469,26 +472,27 @@ class _InventoryUpShopPageState extends State<InventoryUpShopPage> {
     });
   }
 
-  double _extractReference(ShopSchemaInfo? schema) {
+  double _extractReference(InventoryItem item, ShopSchemaInfo? schema) {
+    // Keep up-shop pricing aligned with inventory list item pricing.
+    final directPrice = _parsePriceValue(item.price);
+    if (directPrice > 0) {
+      return _normalizePrice(directPrice);
+    }
     if (schema == null) {
       return 0;
     }
     final raw = schema.raw;
 
-    final sellMin = _parsePriceValue(raw['sell_min']);
     final buffMinPrice = _parsePriceValue(raw['buff_min_price']);
-    if (sellMin > 0) {
-      if (buffMinPrice > 0) {
-        final minPrice = buffMinPrice < sellMin ? buffMinPrice : sellMin;
-        return _normalizePrice(minPrice);
-      }
-      return _normalizePrice(sellMin);
+    if (buffMinPrice > 0) {
+      return _normalizePrice(buffMinPrice);
     }
 
     final candidates = [
-      raw['reference_price'],
-      raw['buff_min_price'],
+      raw['sell_min'],
       raw['market_price'],
+      raw['reference_price'],
+      raw['price'],
     ];
     for (final value in candidates) {
       final parsed = _parsePriceValue(value);
@@ -543,7 +547,7 @@ class _InventoryUpShopPageState extends State<InventoryUpShopPage> {
   double _totalAppraise() {
     double total = 0;
     for (final item in _items) {
-      final reference = _extractReference(_lookupSchema(item));
+      final reference = _extractReference(item, _lookupSchema(item));
       if (reference <= 0) {
         continue;
       }
@@ -574,7 +578,7 @@ class _InventoryUpShopPageState extends State<InventoryUpShopPage> {
   }
 
   double _itemAppraise(InventoryItem item) {
-    final reference = _extractReference(_lookupSchema(item));
+    final reference = _extractReference(item, _lookupSchema(item));
     if (reference <= 0) {
       return 0;
     }
@@ -599,7 +603,7 @@ class _InventoryUpShopPageState extends State<InventoryUpShopPage> {
   void _applyReferencePrice() {
     for (final item in _items) {
       final id = item.id!;
-      final referencePrice = _extractReference(_lookupSchema(item));
+      final referencePrice = _extractReference(item, _lookupSchema(item));
       if (referencePrice <= 0) {
         continue;
       }
@@ -738,10 +742,7 @@ class _InventoryUpShopPageState extends State<InventoryUpShopPage> {
       final id = item.id!;
       final price = _prices[id] ?? 0;
       if (price <= 0) {
-        Get.snackbar(
-          'app.system.tips.title'.tr,
-          'app.inventory.message.price_and_num_error'.tr,
-        );
+        AppSnackbar.error('app.inventory.message.price_and_num_error'.tr);
         return;
       }
       payload[id] = price;
@@ -793,16 +794,13 @@ class _InventoryUpShopPageState extends State<InventoryUpShopPage> {
 
       if (submitCode == 0 || submitCode == 200) {
         Get.back();
-        Get.snackbar(
-          'app.system.tips.title'.tr,
-          'app.system.message.success'.tr,
-        );
+        AppSnackbar.success('app.system.message.success'.tr);
         return;
       }
 
-      Get.snackbar('app.system.tips.title'.tr, submitText);
+      AppSnackbar.error(submitText);
     } catch (_) {
-      Get.snackbar('app.system.tips.title'.tr, 'app.trade.filter.failed'.tr);
+      AppSnackbar.error('app.trade.filter.failed'.tr);
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);
@@ -1305,11 +1303,8 @@ class _InventoryUpShopPageState extends State<InventoryUpShopPage> {
                               title,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: Theme.of(
-                                context,
-                              ).textTheme.titleSmall?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
+                              style: Theme.of(context).textTheme.titleSmall
+                                  ?.copyWith(fontWeight: FontWeight.w600),
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -1318,12 +1313,11 @@ class _InventoryUpShopPageState extends State<InventoryUpShopPage> {
                               padding: const EdgeInsets.only(top: 2),
                               child: Text(
                                 'x$itemCount',
-                                style: Theme.of(
-                                  context,
-                                ).textTheme.labelMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: colorScheme.primary,
-                                ),
+                                style: Theme.of(context).textTheme.labelMedium
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                      color: colorScheme.primary,
+                                    ),
                               ),
                             )
                           else
@@ -1654,7 +1648,7 @@ class _InventoryUpShopPageState extends State<InventoryUpShopPage> {
                 visualDensity: VisualDensity.compact,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              child: const Text('查看总览'),
+              child: Text('app.inventory.view_overview'.tr),
             ),
           ),
           Padding(

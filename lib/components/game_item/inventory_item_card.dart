@@ -204,26 +204,26 @@ double _normalizePrice(double value) {
 }
 
 double _extractPrice(ShopSchemaInfo? schema, double fallback) {
+  // Keep inventory card pricing aligned with tronskins-app:
+  // prefer the item's own price, then schema buff min price.
+  final directPrice = _parsePriceValue(fallback);
+  if (directPrice > 0) {
+    return _normalizePrice(directPrice);
+  }
   if (schema == null) {
-    return _normalizePrice(fallback);
+    return 0;
   }
   final raw = schema.raw;
-  final sellMin = _parsePriceValue(raw['sell_min']);
   final buffMinPrice = _parsePriceValue(raw['buff_min_price']);
-
-  if (sellMin > 0) {
-    if (buffMinPrice > 0) {
-      return _normalizePrice(buffMinPrice < sellMin ? buffMinPrice : sellMin);
-    }
-    return _normalizePrice(sellMin);
+  if (buffMinPrice > 0) {
+    return _normalizePrice(buffMinPrice);
   }
 
   final candidates = [
-    raw['reference_price'],
-    raw['buff_min_price'],
+    raw['sell_min'],
     raw['market_price'],
+    raw['reference_price'],
     raw['price'],
-    fallback,
   ];
   for (final value in candidates) {
     final parsed = _parsePriceValue(value);

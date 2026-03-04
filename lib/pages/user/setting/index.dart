@@ -105,6 +105,16 @@ class UserSetting extends StatelessWidget {
               ),
               _buildActionItem(
                 'app.user.setting.theme'.tr,
+                trailing: Obx(
+                  () => Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(_themeModeIcon(useTheme.themeMode), size: 20),
+                      const SizedBox(width: 8),
+                      Text(_themeModeLabel(useTheme.themeMode)),
+                    ],
+                  ),
+                ),
                 onTap: () => _showThemeSheet(context, useTheme),
               ),
               _buildActionItem(
@@ -286,6 +296,28 @@ class UserSetting extends StatelessWidget {
     );
   }
 
+  String _themeModeLabel(ThemeMode mode) {
+    switch (mode) {
+      case ThemeMode.light:
+        return 'app.user.setting.theme_light'.tr;
+      case ThemeMode.dark:
+        return 'app.user.setting.theme_dark'.tr;
+      case ThemeMode.system:
+        return 'app.user.setting.theme_system'.tr;
+    }
+  }
+
+  IconData _themeModeIcon(ThemeMode mode) {
+    switch (mode) {
+      case ThemeMode.light:
+        return Icons.light_mode_outlined;
+      case ThemeMode.dark:
+        return Icons.dark_mode_outlined;
+      case ThemeMode.system:
+        return Icons.settings_suggest_outlined;
+    }
+  }
+
   void _showLanguageSheet(BuildContext context, UseLocale useLocale) {
     showModalBottomSheet<void>(
       context: context,
@@ -330,16 +362,21 @@ class UserSetting extends StatelessWidget {
         return SafeArea(
           child: Obx(() {
             final current = useTheme.themeMode;
-            final brightness = Theme.of(context).brightness;
-            final isLightSelected =
-                current == ThemeMode.light ||
-                (current == ThemeMode.system && brightness == Brightness.light);
-            final isDarkSelected =
-                current == ThemeMode.dark ||
-                (current == ThemeMode.system && brightness == Brightness.dark);
+            final isSystemSelected = current == ThemeMode.system;
+            final isLightSelected = current == ThemeMode.light;
+            final isDarkSelected = current == ThemeMode.dark;
             return Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                ListTile(
+                  leading: const Icon(Icons.settings_suggest_outlined),
+                  title: Text('app.user.setting.theme_system'.tr),
+                  trailing: isSystemSelected ? const Icon(Icons.check) : null,
+                  onTap: () {
+                    useTheme.changeThemeMode(ThemeMode.system);
+                    Navigator.pop(context);
+                  },
+                ),
                 ListTile(
                   leading: const Icon(Icons.light_mode_outlined),
                   title: Text('app.user.setting.theme_light'.tr),

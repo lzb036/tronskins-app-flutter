@@ -2,6 +2,7 @@
 final Map<String, String> ko_KR = {
   "app.tabbar.home": "홈",
   "app.tabbar.inventory": "재고",
+  "app.tabbar.market": "액세서리 시장",
   "app.tabbar.sell": "판매",
   "app.tabbar.mine": "광산",
   "app.market.price_total": "총",
@@ -275,6 +276,7 @@ final Map<String, String> ko_KR = {
   "app.user.setting.theme": "테마",
   "app.user.setting.theme_light": "라이트 모드",
   "app.user.setting.theme_dark": "다크 모드",
+  "app.user.setting.theme_system": "시스템 설정 따르기",
   "app.user.setting.server": "서버 전환",
   "app.user.setting.server_add": "새로운 서버 추가",
   "app.user.setting.server_ip_placeholder": "IP 주소를 입력하십시오.",
@@ -394,6 +396,7 @@ final Map<String, String> ko_KR = {
   "app.inventory.pricing": "가격",
   "app.inventory.pricing_reference": "참조 가격",
   "app.inventory.pricing_abnormal": "가격 异常",
+  "app.inventory.view_overview": "View Overview",
   "app.inventory.upshop.text": "판매 중",
   "app.inventory.upshop.confirm_title": "선반 확인",
   "app.inventory.upshop.nums": "선반 수",

@@ -104,6 +104,8 @@ class Routers {
   // ignore: non_constant_identifier_names
   static String SHOP_PRICE_CHANGE = '/shop/price-change';
   // ignore: non_constant_identifier_names
+  static String SHOP_ORDER_DETAIL = '/shop/order/detail';
+  // ignore: non_constant_identifier_names
   static String INVENTORY_UPSHOP = '/inventory/upshop';
   // ignore: non_constant_identifier_names
   static String SHOP_PURCHASE = '/shop/purchase';
@@ -117,6 +119,8 @@ class Routers {
   static String PRODUCT_BUYING = '/shop/buying/product-buying';
   // ignore: non_constant_identifier_names
   static String BUYING_SUPPLY = '/shop/buying/supply';
+  // ignore: non_constant_identifier_names
+  static String BULK_BUYING = '/shop/buying/bulk-buying';
   // ignore: non_constant_identifier_names
   static String RECEIVE_GOODS = '/shop/receive';
 }

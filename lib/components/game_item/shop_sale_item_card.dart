@@ -39,6 +39,8 @@ class ShopSaleItemCard extends StatelessWidget {
     final exterior = TagInfo.fromRaw(tags is Map ? tags['exterior'] : null);
     final paintWearText = _extractText(asset, ['paint_wear', 'paintWear']);
     final paintWearValue = _extractDouble(asset, ['paint_wear', 'paintWear']);
+    final stickerBottomOffset =
+        paintWearText != null && paintWearText.isNotEmpty ? 16.0 : 0.0;
     final paintSeed = _extractText(asset, ['paint_seed', 'paintSeed']);
     final phase = _extractText(asset, ['phase']);
     final percentage = _extractText(asset, ['percentage']);
@@ -80,9 +82,10 @@ class ShopSaleItemCard extends StatelessWidget {
                       percentage: percentage,
                       paintWearText: paintWearText,
                       count: item.count,
-                      selected: selected,
+                      selected: false,
                       stickers: stickers,
                       gems: gems,
+                      stickerBottomOffset: stickerBottomOffset,
                     ),
                   ),
                   if (showQualityRibbon && quality != null)
@@ -90,6 +93,16 @@ class ShopSaleItemCard extends StatelessWidget {
                       right: -32,
                       top: 12,
                       child: QualityRibbon(quality: quality),
+                    ),
+                  if (selected)
+                    Positioned(
+                      right: 6,
+                      top: 6,
+                      child: Image.asset(
+                        'assets/images/game/item/gou.png',
+                        width: 20,
+                        height: 20,
+                      ),
                     ),
                 ],
               ),

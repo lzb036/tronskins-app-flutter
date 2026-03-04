@@ -239,7 +239,7 @@ class _CustomNavBarState extends State<CustomNavBar> {
             ),
             BottomNavigationBarItem(
               icon: const Icon(Icons.storefront_outlined),
-              label: 'app.market.product.title'.tr,
+              label: 'app.tabbar.market'.tr,
             ),
             BottomNavigationBarItem(
               icon: const Icon(Icons.backpack_outlined),

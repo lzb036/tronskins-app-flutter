@@ -9,6 +9,9 @@ class MarketDetailController extends GetxController {
     : _api = api ?? ApiMarketServer();
 
   final ApiMarketServer _api;
+  static const int _onSalePageSize = 20;
+  static const int _transactionPageSize = 10;
+  static const int _buyRequestPageSize = 20;
 
   late MarketItemEntity item;
 
@@ -39,6 +42,21 @@ class MarketDetailController extends GetxController {
   int get appId => item.appId ?? 730;
   int? get schemaId => item.schemaId ?? item.id;
   String get marketHashName => item.marketHashName ?? item.marketName ?? '';
+
+  bool _hasMoreData({
+    required int fetchedCount,
+    required int accumulatedCount,
+    required int pageSize,
+    int? total,
+  }) {
+    if (fetchedCount <= 0) {
+      return false;
+    }
+    if (total != null && total > 0) {
+      return accumulatedCount < total;
+    }
+    return fetchedCount >= pageSize;
+  }
 
   @override
   void onInit() {
@@ -110,14 +128,23 @@ class MarketDetailController extends GetxController {
         appId: appId,
         schemaId: schemaId!,
         page: _onSalePage,
-        pageSize: 20,
+        pageSize: _onSalePageSize,
       );
       final data = res.datas;
-      if (data == null || data.items.isEmpty) {
+      final fetchedCount = data?.items.length ?? 0;
+      if (data == null || fetchedCount == 0) {
         _onSaleHasMore = false;
       } else {
         onSaleItems.addAll(data.items);
-        _onSalePage += 1;
+        _onSaleHasMore = _hasMoreData(
+          fetchedCount: fetchedCount,
+          accumulatedCount: onSaleItems.length,
+          pageSize: _onSalePageSize,
+          total: data.pager?.total,
+        );
+        if (_onSaleHasMore) {
+          _onSalePage += 1;
+        }
       }
       users.addAll(data?.users ?? const {});
       schemas.addAll(data?.schemas ?? const {});
@@ -145,14 +172,23 @@ class MarketDetailController extends GetxController {
         appId: appId,
         schemaId: schemaId!,
         page: _transactionPage,
-        pageSize: 10,
+        pageSize: _transactionPageSize,
       );
       final data = res.datas;
-      if (data == null || data.items.isEmpty) {
+      final fetchedCount = data?.items.length ?? 0;
+      if (data == null || fetchedCount == 0) {
         _transactionHasMore = false;
       } else {
         transactionItems.addAll(data.items);
-        _transactionPage += 1;
+        _transactionHasMore = _hasMoreData(
+          fetchedCount: fetchedCount,
+          accumulatedCount: transactionItems.length,
+          pageSize: _transactionPageSize,
+          total: data.pager?.total,
+        );
+        if (_transactionHasMore) {
+          _transactionPage += 1;
+        }
       }
       users.addAll(data?.users ?? const {});
       schemas.addAll(data?.schemas ?? const {});
@@ -181,7 +217,7 @@ class MarketDetailController extends GetxController {
         appId: appId,
         schemaId: schemaId!,
         page: _buyRequestPage,
-        pageSize: 20,
+        pageSize: _buyRequestPageSize,
         useAuth: useAuth,
       );
       if (!res.success && useAuth) {
@@ -189,16 +225,25 @@ class MarketDetailController extends GetxController {
           appId: appId,
           schemaId: schemaId!,
           page: _buyRequestPage,
-          pageSize: 20,
+          pageSize: _buyRequestPageSize,
           useAuth: false,
         );
       }
       final data = res.datas;
-      if (data == null || data.items.isEmpty) {
+      final fetchedCount = data?.items.length ?? 0;
+      if (data == null || fetchedCount == 0) {
         _buyRequestHasMore = false;
       } else {
         buyRequests.addAll(data.items);
-        _buyRequestPage += 1;
+        _buyRequestHasMore = _hasMoreData(
+          fetchedCount: fetchedCount,
+          accumulatedCount: buyRequests.length,
+          pageSize: _buyRequestPageSize,
+          total: data.total ?? data.pager?.total,
+        );
+        if (_buyRequestHasMore) {
+          _buyRequestPage += 1;
+        }
       }
       buyUsers.addAll(data?.users ?? const {});
       buySchemas.addAll(data?.schemas ?? const {});

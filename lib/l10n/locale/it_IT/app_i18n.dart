@@ -2,6 +2,7 @@
 final Map<String, String> it_IT = {
   "app.tabbar.home": "Casa",
   "app.tabbar.inventory": "Inventario",
+  "app.tabbar.market": "Mercato degli accessori",
   "app.tabbar.sell": "Vendere",
   "app.tabbar.mine": "Il mio",
   "app.market.price_total": "Totale",
@@ -323,6 +324,7 @@ final Map<String, String> it_IT = {
   "app.user.setting.theme": "Tema",
   "app.user.setting.theme_light": "Modalità chiara",
   "app.user.setting.theme_dark": "Modalità scura",
+  "app.user.setting.theme_system": "Segui sistema",
   "app.user.setting.server": "Cambio server",
   "app.user.setting.server_add": "Nuovo server aggiunto",
   "app.user.setting.server_ip_placeholder": "Inserisci l'indirizzo IP.",
@@ -457,6 +459,7 @@ final Map<String, String> it_IT = {
   "app.inventory.pricing": "Prezzi",
   "app.inventory.pricing_reference": "Prezzi di riferimento",
   "app.inventory.pricing_abnormal": "L'anomalia dei prezzi",
+  "app.inventory.view_overview": "View Overview",
   "app.inventory.upshop.text": "In vendita",
   "app.inventory.upshop.confirm_title": "Conferma dello scaffale",
   "app.inventory.upshop.nums": "Numero di scaffali",

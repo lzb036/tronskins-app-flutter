@@ -2,6 +2,7 @@
 final Map<String, String> po_PL = {
   "app.tabbar.home": "Strona główna",
   "app.tabbar.inventory": "Inventaryzacja",
+  "app.tabbar.market": "Rynek akcesoriów",
   "app.tabbar.sell": "Sprzedaj",
   "app.tabbar.mine": "Moje",
   "app.market.price_total": "Całkowita",
@@ -317,6 +318,7 @@ final Map<String, String> po_PL = {
   "app.user.setting.theme": "Motyw",
   "app.user.setting.theme_light": "Tryb jasny",
   "app.user.setting.theme_dark": "Tryb ciemny",
+  "app.user.setting.theme_system": "Zgodnie z systemem",
   "app.user.setting.server": "Zmiana serwera",
   "app.user.setting.server_add": "Dodany nowy serwer",
   "app.user.setting.server_ip_placeholder": "Proszę wpisać adres IP.",
@@ -450,6 +452,7 @@ final Map<String, String> po_PL = {
   "app.inventory.pricing": "Cenowanie",
   "app.inventory.pricing_reference": "Ceny referencyjne",
   "app.inventory.pricing_abnormal": "Anomalia cenowa",
+  "app.inventory.view_overview": "View Overview",
   "app.inventory.upshop.text": "Na sprzedaż",
   "app.inventory.upshop.confirm_title": "Potwierdzenie półki",
   "app.inventory.upshop.nums": "Liczba półek",

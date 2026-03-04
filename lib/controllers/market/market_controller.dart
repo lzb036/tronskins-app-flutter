@@ -5,6 +5,8 @@ import 'package:tronskins_app/common/storage/game_storage.dart';
 
 class MarketController extends GetxController {
   final ApiMarketServer _api = ApiMarketServer();
+  static const int _latestPageSize = 10;
+  static const int _hotPageSize = 20;
 
   final RxInt appId = 730.obs;
   final RxList<MarketItemEntity> latestItems = <MarketItemEntity>[].obs;
@@ -25,10 +27,7 @@ class MarketController extends GetxController {
   }
 
   Future<void> refreshAll() async {
-    await Future.wait([
-      fetchLatest(reset: true),
-      fetchHot(reset: true),
-    ]);
+    await Future.wait([fetchLatest(reset: true), fetchHot(reset: true)]);
   }
 
   Future<void> changeGame(int newAppId) async {
@@ -54,14 +53,18 @@ class MarketController extends GetxController {
       final res = await _api.marketNews(
         appId: appId.value,
         page: _latestPage,
-        pageSize: 10,
+        pageSize: _latestPageSize,
       );
       final items = res.datas ?? <MarketItemEntity>[];
-      if (items.isEmpty) {
+      final fetchedCount = items.length;
+      if (fetchedCount == 0) {
         _latestHasMore = false;
       } else {
         latestItems.addAll(items);
-        _latestPage += 1;
+        _latestHasMore = fetchedCount >= _latestPageSize;
+        if (_latestHasMore) {
+          _latestPage += 1;
+        }
       }
     } finally {
       isLoadingLatest.value = false;
@@ -82,14 +85,18 @@ class MarketController extends GetxController {
       final res = await _api.marketHotItems(
         appId: appId.value,
         page: _hotPage,
-        pageSize: 20,
+        pageSize: _hotPageSize,
       );
       final items = res.datas ?? <MarketItemEntity>[];
-      if (items.isEmpty) {
+      final fetchedCount = items.length;
+      if (fetchedCount == 0) {
         _hotHasMore = false;
       } else {
         hotItems.addAll(items);
-        _hotPage += 1;
+        _hotHasMore = fetchedCount >= _hotPageSize;
+        if (_hotHasMore) {
+          _hotPage += 1;
+        }
       }
     } finally {
       isLoadingHot.value = false;

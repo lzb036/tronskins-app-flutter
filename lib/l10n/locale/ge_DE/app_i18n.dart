@@ -2,6 +2,7 @@
 final Map<String, String> ge_DE = {
   "app.tabbar.home": "Startseite",
   "app.tabbar.inventory": "Inventar",
+  "app.tabbar.market": "Zubehör Markt",
   "app.tabbar.sell": "Verkaufen",
   "app.tabbar.mine": "Meine",
   "app.market.price_total": "Insgesamt",
@@ -325,6 +326,7 @@ final Map<String, String> ge_DE = {
   "app.user.setting.theme": "Thema",
   "app.user.setting.theme_light": "Hellmodus",
   "app.user.setting.theme_dark": "Dunkelmodus",
+  "app.user.setting.theme_system": "System folgen",
   "app.user.setting.server": "Serverwechsel",
   "app.user.setting.server_add": "Neuer Server hinzugefügt",
   "app.user.setting.server_ip_placeholder":
@@ -462,6 +464,7 @@ final Map<String, String> ge_DE = {
   "app.inventory.pricing": "Preise",
   "app.inventory.pricing_reference": "Referenzpreise",
   "app.inventory.pricing_abnormal": "Die Preisanomalie",
+  "app.inventory.view_overview": "View Overview",
   "app.inventory.upshop.text": "Auf Verkauf",
   "app.inventory.upshop.confirm_title": "Bestätigung des Regals",
   "app.inventory.upshop.nums": "Anzahl der Regale",

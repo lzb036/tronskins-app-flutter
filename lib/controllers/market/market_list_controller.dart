@@ -5,6 +5,7 @@ import 'package:tronskins_app/common/storage/game_storage.dart';
 
 class MarketListController extends GetxController {
   final ApiMarketServer _api = ApiMarketServer();
+  static const int _pageSize = 20;
 
   final RxInt appId = 730.obs;
   final RxList<MarketItemEntity> items = <MarketItemEntity>[].obs;
@@ -29,6 +30,7 @@ class MarketListController extends GetxController {
     appId.value = GameStorage.getGameType();
   }
 
+  @override
   Future<void> refresh({bool reset = true}) async {
     if (reset) {
       _page = 1;
@@ -49,7 +51,7 @@ class MarketListController extends GetxController {
       final res = await _api.marketGameList(
         appId: appId.value,
         page: _page,
-        pageSize: 20,
+        pageSize: _pageSize,
         field: sortField.value,
         asc: sortAsc.value,
         keywords: keywords.value.isEmpty ? null : keywords.value,
@@ -63,8 +65,17 @@ class MarketListController extends GetxController {
       if (list.isEmpty) {
         _hasMore = false;
       } else {
+        final fetchedCount = list.length;
         items.addAll(list);
-        _page += 1;
+        final totalCount = data?.pager?.total;
+        if (totalCount != null && totalCount > 0) {
+          _hasMore = items.length < totalCount;
+        } else {
+          _hasMore = fetchedCount >= _pageSize;
+        }
+        if (_hasMore) {
+          _page += 1;
+        }
       }
       total.value = data?.pager?.total ?? total.value;
     } finally {

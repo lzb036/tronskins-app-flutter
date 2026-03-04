@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import 'package:tronskins_app/api/shop_product.dart';
 import 'package:tronskins_app/api/model/shop/shop_models.dart';
+import 'package:tronskins_app/common/http/model/base_response.dart';
 import 'package:tronskins_app/common/storage/game_storage.dart';
 
 class ShopSalesController extends GetxController {
@@ -254,9 +255,12 @@ class ShopSalesController extends GetxController {
     }
   }
 
-  Future<void> delistItems(List<int> ids) async {
-    await _api.orderItemRemoved(ids: ids);
-    await refreshOnSale();
+  Future<BaseHttpResponse<dynamic>> delistItems(List<int> ids) async {
+    final res = await _api.orderItemRemoved(ids: ids);
+    if (res.success) {
+      await refreshOnSale();
+    }
+    return res;
   }
 
   Future<void> changePrice({

@@ -14,11 +14,7 @@ class ApiMarketServer {
   }) async {
     final response = await http.post(
       'api/public/mall/sell/$appId/news',
-      data: {
-        'appId': appId,
-        'page': page,
-        'pageSize': pageSize,
-      },
+      data: {'appId': appId, 'page': page, 'pageSize': pageSize},
     );
     return BaseHttpResponse.fromJson(
       response.data as Map<String, dynamic>,
@@ -36,11 +32,7 @@ class ApiMarketServer {
   }) async {
     final response = await http.post(
       'api/public/mall/hots',
-      data: {
-        'appId': appId,
-        'page': page,
-        'pageSize': pageSize,
-      },
+      data: {'appId': appId, 'page': page, 'pageSize': pageSize},
     );
     return BaseHttpResponse.fromJson(
       response.data as Map<String, dynamic>,
@@ -80,9 +72,7 @@ class ApiMarketServer {
     );
     return BaseHttpResponse.fromJson(
       response.data as Map<String, dynamic>,
-      (json) => MarketSchemaListResponse.fromJson(
-        json as Map<String, dynamic>,
-      ),
+      (json) => MarketSchemaListResponse.fromJson(json as Map<String, dynamic>),
     );
   }
 
@@ -92,10 +82,7 @@ class ApiMarketServer {
   }) async {
     final response = await http.post(
       'api/public/schema/item/language/list',
-      data: {
-        'appId': appId,
-        'keywords': keywords,
-      },
+      data: {'appId': appId, 'keywords': keywords},
     );
     return BaseHttpResponse.fromJson(
       response.data as Map<String, dynamic>,
@@ -115,9 +102,7 @@ class ApiMarketServer {
     );
     return BaseHttpResponse.fromJson(
       response.data as Map<String, dynamic>,
-      (json) => MarketAttributePayload.fromJson(
-        json as Map<String, dynamic>,
-      ),
+      (json) => MarketAttributePayload.fromJson(json as Map<String, dynamic>),
     );
   }
 
@@ -126,6 +111,11 @@ class ApiMarketServer {
     required int schemaId,
     int page = 1,
     int pageSize = 20,
+    double? maxPrice,
+    int? userId,
+    int? paintIndex,
+    double? paintWearMin,
+    double? paintWearMax,
   }) async {
     final response = await http.post(
       'api/app/order/sell/details/list',
@@ -134,7 +124,12 @@ class ApiMarketServer {
         'schemaId': schemaId,
         'page': page,
         'pageSize': pageSize,
-      },
+        'maxPrice': maxPrice,
+        'userId': userId,
+        'paintIndex': paintIndex,
+        'paintWearMin': paintWearMin,
+        'paintWearMax': paintWearMax,
+      }..removeWhere((_, value) => value == null),
     );
     return BaseHttpResponse.fromJson(
       response.data as Map<String, dynamic>,
@@ -241,8 +236,9 @@ class ApiMarketServer {
   Future<BaseHttpResponse<BuyRemainInfo>> buyRemainNum({
     required int schemaId,
   }) async {
-    final response =
-        await http.get('api/app/mall/tobuy/buynum/$schemaId/limit');
+    final response = await http.get(
+      'api/app/mall/tobuy/buynum/$schemaId/limit',
+    );
     return BaseHttpResponse.fromJson(
       response.data as Map<String, dynamic>,
       (json) => BuyRemainInfo.fromJson(json as Map<String, dynamic>),

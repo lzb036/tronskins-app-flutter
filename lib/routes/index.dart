@@ -18,10 +18,12 @@ import 'package:tronskins_app/pages/shop/inventory_up_shop_page.dart';
 import 'package:tronskins_app/pages/shop/buying_page.dart';
 import 'package:tronskins_app/pages/shop/buying_supply_page.dart';
 import 'package:tronskins_app/pages/shop/buying_update_price_page.dart';
+import 'package:tronskins_app/pages/shop/bulk_buying_page.dart';
 import 'package:tronskins_app/pages/shop/my_purchase_page.dart';
 import 'package:tronskins_app/pages/shop/product_buying_page.dart';
 import 'package:tronskins_app/pages/shop/purchase_setting_page.dart';
 import 'package:tronskins_app/pages/shop/receive_goods_page.dart';
+import 'package:tronskins_app/pages/shop/shop_order_detail_page.dart';
 import 'package:tronskins_app/pages/shop/shop_price_change_page.dart';
 import 'package:tronskins_app/pages/shop/shop_rename_page.dart';
 import 'package:tronskins_app/pages/shop/shop_setting_page.dart';
@@ -107,6 +109,7 @@ class RoutersConfig {
     GetPage(name: Routers.SHOP_SETTING, page: () => ShopSettingPage()),
     GetPage(name: Routers.SHOP_RENAME, page: () => ShopRenamePage()),
     GetPage(name: Routers.SHOP_PRICE_CHANGE, page: () => ShopPriceChangePage()),
+    GetPage(name: Routers.SHOP_ORDER_DETAIL, page: () => ShopOrderDetailPage()),
     GetPage(name: Routers.INVENTORY_UPSHOP, page: () => InventoryUpShopPage()),
     GetPage(name: Routers.SHOP_PURCHASE, page: () => MyPurchasePage()),
     GetPage(name: Routers.BUYING, page: () => BuyingPage()),
@@ -116,6 +119,7 @@ class RoutersConfig {
     ),
     GetPage(name: Routers.PURCHASE_SETTING, page: () => PurchaseSettingPage()),
     GetPage(name: Routers.PRODUCT_BUYING, page: () => ProductBuyingPage()),
+    GetPage(name: Routers.BULK_BUYING, page: () => BulkBuyingPage()),
     GetPage(name: Routers.BUYING_SUPPLY, page: () => BuyingSupplyPage()),
     GetPage(name: Routers.RECEIVE_GOODS, page: () => ReceiveGoodsPage()),
     GetPage(name: Routers.BALANCE_DETAIL, page: () => WalletPage()),

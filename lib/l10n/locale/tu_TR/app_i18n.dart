@@ -2,6 +2,7 @@
 final Map<String, String> tu_TR = {
   "app.tabbar.home": "Başlık",
   "app.tabbar.inventory": "envanter",
+  "app.tabbar.market": "Aksesuarlar Pazarı",
   "app.tabbar.sell": "Satış",
   "app.tabbar.mine": "Benim",
   "app.market.price_total": "Toplam",
@@ -310,6 +311,7 @@ final Map<String, String> tu_TR = {
   "app.user.setting.theme": "Tema",
   "app.user.setting.theme_light": "Açık mod",
   "app.user.setting.theme_dark": "Koyu mod",
+  "app.user.setting.theme_system": "Sistemi takip et",
   "app.user.setting.server": "Sunucu değiştirme",
   "app.user.setting.server_add": "Yeni Sunucu Eklendi",
   "app.user.setting.server_ip_placeholder": "Lütfen IP adresini girin.",
@@ -441,6 +443,7 @@ final Map<String, String> tu_TR = {
   "app.inventory.pricing": "Fiyatlandırma",
   "app.inventory.pricing_reference": "Referans Fiyatlandırma",
   "app.inventory.pricing_abnormal": "Fiyat Anomalisi",
+  "app.inventory.view_overview": "View Overview",
   "app.inventory.upshop.text": "Satılık",
   "app.inventory.upshop.confirm_title": "Rafın Onaylanması",
   "app.inventory.upshop.nums": "Rafların Sayısı",

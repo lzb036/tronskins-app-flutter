@@ -2,6 +2,7 @@
 final Map<String, String> ru_RU = {
   "app.tabbar.home": "Главная",
   "app.tabbar.inventory": "Инвентаризация",
+  "app.tabbar.market": "Рынок аксессуаров",
   "app.tabbar.sell": "Продать",
   "app.tabbar.mine": "Мой",
   "app.market.price_total": "Всего",
@@ -322,6 +323,7 @@ final Map<String, String> ru_RU = {
   "app.user.setting.theme": "Тема",
   "app.user.setting.theme_light": "Светлая тема",
   "app.user.setting.theme_dark": "Тёмная тема",
+  "app.user.setting.theme_system": "Следовать системе",
   "app.user.setting.server": "Переключение сервера",
   "app.user.setting.server_add": "Добавлен новый сервер",
   "app.user.setting.server_ip_placeholder": "Пожалуйста, введите IP-адрес.",
@@ -458,6 +460,7 @@ final Map<String, String> ru_RU = {
   "app.inventory.pricing": "Цены",
   "app.inventory.pricing_reference": "Референтное ценообразование",
   "app.inventory.pricing_abnormal": "Аномалия ценообразования",
+  "app.inventory.view_overview": "View Overview",
   "app.inventory.upshop.text": "В продаже",
   "app.inventory.upshop.confirm_title": "Подтверждение полки",
   "app.inventory.upshop.nums": "Количество полок",

@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -17,6 +16,7 @@ import 'package:tronskins_app/components/game_item/wear_progress_bar.dart';
 import 'package:tronskins_app/components/market/price_trend_chart.dart';
 import 'package:tronskins_app/controllers/market/market_detail_controller.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
+import 'package:tronskins_app/common/utils/app_snackbar.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
 
 class MarketDetailPage extends StatefulWidget {
@@ -144,6 +144,26 @@ class _MarketDetailPageState extends State<MarketDetailPage>
       Routers.PRODUCT_BUYING,
       arguments: {'appId': controller.appId, 'schemaId': schemaId},
     );
+  }
+
+  Future<void> _openBulkBuying() async {
+    final user = UserStorage.getUserInfo();
+    if (user == null) {
+      Get.snackbar('app.system.tips.title'.tr, 'app.system.message.nologin'.tr);
+      return;
+    }
+    final schemaId = controller.schemaId;
+    if (schemaId == null) {
+      return;
+    }
+    final result = await Get.toNamed(
+      Routers.BULK_BUYING,
+      arguments: {'appId': controller.appId, 'schemaId': schemaId},
+    );
+    if (result == true) {
+      await controller.loadOnSale(reset: true);
+      await controller.loadTransactions(reset: true);
+    }
   }
 
   Future<void> _loadTemplate({int? schemaId}) async {
@@ -554,35 +574,55 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                         ),
                       ],
                     ),
-                    const Spacer(),
-                    // Action Buttons
-                    // Currently we default to "Buy" / "Release Purchase" as this is likely the aggregation page
-                    // But mimicking the requested UI structure:
-
-                    // If Own Item (Mock logic):
-                    // Expanded(child: Row(children: [Expanded(child: Button('下架')), SizedBox(width:8), Expanded(child: Button('改价'))]))
-
-                    // Default (Others):
-                    SizedBox(
-                      height: 44,
-                      width: 140,
-                      child: ElevatedButton(
-                        onPressed: _openBuying,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF4C81E7), // Buff Blue
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          elevation: 0,
-                        ),
-                        child: Text(
-                          'app.market.detail.release_purchase'
-                              .tr, // "购买" or "发布求购"
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: SizedBox(
+                        height: 44,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton(
+                                onPressed: _openBuying,
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Theme.of(
+                                    context,
+                                  ).colorScheme.primary,
+                                  side: BorderSide(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                                child: Text(
+                                  'app.market.detail.release_purchase'.tr,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: _openBulkBuying,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF4C81E7),
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  elevation: 0,
+                                ),
+                                child: Text(
+                                  'app.market.detail.bulk_buying.title'.tr,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -1338,18 +1378,14 @@ class _MarketDetailPageState extends State<MarketDetailPage>
     try {
       final res = await _shopProductApi.orderItemRemoved(ids: <int>[id]);
       if (res.success) {
-        Get.snackbar(
-          'app.system.tips.title'.tr,
-          'app.system.message.success'.tr,
-        );
+        AppSnackbar.success('app.system.message.success'.tr);
       } else {
-        Get.snackbar(
-          'app.system.tips.title'.tr,
+        AppSnackbar.error(
           res.message.isNotEmpty ? res.message : 'app.trade.filter.failed'.tr,
         );
       }
     } catch (_) {
-      Get.snackbar('app.system.tips.title'.tr, 'app.trade.filter.failed'.tr);
+      AppSnackbar.error('app.trade.filter.failed'.tr);
     }
 
     await controller.loadOnSale(reset: true);

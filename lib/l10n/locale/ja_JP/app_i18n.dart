@@ -2,6 +2,7 @@
 final Map<String, String> ja_JP = {
   "app.tabbar.home": "ホーム",
   "app.tabbar.inventory": "在庫",
+  "app.tabbar.market": "アクセサリー 市場",
   "app.tabbar.sell": "販売",
   "app.tabbar.mine": "鉱山",
   "app.market.price_total": "合計",
@@ -268,6 +269,7 @@ final Map<String, String> ja_JP = {
   "app.user.setting.theme": "テーマ",
   "app.user.setting.theme_light": "ライトモード",
   "app.user.setting.theme_dark": "ダークモード",
+  "app.user.setting.theme_system": "システムに従う",
   "app.user.setting.server": "サーバー切り替え",
   "app.user.setting.server_add": "新しいサーバー追加",
   "app.user.setting.server_ip_placeholder": "IPアドレスを入力してください。",
@@ -386,6 +388,7 @@ final Map<String, String> ja_JP = {
   "app.inventory.pricing": "価格",
   "app.inventory.pricing_reference": "参考価格",
   "app.inventory.pricing_abnormal": "価格の異常",
+  "app.inventory.view_overview": "View Overview",
   "app.inventory.upshop.text": "販売中",
   "app.inventory.upshop.confirm_title": "棚の確認",
   "app.inventory.upshop.nums": "棚の数",

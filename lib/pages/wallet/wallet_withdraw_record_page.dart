@@ -122,8 +122,7 @@ class _WalletWithdrawRecordPageState extends State<WalletWithdrawRecordPage> {
                             Text(
                               '${'app.trade.order.number'.tr}: ${item.id ?? '-'}',
                               style: Theme.of(context).textTheme.bodySmall,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                              softWrap: true,
                             ),
                             const SizedBox(height: 6),
                             Text(
@@ -143,8 +142,7 @@ class _WalletWithdrawRecordPageState extends State<WalletWithdrawRecordPage> {
                               '${'app.user.wallet.address'.tr}: '
                               '${item.account ?? '-'}',
                               style: Theme.of(context).textTheme.bodySmall,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                              softWrap: true,
                             ),
                           ],
                         ),

@@ -2,6 +2,7 @@
 final Map<String, String> in_ID = {
   "app.tabbar.home": "Rumah",
   "app.tabbar.inventory": "Inventaris",
+  "app.tabbar.market": "Pasar Aksesoris",
   "app.tabbar.sell": "Menjual",
   "app.tabbar.mine": "Pertambangan",
   "app.market.price_total": "Total",
@@ -318,6 +319,7 @@ final Map<String, String> in_ID = {
   "app.user.setting.theme": "Tema",
   "app.user.setting.theme_light": "Mode terang",
   "app.user.setting.theme_dark": "Mode gelap",
+  "app.user.setting.theme_system": "Ikuti sistem",
   "app.user.setting.server": "Penggantian server",
   "app.user.setting.server_add": "Server Baru Ditambahkan",
   "app.user.setting.server_ip_placeholder": "Silakan masukkan alamat IP.",
@@ -452,6 +454,7 @@ final Map<String, String> in_ID = {
   "app.inventory.pricing": "Penghargaan",
   "app.inventory.pricing_reference": "Harga Referensi",
   "app.inventory.pricing_abnormal": "Anomali harga",
+  "app.inventory.view_overview": "View Overview",
   "app.inventory.upshop.text": "Dijual",
   "app.inventory.upshop.confirm_title": "Konfirmasi Rak",
   "app.inventory.upshop.nums": "Jumlah Rak",

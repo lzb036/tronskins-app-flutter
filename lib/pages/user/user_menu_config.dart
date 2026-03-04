@@ -1,6 +1,7 @@
 // lib/pages/user/user_menu_config.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:tronskins_app/controllers/navbar/nav_controller.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
 
 class UserMenuItem {
@@ -16,7 +17,12 @@ final userMenuItems = [
     Icons.shopping_bag_outlined,
     () => Get.toNamed(Routers.SHOP_PURCHASE),
   ),
-  UserMenuItem('app.user.menu.sale', Icons.receipt_long_outlined),
+  UserMenuItem('app.user.menu.sale', Icons.receipt_long_outlined, () {
+    final navCtrl = Get.isRegistered<NavController>()
+        ? Get.find<NavController>()
+        : Get.put(NavController(), permanent: true);
+    navCtrl.switchToShopTab(NavController.shopTabSaleRecord);
+  }),
   UserMenuItem(
     'app.user.menu.purchase',
     Icons.search,

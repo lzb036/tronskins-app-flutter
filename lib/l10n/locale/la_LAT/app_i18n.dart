@@ -2,6 +2,7 @@
 final Map<String, String> la_LAT = {
   "app.tabbar.home": "Inicio",
   "app.tabbar.inventory": "Inventario",
+  "app.tabbar.market": "Mercado de Accesorios",
   "app.tabbar.sell": "Vender",
   "app.tabbar.mine": "Mi",
   "app.market.price_total": "Total",
@@ -331,6 +332,7 @@ final Map<String, String> la_LAT = {
   "app.user.setting.theme": "Tema",
   "app.user.setting.theme_light": "Modo claro",
   "app.user.setting.theme_dark": "Modo oscuro",
+  "app.user.setting.theme_system": "Seguir sistema",
   "app.user.setting.server": "Cambio de servidor",
   "app.user.setting.server_add": "Añadido nuevo servidor",
   "app.user.setting.server_ip_placeholder":
@@ -469,6 +471,7 @@ final Map<String, String> la_LAT = {
   "app.inventory.pricing": "Precios",
   "app.inventory.pricing_reference": "Precios de referencia",
   "app.inventory.pricing_abnormal": "La anomalía de precios",
+  "app.inventory.view_overview": "View Overview",
   "app.inventory.upshop.text": "En venta",
   "app.inventory.upshop.confirm_title": "Confirmación de estante",
   "app.inventory.upshop.nums": "Número de estantes",

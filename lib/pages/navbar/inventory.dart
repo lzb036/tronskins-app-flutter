@@ -30,7 +30,7 @@ class _InventoryPageState extends State<InventoryPage> {
       : Get.put(InventoryController());
   final UserController userController = Get.find<UserController>();
   final ApiSteamServer _steamApi = ApiSteamServer();
-  final ScrollController _scrollController = ScrollController();
+  late final PageController _inventoryStatePageController;
   final TextEditingController _searchController = TextEditingController();
   Worker? _loginWorker;
   Worker? _tabWorker;
@@ -50,6 +50,11 @@ class _InventoryPageState extends State<InventoryPage> {
     }
     await userController.fetchUserData(showLoading: false);
     return _steamIdFromProfile().isNotEmpty;
+  }
+
+  Future<void> _refreshInventoryAndPreloadIfNeeded() async {
+    await controller.refreshIfStale();
+    await controller.preloadStateBucketsIfNeeded();
   }
 
   Future<void> _toSteamBind() async {
@@ -78,17 +83,19 @@ class _InventoryPageState extends State<InventoryPage> {
   @override
   void initState() {
     super.initState();
+    _inventoryStatePageController = PageController(
+      initialPage: _inventoryFilterToPage(_currentInventoryStateFilter()),
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       MarketFilterSheet.preload(appId: controller.currentAppId.value);
     });
     if (userController.isLoggedIn.value) {
-      controller.refreshIfStale();
+      Future.microtask(_refreshInventoryAndPreloadIfNeeded);
       Future.microtask(_checkSteamSessionIfNeeded);
     }
-    _scrollController.addListener(_handleScroll);
     _loginWorker = ever<bool>(userController.isLoggedIn, (loggedIn) {
       if (loggedIn) {
-        controller.refreshIfStale();
+        Future.microtask(_refreshInventoryAndPreloadIfNeeded);
         Future.microtask(_checkSteamSessionIfNeeded);
       } else {
         controller.items.clear();
@@ -103,7 +110,7 @@ class _InventoryPageState extends State<InventoryPage> {
       final navController = Get.find<NavController>();
       _tabWorker = ever<int>(navController.currentIndex, (index) {
         if (index == 2 && userController.isLoggedIn.value) {
-          controller.refreshIfStale();
+          Future.microtask(_refreshInventoryAndPreloadIfNeeded);
           Future.microtask(_checkSteamSessionIfNeeded);
         }
       });
@@ -185,19 +192,11 @@ class _InventoryPageState extends State<InventoryPage> {
 
   @override
   void dispose() {
-    _scrollController.removeListener(_handleScroll);
-    _scrollController.dispose();
+    _inventoryStatePageController.dispose();
     _searchController.dispose();
     _loginWorker?.dispose();
     _tabWorker?.dispose();
     super.dispose();
-  }
-
-  void _handleScroll() {
-    if (_scrollController.position.pixels >
-        _scrollController.position.maxScrollExtent - 240) {
-      controller.loadMore();
-    }
   }
 
   Future<void> _onRefresh() async {
@@ -282,6 +281,197 @@ class _InventoryPageState extends State<InventoryPage> {
     return null;
   }
 
+  int _inventoryFilterToPage(_InventoryStateFilter filter) {
+    switch (filter) {
+      case _InventoryStateFilter.all:
+        return 0;
+      case _InventoryStateFilter.sellable:
+        return 1;
+      case _InventoryStateFilter.cooling:
+        return 2;
+    }
+  }
+
+  _InventoryStateFilter _inventoryFilterFromPage(int page) {
+    switch (page) {
+      case 1:
+        return _InventoryStateFilter.sellable;
+      case 2:
+        return _InventoryStateFilter.cooling;
+      default:
+        return _InventoryStateFilter.all;
+    }
+  }
+
+  Future<void> _applyInventoryStateFilter(
+    _InventoryStateFilter selected,
+  ) async {
+    switch (selected) {
+      case _InventoryStateFilter.all:
+        if (controller.sellableOnly.value) {
+          await controller.toggleSellable();
+          return;
+        }
+        if (controller.coolingOnly.value) {
+          await controller.toggleCooling();
+        }
+        return;
+      case _InventoryStateFilter.sellable:
+        if (!controller.sellableOnly.value) {
+          await controller.toggleSellable();
+        }
+        return;
+      case _InventoryStateFilter.cooling:
+        if (!controller.coolingOnly.value) {
+          await controller.toggleCooling();
+        }
+        return;
+    }
+  }
+
+  Future<void> _animateToInventoryStatePage(
+    _InventoryStateFilter filter,
+  ) async {
+    if (!_inventoryStatePageController.hasClients) {
+      await _applyInventoryStateFilter(filter);
+      return;
+    }
+    final targetPage = _inventoryFilterToPage(filter);
+    final currentPage =
+        (_inventoryStatePageController.page ??
+                _inventoryStatePageController.initialPage.toDouble())
+            .round();
+    if (currentPage == targetPage) {
+      return;
+    }
+    await _inventoryStatePageController.animateToPage(
+      targetPage,
+      duration: const Duration(milliseconds: 240),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  Future<void> _onInventoryStatePageChanged(int page) async {
+    if (controller.isLoading.value) {
+      await _animateToInventoryStatePage(_currentInventoryStateFilter());
+      return;
+    }
+    final selected = _inventoryFilterFromPage(page);
+    if (selected == _currentInventoryStateFilter()) {
+      return;
+    }
+    await _applyInventoryStateFilter(selected);
+  }
+
+  bool _onInventoryScrollNotification(ScrollNotification notification) {
+    final metrics = notification.metrics;
+    if (metrics.maxScrollExtent <= 0) {
+      return false;
+    }
+    if (metrics.pixels >= metrics.maxScrollExtent - 240) {
+      controller.loadMore();
+    }
+    return false;
+  }
+
+  Widget _buildInventoryListView({required Key scrollViewKey}) {
+    return Obx(() {
+      if (controller.items.isEmpty && controller.isLoading.value) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      return RefreshIndicator(
+        onRefresh: _onRefresh,
+        child: NotificationListener<ScrollNotification>(
+          onNotification: _onInventoryScrollNotification,
+          child: CustomScrollView(
+            key: scrollViewKey,
+            slivers: [
+              if (controller.items.isEmpty)
+                SliverFillRemaining(
+                  child: Center(child: Text('app.common.no_data'.tr)),
+                )
+              else
+                SliverPadding(
+                  padding: const EdgeInsets.all(10),
+                  sliver: SliverGrid.builder(
+                    gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          mainAxisSpacing: 10,
+                          crossAxisSpacing: 10,
+                          childAspectRatio: 1.0,
+                        ),
+                    itemCount: controller.items.length,
+                    itemBuilder: (context, index) {
+                      final item = controller.items[index];
+                      final schema = _lookupSchema(controller.schemas, item);
+                      final isTradable = item.tradable ?? true;
+                      final isCooling = item.coolingDown ?? false;
+                      final isOnSale = item.status == 1;
+                      final isInSupply = item.status == 2;
+                      final disabled = !_isItemSelectable(item);
+                      final disabledLabel = !isTradable
+                          ? 'app.trade.non_tradable'.tr
+                          : isCooling
+                          ? 'app.market.product.cooling'.tr
+                          : isOnSale
+                          ? 'app.inventory.on_sale'.tr
+                          : isInSupply
+                          ? 'app.inventory.in_supply'.tr
+                          : null;
+                      return Obx(() {
+                        final selected = controller.selectedIds.contains(
+                          item.id ?? -1,
+                        );
+                        return InventoryItemCard(
+                          item: item,
+                          schema: schema,
+                          schemaMap: controller.schemas,
+                          stickerMap: controller.stickers,
+                          selected: selected,
+                          disabledLabel: disabled ? disabledLabel : null,
+                          onTap: () {
+                            if (item.id == null) {
+                              return;
+                            }
+                            if (disabled) {
+                              Get.snackbar(
+                                'app.system.tips.title'.tr,
+                                !isTradable
+                                    ? 'app.inventory.message.non_tradable'.tr
+                                    : isCooling
+                                    ? 'app.market.product.cooling'.tr
+                                    : isOnSale
+                                    ? 'app.inventory.on_sale'.tr
+                                    : 'app.inventory.in_supply'.tr,
+                              );
+                              return;
+                            }
+                            controller.toggleSelection(item.id!);
+                          },
+                        );
+                      });
+                    },
+                  ),
+                ),
+              if (controller.isLoading.value)
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
+                ),
+              if (controller.items.isNotEmpty &&
+                  !controller.isLoading.value &&
+                  !controller.hasMore)
+                const SliverToBoxAdapter(child: ListEndTip()),
+            ],
+          ),
+        ),
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final currency = Get.find<CurrencyController>();
@@ -344,100 +534,35 @@ class _InventoryPageState extends State<InventoryPage> {
               ),
               Expanded(
                 child: Obx(() {
-                  if (controller.items.isEmpty && controller.isLoading.value) {
-                    return const Center(child: CircularProgressIndicator());
+                  if (controller.currentAppId.value == 440) {
+                    return _buildInventoryListView(
+                      scrollViewKey: const PageStorageKey(
+                        'inventory_scroll_single',
+                      ),
+                    );
                   }
-                  return RefreshIndicator(
-                    onRefresh: _onRefresh,
-                    child: CustomScrollView(
-                      controller: _scrollController,
-                      slivers: [
-                        if (controller.items.isEmpty)
-                          SliverFillRemaining(
-                            child: Center(child: Text('app.common.no_data'.tr)),
-                          )
-                        else
-                          SliverPadding(
-                            padding: const EdgeInsets.all(10),
-                            sliver: SliverGrid.builder(
-                              gridDelegate:
-                                  const SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: 2,
-                                    mainAxisSpacing: 10,
-                                    crossAxisSpacing: 10,
-                                    childAspectRatio: 1.0,
-                                  ),
-                              itemCount: controller.items.length,
-                              itemBuilder: (context, index) {
-                                final item = controller.items[index];
-                                final schema = _lookupSchema(
-                                  controller.schemas,
-                                  item,
-                                );
-                                final isTradable = item.tradable ?? true;
-                                final isCooling = item.coolingDown ?? false;
-                                final isOnSale = item.status == 1;
-                                final isInSupply = item.status == 2;
-                                final disabled = !_isItemSelectable(item);
-                                final disabledLabel = !isTradable
-                                    ? 'app.trade.non_tradable'.tr
-                                    : isCooling
-                                    ? 'app.market.product.cooling'.tr
-                                    : isOnSale
-                                    ? 'app.inventory.on_sale'.tr
-                                    : isInSupply
-                                    ? 'app.inventory.in_supply'.tr
-                                    : null;
-                                return Obx(() {
-                                  final selected = controller.selectedIds
-                                      .contains(item.id ?? -1);
-                                  return InventoryItemCard(
-                                    item: item,
-                                    schema: schema,
-                                    schemaMap: controller.schemas,
-                                    stickerMap: controller.stickers,
-                                    selected: selected,
-                                    disabledLabel: disabled
-                                        ? disabledLabel
-                                        : null,
-                                    onTap: () {
-                                      if (item.id == null) {
-                                        return;
-                                      }
-                                      if (disabled) {
-                                        Get.snackbar(
-                                          'app.system.tips.title'.tr,
-                                          !isTradable
-                                              ? 'app.inventory.message.non_tradable'
-                                                    .tr
-                                              : isCooling
-                                              ? 'app.market.product.cooling'.tr
-                                              : isOnSale
-                                              ? 'app.inventory.on_sale'.tr
-                                              : 'app.inventory.in_supply'.tr,
-                                        );
-                                        return;
-                                      }
-                                      controller.toggleSelection(item.id!);
-                                    },
-                                  );
-                                });
-                              },
-                            ),
-                          ),
-                        if (controller.isLoading.value)
-                          const SliverToBoxAdapter(
-                            child: Padding(
-                              padding: EdgeInsets.symmetric(vertical: 16),
-                              child: Center(child: CircularProgressIndicator()),
-                            ),
-                          ),
-                        if (controller.items.isNotEmpty &&
-                            !controller.isLoading.value &&
-                            !controller.hasMore)
-                          const SliverToBoxAdapter(child: ListEndTip()),
-                      ],
-                    ),
+                  return PageView(
+                    controller: _inventoryStatePageController,
+                    onPageChanged: (page) {
+                      _onInventoryStatePageChanged(page);
+                    },
+                    children: [
+                      _buildInventoryListView(
+                        scrollViewKey: const PageStorageKey(
+                          'inventory_scroll_all',
+                        ),
+                      ),
+                      _buildInventoryListView(
+                        scrollViewKey: const PageStorageKey(
+                          'inventory_scroll_sellable',
+                        ),
+                      ),
+                      _buildInventoryListView(
+                        scrollViewKey: const PageStorageKey(
+                          'inventory_scroll_cooling',
+                        ),
+                      ),
+                    ],
                   );
                 }),
               ),
@@ -480,7 +605,6 @@ class _InventoryPageState extends State<InventoryPage> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  '${'app.inventory.count'.tr}: '
                   '${controller.selectedIds.length}/$sellableTotal',
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.bodyMedium,
@@ -622,28 +746,7 @@ class _InventoryPageState extends State<InventoryPage> {
     if (selected == null || selected == currentFilter) {
       return;
     }
-
-    switch (selected) {
-      case _InventoryStateFilter.all:
-        if (controller.sellableOnly.value) {
-          await controller.toggleSellable();
-          return;
-        }
-        if (controller.coolingOnly.value) {
-          await controller.toggleCooling();
-        }
-        return;
-      case _InventoryStateFilter.sellable:
-        if (!controller.sellableOnly.value) {
-          await controller.toggleSellable();
-        }
-        return;
-      case _InventoryStateFilter.cooling:
-        if (!controller.coolingOnly.value) {
-          await controller.toggleCooling();
-        }
-        return;
-    }
+    await _animateToInventoryStatePage(selected);
   }
 
   Widget _buildInventoryStateSwitcher() {
@@ -700,7 +803,8 @@ class _InventoryPageState extends State<InventoryPage> {
                 return;
               }
               MarketFilterSheet.preload(appId: selected);
-              controller.changeGame(selected);
+              await controller.changeGame(selected);
+              await controller.preloadStateBucketsIfNeeded();
             },
           );
         },
@@ -1009,11 +1113,8 @@ class _InventoryStateSwitchOverlay extends StatelessWidget {
                 scale: Tween<double>(begin: 0.2, end: 1).animate(curved),
                 child: FadeTransition(
                   opacity: curved,
-                  child: Align(
-                    alignment: alignment,
-                    child: _InventoryStateSwitchPanel(
-                      currentFilter: currentFilter,
-                    ),
+                  child: _InventoryStateSwitchPanel(
+                    currentFilter: currentFilter,
                   ),
                 ),
               ),
@@ -1034,38 +1135,33 @@ class _InventoryStateSwitchPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final surface = Theme.of(context).colorScheme.surface;
     final divider = Theme.of(context).dividerColor;
-    return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 168),
-      child: Material(
-        color: surface,
-        elevation: 8,
-        borderRadius: BorderRadius.circular(12),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _InventoryStateOption(
-              filter: _InventoryStateFilter.all,
-              icon: Icons.apps_outlined,
-              labelKey: 'app.market.filter.all',
-              selected: currentFilter == _InventoryStateFilter.all,
-            ),
-            Divider(height: 1, color: divider),
-            _InventoryStateOption(
-              filter: _InventoryStateFilter.sellable,
-              icon: Icons.sell_outlined,
-              labelKey: 'app.market.product.sellable',
-              selected: currentFilter == _InventoryStateFilter.sellable,
-            ),
-            Divider(height: 1, color: divider),
-            _InventoryStateOption(
-              filter: _InventoryStateFilter.cooling,
-              icon: Icons.timer_outlined,
-              labelKey: 'app.market.product.cooling',
-              selected: currentFilter == _InventoryStateFilter.cooling,
-            ),
-          ],
-        ),
+    return Material(
+      color: surface,
+      elevation: 8,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _InventoryStateOption(
+            filter: _InventoryStateFilter.all,
+            icon: Icons.apps_outlined,
+            labelKey: 'app.market.filter.all',
+            selected: currentFilter == _InventoryStateFilter.all,
+          ),
+          Divider(height: 1, color: divider),
+          _InventoryStateOption(
+            filter: _InventoryStateFilter.sellable,
+            icon: Icons.sell_outlined,
+            labelKey: 'app.market.product.sellable',
+            selected: currentFilter == _InventoryStateFilter.sellable,
+          ),
+          Divider(height: 1, color: divider),
+          _InventoryStateOption(
+            filter: _InventoryStateFilter.cooling,
+            icon: Icons.timer_outlined,
+            labelKey: 'app.market.product.cooling',
+            selected: currentFilter == _InventoryStateFilter.cooling,
+          ),
+        ],
       ),
     );
   }
@@ -1090,7 +1186,7 @@ class _InventoryStateOption extends StatelessWidget {
     return InkWell(
       onTap: () => Navigator.of(context).pop(filter),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
           children: [
             Icon(icon, size: 18, color: selected ? selectedColor : null),

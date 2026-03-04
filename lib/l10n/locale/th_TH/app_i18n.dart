@@ -2,6 +2,7 @@
 final Map<String, String> th_TH = {
   "app.tabbar.home": "หน้าหลัก",
   "app.tabbar.inventory": "สินค้าคลัง",
+  "app.tabbar.market": "ตลาดอุปกรณ์เสริม",
   "app.tabbar.sell": "ขาย",
   "app.tabbar.mine": "เหมือง",
   "app.market.price_total": "ทั้งหมด",
@@ -302,6 +303,7 @@ final Map<String, String> th_TH = {
   "app.user.setting.theme": "ธีม",
   "app.user.setting.theme_light": "โหมดสว่าง",
   "app.user.setting.theme_dark": "โหมดมืด",
+  "app.user.setting.theme_system": "ตามระบบ",
   "app.user.setting.server": "การเปลี่ยนเซิร์ฟเวอร์",
   "app.user.setting.server_add": "เพิ่มเซิร์ฟเวอร์ใหม่",
   "app.user.setting.server_ip_placeholder": "กรุณาป้อนที่อยู่ IP",
@@ -431,6 +433,7 @@ final Map<String, String> th_TH = {
   "app.inventory.pricing": "ราคา",
   "app.inventory.pricing_reference": "ราคาอ้างอิง",
   "app.inventory.pricing_abnormal": "ความผิดปกติของราคา",
+  "app.inventory.view_overview": "View Overview",
   "app.inventory.upshop.text": "ขาย",
   "app.inventory.upshop.confirm_title": "การยืนยันชั้นวาง",
   "app.inventory.upshop.nums": "จํานวนชั้นวาง",

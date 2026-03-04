@@ -7,9 +7,34 @@ import 'package:tronskins_app/common/http/interceptors/auth_interceptor.dart';
 import 'package:tronskins_app/common/http/model/base_response.dart';
 import 'package:tronskins_app/common/storage/game_storage.dart';
 
+class _InventoryStateSnapshot {
+  const _InventoryStateSnapshot({
+    required this.items,
+    required this.schemas,
+    required this.stickers,
+    required this.total,
+    required this.totalPrice,
+    required this.page,
+    required this.hasMore,
+    required this.lastFetchedAt,
+    required this.triedRemoteFreshForCurrentRefresh,
+  });
+
+  final List<InventoryItem> items;
+  final Map<String, ShopSchemaInfo> schemas;
+  final Map<String, dynamic> stickers;
+  final int total;
+  final double totalPrice;
+  final int page;
+  final bool hasMore;
+  final DateTime? lastFetchedAt;
+  final bool triedRemoteFreshForCurrentRefresh;
+}
+
 class InventoryController extends GetxController {
   final ApiInventoryServer _inventoryApi = ApiInventoryServer();
   final ApiShopProductServer _shopApi = ApiShopProductServer();
+  static const int _inventoryPageSize = 20;
 
   final RxList<InventoryItem> items = <InventoryItem>[].obs;
   final RxMap<String, ShopSchemaInfo> schemas = <String, ShopSchemaInfo>{}.obs;
@@ -31,6 +56,10 @@ class InventoryController extends GetxController {
   int _page = 1;
   bool _hasMore = true;
   bool get hasMore => _hasMore;
+  final Map<String, _InventoryStateSnapshot> _stateCache =
+      <String, _InventoryStateSnapshot>{};
+  final Set<String> _loadedStateKeys = <String>{};
+  bool _isPreloadingStateBuckets = false;
   Worker? _logoutWorker;
   DateTime? _lastFetchedAt;
   bool _triedRemoteFreshForCurrentRefresh = false;
@@ -53,8 +82,13 @@ class InventoryController extends GetxController {
       selectedIds.clear();
       itemName.value = null;
       tags.clear();
+      sellableOnly.value = false;
+      coolingOnly.value = false;
       _page = 1;
       _hasMore = true;
+      _stateCache.clear();
+      _loadedStateKeys.clear();
+      _isPreloadingStateBuckets = false;
       _lastFetchedAt = null;
       _triedRemoteFreshForCurrentRefresh = false;
     });
@@ -86,9 +120,14 @@ class InventoryController extends GetxController {
       stickers.clear();
       total.value = 0;
       totalPrice.value = 0;
+      _stateCache.clear();
+      _loadedStateKeys.clear();
       _lastFetchedAt = null;
       return;
     }
+    final key = _activeStateKey();
+    _stateCache.remove(key);
+    _loadedStateKeys.remove(key);
     _page = 1;
     _hasMore = true;
     _triedRemoteFreshForCurrentRefresh = false;
@@ -97,8 +136,6 @@ class InventoryController extends GetxController {
   }
 
   Future<void> refreshByPullDown() async {
-    sellableOnly.value = false;
-    coolingOnly.value = false;
     clearSelection();
     await refreshList();
   }
@@ -133,15 +170,44 @@ class InventoryController extends GetxController {
       if (data == null || data.items.isEmpty) {
         _hasMore = false;
       } else {
+        final fetchedCount = data.items.length;
         items.addAll(data.items);
-        _page += 1;
+        final totalCount = data.total ?? data.pager?.total;
+        if (totalCount != null) {
+          _hasMore = items.length < totalCount;
+        } else {
+          _hasMore = fetchedCount >= _inventoryPageSize;
+        }
+        if (_hasMore) {
+          _page += 1;
+        }
       }
+      _saveCurrentStateToCache(_activeStateKey());
     } finally {
       isLoading.value = false;
     }
   }
 
   Future<InventoryResponse?> _fetchInventoryPage(int page) async {
+    final res = await _fetchInventoryPageWithState(
+      page: page,
+      sellableOnlyFlag: sellableOnly.value,
+      coolingOnlyFlag: coolingOnly.value,
+    );
+
+    if (res.success) {
+      _loadedStateKeys.add(_activeStateKey());
+      _lastFetchedAt = DateTime.now();
+    }
+
+    return res.datas;
+  }
+
+  Future<BaseHttpResponse<InventoryResponse>> _fetchInventoryPageWithState({
+    required int page,
+    required bool sellableOnlyFlag,
+    required bool coolingOnlyFlag,
+  }) async {
     final tagPayload = Map<String, dynamic>.from(tags)
       ..removeWhere((key, value) => value == null || value == '');
     if (priceMin.value != null) {
@@ -150,31 +216,25 @@ class InventoryController extends GetxController {
     if (priceMax.value != null) {
       tagPayload['priceMax'] = priceMax.value;
     }
-
-    final res = await _inventoryApi.inventoryList(
+    return _inventoryApi.inventoryList(
       appId: appId,
       page: page,
-      pageSize: 20,
+      pageSize: _inventoryPageSize,
       field: sortField.value,
       asc: sortAsc.value,
       keywords: keywords.value.isEmpty ? null : keywords.value,
       tags: tagPayload.isEmpty ? null : tagPayload,
       itemName: itemName.value,
-      canSellOnly: sellableOnly.value ? true : null,
-      status: coolingOnly.value ? 4 : null,
+      canSellOnly: sellableOnlyFlag ? true : null,
+      status: coolingOnlyFlag ? 4 : null,
     );
-
-    if (res.success) {
-      _lastFetchedAt = DateTime.now();
-    }
-
-    return res.datas;
   }
 
   Future<void> refreshInventory() async {
     if (!_hasToken) {
       return;
     }
+    _invalidateStateCache();
     await _inventoryApi.inventoryRefresh(appId: appId);
     await refreshList();
   }
@@ -182,6 +242,7 @@ class InventoryController extends GetxController {
   Future<void> search(String value) async {
     keywords.value = value.trim();
     itemName.value = null;
+    _invalidateStateCache();
     clearSelection();
     await refreshList();
   }
@@ -223,31 +284,47 @@ class InventoryController extends GetxController {
     if (sellableOnly.value && coolingOnly.value) {
       coolingOnly.value = false;
     }
+    _invalidateStateCache();
     clearSelection();
     await refreshList();
   }
 
   Future<void> toggleSortAsc() async {
     sortAsc.value = !sortAsc.value;
+    _invalidateStateCache();
     clearSelection();
     await refreshList();
   }
 
   Future<void> toggleSellable() async {
+    final previousKey = _activeStateKey();
+    _saveCurrentStateToCache(previousKey);
+
     sellableOnly.value = !sellableOnly.value;
     if (sellableOnly.value) {
       coolingOnly.value = false;
     }
+    final targetKey = _activeStateKey();
     clearSelection();
+    if (_restoreStateFromCache(targetKey)) {
+      return;
+    }
     await refreshList();
   }
 
   Future<void> toggleCooling() async {
+    final previousKey = _activeStateKey();
+    _saveCurrentStateToCache(previousKey);
+
     coolingOnly.value = !coolingOnly.value;
     if (coolingOnly.value) {
       sellableOnly.value = false;
     }
+    final targetKey = _activeStateKey();
     clearSelection();
+    if (_restoreStateFromCache(targetKey)) {
+      return;
+    }
     await refreshList();
   }
 
@@ -259,8 +336,90 @@ class InventoryController extends GetxController {
     await GameStorage.setGameType(newAppId);
     tags.clear();
     itemName.value = null;
+    _invalidateStateCache();
     clearSelection();
     await refreshList();
+  }
+
+  Future<void> preloadStateBucketsIfNeeded({bool force = false}) async {
+    if (!_hasToken || appId == 440) {
+      return;
+    }
+    if (_isPreloadingStateBuckets || isLoading.value) {
+      return;
+    }
+    final currentKey = _activeStateKey();
+    _saveCurrentStateToCache(currentKey);
+    final targets = <String>['all', 'sellable', 'cooling'];
+    if (!force && targets.every(_stateCache.containsKey)) {
+      return;
+    }
+
+    _isPreloadingStateBuckets = true;
+    try {
+      for (final key in targets) {
+        if (!force && _stateCache.containsKey(key)) {
+          continue;
+        }
+        final snapshot = await _buildFirstPageSnapshotForState(key);
+        if (snapshot == null) {
+          continue;
+        }
+        _stateCache[key] = snapshot;
+        _loadedStateKeys.add(key);
+      }
+    } finally {
+      _isPreloadingStateBuckets = false;
+    }
+  }
+
+  Future<_InventoryStateSnapshot?> _buildFirstPageSnapshotForState(
+    String key,
+  ) async {
+    final flags = _stateFlagsForKey(key);
+    final res = await _fetchInventoryPageWithState(
+      page: 1,
+      sellableOnlyFlag: flags.$1,
+      coolingOnlyFlag: flags.$2,
+    );
+    if (!res.success) {
+      return null;
+    }
+    final fetchedAt = DateTime.now();
+    final data = res.datas;
+    if (data == null) {
+      return _InventoryStateSnapshot(
+        items: const <InventoryItem>[],
+        schemas: const <String, ShopSchemaInfo>{},
+        stickers: const <String, dynamic>{},
+        total: 0,
+        totalPrice: 0,
+        page: 1,
+        hasMore: false,
+        lastFetchedAt: fetchedAt,
+        triedRemoteFreshForCurrentRefresh: false,
+      );
+    }
+
+    final fetchedCount = data.items.length;
+    final totalCount = data.total ?? data.pager?.total;
+    final hasMore = fetchedCount > 0
+        ? (totalCount != null
+              ? fetchedCount < totalCount
+              : fetchedCount >= _inventoryPageSize)
+        : false;
+
+    return _InventoryStateSnapshot(
+      items: List<InventoryItem>.from(data.items),
+      schemas: Map<String, ShopSchemaInfo>.from(data.schemas),
+      stickers: Map<String, dynamic>.from(data.stickers),
+      total: data.total ?? 0,
+      totalPrice: data.totalPrice ?? 0,
+      page: hasMore ? 2 : 1,
+      hasMore: hasMore,
+      lastFetchedAt: fetchedAt,
+      triedRemoteFreshForCurrentRefresh: false,
+    );
   }
 
   bool toggleSelection(int itemId) {
@@ -292,6 +451,7 @@ class InventoryController extends GetxController {
         .toList();
     final res = await _shopApi.orderItemUp(appId: appId, items: payload);
     if (res.success) {
+      _invalidateStateCache();
       clearSelection();
       await refreshList();
     }
@@ -312,9 +472,76 @@ class InventoryController extends GetxController {
         .toList();
     final res = await _shopApi.orderItemUp(appId: appId, items: payload);
     if (res.success) {
+      _invalidateStateCache();
       clearSelection();
       await refreshList();
     }
     return res;
+  }
+
+  String _activeStateKey() {
+    if (coolingOnly.value) {
+      return 'cooling';
+    }
+    if (sellableOnly.value) {
+      return 'sellable';
+    }
+    return 'all';
+  }
+
+  (bool, bool) _stateFlagsForKey(String key) {
+    switch (key) {
+      case 'sellable':
+        return (true, false);
+      case 'cooling':
+        return (false, true);
+      default:
+        return (false, false);
+    }
+  }
+
+  void _invalidateStateCache() {
+    _stateCache.clear();
+    _loadedStateKeys.clear();
+    _isPreloadingStateBuckets = false;
+  }
+
+  void _saveCurrentStateToCache(String key) {
+    if (!_loadedStateKeys.contains(key)) {
+      return;
+    }
+    _stateCache[key] = _InventoryStateSnapshot(
+      items: List<InventoryItem>.from(items),
+      schemas: Map<String, ShopSchemaInfo>.from(schemas),
+      stickers: Map<String, dynamic>.from(stickers),
+      total: total.value,
+      totalPrice: totalPrice.value,
+      page: _page,
+      hasMore: _hasMore,
+      lastFetchedAt: _lastFetchedAt,
+      triedRemoteFreshForCurrentRefresh: _triedRemoteFreshForCurrentRefresh,
+    );
+  }
+
+  bool _restoreStateFromCache(String key) {
+    final cached = _stateCache[key];
+    if (cached == null) {
+      return false;
+    }
+    items.assignAll(cached.items);
+    schemas
+      ..clear()
+      ..addAll(cached.schemas);
+    stickers
+      ..clear()
+      ..addAll(cached.stickers);
+    total.value = cached.total;
+    totalPrice.value = cached.totalPrice;
+    _page = cached.page;
+    _hasMore = cached.hasMore;
+    _lastFetchedAt = cached.lastFetchedAt;
+    _triedRemoteFreshForCurrentRefresh =
+        cached.triedRemoteFreshForCurrentRefresh;
+    return true;
   }
 }

@@ -2,6 +2,7 @@
 final Map<String, String> en_US = {
   "app.tabbar.home": "Home",
   "app.tabbar.inventory": "Inventory",
+  "app.tabbar.market": "Market",
   "app.tabbar.sell": "Sell",
   "app.tabbar.mine": "Mine",
   "app.market.price_total": "Total",
@@ -315,6 +316,7 @@ final Map<String, String> en_US = {
   "app.user.setting.theme": "Theme",
   "app.user.setting.theme_light": "Light Mode",
   "app.user.setting.theme_dark": "Dark Mode",
+  "app.user.setting.theme_system": "Follow System",
   "app.user.setting.server": "Server Switch",
   "app.user.setting.server_add": "New Server Added",
   "app.user.setting.server_ip_placeholder": "Please enter the IP address.",
@@ -447,6 +449,7 @@ final Map<String, String> en_US = {
   "app.inventory.pricing": "Pricing",
   "app.inventory.pricing_reference": "Reference Pricing",
   "app.inventory.pricing_abnormal": "The pricing anomaly",
+  "app.inventory.view_overview": "View Overview",
   "app.inventory.upshop.text": "On Sale",
   "app.inventory.upshop.confirm_title": "Confirmation of Shelf",
   "app.inventory.upshop.nums": "Number of Shelves",
