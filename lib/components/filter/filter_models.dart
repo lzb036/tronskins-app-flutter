@@ -63,6 +63,9 @@ class MarketFilterResult {
     this.priceMax,
     this.tags,
     this.itemName,
+    this.statusList,
+    this.startDate,
+    this.endDate,
     this.clearKeyword = false,
   });
 
@@ -72,5 +75,8 @@ class MarketFilterResult {
   final double? priceMax;
   final Map<String, dynamic>? tags;
   final String? itemName;
+  final List<int>? statusList;
+  final DateTime? startDate;
+  final DateTime? endDate;
   final bool clearKeyword;
 }

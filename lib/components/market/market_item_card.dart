@@ -8,11 +8,7 @@ import 'package:tronskins_app/components/game_item/quality_ribbon.dart';
 import 'package:tronskins_app/components/game_item/wear_progress_bar.dart';
 
 class MarketItemCard extends StatelessWidget {
-  const MarketItemCard({
-    super.key,
-    required this.item,
-    this.onTap,
-  });
+  const MarketItemCard({super.key, required this.item, this.onTap});
 
   final MarketItemEntity item;
   final VoidCallback? onTap;
@@ -29,13 +25,9 @@ class MarketItemCard extends StatelessWidget {
     final paintWearText = item.paintWear;
     final paintWearValue = double.tryParse(item.paintWear ?? '');
     final reserveWearSlot = item.appId == 730;
-    final nameStyle = theme.textTheme.bodyMedium;
-    final nameFontSize = nameStyle?.fontSize ?? 14;
-    final nameLineHeight = (nameStyle?.height ?? 1.2) * nameFontSize;
-    final nameBoxHeight = nameLineHeight * 2;
-    final showQualityRibbon =
-        !isDota && _shouldShowQualityRibbon(quality);
+    final showQualityRibbon = !isDota && _shouldShowQualityRibbon(quality);
     return Card(
+      margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
@@ -72,40 +64,29 @@ class MarketItemCard extends StatelessWidget {
               SizedBox(
                 height: 14,
                 child: paintWearValue != null
-                    ? WearProgressBar(
-                        paintWear: paintWearValue,
-                        height: 14,
-                      )
+                    ? WearProgressBar(paintWear: paintWearValue, height: 14)
                     : const SizedBox.shrink(),
               ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 10, 12, 4),
-              child: SizedBox(
-                height: nameBoxHeight,
-                child: Text(
-                  item.marketName ?? '',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: nameStyle,
-                  strutStyle: StrutStyle(
-                    fontSize: nameFontSize,
-                    height: nameStyle?.height ?? 1.2,
-                    forceStrutHeight: true,
-                  ),
-                ),
+              padding: const EdgeInsets.fromLTRB(8, 6, 8, 2),
+              child: Text(
+                item.marketName ?? '',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodyMedium,
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+              padding: const EdgeInsets.fromLTRB(8, 0, 8, 6),
               child: Row(
                 children: [
                   Obx(
                     () => Text(
                       currency.format(price),
                       style: theme.textTheme.titleSmall?.copyWith(
-                            color: Theme.of(context).colorScheme.primary,
-                            fontWeight: FontWeight.w600,
-                          ),
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                   const Spacer(),

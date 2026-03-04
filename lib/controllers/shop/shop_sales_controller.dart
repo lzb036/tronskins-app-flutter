@@ -178,10 +178,14 @@ class ShopSalesController extends GetxController {
     String? sortField,
     Map<String, dynamic>? tags,
     String? itemName,
+    String? keyword,
   }) async {
     recordStatusList.assignAll(statusList ?? <int>[]);
     recordStartDate.value = startDate;
     recordEndDate.value = endDate;
+    if (keyword != null) {
+      recordKeywords.value = keyword.trim();
+    }
     if (sortAsc != null) {
       recordSortAsc.value = sortAsc;
     }

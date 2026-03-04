@@ -3,11 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:tronskins_app/components/game_item/game_item_models.dart';
 
 class GemRow extends StatelessWidget {
-  const GemRow({
-    super.key,
-    required this.gems,
-    this.size = 18,
-  });
+  const GemRow({super.key, required this.gems, this.size = 18});
 
   final List<GameItemGem> gems;
   final double size;
@@ -33,17 +29,11 @@ class GemRow extends StatelessWidget {
               child: CachedNetworkImage(
                 imageUrl: gem.imageUrl,
                 fit: BoxFit.contain,
-                placeholder: (context, _) => SizedBox(
-                  width: size,
-                  height: size,
-                  child: const Center(
-                    child: CircularProgressIndicator(strokeWidth: 1.2),
-                  ),
-                ),
-                errorWidget: (context, _, __) => Icon(
-                  Icons.image_not_supported_outlined,
-                  size: size,
-                ),
+                fadeInDuration: const Duration(milliseconds: 120),
+                placeholder: (context, _) =>
+                    SizedBox(width: size, height: size),
+                errorWidget: (context, _, __) =>
+                    Icon(Icons.image_not_supported_outlined, size: size),
               ),
             ),
           )

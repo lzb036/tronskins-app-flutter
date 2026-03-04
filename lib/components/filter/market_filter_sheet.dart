@@ -14,7 +14,11 @@ class MarketFilterSheet extends StatefulWidget {
     this.titleKey = 'app.market.filter.text',
     this.showPriceRange = true,
     this.showSort = true,
+    this.showStatus = false,
+    this.showDateRange = false,
+    this.statusOptions = const [],
     this.isSideSheet = false,
+    this.initialGroupKey,
   });
 
   final int appId;
@@ -23,7 +27,11 @@ class MarketFilterSheet extends StatefulWidget {
   final String titleKey;
   final bool showPriceRange;
   final bool showSort;
+  final bool showStatus;
+  final bool showDateRange;
+  final List<StatusOption> statusOptions;
   final bool isSideSheet;
+  final String? initialGroupKey;
 
   static final GetStorage _box = GetStorage();
   static final Map<int, Map<String, List<_AttributeGroup>>> _memoryCache = {};
@@ -41,9 +49,14 @@ class MarketFilterSheet extends StatefulWidget {
     String titleKey = 'app.market.filter.text',
     bool showPriceRange = true,
     bool showSort = true,
+    bool showStatus = false,
+    bool showDateRange = false,
+    List<StatusOption> statusOptions = const [],
+    String? initialGroupKey,
   }) {
-    final barrierLabel =
-        MaterialLocalizations.of(context).modalBarrierDismissLabel;
+    final barrierLabel = MaterialLocalizations.of(
+      context,
+    ).modalBarrierDismissLabel;
     return showGeneralDialog<MarketFilterResult>(
       context: context,
       barrierDismissible: true,
@@ -65,7 +78,11 @@ class MarketFilterSheet extends StatefulWidget {
                 titleKey: titleKey,
                 showPriceRange: showPriceRange,
                 showSort: showSort,
+                showStatus: showStatus,
+                showDateRange: showDateRange,
+                statusOptions: statusOptions,
                 isSideSheet: true,
+                initialGroupKey: initialGroupKey,
               ),
             ),
           ),
@@ -93,11 +110,50 @@ class MarketFilterSheet extends StatefulWidget {
     await _loadGroups(appId);
   }
 
+  static Future<List<MarketFilterGroupMeta>> loadGroupMetas({
+    required int appId,
+  }) async {
+    final groups = await _loadGroups(appId);
+    return groups
+        .map(
+          (group) => MarketFilterGroupMeta(
+            key: group.key,
+            labelKey: group.label,
+            optionLabels: _buildOptionLabelMap(group),
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  static Map<String, String> _buildOptionLabelMap(_AttributeGroup group) {
+    final labels = <String, String>{};
+    for (final option in group.options) {
+      if (!option.isUnlimited && option.name.isNotEmpty) {
+        labels[option.name] = option.label;
+      }
+      for (final sub in option.subOptions) {
+        if (!sub.isUnlimited && sub.name.isNotEmpty) {
+          labels[sub.name] = sub.label;
+        }
+      }
+    }
+    for (final heroSection in group.heroSections) {
+      for (final hero in heroSection.heroes) {
+        if (!hero.isUnlimited && hero.name.isNotEmpty) {
+          labels[hero.name] = hero.label;
+        }
+      }
+    }
+    return labels;
+  }
+
   static String _localeKeyStatic() {
     final locale = Get.locale;
     if (locale == null) return 'en_US';
     final country = locale.countryCode;
-    return country == null ? locale.languageCode : '${locale.languageCode}_$country';
+    return country == null
+        ? locale.languageCode
+        : '${locale.languageCode}_$country';
   }
 
   static bool _isExpired(int ts, int now) {
@@ -131,7 +187,8 @@ class MarketFilterSheet extends StatefulWidget {
     Map<String, dynamic> raw,
   ) async {
     final cacheKey = 'schema_tags_$appId';
-    final cached = _box.read<Map<String, dynamic>>(cacheKey) ?? <String, dynamic>{};
+    final cached =
+        _box.read<Map<String, dynamic>>(cacheKey) ?? <String, dynamic>{};
     cached[localeKey] = <String, dynamic>{
       _cacheTsKey: DateTime.now().millisecondsSinceEpoch,
       _cacheDataKey: raw,
@@ -151,8 +208,7 @@ class MarketFilterSheet extends StatefulWidget {
         await _writeCache(appId, localeKey, data);
         final groups = _buildGroupsStatic(appId, data);
         _memoryCache.putIfAbsent(appId, () => {})[localeKey] = groups;
-        _memoryTs
-            .putIfAbsent(appId, () => {})[localeKey] =
+        _memoryTs.putIfAbsent(appId, () => {})[localeKey] =
             DateTime.now().millisecondsSinceEpoch;
         return groups;
       }
@@ -226,6 +282,9 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
   late bool _sortAsc;
   late final TextEditingController _minController;
   late final TextEditingController _maxController;
+  DateTime? _startDate;
+  DateTime? _endDate;
+  int _selectedStatusIndex = -1;
 
   final Map<String, String?> _selectedTags = {};
   String? _selectedItemName;
@@ -237,6 +296,7 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
   List<_FilterSection> _sections = [];
   int _currentSectionIndex = 0;
   int _slideDirection = 1;
+  bool _hasAppliedInitialGroupKey = false;
 
   @override
   void initState() {
@@ -255,6 +315,9 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
       });
     }
     _selectedItemName = widget.initial.itemName;
+    _startDate = widget.initial.startDate;
+    _endDate = widget.initial.endDate;
+    _selectedStatusIndex = _resolveInitialStatusIndex();
     _primeCache();
     _rebuildSections();
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -276,6 +339,31 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
     });
   }
 
+  int _resolveInitialStatusIndex() {
+    if (!widget.showStatus || widget.statusOptions.isEmpty) {
+      return -1;
+    }
+    final initialStatusList = widget.initial.statusList;
+    if (initialStatusList == null || initialStatusList.isEmpty) {
+      return -1;
+    }
+    return widget.statusOptions.indexWhere(
+      (option) => _listEquals(option.values, initialStatusList),
+    );
+  }
+
+  bool _listEquals(List<int> a, List<int> b) {
+    if (a.length != b.length) {
+      return false;
+    }
+    for (var i = 0; i < a.length; i += 1) {
+      if (a[i] != b[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   void _primeCache() {
     final localeKey = _localeKey();
     final memory = MarketFilterSheet._memoryCache[widget.appId];
@@ -293,13 +381,20 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
       }
       return;
     }
-    final payload = MarketFilterSheet._readCachePayload(widget.appId, localeKey);
+    final payload = MarketFilterSheet._readCachePayload(
+      widget.appId,
+      localeKey,
+    );
     if (payload != null) {
       _groups = _buildGroups(payload.raw);
-      MarketFilterSheet._memoryCache
-          .putIfAbsent(widget.appId, () => {})[localeKey] = _groups;
-      MarketFilterSheet._memoryTs
-          .putIfAbsent(widget.appId, () => {})[localeKey] = payload.ts;
+      MarketFilterSheet._memoryCache.putIfAbsent(
+        widget.appId,
+        () => {},
+      )[localeKey] = _groups;
+      MarketFilterSheet._memoryTs.putIfAbsent(
+        widget.appId,
+        () => {},
+      )[localeKey] = payload.ts;
       _isLoading = false;
       _rebuildSections();
       if (MarketFilterSheet._isExpired(
@@ -349,10 +444,47 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
         ),
       );
     }
+    if (widget.showStatus) {
+      sections.add(
+        const _FilterSection(
+          type: _SectionType.status,
+          labelKey: 'app.trade.order.status',
+        ),
+      );
+    }
+    if (widget.showDateRange) {
+      sections.add(
+        const _FilterSection(
+          type: _SectionType.date,
+          labelKey: 'app.trade.order.date',
+        ),
+      );
+    }
     _sections = sections;
     if (_currentSectionIndex >= _sections.length) {
       _currentSectionIndex = 0;
     }
+    _applyInitialGroupSection();
+  }
+
+  void _applyInitialGroupSection() {
+    if (_hasAppliedInitialGroupKey) {
+      return;
+    }
+    final targetKey = widget.initialGroupKey;
+    if (targetKey == null || targetKey.isEmpty) {
+      _hasAppliedInitialGroupKey = true;
+      return;
+    }
+    final index = _sections.indexWhere(
+      (section) =>
+          section.type == _SectionType.group && section.group?.key == targetKey,
+    );
+    if (index < 0) {
+      return;
+    }
+    _currentSectionIndex = index;
+    _hasAppliedInitialGroupKey = true;
   }
 
   @override
@@ -423,6 +555,9 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
         priceMax: null,
         tags: <String, dynamic>{},
         itemName: '',
+        statusList: null,
+        startDate: null,
+        endDate: null,
         clearKeyword: true,
       ),
     );
@@ -432,7 +567,9 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
     final min = double.tryParse(_minController.text.trim());
     final max = double.tryParse(_maxController.text.trim());
     final tags = Map<String, dynamic>.from(_selectedTags)
-      ..removeWhere((key, value) => value == null || value == '' || value == 'unlimited');
+      ..removeWhere(
+        (key, value) => value == null || value == '' || value == 'unlimited',
+      );
     Navigator.of(context).pop(
       MarketFilterResult(
         sortField: _sortField,
@@ -441,6 +578,11 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
         priceMax: max,
         tags: tags,
         itemName: _selectedItemName ?? '',
+        statusList: widget.showStatus && _selectedStatusIndex >= 0
+            ? widget.statusOptions[_selectedStatusIndex].values
+            : null,
+        startDate: widget.showDateRange ? _startDate : null,
+        endDate: widget.showDateRange ? _endDate : null,
       ),
     );
   }
@@ -494,16 +636,17 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
       isDark ? 0.16 : 0.08,
     )!;
     final borderColor = colors.outline.withOpacity(isDark ? 0.18 : 0.08);
-    final softSurface =
-        isDark ? colors.surfaceVariant.withOpacity(0.18) : colors.surfaceVariant.withOpacity(0.6);
+    final softSurface = isDark
+        ? colors.surfaceVariant.withOpacity(0.18)
+        : colors.surfaceVariant.withOpacity(0.6);
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final disableAnimations =
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    final animationDuration =
-        disableAnimations ? Duration.zero : const Duration(milliseconds: 240);
+    final animationDuration = disableAnimations
+        ? Duration.zero
+        : const Duration(milliseconds: 240);
     const actionBarHeight = 56.0;
-    final entryOffset =
-        widget.isSideSheet ? Offset.zero : const Offset(0, 0.1);
+    final entryOffset = widget.isSideSheet ? Offset.zero : const Offset(0, 0.1);
     final sheet = SafeArea(
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -522,13 +665,11 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [
-                        panelColor,
-                        panelTint,
-                      ],
+                      colors: [panelColor, panelTint],
                     ),
-                    borderRadius:
-                        const BorderRadius.vertical(top: Radius.circular(20)),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(20),
+                    ),
                     border: Border.all(color: borderColor),
                     boxShadow: [
                       BoxShadow(
@@ -568,8 +709,8 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
                                   ? LinearProgressIndicator(
                                       minHeight: 2,
                                       color: colors.primary.withOpacity(0.7),
-                                      backgroundColor:
-                                          colors.outline.withOpacity(0.08),
+                                      backgroundColor: colors.outline
+                                          .withOpacity(0.08),
                                     )
                                   : const SizedBox(height: 2),
                             ),
@@ -641,10 +782,10 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
     return Text(
       text,
       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.2,
-            color: colors.onSurface,
-          ),
+        fontWeight: FontWeight.w600,
+        letterSpacing: 0.2,
+        color: colors.onSurface,
+      ),
     );
   }
 
@@ -775,7 +916,9 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: borderColor),
             ),
-            child: _showAttributes ? _buildSectionContent() : const SizedBox.shrink(),
+            child: _showAttributes
+                ? _buildSectionContent()
+                : const SizedBox.shrink(),
           ),
         ),
         const SizedBox(width: 12),
@@ -872,8 +1015,16 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
       case _SectionType.price:
         children = _buildPriceSection();
         break;
+      case _SectionType.status:
+        children = _buildStatusSection();
+        break;
+      case _SectionType.date:
+        children = _buildDateSection();
+        break;
       case _SectionType.group:
-        children = [if (section.group != null) _buildGroupSection(section.group!)];
+        children = [
+          if (section.group != null) _buildGroupSection(section.group!),
+        ];
         break;
     }
     return LayoutBuilder(
@@ -911,10 +1062,7 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
               physics: const ClampingScrollPhysics(),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ...children,
-                  const SizedBox(height: 8),
-                ],
+                children: [...children, const SizedBox(height: 8)],
               ),
             ),
           ),
@@ -1010,7 +1158,9 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
         duration: const Duration(milliseconds: 160),
         padding: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? colors.primary.withOpacity(0.14) : Colors.transparent,
+          color: selected
+              ? colors.primary.withOpacity(0.14)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(10),
         ),
         child: Row(
@@ -1025,9 +1175,9 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
             Text(
               label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: selected ? colors.primary : colors.onSurfaceVariant,
-                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                  ),
+                color: selected ? colors.primary : colors.onSurfaceVariant,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+              ),
             ),
           ],
         ),
@@ -1049,14 +1199,17 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
           Expanded(
             child: TextField(
               controller: _minController,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               decoration: InputDecoration(
                 filled: true,
                 fillColor: fillColor,
                 isDense: true,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 12,
+                ),
                 labelText: 'app.market.filter.price_lowest'.tr,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -1083,14 +1236,17 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
           Expanded(
             child: TextField(
               controller: _maxController,
-              keyboardType:
-                  const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               decoration: InputDecoration(
                 filled: true,
                 fillColor: fillColor,
                 isDense: true,
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 12,
+                ),
                 labelText: 'app.market.filter.price_highest'.tr,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -1114,6 +1270,134 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
             ),
           ),
         ],
+      ),
+    ];
+  }
+
+  List<Widget> _buildStatusSection() {
+    return [
+      _buildSectionTitle('app.trade.order.status'.tr),
+      const SizedBox(height: 8),
+      Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: List.generate(widget.statusOptions.length, (index) {
+          final option = widget.statusOptions[index];
+          final selected = _selectedStatusIndex == index;
+          return _buildChip(
+            option.labelKey.tr,
+            selected: selected,
+            onSelected: (value) {
+              setState(() {
+                _selectedStatusIndex = value ? index : -1;
+              });
+            },
+          );
+        }),
+      ),
+    ];
+  }
+
+  String _formatDate(DateTime? date) {
+    if (date == null) {
+      return '-';
+    }
+    return '${date.year.toString().padLeft(4, '0')}-'
+        '${date.month.toString().padLeft(2, '0')}-'
+        '${date.day.toString().padLeft(2, '0')}';
+  }
+
+  Future<void> _pickStartDate() async {
+    final now = DateTime.now();
+    final result = await showDatePicker(
+      context: context,
+      initialDate: _startDate ?? now,
+      firstDate: DateTime(now.year - 10),
+      lastDate: DateTime(now.year + 1),
+    );
+    if (result != null) {
+      setState(() => _startDate = result);
+    }
+  }
+
+  Future<void> _pickEndDate() async {
+    final now = DateTime.now();
+    final result = await showDatePicker(
+      context: context,
+      initialDate: _endDate ?? _startDate ?? now,
+      firstDate: DateTime(now.year - 10),
+      lastDate: DateTime(now.year + 1),
+    );
+    if (result != null) {
+      setState(() => _endDate = result);
+    }
+  }
+
+  Widget _buildDateField({
+    required String title,
+    required String value,
+    required VoidCallback onTap,
+  }) {
+    final colors = Theme.of(context).colorScheme;
+    return InkWell(
+      borderRadius: BorderRadius.circular(10),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: colors.surfaceVariant.withOpacity(0.4),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: colors.outline.withOpacity(0.2)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: Theme.of(
+                context,
+              ).textTheme.labelSmall?.copyWith(color: colors.onSurfaceVariant),
+            ),
+            const SizedBox(height: 4),
+            Text(value, style: Theme.of(context).textTheme.bodySmall),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildDateSection() {
+    return [
+      _buildSectionTitle('app.trade.order.date'.tr),
+      const SizedBox(height: 8),
+      Row(
+        children: [
+          Expanded(
+            child: _buildDateField(
+              title: 'app.market.filter.date_start'.tr,
+              value: _formatDate(_startDate),
+              onTap: _pickStartDate,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _buildDateField(
+              title: 'app.market.filter.date_end'.tr,
+              value: _formatDate(_endDate),
+              onTap: _pickEndDate,
+            ),
+          ),
+        ],
+      ),
+      Align(
+        alignment: Alignment.centerLeft,
+        child: TextButton(
+          onPressed: () => setState(() {
+            _startDate = null;
+            _endDate = null;
+          }),
+          child: Text('app.market.filter.clear'.tr),
+        ),
       ),
     ];
   }
@@ -1143,8 +1427,10 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
                 }),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 180),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: isUnlimited
                         ? colors.primary.withOpacity(0.12)
@@ -1162,8 +1448,9 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
                       color: isUnlimited
                           ? colors.primary
                           : colors.onSurfaceVariant,
-                      fontWeight:
-                          isUnlimited ? FontWeight.w600 : FontWeight.w500,
+                      fontWeight: isUnlimited
+                          ? FontWeight.w600
+                          : FontWeight.w500,
                     ),
                   ),
                 ),
@@ -1199,8 +1486,7 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
             builder: (context, constraints) {
               final width = constraints.maxWidth;
               final minTileWidth = 78.0;
-              final count =
-                  (width / minTileWidth).floor().clamp(3, 5).toInt();
+              final count = (width / minTileWidth).floor().clamp(3, 5).toInt();
               return GridView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
@@ -1224,10 +1510,7 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
     );
   }
 
-  Widget _buildHeroTile(
-    _AttributeOption hero, {
-    required bool selected,
-  }) {
+  Widget _buildHeroTile(_AttributeOption hero, {required bool selected}) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
@@ -1320,8 +1603,9 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
       },
       loadingBuilder: (context, child, progress) {
         if (progress == null) return child;
-        final overlayColor =
-            Theme.of(context).colorScheme.surface.withOpacity(0.35);
+        final overlayColor = Theme.of(
+          context,
+        ).colorScheme.surface.withOpacity(0.35);
         return Stack(
           fit: StackFit.expand,
           children: [
@@ -1361,23 +1645,23 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
                   .map(
                     (option) => ChoiceChip(
                       label: Text(option.label.tr),
-                      selectedColor:
-                          Theme.of(context).colorScheme.primary.withOpacity(0.16),
-                      backgroundColor:
-                          Theme.of(context).colorScheme.surfaceVariant,
+                      selectedColor: Theme.of(
+                        context,
+                      ).colorScheme.primary.withOpacity(0.16),
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.surfaceVariant,
                       selected: _isGroupSelected(group.key, option),
                       showCheckmark: false,
                       shape: StadiumBorder(
                         side: BorderSide(
                           color: _isGroupSelected(group.key, option)
-                              ? Theme.of(context)
-                                  .colorScheme
-                                  .primary
-                                  .withOpacity(0.5)
-                              : Theme.of(context)
-                                  .colorScheme
-                                  .outline
-                                  .withOpacity(0.2),
+                              ? Theme.of(
+                                  context,
+                                ).colorScheme.primary.withOpacity(0.5)
+                              : Theme.of(
+                                  context,
+                                ).colorScheme.outline.withOpacity(0.2),
                         ),
                       ),
                       labelStyle: TextStyle(
@@ -1410,31 +1694,26 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
           children: [
             ChoiceChip(
               label: Text(unlimitedLabel.tr),
-              selectedColor:
-                  Theme.of(context).colorScheme.primary.withOpacity(0.16),
-              backgroundColor:
-                  Theme.of(context).colorScheme.surfaceVariant,
+              selectedColor: Theme.of(
+                context,
+              ).colorScheme.primary.withOpacity(0.16),
+              backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
               selected: selected == null,
               showCheckmark: false,
               shape: StadiumBorder(
                 side: BorderSide(
                   color: selected == null
-                      ? Theme.of(context)
-                          .colorScheme
-                          .primary
-                          .withOpacity(0.5)
-                      : Theme.of(context)
-                          .colorScheme
-                          .outline
-                          .withOpacity(0.2),
+                      ? Theme.of(context).colorScheme.primary.withOpacity(0.5)
+                      : Theme.of(context).colorScheme.outline.withOpacity(0.2),
                 ),
               ),
               labelStyle: TextStyle(
                 color: selected == null
                     ? Theme.of(context).colorScheme.primary
                     : Theme.of(context).textTheme.bodySmall?.color,
-                fontWeight:
-                    selected == null ? FontWeight.w600 : FontWeight.w500,
+                fontWeight: selected == null
+                    ? FontWeight.w600
+                    : FontWeight.w500,
               ),
               onSelected: (_) => _selectSubOption(
                 group,
@@ -1457,22 +1736,20 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
                 ChoiceChip(
                   label: Text(option.label.tr),
                   selected: selected == option.name,
-                  selectedColor:
-                      Theme.of(context).colorScheme.primary.withOpacity(0.16),
-                  backgroundColor:
-                      Theme.of(context).colorScheme.surfaceVariant,
+                  selectedColor: Theme.of(
+                    context,
+                  ).colorScheme.primary.withOpacity(0.16),
+                  backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
                   showCheckmark: false,
                   shape: StadiumBorder(
                     side: BorderSide(
                       color: selected == option.name
-                          ? Theme.of(context)
-                              .colorScheme
-                              .primary
-                              .withOpacity(0.5)
-                          : Theme.of(context)
-                              .colorScheme
-                              .outline
-                              .withOpacity(0.2),
+                          ? Theme.of(
+                              context,
+                            ).colorScheme.primary.withOpacity(0.5)
+                          : Theme.of(
+                              context,
+                            ).colorScheme.outline.withOpacity(0.2),
                     ),
                   ),
                   labelStyle: TextStyle(
@@ -1504,24 +1781,22 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
                       (sub) => ChoiceChip(
                         label: Text(sub.label.tr),
                         selected: selected == sub.name,
-                        selectedColor: Theme.of(context)
-                            .colorScheme
-                            .primary
-                            .withOpacity(0.16),
-                        backgroundColor:
-                            Theme.of(context).colorScheme.surfaceVariant,
+                        selectedColor: Theme.of(
+                          context,
+                        ).colorScheme.primary.withOpacity(0.16),
+                        backgroundColor: Theme.of(
+                          context,
+                        ).colorScheme.surfaceVariant,
                         showCheckmark: false,
                         shape: StadiumBorder(
                           side: BorderSide(
                             color: selected == sub.name
-                                ? Theme.of(context)
-                                    .colorScheme
-                                    .primary
-                                    .withOpacity(0.5)
-                                : Theme.of(context)
-                                    .colorScheme
-                                    .outline
-                                    .withOpacity(0.2),
+                                ? Theme.of(
+                                    context,
+                                  ).colorScheme.primary.withOpacity(0.5)
+                                : Theme.of(
+                                    context,
+                                  ).colorScheme.outline.withOpacity(0.2),
                           ),
                         ),
                         labelStyle: TextStyle(
@@ -1630,11 +1905,13 @@ _AttributeGroup _buildGroupStatic(
 ) {
   final label = group['label']?.toString() ?? key;
   final list = group['list'];
-  final options =
-      list is List ? _parseOptionsStatic(list) : <_AttributeOption>[];
+  final options = list is List
+      ? _parseOptionsStatic(list)
+      : <_AttributeOption>[];
   final hasSubOptions = options.any((option) => option.subOptions.isNotEmpty);
-  final normalized =
-      hasSubOptions ? options : _withUnlimitedStatic(options, unlimitedLabel);
+  final normalized = hasSubOptions
+      ? options
+      : _withUnlimitedStatic(options, unlimitedLabel);
   return _AttributeGroup(
     key: key,
     label: label,
@@ -1644,57 +1921,41 @@ _AttributeGroup _buildGroupStatic(
 }
 
 List<_AttributeOption> _parseOptionsStatic(List list) {
-  return list
-      .whereType<Map<String, dynamic>>()
-      .map((item) {
-        final name = item['name']?.toString() ?? '';
-        final label = item['localized_name']?.toString() ?? name;
-        final subTypes = item['subTypes'];
-        final subOptions = <_AttributeOption>[];
-        if (subTypes is List) {
-          for (final sub in subTypes) {
-            if (sub is Map<String, dynamic>) {
-              final subKey = sub['key']?.toString() ?? '';
-              final subLabel = sub['value']?.toString() ??
-                  sub['localized_name']?.toString() ??
-                  subKey;
-              subOptions.add(
-                _AttributeOption(
-                  name: subKey,
-                  label: subLabel,
-                  parentName: name,
-                ),
-              );
-            }
-          }
+  return list.whereType<Map<String, dynamic>>().map((item) {
+    final name = item['name']?.toString() ?? '';
+    final label = item['localized_name']?.toString() ?? name;
+    final subTypes = item['subTypes'];
+    final subOptions = <_AttributeOption>[];
+    if (subTypes is List) {
+      for (final sub in subTypes) {
+        if (sub is Map<String, dynamic>) {
+          final subKey = sub['key']?.toString() ?? '';
+          final subLabel =
+              sub['value']?.toString() ??
+              sub['localized_name']?.toString() ??
+              subKey;
+          subOptions.add(
+            _AttributeOption(name: subKey, label: subLabel, parentName: name),
+          );
         }
-        return _AttributeOption(
-          name: name,
-          label: label,
-          isUnlimited: name.toLowerCase() == 'unlimited',
-          subOptions: subOptions,
-        );
-      })
-      .toList();
+      }
+    }
+    return _AttributeOption(
+      name: name,
+      label: label,
+      isUnlimited: name.toLowerCase() == 'unlimited',
+      subOptions: subOptions,
+    );
+  }).toList();
 }
 
-List<_AttributeOption> _parseHeroOptionsStatic(
-  List list,
-  String base,
-) {
-  return list
-      .whereType<Map<String, dynamic>>()
-      .map((item) {
-        final name = item['name']?.toString() ?? '';
-        final label = item['localized_name']?.toString() ?? name;
-        final imageUrl = base.isEmpty ? null : '$base$name.jpg';
-        return _AttributeOption(
-          name: name,
-          label: label,
-          imageUrl: imageUrl,
-        );
-      })
-      .toList();
+List<_AttributeOption> _parseHeroOptionsStatic(List list, String base) {
+  return list.whereType<Map<String, dynamic>>().map((item) {
+    final name = item['name']?.toString() ?? '';
+    final label = item['localized_name']?.toString() ?? name;
+    final imageUrl = base.isEmpty ? null : '$base$name.jpg';
+    return _AttributeOption(name: name, label: label, imageUrl: imageUrl);
+  }).toList();
 }
 
 List<_AttributeOption> _withUnlimitedStatic(
@@ -1711,6 +1972,25 @@ List<_AttributeOption> _withUnlimitedStatic(
     ),
     ...options,
   ];
+}
+
+class MarketFilterGroupMeta {
+  const MarketFilterGroupMeta({
+    required this.key,
+    required this.labelKey,
+    required this.optionLabels,
+  });
+
+  final String key;
+  final String labelKey;
+  final Map<String, String> optionLabels;
+
+  String? labelForValue(dynamic value) {
+    if (value == null) {
+      return null;
+    }
+    return optionLabels[value.toString()];
+  }
 }
 
 class _AttributeGroup {
@@ -1750,10 +2030,7 @@ class _AttributeOption {
 }
 
 class _HeroSection {
-  const _HeroSection({
-    required this.labelKey,
-    required this.heroes,
-  });
+  const _HeroSection({required this.labelKey, required this.heroes});
 
   final String labelKey;
   final List<_AttributeOption> heroes;
@@ -1766,7 +2043,7 @@ class _CachePayload {
   final int ts;
 }
 
-enum _SectionType { sort, price, group }
+enum _SectionType { sort, price, group, status, date }
 
 class _FilterSection {
   const _FilterSection({

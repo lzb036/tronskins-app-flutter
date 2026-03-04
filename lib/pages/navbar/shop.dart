@@ -13,7 +13,6 @@ import 'package:tronskins_app/components/game/game_icon_button.dart';
 import 'package:tronskins_app/components/game/game_switch_menu.dart';
 import 'package:tronskins_app/components/filter/filter_models.dart';
 import 'package:tronskins_app/components/filter/market_filter_sheet.dart';
-import 'package:tronskins_app/components/filter/order_filter_sheet.dart';
 import 'package:tronskins_app/components/game_item/game_item_image.dart';
 import 'package:tronskins_app/components/game_item/game_item_models.dart';
 import 'package:tronskins_app/components/game_item/shop_sale_item_card.dart';
@@ -296,7 +295,7 @@ class _ShopPageState extends State<ShopPage>
       return '';
     }
     final date = DateTime.fromMillisecondsSinceEpoch(timestamp * 1000);
-    return DateFormat('MM-dd HH:mm').format(date);
+    return DateFormat('yyyy-MM-dd HH:mm').format(date);
   }
 
   double _sumOrderPrice(ShopOrderItem order) {
@@ -323,17 +322,67 @@ class _ShopPageState extends State<ShopPage>
     return total;
   }
 
+  String _resolveDetailTitle(
+    ShopOrderDetail detail,
+    Map<String, ShopSchemaInfo> schemas,
+  ) {
+    final schema = _lookupSchema(
+      schemas,
+      detail.marketHashName,
+      detail.schemaId,
+    );
+    return detail.marketName ?? schema?.marketName ?? '-';
+  }
+
+  List<String> _buildMultiDetailTitleLines({
+    required List<ShopOrderDetail> details,
+    required Map<String, ShopSchemaInfo> schemas,
+    int maxVisibleNames = 3,
+  }) {
+    if (details.isEmpty) {
+      return const ['-'];
+    }
+    final names = details
+        .map((detail) => _resolveDetailTitle(detail, schemas))
+        .toList(growable: false);
+    final visible = names.take(maxVisibleNames).toList(growable: false);
+    final hasOverflow = names.length > maxVisibleNames;
+    final lines = <String>[];
+    for (var i = 0; i < visible.length; i++) {
+      final name = visible[i];
+      final isLastVisible = i == visible.length - 1;
+      final suffix = hasOverflow && isLastVisible ? '...' : '';
+      lines.add('. $name$suffix');
+    }
+    return lines;
+  }
+
   Widget _buildSellRecordDetailImage({
     required ShopOrderDetail detail,
     required Map<String, ShopSchemaInfo> schemas,
   }) {
-    final schema = _lookupSchema(schemas, detail.marketHashName, detail.schemaId);
+    final schema = _lookupSchema(
+      schemas,
+      detail.marketHashName,
+      detail.schemaId,
+    );
     final appId = _resolveDetailAppId(detail, schema);
     final imageUrl = detail.imageUrl ?? schema?.imageUrl ?? '';
     final rarity = _schemaTag(schema, 'rarity');
     final quality = _schemaTag(schema, 'quality');
     final phase = _detailText(detail, ['phase']);
     final percentage = _detailText(detail, ['percentage']);
+    final rawAsset = detail.raw['asset'];
+    final rawCsgoAsset = detail.raw['csgoAsset'];
+    final stickerRaw =
+        detail.raw['stickers'] ??
+        (rawAsset is Map ? rawAsset['stickers'] : null) ??
+        (rawCsgoAsset is Map ? rawCsgoAsset['stickers'] : null);
+    final stickers = parseStickerList(
+      stickerRaw,
+      schemaMap: schemas,
+      stickerMap: salesController.stickers,
+    );
     final count = detail.count ?? 1;
     return SizedBox(
       width: 72,
@@ -346,6 +395,123 @@ class _ShopPageState extends State<ShopPage>
         phase: phase,
         percentage: percentage,
         count: count > 1 ? count : null,
+        stickers: stickers,
+      ),
+    );
+  }
+
+  Widget _buildSellRecordDetailOverflowHint(int hiddenCount) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      width: 72,
+      height: 43,
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      alignment: Alignment.center,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            '...',
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          Text('+$hiddenCount', style: Theme.of(context).textTheme.labelSmall),
+        ],
+      ),
+    );
+  }
+
+  String _buildRecordStatusText(ShopOrderItem record) {
+    final status = record.status;
+    if (status == 6) {
+      return 'app.trade.sale.success'.tr;
+    }
+    final statusName = record.statusName?.trim();
+    if ([2, 3, 4].contains(status)) {
+      return (statusName == null || statusName.isEmpty) ? '-' : statusName;
+    }
+    final cancelDesc = record.cancelDesc?.trim();
+    if (![2, 3, 4, 5, 6].contains(status) &&
+        cancelDesc != null &&
+        cancelDesc.isNotEmpty) {
+      return cancelDesc;
+    }
+    if (statusName != null && statusName.isNotEmpty) {
+      return statusName;
+    }
+    return '-';
+  }
+
+  ({Color bg, Color fg}) _recordStatusPalette(int? status) {
+    if ([5, 6].contains(status)) {
+      return (bg: const Color(0xFFE8F5E9), fg: const Color(0xFF008000));
+    }
+    if ([2, 3, 4].contains(status)) {
+      return (bg: const Color(0xFFFDECEC), fg: const Color(0xFFC22121));
+    }
+    return (bg: const Color(0xFFF5F5F5), fg: const Color(0xFF888888));
+  }
+
+  Widget _buildRecordStatusBadge(
+    ShopOrderItem record, {
+    double maxWidth = 160,
+  }) {
+    final palette = _recordStatusPalette(record.status);
+    final statusText = _buildRecordStatusText(record);
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: maxWidth),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: palette.bg,
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Text(
+          statusText,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: palette.fg,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRecordInfoChip({required IconData icon, required String text}) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 180),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.6),
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.max,
+          children: [
+            Icon(icon, size: 13, color: colorScheme.onSurfaceVariant),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                text,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                softWrap: false,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -417,30 +583,31 @@ class _ShopPageState extends State<ShopPage>
   }
 
   Future<void> _openSellRecordFilterSheet() async {
-    final result = await OrderFilterSheet.showFromRight(
+    final result = await MarketFilterSheet.showFromRight(
       context: context,
-      initial: OrderFilterResult(
-        statusList: salesController.recordStatusList.toList(),
-        startDate: salesController.recordStartDate.value,
-        endDate: salesController.recordEndDate.value,
+      appId: GameStorage.getGameType(),
+      sortOptions: const [
+        SortOption(labelKey: 'app.market.filter.time', field: 'time'),
+      ],
+      showSort: false,
+      showPriceRange: false,
+      showStatus: true,
+      showDateRange: true,
+      statusOptions: _statusOptions,
+      initial: MarketFilterResult(
         sortField: salesController.recordSortField.value,
         sortAsc: salesController.recordSortAsc.value,
         tags: Map<String, dynamic>.from(salesController.recordTags),
         itemName: salesController.recordItemName.value,
+        statusList: salesController.recordStatusList.toList(),
+        startDate: salesController.recordStartDate.value,
+        endDate: salesController.recordEndDate.value,
       ),
-      statusOptions: _statusOptions,
-      showSort: false,
-      showStatus: true,
-      showDateRange: true,
-      enableAttributeFilter: true,
-      appId: GameStorage.getGameType(),
-      attributeShowSort: false,
-      attributeShowPriceRange: false,
-      attributeSortOptions: const [
-        SortOption(labelKey: 'app.market.filter.time', field: 'time'),
-      ],
     );
     if (result != null) {
+      if (result.clearKeyword) {
+        _recordSearchController.clear();
+      }
       await salesController.applyRecordFilter(
         statusList: result.statusList,
         startDate: result.startDate,
@@ -449,6 +616,7 @@ class _ShopPageState extends State<ShopPage>
         sortField: result.sortField,
         tags: result.tags,
         itemName: result.itemName,
+        keyword: result.clearKeyword ? '' : null,
       );
     }
   }
@@ -1103,13 +1271,13 @@ class _ShopPageState extends State<ShopPage>
           controller: _onSaleScroll,
           slivers: [
             SliverPadding(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(10),
               sliver: SliverGrid.builder(
                 gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  childAspectRatio: 0.74,
+                  mainAxisSpacing: 10,
+                  crossAxisSpacing: 10,
+                  childAspectRatio: 1.0,
                 ),
                 itemCount: salesController.onSaleItems.length,
                 itemBuilder: (context, index) {
@@ -1382,33 +1550,59 @@ class _ShopPageState extends State<ShopPage>
                       : _detailText(primary, ['paint_wear', 'paintWear']) ??
                             wearValue?.toString();
                   final hasMultipleDetails = record.details.length > 1;
-                  final totalCount = _sumOrderCount(record);
                   final showCountdown = _showRecordCountdown(record);
+                  const maxVisibleDetails = 3;
+                  final visibleDetailItems = record.details
+                      .take(maxVisibleDetails)
+                      .toList(growable: false);
+                  final hiddenDetailCount =
+                      record.details.length - visibleDetailItems.length;
+                  final colorScheme = Theme.of(context).colorScheme;
+                  final textTheme = Theme.of(context).textTheme;
+                  final statusText = _buildRecordStatusText(record);
+                  final statusColor = [5, 6].contains(record.status)
+                      ? const Color(0xFF008000)
+                      : [2, 3, 4].contains(record.status)
+                      ? const Color(0xFFC22121)
+                      : colorScheme.onSurfaceVariant;
                   return Card(
                     child: Padding(
                       padding: const EdgeInsets.all(12),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (hasMultipleDetails) ...[
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 8,
-                              children: record.details
-                                  .map(
-                                    (detail) => _buildSellRecordDetailImage(
-                                      detail: detail,
-                                      schemas: salesController.schemas,
-                                    ),
-                                  )
-                                  .toList(growable: false),
-                            ),
-                            const SizedBox(height: 10),
-                          ],
                           Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              if (!hasMultipleDetails) ...[
+                              Expanded(
+                                child: Text(
+                                  _formatTime(record.createTime),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: textTheme.bodySmall?.copyWith(
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Text(
+                                  statusText,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: textTheme.bodySmall?.copyWith(
+                                    color: statusColor,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 10),
+                          if (!hasMultipleDetails)
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
                                 if (primary != null)
                                   _buildSellRecordDetailImage(
                                     detail: primary,
@@ -1419,9 +1613,8 @@ class _ShopPageState extends State<ShopPage>
                                     width: 72,
                                     height: 43,
                                     decoration: BoxDecoration(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.surfaceContainerHighest,
+                                      color:
+                                          colorScheme.surfaceContainerHighest,
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     alignment: Alignment.center,
@@ -1431,78 +1624,137 @@ class _ShopPageState extends State<ShopPage>
                                     ),
                                   ),
                                 const SizedBox(width: 12),
+                                Expanded(
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              title,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: textTheme.titleSmall
+                                                  ?.copyWith(
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                            ),
+                                            if (wearValue != null &&
+                                                wearText != null) ...[
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                '${'app.market.csgo.abradability'.tr}: $wearText',
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: textTheme.bodySmall
+                                                    ?.copyWith(
+                                                      color: colorScheme
+                                                          .onSurfaceVariant,
+                                                    ),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              WearProgressBar(
+                                                paintWear: wearValue,
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.end,
+                                        children: [
+                                          if (showCountdown) ...[
+                                            _RecordProtectionCountdownText(
+                                              endTimeSeconds:
+                                                  record.protectionTime!,
+                                              style: textTheme.bodySmall
+                                                  ?.copyWith(
+                                                    color:
+                                                        Colors.orange.shade600,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                          ],
+                                          Obx(
+                                            () => Text(
+                                              currency.format(totalPrice),
+                                              style: textTheme.titleSmall
+                                                  ?.copyWith(
+                                                    color: colorScheme.primary,
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ],
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                            )
+                          else
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Expanded(
+                                  child: Row(
+                                    children: [
+                                      ...visibleDetailItems.map(
+                                        (detail) => Padding(
+                                          padding: const EdgeInsets.only(
+                                            right: 8,
+                                          ),
+                                          child: _buildSellRecordDetailImage(
+                                            detail: detail,
+                                            schemas: salesController.schemas,
+                                          ),
+                                        ),
+                                      ),
+                                      if (hiddenDetailCount > 0)
+                                        Text(
+                                          '+$hiddenDetailCount',
+                                          style: textTheme.bodySmall?.copyWith(
+                                            color: colorScheme.onSurfaceVariant,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Text(
-                                      hasMultipleDetails
-                                          ? '$title  x$totalCount'
-                                          : title,
-                                      maxLines: 2,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      _formatTime(record.createTime),
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.bodySmall,
-                                    ),
-                                    if (!hasMultipleDetails &&
-                                        wearValue != null &&
-                                        wearText != null) ...[
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        '${'app.market.csgo.abradability'.tr}: $wearText',
-                                        style: Theme.of(
-                                          context,
-                                        ).textTheme.bodySmall,
+                                    if (showCountdown) ...[
+                                      _RecordProtectionCountdownText(
+                                        endTimeSeconds: record.protectionTime!,
+                                        style: textTheme.bodySmall?.copyWith(
+                                          color: Colors.orange.shade600,
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                       ),
                                       const SizedBox(height: 4),
-                                      WearProgressBar(paintWear: wearValue),
                                     ],
+                                    Obx(
+                                      () => Text(
+                                        currency.format(totalPrice),
+                                        style: textTheme.titleSmall?.copyWith(
+                                          color: colorScheme.primary,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
                                   ],
                                 ),
-                              ),
-                              const SizedBox(width: 8),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  if (showCountdown) ...[
-                                    _RecordProtectionCountdownText(
-                                      endTimeSeconds: record.protectionTime!,
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.bodySmall?.copyWith(
-                                        color: Colors.orange.shade600,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                  ],
-                                  Obx(
-                                    () => Text(
-                                      currency.format(totalPrice),
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.titleSmall?.copyWith(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.primary,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    record.statusName ?? '',
-                                    style: Theme.of(context).textTheme.bodySmall,
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
+                              ],
+                            ),
                         ],
                       ),
                     ),

@@ -358,14 +358,14 @@ class _InventoryPageState extends State<InventoryPage> {
                           )
                         else
                           SliverPadding(
-                            padding: const EdgeInsets.all(12),
+                            padding: const EdgeInsets.all(10),
                             sliver: SliverGrid.builder(
                               gridDelegate:
                                   const SliverGridDelegateWithFixedCrossAxisCount(
                                     crossAxisCount: 2,
-                                    mainAxisSpacing: 12,
-                                    crossAxisSpacing: 12,
-                                    childAspectRatio: 0.74,
+                                    mainAxisSpacing: 10,
+                                    crossAxisSpacing: 10,
+                                    childAspectRatio: 1.0,
                                   ),
                               itemCount: controller.items.length,
                               itemBuilder: (context, index) {

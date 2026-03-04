@@ -25,6 +25,8 @@ class GameItemImage extends StatelessWidget {
     this.disabledLabel,
     this.stickers = const [],
     this.gems = const [],
+    this.stickerBottomOffset = 0,
+    this.onSaleBottomOffset = 0,
   });
 
   final String? imageUrl;
@@ -43,15 +45,34 @@ class GameItemImage extends StatelessWidget {
   final String? disabledLabel;
   final List<GameItemSticker> stickers;
   final List<GameItemGem> gems;
+  final double stickerBottomOffset;
+  final double onSaleBottomOffset;
 
   bool get _isDota => appId == 570;
 
   @override
   Widget build(BuildContext context) {
     final bgAsset = _isDota ? null : rarityBgAsset(rarity?.color);
-    final qualityBorder = _isDota ? null : qualityBorderColor(quality?.color);
+    final qualityBorder = qualityBorderColor(quality?.color);
     final exteriorColor = parseHexColor(exterior?.color) ?? Colors.black54;
     final badges = _buildBadges(context, exteriorColor);
+    final hasCountBadge = count != null && count! > 1;
+    final stickerBottom =
+        (_isDota ? 3.0 : (hasCountBadge ? 20.0 : 2.0)) + stickerBottomOffset;
+    final stickerLeft = _isDota ? 0.0 : 6.0;
+    final stickerSize = _isDota ? 15.0 : 16.0;
+    final gemLeft = _isDota ? 10.0 : 6.0;
+    final gemBottom = _isDota ? 15.0 : 10.0;
+    final gemSize = _isDota ? 15.0 : 16.0;
+    final stickerBottomWithGem = gems.isNotEmpty
+        ? stickerBottom + gemSize + 4.0
+        : stickerBottom;
+    final countBottom = _isDota && stickers.isNotEmpty ? 24.0 : 6.0;
+    final onSaleBottom =
+        (hasCountBadge ? countBottom + 18.0 : 6.0) + onSaleBottomOffset;
+    final badgeLeft = _isDota ? 4.0 : 6.0;
+    final badgeTop = 4.0;
+    final badgeMaxWidth = _isDota ? 130.0 : 145.0;
     return Stack(
       children: [
         if (bgAsset != null)
@@ -74,16 +95,23 @@ class GameItemImage extends StatelessWidget {
               final image = CachedNetworkImage(
                 imageUrl: imageUrl ?? '',
                 fit: BoxFit.contain,
-                placeholder: (context, _) =>
-                    const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                placeholder: (context, _) => const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
                 errorWidget: (context, _, __) =>
                     const Icon(Icons.image_not_supported_outlined),
               );
               if (_isDota) {
                 return Center(
-                  child: SizedBox(
+                  child: Container(
                     width: constraints.maxWidth,
                     height: constraints.maxHeight,
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: qualityBorder ?? Colors.white,
+                        width: 1.8,
+                      ),
+                    ),
                     child: image,
                   ),
                 );
@@ -100,12 +128,17 @@ class GameItemImage extends StatelessWidget {
         ),
         if (badges.isNotEmpty)
           Positioned(
-            left: 6,
-            top: 6,
-            child: Wrap(
-              spacing: 4,
-              runSpacing: 4,
-              children: badges,
+            left: badgeLeft,
+            top: badgeTop,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: badgeMaxWidth),
+              child: Wrap(
+                alignment: WrapAlignment.start,
+                runAlignment: WrapAlignment.start,
+                spacing: 3,
+                runSpacing: 3,
+                children: badges,
+              ),
             ),
           ),
         if (paintWearText != null && paintWearText!.isNotEmpty)
@@ -118,10 +151,7 @@ class GameItemImage extends StatelessWidget {
               color: Colors.black.withOpacity(0.6),
               child: Text(
                 '${'app.market.csgo.abradability'.tr}: $paintWearText',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 10,
-                ),
+                style: const TextStyle(color: Colors.white, fontSize: 10),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -129,30 +159,30 @@ class GameItemImage extends StatelessWidget {
           ),
         if (gems.isNotEmpty)
           Positioned(
-            left: 6,
-            bottom: 10,
-            child: GemRow(gems: gems, size: 16),
+            left: gemLeft,
+            bottom: gemBottom,
+            child: GemRow(gems: gems, size: gemSize),
           ),
         if (stickers.isNotEmpty)
           Positioned(
-            right: 6,
-            bottom: 10,
-            child: StickerRow(stickers: stickers, size: 16),
+            left: stickerLeft,
+            bottom: stickerBottomWithGem,
+            child: StickerRow(stickers: stickers, size: stickerSize),
           ),
         if (showOnSaleBadge)
           Positioned(
             right: 6,
-            bottom: stickers.isNotEmpty ? 32 : 10,
+            bottom: onSaleBottom,
             child: Image.asset(
               'assets/images/game/item/on-sale.png',
               width: 18,
               height: 18,
             ),
           ),
-        if (count != null && count! > 1)
+        if (hasCountBadge)
           Positioned(
             right: 6,
-            bottom: 6,
+            bottom: countBottom,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
@@ -230,10 +260,7 @@ class GameItemImage extends StatelessWidget {
 }
 
 class _TagChip extends StatelessWidget {
-  const _TagChip({
-    required this.text,
-    required this.background,
-  });
+  const _TagChip({required this.text, required this.background});
 
   final String text;
   final Color background;
@@ -241,17 +268,14 @@ class _TagChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
       decoration: BoxDecoration(
         color: background,
         borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
         text,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 10,
-        ),
+        style: const TextStyle(color: Colors.white, fontSize: 9.5),
       ),
     );
   }

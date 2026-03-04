@@ -57,6 +57,7 @@ class ShopSaleItemCard extends StatelessWidget {
     final showQualityRibbon = appId != 570 && _shouldShowQualityRibbon(quality);
 
     return Card(
+      margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
@@ -96,18 +97,18 @@ class ShopSaleItemCard extends StatelessWidget {
             if (paintWearValue != null)
               WearProgressBar(paintWear: paintWearValue),
             if (paintWearValue == null && appId == 730)
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+              padding: const EdgeInsets.fromLTRB(8, 6, 8, 2),
               child: Text(
                 title,
-                maxLines: 2,
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+              padding: const EdgeInsets.fromLTRB(8, 0, 8, 6),
               child: Obx(
                 () => Text(
                   currency.format(item.price ?? 0),

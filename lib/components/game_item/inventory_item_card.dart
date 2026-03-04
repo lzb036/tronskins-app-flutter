@@ -45,6 +45,11 @@ class InventoryItemCard extends StatelessWidget {
         _extractText(asset, ['paint_wear', 'paintWear']) ??
         _extractText(item.raw, ['paint_wear', 'paintWear']) ??
         _formatWear(paintWearValue);
+    final stickerBottomOffset =
+        paintWearText != null && paintWearText.isNotEmpty ? 16.0 : 0.0;
+    final onSaleBottomOffset = paintWearText != null && paintWearText.isNotEmpty
+        ? 14.0
+        : 0.0;
     final paintSeed =
         item.paintSeed ?? _extractText(asset, ['paint_seed', 'paintSeed']);
     final phase = item.phase ?? _extractText(asset, ['phase']);
@@ -65,6 +70,7 @@ class InventoryItemCard extends StatelessWidget {
     final price = _extractPrice(schema, item.price ?? 0);
 
     return Card(
+      margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
@@ -87,11 +93,13 @@ class InventoryItemCard extends StatelessWidget {
                       percentage: percentage,
                       paintWearText: paintWearText,
                       count: item.count,
-                      selected: selected,
+                      selected: false,
                       showOnSaleBadge: showOnSaleBadge,
                       disabledLabel: disabledLabel,
                       stickers: stickers,
                       gems: gems,
+                      stickerBottomOffset: stickerBottomOffset,
+                      onSaleBottomOffset: onSaleBottomOffset,
                     ),
                   ),
                   if (showQualityRibbon && quality != null)
@@ -100,24 +108,34 @@ class InventoryItemCard extends StatelessWidget {
                       top: 12,
                       child: QualityRibbon(quality: quality),
                     ),
+                  if (selected)
+                    Positioned(
+                      right: 6,
+                      top: 6,
+                      child: Image.asset(
+                        'assets/images/game/item/gou.png',
+                        width: 20,
+                        height: 20,
+                      ),
+                    ),
                 ],
               ),
             ),
             if (paintWearValue != null)
               WearProgressBar(paintWear: paintWearValue),
             if (paintWearValue == null && appId == 730)
-              const SizedBox(height: 8),
+              const SizedBox(height: 4),
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+              padding: const EdgeInsets.fromLTRB(8, 6, 8, 2),
               child: Text(
                 title,
-                maxLines: 2,
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+              padding: const EdgeInsets.fromLTRB(8, 0, 8, 6),
               child: Row(
                 children: [
                   Obx(
