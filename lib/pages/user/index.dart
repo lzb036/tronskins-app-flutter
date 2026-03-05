@@ -38,14 +38,8 @@ class UserPage extends StatelessWidget {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: isDark
-                        ? [
-                            const Color(0xFF1E1E1E),
-                            const Color(0xFF121212),
-                          ]
-                        : [
-                            colors.primary,
-                            colors.primary.withOpacity(0.85),
-                          ],
+                        ? [const Color(0xFF1E1E1E), const Color(0xFF121212)]
+                        : [colors.primary, colors.primary.withOpacity(0.85)],
                   ),
                 ),
                 child: Column(
@@ -60,21 +54,27 @@ class UserPage extends StatelessWidget {
                     const SizedBox(height: 12),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Obx(() => _Header(
-                            avatarProvider: userCtrl.avatarProvider,
-                            nickname: userCtrl.nickname,
-                            isLoggedIn: userCtrl.isLoggedIn.value,
-                          )),
+                      child: Obx(
+                        () => _Header(
+                          avatarProvider: userCtrl.avatarProvider,
+                          nickname: userCtrl.nickname,
+                          isLoggedIn: userCtrl.isLoggedIn.value,
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 16),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: Obx(() => _BalanceSection(
-                            balance: currency.formatUsd(userCtrl.balanceValue),
-                            gift: currency.formatUsd(userCtrl.giftValue),
-                            locked: currency.formatUsd(userCtrl.lockedValue),
-                            unsettled: currency.formatUsd(userCtrl.settlementValue),
-                          )),
+                      child: Obx(
+                        () => _BalanceSection(
+                          balance: currency.formatUsd(userCtrl.balanceValue),
+                          gift: currency.formatUsd(userCtrl.giftValue),
+                          locked: currency.formatUsd(userCtrl.lockedValue),
+                          unsettled: currency.formatUsd(
+                            userCtrl.settlementValue,
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -124,7 +124,10 @@ class _Header extends StatelessWidget {
                 padding: const EdgeInsets.all(2),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white.withOpacity(0.5), width: 2),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.5),
+                    width: 2,
+                  ),
                 ),
                 child: CircleAvatar(
                   radius: 32,
@@ -165,90 +168,101 @@ class _TopRightButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          CustomAnimatedIconButton(
-              icon: Icons.center_focus_weak,
-              normalIconColor: Colors.white,
-              onTap: () {}),
-          const SizedBox(width: 8),
-          CustomAnimatedIconButton(
-              icon: Icons.notifications,
-              normalIconColor: Colors.white,
-              onTap: () => Get.toNamed(Routers.MESSAGE)),
-          const SizedBox(width: 8),
-          CustomAnimatedIconButton(
-              icon: Icons.settings,
-              normalIconColor: Colors.white,
-              onTap: () => Get.toNamed(Routers.USER_SETTING)),
-        ],
-      );
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      CustomAnimatedIconButton(
+        icon: Icons.center_focus_weak,
+        normalIconColor: Colors.white,
+        onTap: () {},
+      ),
+      const SizedBox(width: 8),
+      CustomAnimatedIconButton(
+        icon: Icons.notifications,
+        normalIconColor: Colors.white,
+        onTap: () => Get.toNamed(Routers.MESSAGE),
+      ),
+      const SizedBox(width: 8),
+      CustomAnimatedIconButton(
+        icon: Icons.settings,
+        normalIconColor: Colors.white,
+        onTap: () => Get.toNamed(Routers.USER_SETTING),
+      ),
+    ],
+  );
 }
 
 // ==================== 余额区 ====================
 class _BalanceSection extends StatelessWidget {
   final String balance, gift, locked, unsettled;
-  const _BalanceSection(
-      {required this.balance,
-      required this.gift,
-      required this.locked,
-      required this.unsettled});
+  const _BalanceSection({
+    required this.balance,
+    required this.gift,
+    required this.locked,
+    required this.unsettled,
+  });
 
   @override
   Widget build(BuildContext context) {
     // final text = Theme.of(context).extension<AppTextTheme>()!;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+        onTap: () => Get.toNamed(Routers.WALLET),
+        child: Ink(
+          padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 12),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 15,
-            child: _buildBalanceItem(
-              context,
-              'app.user.wallet.assets_total'.tr,
-              balance,
-            ),
+          child: Row(
+            children: [
+              Expanded(
+                flex: 15,
+                child: _buildBalanceItem(
+                  context,
+                  'app.user.wallet.assets_total'.tr,
+                  balance,
+                ),
+              ),
+              _buildVerticalDivider(context),
+              Expanded(
+                flex: 10,
+                child: _buildBalanceItem(
+                  context,
+                  'app.user.wallet.gift'.tr,
+                  gift,
+                ),
+              ),
+              _buildVerticalDivider(context),
+              Expanded(
+                flex: 10,
+                child: _buildBalanceItem(
+                  context,
+                  'app.user.wallet.lock_amount'.tr,
+                  locked,
+                ),
+              ),
+              _buildVerticalDivider(context),
+              Expanded(
+                flex: 10,
+                child: _buildBalanceItem(
+                  context,
+                  'app.user.wallet.unsettled'.tr,
+                  unsettled,
+                ),
+              ),
+            ],
           ),
-          _buildVerticalDivider(context),
-          Expanded(
-            flex: 10,
-            child: _buildBalanceItem(
-              context,
-              'app.user.wallet.gift'.tr,
-              gift,
-            ),
-          ),
-          _buildVerticalDivider(context),
-          Expanded(
-            flex: 10,
-            child: _buildBalanceItem(
-              context,
-              'app.user.wallet.lock_amount'.tr,
-              locked,
-            ),
-          ),
-          _buildVerticalDivider(context),
-          Expanded(
-            flex: 10,
-            child: _buildBalanceItem(
-              context,
-              'app.user.wallet.unsettled'.tr,
-              unsettled,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -262,50 +276,60 @@ class _BalanceSection extends StatelessWidget {
     );
   }
 
-  Widget _buildBalanceItem(BuildContext context, String label, String value,
-      {bool clickable = false}) {
-    return Builder(builder: (ctx) {
-      // final text = Theme.of(ctx).extension<AppTextTheme>()!;
-      final child = Column(
-        children: [
-          SizedBox(
-            width: double.infinity,
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.center,
-              child: Text(
-                value,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
-                    ),
+  Widget _buildBalanceItem(
+    BuildContext context,
+    String label,
+    String value, {
+    bool clickable = false,
+  }) {
+    return Builder(
+      builder: (ctx) {
+        // final text = Theme.of(ctx).extension<AppTextTheme>()!;
+        final child = Column(
+          children: [
+            SizedBox(
+              width: double.infinity,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.center,
+                child: Text(
+                  value,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 4),
-          SizedBox(
-            width: double.infinity,
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.center,
-              child: Text(
-                label,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      fontSize: 11,
-                      color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.7),
-                    ),
+            const SizedBox(height: 4),
+            SizedBox(
+              width: double.infinity,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.center,
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    fontSize: 11,
+                    color: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.color?.withOpacity(0.7),
+                  ),
+                ),
               ),
             ),
-          ),
-        ],
-      );
-      return clickable
-          ? InkWell(
-              onTap: () => Get.toNamed(Routers.BALANCE_DETAIL), child: child)
-          : child;
-    });
+          ],
+        );
+        return clickable
+            ? InkWell(
+                onTap: () => Get.toNamed(Routers.BALANCE_DETAIL),
+                child: child,
+              )
+            : child;
+      },
+    );
   }
 }
 
@@ -334,7 +358,10 @@ class _MenuSection extends StatelessWidget {
   }
 
   Widget _buildGroupCard(
-      BuildContext context, String title, List<UserMenuItem> items) {
+    BuildContext context,
+    String title,
+    List<UserMenuItem> items,
+  ) {
     final colors = Theme.of(context).extension<AppColors>()!;
     final text = Theme.of(context).extension<AppTextTheme>()!;
     const horizontalPadding = 16.0;
@@ -403,10 +430,7 @@ class _MenuSection extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               item.title.tr,
-              style: TextStyle(
-                fontSize: 12,
-                color: colors.textSecondary,
-              ),
+              style: TextStyle(fontSize: 12, color: colors.textSecondary),
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

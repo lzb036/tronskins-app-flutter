@@ -2,18 +2,22 @@ class WalletPager {
   final int page;
   final int pageSize;
   final int total;
+  final int? pages;
 
   const WalletPager({
     required this.page,
     required this.pageSize,
     required this.total,
+    this.pages,
   });
 
   factory WalletPager.fromJson(Map<String, dynamic> json) {
     return WalletPager(
-      page: _asInt(json['page']) ?? 1,
-      pageSize: _asInt(json['pageSize'] ?? json['page_size']) ?? 10,
+      page: _asInt(json['page'] ?? json['current']) ?? 1,
+      pageSize:
+          _asInt(json['pageSize'] ?? json['page_size'] ?? json['rp']) ?? 10,
       total: _asInt(json['total']) ?? 0,
+      pages: _asInt(json['pages']),
     );
   }
 }
@@ -22,10 +26,7 @@ class WalletListResponse<T> {
   final List<T> list;
   final WalletPager? pager;
 
-  const WalletListResponse({
-    required this.list,
-    this.pager,
-  });
+  const WalletListResponse({required this.list, this.pager});
 
   factory WalletListResponse.fromJson(
     Map<String, dynamic> json,
@@ -34,10 +35,7 @@ class WalletListResponse<T> {
   }) {
     final rawList = json[listKey];
     final list = rawList is List
-        ? rawList
-            .whereType<Map<String, dynamic>>()
-            .map(mapper)
-            .toList()
+        ? rawList.whereType<Map<String, dynamic>>().map(mapper).toList()
         : <T>[];
 
     final pager = json['pager'] is Map<String, dynamic>
@@ -70,14 +68,12 @@ class WalletFundFlowItem {
   factory WalletFundFlowItem.fromJson(Map<String, dynamic> json) {
     return WalletFundFlowItem(
       id: json['id']?.toString(),
-      serialNumber: json['serialNumber']?.toString() ??
-          json['serial_number']?.toString(),
+      serialNumber:
+          json['serialNumber']?.toString() ?? json['serial_number']?.toString(),
       type: _asInt(json['type']),
-      typeName: json['typeName']?.toString() ??
-          json['type_name']?.toString(),
+      typeName: json['typeName']?.toString() ?? json['type_name']?.toString(),
       amount: _asDouble(json['amount']),
-      beforeBalance:
-          _asDouble(json['beforeBalance'] ?? json['before_balance']),
+      beforeBalance: _asDouble(json['beforeBalance'] ?? json['before_balance']),
       createTime: _asInt(json['createTime'] ?? json['create_time']),
     );
   }
@@ -105,13 +101,15 @@ class WalletLockedItem {
   });
 
   factory WalletLockedItem.fromJson(Map<String, dynamic> json) {
-    final lockTimeRaw = json['lockAmount'] ??
+    final lockTimeRaw =
+        json['lockAmount'] ??
         json['lock_amount'] ??
         json['lockTime'] ??
         json['lock_time'] ??
         json['lockedTime'] ??
         json['locked_time'];
-    final createTimeRaw = json['createTime'] ??
+    final createTimeRaw =
+        json['createTime'] ??
         json['create_time'] ??
         json['createdAt'] ??
         json['created_at'] ??
@@ -208,7 +206,8 @@ class WalletLockedOrder {
       status: _asInt(json['status']),
       buyerId: json['buyer']?.toString() ?? json['buyer_id']?.toString(),
       sellerId: json['seller']?.toString() ?? json['seller_id']?.toString(),
-      tradeOfferId: json['trade_offer_id']?.toString() ??
+      tradeOfferId:
+          json['trade_offer_id']?.toString() ??
           json['tradeOfferId']?.toString(),
       changeTime: _asInt(json['change_time'] ?? json['changeTime']),
       createTime: _asInt(json['create_time'] ?? json['createTime']),
@@ -255,14 +254,12 @@ class WalletOfficialWallet {
   final String? walletAddress;
   final int? remainTime;
 
-  const WalletOfficialWallet({
-    this.walletAddress,
-    this.remainTime,
-  });
+  const WalletOfficialWallet({this.walletAddress, this.remainTime});
 
   factory WalletOfficialWallet.fromJson(Map<String, dynamic> json) {
     return WalletOfficialWallet(
-      walletAddress: json['walletAddress']?.toString() ??
+      walletAddress:
+          json['walletAddress']?.toString() ??
           json['wallet_address']?.toString(),
       remainTime: _asInt(json['remainTime'] ?? json['remain_time']),
     );
@@ -290,8 +287,8 @@ class WalletRechargeRecord {
     return WalletRechargeRecord(
       id: json['id']?.toString(),
       status: _asInt(json['status']),
-      statusName: json['statusName']?.toString() ??
-          json['status_name']?.toString(),
+      statusName:
+          json['statusName']?.toString() ?? json['status_name']?.toString(),
       modeName: json['modeName']?.toString() ?? json['mode_name']?.toString(),
       amount: _asDouble(json['amount']),
       createTime: _asInt(json['createTime'] ?? json['create_time']),
@@ -320,8 +317,8 @@ class WalletWithdrawRecord {
     return WalletWithdrawRecord(
       id: json['id']?.toString(),
       status: _asInt(json['status']),
-      statusName: json['statusName']?.toString() ??
-          json['status_name']?.toString(),
+      statusName:
+          json['statusName']?.toString() ?? json['status_name']?.toString(),
       amount: _asDouble(json['amount']),
       account: json['account']?.toString(),
       createTime: _asInt(json['createTime'] ?? json['create_time']),
@@ -334,11 +331,7 @@ class WalletWithdrawAddress {
   final String? name;
   final String? account;
 
-  const WalletWithdrawAddress({
-    this.id,
-    this.name,
-    this.account,
-  });
+  const WalletWithdrawAddress({this.id, this.name, this.account});
 
   factory WalletWithdrawAddress.fromJson(Map<String, dynamic> json) {
     return WalletWithdrawAddress(
@@ -370,12 +363,13 @@ class WalletIntegralRecord {
     return WalletIntegralRecord(
       id: json['id']?.toString(),
       type: _asInt(json['type']),
-      typeName: json['typeName']?.toString() ??
-          json['type_name']?.toString(),
+      typeName: json['typeName']?.toString() ?? json['type_name']?.toString(),
       value: _asInt(json['value']),
-      changedIntegral: _asInt(json['changedIntegral'] ??
-          json['changed_integral'] ??
-          json['afterIntegral']),
+      changedIntegral: _asInt(
+        json['changedIntegral'] ??
+            json['changed_integral'] ??
+            json['afterIntegral'],
+      ),
       createTime: _asInt(json['createTime'] ?? json['create_time']),
     );
   }
@@ -405,8 +399,7 @@ class WalletCouponItem {
       value: _asInt(json['value']),
       validate: _asInt(json['validate']),
       couponsType: _asInt(json['couponsType'] ?? json['coupons_type']),
-      typeName: json['typeName']?.toString() ??
-          json['type_name']?.toString(),
+      typeName: json['typeName']?.toString() ?? json['type_name']?.toString(),
     );
   }
 }
@@ -427,8 +420,7 @@ class WalletCouponRecord {
   factory WalletCouponRecord.fromJson(Map<String, dynamic> json) {
     return WalletCouponRecord(
       id: json['id']?.toString(),
-      typeName: json['typeName']?.toString() ??
-          json['type_name']?.toString(),
+      typeName: json['typeName']?.toString() ?? json['type_name']?.toString(),
       couponsType: _asInt(json['couponsType'] ?? json['coupons_type']),
       expireTime: _asInt(json['expireTime'] ?? json['expire_time']),
     );
@@ -457,7 +449,8 @@ class WalletLotteryPrize {
       raw: json,
       index: _asInt(json['index'] ?? json['sort']),
       prizeNumber: _asInt(json['prizeNumber'] ?? json['prize_number']),
-      label: json['label']?.toString() ??
+      label:
+          json['label']?.toString() ??
           json['name']?.toString() ??
           json['title']?.toString(),
       drawingLabel: json['drawingLabel']?.toString(),
@@ -482,7 +475,8 @@ class WalletLotteryResult {
   factory WalletLotteryResult.fromJson(Map<String, dynamic> json) {
     return WalletLotteryResult(
       raw: json,
-      title: json['title']?.toString() ??
+      title:
+          json['title']?.toString() ??
           json['name']?.toString() ??
           json['typeName']?.toString(),
       description: json['desc']?.toString() ?? json['description']?.toString(),
@@ -517,12 +511,12 @@ class WalletSettlementDetail {
       raw: json,
       appId: _asInt(json['app_id'] ?? json['appId']),
       schemaId: _asInt(json['schema_id'] ?? json['schemaId']),
-      marketName: json['market_name']?.toString() ??
-          json['marketName']?.toString(),
-      marketHashName: json['market_hash_name']?.toString() ??
+      marketName:
+          json['market_name']?.toString() ?? json['marketName']?.toString(),
+      marketHashName:
+          json['market_hash_name']?.toString() ??
           json['marketHashName']?.toString(),
-      imageUrl: json['image_url']?.toString() ??
-          json['imageUrl']?.toString(),
+      imageUrl: json['image_url']?.toString() ?? json['imageUrl']?.toString(),
       paintWear: _asDouble(json['paint_wear'] ?? json['paintWear']),
       price: _asDouble(json['price']),
     );
@@ -550,9 +544,9 @@ class WalletSettlementRecord {
     final rawDetails = json['details'];
     final details = rawDetails is List
         ? rawDetails
-            .whereType<Map<String, dynamic>>()
-            .map(WalletSettlementDetail.fromJson)
-            .toList()
+              .whereType<Map<String, dynamic>>()
+              .map(WalletSettlementDetail.fromJson)
+              .toList()
         : <WalletSettlementDetail>[];
     return WalletSettlementRecord(
       raw: json,
@@ -584,9 +578,9 @@ class WalletSettlementResponse {
     final rawList = json['records'];
     final records = rawList is List
         ? rawList
-            .whereType<Map<String, dynamic>>()
-            .map(WalletSettlementRecord.fromJson)
-            .toList()
+              .whereType<Map<String, dynamic>>()
+              .map(WalletSettlementRecord.fromJson)
+              .toList()
         : <WalletSettlementRecord>[];
 
     final rawSchemas = json['schemas'];
@@ -634,9 +628,11 @@ class WalletShopEnableStatus {
 
   factory WalletShopEnableStatus.fromJson(Map<String, dynamic> json) {
     return WalletShopEnableStatus(
-      isEnableRecharge: _asBool(json['isEnableRecharge']) ||
+      isEnableRecharge:
+          _asBool(json['isEnableRecharge']) ||
           _asBool(json['is_enable_recharge']),
-      isEnableWithdraw: _asBool(json['isEnableWithdraw']) ||
+      isEnableWithdraw:
+          _asBool(json['isEnableWithdraw']) ||
           _asBool(json['is_enable_withdraw']),
     );
   }

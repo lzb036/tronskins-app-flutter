@@ -112,6 +112,7 @@ class WalletController extends GetxController {
   }
 
   Future<void> loadFundFlows({bool reset = false}) async {
+    const pageSize = 20;
     if (isLoadingFundFlows.value) {
       return;
     }
@@ -125,14 +126,25 @@ class WalletController extends GetxController {
         _fundFlowHasMore = true;
         fundFlows.clear();
       }
-      final res = await _api.fundChangesList(page: _fundFlowPage, pageSize: 20);
+      final res = await _api.fundChangesList(
+        page: _fundFlowPage,
+        pageSize: pageSize,
+      );
       final data = res.datas;
       final list = data?.list ?? <WalletFundFlowItem>[];
       if (list.isEmpty) {
         _fundFlowHasMore = false;
       } else {
         fundFlows.addAll(list);
-        _fundFlowPage += 1;
+        _fundFlowHasMore = _hasMoreByPager(
+          pager: data?.pager,
+          accumulatedCount: fundFlows.length,
+          fetchedCount: list.length,
+          pageSize: pageSize,
+        );
+        if (_fundFlowHasMore) {
+          _fundFlowPage += 1;
+        }
       }
     } finally {
       isLoadingFundFlows.value = false;
@@ -212,6 +224,7 @@ class WalletController extends GetxController {
   }
 
   Future<void> loadRechargeRecords({bool reset = false}) async {
+    const pageSize = 20;
     if (isLoadingRechargeRecords.value) {
       return;
     }
@@ -225,13 +238,25 @@ class WalletController extends GetxController {
         _rechargeHasMore = true;
         rechargeRecords.clear();
       }
-      final res = await _api.rechargeRecords(page: _rechargePage, pageSize: 20);
-      final list = res.datas?.list ?? <WalletRechargeRecord>[];
+      final res = await _api.rechargeRecords(
+        page: _rechargePage,
+        pageSize: pageSize,
+      );
+      final data = res.datas;
+      final list = data?.list ?? <WalletRechargeRecord>[];
       if (list.isEmpty) {
         _rechargeHasMore = false;
       } else {
         rechargeRecords.addAll(list);
-        _rechargePage += 1;
+        _rechargeHasMore = _hasMoreByPager(
+          pager: data?.pager,
+          accumulatedCount: rechargeRecords.length,
+          fetchedCount: list.length,
+          pageSize: pageSize,
+        );
+        if (_rechargeHasMore) {
+          _rechargePage += 1;
+        }
       }
     } finally {
       isLoadingRechargeRecords.value = false;
@@ -239,6 +264,7 @@ class WalletController extends GetxController {
   }
 
   Future<void> loadWithdrawRecords({bool reset = false}) async {
+    const pageSize = 20;
     if (isLoadingWithdrawRecords.value) {
       return;
     }
@@ -252,13 +278,25 @@ class WalletController extends GetxController {
         _withdrawHasMore = true;
         withdrawRecords.clear();
       }
-      final res = await _api.withdrawRecords(page: _withdrawPage, pageSize: 20);
-      final list = res.datas?.list ?? <WalletWithdrawRecord>[];
+      final res = await _api.withdrawRecords(
+        page: _withdrawPage,
+        pageSize: pageSize,
+      );
+      final data = res.datas;
+      final list = data?.list ?? <WalletWithdrawRecord>[];
       if (list.isEmpty) {
         _withdrawHasMore = false;
       } else {
         withdrawRecords.addAll(list);
-        _withdrawPage += 1;
+        _withdrawHasMore = _hasMoreByPager(
+          pager: data?.pager,
+          accumulatedCount: withdrawRecords.length,
+          fetchedCount: list.length,
+          pageSize: pageSize,
+        );
+        if (_withdrawHasMore) {
+          _withdrawPage += 1;
+        }
       }
     } finally {
       isLoadingWithdrawRecords.value = false;
@@ -266,6 +304,7 @@ class WalletController extends GetxController {
   }
 
   Future<void> loadIntegralRecords({bool reset = false}) async {
+    const pageSize = 20;
     if (isLoadingIntegralRecords.value) {
       return;
     }
@@ -281,14 +320,23 @@ class WalletController extends GetxController {
       }
       final res = await _api.integralChangesList(
         page: _integralPage,
-        pageSize: 20,
+        pageSize: pageSize,
       );
-      final list = res.datas?.list ?? <WalletIntegralRecord>[];
+      final data = res.datas;
+      final list = data?.list ?? <WalletIntegralRecord>[];
       if (list.isEmpty) {
         _integralHasMore = false;
       } else {
         integralRecords.addAll(list);
-        _integralPage += 1;
+        _integralHasMore = _hasMoreByPager(
+          pager: data?.pager,
+          accumulatedCount: integralRecords.length,
+          fetchedCount: list.length,
+          pageSize: pageSize,
+        );
+        if (_integralHasMore) {
+          _integralPage += 1;
+        }
       }
     } finally {
       isLoadingIntegralRecords.value = false;
@@ -296,6 +344,7 @@ class WalletController extends GetxController {
   }
 
   Future<void> loadSettlementRecords({bool reset = false}) async {
+    const pageSize = 10;
     if (isLoadingSettlement.value) {
       return;
     }
@@ -314,7 +363,7 @@ class WalletController extends GetxController {
       }
       final res = await _api.settlementRecords(
         page: _settlementPage,
-        pageSize: 10,
+        pageSize: pageSize,
       );
       final data = res.datas;
       final list = data?.records ?? <WalletSettlementRecord>[];
@@ -322,7 +371,15 @@ class WalletController extends GetxController {
         _settlementHasMore = false;
       } else {
         settlementRecords.addAll(list);
-        _settlementPage += 1;
+        _settlementHasMore = _hasMoreByPager(
+          pager: data?.pager,
+          accumulatedCount: settlementRecords.length,
+          fetchedCount: list.length,
+          pageSize: pageSize,
+        );
+        if (_settlementHasMore) {
+          _settlementPage += 1;
+        }
       }
       settlementSchemas.addAll(data?.schemas ?? const {});
       settlementUsers.addAll(data?.users ?? const {});
@@ -330,6 +387,31 @@ class WalletController extends GetxController {
     } finally {
       isLoadingSettlement.value = false;
     }
+  }
+
+  bool _hasMoreByPager({
+    required WalletPager? pager,
+    required int accumulatedCount,
+    required int fetchedCount,
+    required int pageSize,
+  }) {
+    if (fetchedCount <= 0) {
+      return false;
+    }
+
+    if (pager != null) {
+      if (pager.total > 0) {
+        return accumulatedCount < pager.total;
+      }
+      if (pager.pages != null && pager.pages! > 0) {
+        return pager.page < pager.pages!;
+      }
+
+      final serverPageSize = pager.pageSize > 0 ? pager.pageSize : pageSize;
+      return fetchedCount >= serverPageSize;
+    }
+
+    return fetchedCount >= pageSize;
   }
 
   Future<void> loadWithdrawAddresses() async {

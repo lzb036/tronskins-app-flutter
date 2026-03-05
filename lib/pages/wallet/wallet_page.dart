@@ -48,52 +48,74 @@ class _WalletPageState extends State<WalletPage> {
     Get.toNamed(Routers.WALLET_WITHDRAW);
   }
 
+  Future<void> _refreshWallet() async {
+    if (!userController.isLoggedIn.value) {
+      return;
+    }
+    await controller.refreshUser(showLoading: true);
+  }
+
   @override
   Widget build(BuildContext context) {
     final currency = Get.find<CurrencyController>();
     return Obx(() {
       final loggedIn = userController.isLoggedIn.value;
+      final refreshing = controller.isLoadingUser.value;
       return Scaffold(
         backgroundColor: WalletUi.pageBackground(context),
-        appBar: AppBar(title: Text('app.user.wallet.title'.tr)),
+        appBar: AppBar(
+          title: Text('app.user.wallet.title'.tr),
+          actions: loggedIn
+              ? [
+                  IconButton(
+                    tooltip: 'app.common.refresh'.tr,
+                    onPressed: refreshing ? null : _refreshWallet,
+                    icon: const Icon(Icons.refresh),
+                  ),
+                ]
+              : const [],
+        ),
         body: loggedIn
-            ? RefreshIndicator(
-                onRefresh: () async {
-                  await controller.refreshUser();
-                },
-                child: ListView(
-                  children: [
-                    Obx(() => _buildHeader(context, currency)),
-                    Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        children: [
-                          _buildActionTile(
-                            icon: Icons.account_balance_wallet_outlined,
-                            title: 'app.user.recharge.title'.tr,
-                            onTap: _navigateRecharge,
+            ? refreshing
+                  ? const Center(child: CircularProgressIndicator())
+                  : ListView(
+                      children: [
+                        Obx(() => _buildHeader(context, currency)),
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            children: [
+                              _buildActionTile(
+                                icon: Icons.account_balance_wallet_outlined,
+                                title: 'app.user.recharge.title'.tr,
+                                onTap: _navigateRecharge,
+                              ),
+                              _buildActionTile(
+                                icon: Icons.outbox_outlined,
+                                title: 'app.user.withdraw.title'.tr,
+                                onTap: _navigateWithdraw,
+                              ),
+                              _buildActionTile(
+                                icon: Icons.receipt_long_outlined,
+                                title: 'app.user.wallet.flow'.tr,
+                                onTap: () => Get.toNamed(Routers.WALLET_FLOW),
+                              ),
+                              _buildActionTile(
+                                icon: Icons.timer_outlined,
+                                title: 'app.user.wallet.unsettled_details'.tr,
+                                onTap: () =>
+                                    Get.toNamed(Routers.WALLET_SETTLEMENT),
+                              ),
+                              _buildActionTile(
+                                icon: Icons.lock_clock_outlined,
+                                title: 'app.user.wallet.lock_details'.tr,
+                                onTap: () => Get.toNamed(Routers.WALLET_LOCKED),
+                              ),
+                            ],
                           ),
-                          _buildActionTile(
-                            icon: Icons.outbox_outlined,
-                            title: 'app.user.withdraw.title'.tr,
-                            onTap: _navigateWithdraw,
-                          ),
-                          _buildActionTile(
-                            icon: Icons.receipt_long_outlined,
-                            title: 'app.user.wallet.flow'.tr,
-                            onTap: () => Get.toNamed(Routers.WALLET_FLOW),
-                          ),
-                          _buildActionTile(
-                            icon: Icons.timer_outlined,
-                            title: 'app.user.wallet.unsettled_details'.tr,
-                            onTap: () => Get.toNamed(Routers.WALLET_SETTLEMENT),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              )
+                        ),
+                      ],
+                    )
             : _buildLoginPrompt(),
       );
     });
