@@ -720,24 +720,46 @@ class _ShopPageState extends State<ShopPage>
   }
 
   Widget _buildShopTabSwitcher() {
+    final theme = Theme.of(context);
     final colors = Theme.of(context).colorScheme;
     final filter = _currentShopTabFilter();
+    final label = _shopTabLabelKey(filter).tr;
     return Builder(
       builder: (iconContext) {
         return Tooltip(
-          message: _shopTabLabelKey(filter).tr,
+          message: label,
           child: Material(
             color: Colors.transparent,
             child: InkWell(
               borderRadius: BorderRadius.circular(8),
               onTap: () => _openShopTabSwitchMenu(iconContext),
               child: SizedBox(
-                width: 34,
                 height: 34,
-                child: Icon(
-                  _shopTabIcon(filter),
-                  size: 18,
-                  color: colors.onSurfaceVariant,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _shopTabIcon(filter),
+                        size: 18,
+                        color: colors.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 4),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 72),
+                        child: Text(
+                          label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: colors.onSurfaceVariant,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

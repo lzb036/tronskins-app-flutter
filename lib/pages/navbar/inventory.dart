@@ -750,31 +750,53 @@ class _InventoryPageState extends State<InventoryPage> {
   }
 
   Widget _buildInventoryStateSwitcher() {
+    final theme = Theme.of(context);
     final colors = Theme.of(context).colorScheme;
     return Obx(() {
       final loading = controller.isLoading.value;
       final filter = _currentInventoryStateFilter();
       final iconColor = colors.onSurfaceVariant;
       final opacity = loading ? 0.45 : 1.0;
+      final label = _inventoryStateLabelKey(filter).tr;
 
       return Builder(
         builder: (iconContext) {
           return Opacity(
             opacity: opacity,
             child: Tooltip(
-              message: _inventoryStateLabelKey(filter).tr,
+              message: label,
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
                   borderRadius: BorderRadius.circular(8),
                   onTap: () => _openInventoryStateSwitchMenu(iconContext),
                   child: SizedBox(
-                    width: 34,
                     height: 34,
-                    child: Icon(
-                      _inventoryStateIcon(filter),
-                      size: 18,
-                      color: iconColor,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _inventoryStateIcon(filter),
+                            size: 18,
+                            color: iconColor,
+                          ),
+                          const SizedBox(width: 4),
+                          ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 72),
+                            child: Text(
+                              label,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: iconColor,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

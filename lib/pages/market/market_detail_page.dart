@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -28,12 +30,14 @@ class MarketDetailPage extends StatefulWidget {
 }
 
 class _MarketDetailPageState extends State<MarketDetailPage>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
+  static const double _topActionToolbarMaxHeight = 48;
   final MarketDetailController controller = Get.put(MarketDetailController());
   final ApiMarketServer _marketApi = ApiMarketServer();
   final ApiShopServer _shopServer = ApiShopServer();
   final ApiShopProductServer _shopProductApi = ApiShopProductServer();
   late final TabController _tabController;
+  int _currentTabIndex = 0;
   final ScrollController _onSaleScroll = ScrollController();
   final ScrollController _transactionScroll = ScrollController();
   final ScrollController _buyRequestScroll = ScrollController();
@@ -56,6 +60,17 @@ class _MarketDetailPageState extends State<MarketDetailPage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+    _tabController.animation?.addListener(() {
+      if (mounted) {
+        setState(() {});
+      }
+    });
+    _tabController.addListener(() {
+      final nextIndex = _tabController.index;
+      if (nextIndex != _currentTabIndex && mounted) {
+        setState(() => _currentTabIndex = nextIndex);
+      }
+    });
     Future.microtask(_loadTemplate);
   }
 
@@ -306,6 +321,20 @@ class _MarketDetailPageState extends State<MarketDetailPage>
         children: [
           NestedScrollView(
             headerSliverBuilder: (context, innerBoxIsScrolled) {
+              final tabBar = TabBar(
+                controller: _tabController,
+                labelColor: isDark ? Colors.white : Colors.black,
+                unselectedLabelColor: Colors.grey,
+                indicatorColor: Theme.of(context).colorScheme.primary,
+                indicatorSize: TabBarIndicatorSize.label,
+                dividerColor: Colors.transparent,
+                tabs: [
+                  Tab(text: 'app.trade.onSale.text'.tr),
+                  Tab(text: 'app.trade.purchase.text'.tr),
+                  Tab(text: 'app.market.detail.price_trend.title'.tr),
+                  Tab(text: 'app.market.detail.trade_record'.tr),
+                ],
+              );
               return [
                 SliverAppBar(
                   expandedHeight: 320,
@@ -391,28 +420,6 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                             color: isDark ? Colors.white : Colors.black87,
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Text(
-                              '${'app.market.detail.steam_price'.tr}: ',
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                            Obx(
-                              () => Text(
-                                currency.format(referencePrice),
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.primary,
-                                    ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
                         const SizedBox(height: 16),
                         ..._buildAttributeRows(item),
                         if (_wearOptions.isNotEmpty) ...[
@@ -472,26 +479,91 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                 ),
                 SliverPersistentHeader(
                   delegate: _SliverTabBarDelegate(
-                    TabBar(
-                      controller: _tabController,
-                      labelColor: isDark ? Colors.white : Colors.black,
-                      unselectedLabelColor: Colors.grey,
-                      indicatorColor: Theme.of(context).colorScheme.primary,
-                      indicatorSize: TabBarIndicatorSize.label,
-                      dividerColor: Colors.transparent,
-                      tabs: [
-                        Tab(text: 'app.trade.onSale.text'.tr),
-                        Tab(text: 'app.trade.purchase.text'.tr),
-                        Tab(text: 'app.market.detail.price_trend.title'.tr),
-                        Tab(text: 'app.market.detail.trade_record'.tr),
-                      ],
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final dragWidth = constraints.maxWidth;
+                        final maxIndex = (_tabController.length - 1).toDouble();
+
+                        void settleToClosestTab() {
+                          if (_tabController.indexIsChanging) {
+                            return;
+                          }
+                          final value =
+                              _tabController.animation?.value ??
+                              _tabController.index.toDouble();
+                          final targetIndex = value.round().clamp(
+                            0,
+                            _tabController.length - 1,
+                          );
+                          if (targetIndex == _tabController.index) {
+                            // Avoid getting stuck in an in-between offset state.
+                            _tabController.offset = 0;
+                            return;
+                          }
+                          _tabController.animateTo(
+                            targetIndex,
+                            duration: const Duration(milliseconds: 180),
+                            curve: Curves.easeOutCubic,
+                          );
+                        }
+
+                        return GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onHorizontalDragUpdate: (details) {
+                            if (_tabController.indexIsChanging ||
+                                dragWidth <= 0) {
+                              return;
+                            }
+                            final currentValue =
+                                _tabController.animation?.value ??
+                                _tabController.index.toDouble();
+                            final nextValue =
+                                (currentValue - (details.delta.dx / dragWidth))
+                                    .clamp(0.0, maxIndex)
+                                    .toDouble();
+                            final nextOffset =
+                                (nextValue - _tabController.index)
+                                    .clamp(-1.0, 1.0)
+                                    .toDouble();
+                            if (nextOffset >= 0.98 &&
+                                _tabController.index <
+                                    _tabController.length - 1) {
+                              _tabController.index = _tabController.index + 1;
+                              _tabController.offset = 0;
+                              return;
+                            }
+                            if (nextOffset <= -0.98 &&
+                                _tabController.index > 0) {
+                              _tabController.index = _tabController.index - 1;
+                              _tabController.offset = 0;
+                              return;
+                            }
+                            _tabController.offset = nextOffset;
+                          },
+                          onHorizontalDragEnd: (_) => settleToClosestTab(),
+                          onHorizontalDragCancel: settleToClosestTab,
+                          child: tabBar,
+                        );
+                      },
                     ),
+                    height: tabBar.preferredSize.height,
                     backgroundColor: isDark
                         ? const Color(0xFF1B1C20)
                         : Colors.white,
                   ),
                   pinned: true,
                 ),
+                if (_topActionToolbarHeight > 0 || _showTopActionToolbar)
+                  SliverPersistentHeader(
+                    delegate: _FixedHeightHeaderDelegate(
+                      height: _topActionToolbarHeight,
+                      backgroundColor: isDark
+                          ? const Color(0xFF1B1C20)
+                          : const Color(0xFFF5F5F5),
+                      child: _buildTopActionToolbar(),
+                    ),
+                    pinned: true,
+                  ),
               ];
             },
             body: Container(
@@ -542,7 +614,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                           ),
                         ),
                         Text(
-                          'app.market.price_reference'.tr,
+                          'app.market.detail.steam_price'.tr,
                           style: TextStyle(
                             color: Colors.grey[600],
                             fontSize: 10,
@@ -1022,22 +1094,6 @@ class _MarketDetailPageState extends State<MarketDetailPage>
     ];
   }
 
-  List<_OnSaleWearOption> _buildOnSaleWearOptions() {
-    final options = <_OnSaleWearOption>[
-      _OnSaleWearOption(label: 'app.market.filter.all'.tr),
-    ];
-    final exteriorKey = _templateDetail?.schema?.tags?.exterior?.key;
-    for (final option in _buildWearQuickOptions(exteriorKey)) {
-      final min = double.tryParse(option.minText);
-      final max = double.tryParse(option.maxText);
-      if (min == null || max == null) {
-        continue;
-      }
-      options.add(_OnSaleWearOption(label: option.label, min: min, max: max));
-    }
-    return options;
-  }
-
   String _formatOnSaleSortLabel(_OnSaleSortOption option) {
     final template = option.labelKey.tr;
     final suffix = option.suffix;
@@ -1045,37 +1101,6 @@ class _MarketDetailPageState extends State<MarketDetailPage>
       return template;
     }
     return _formatI18nPlaceholder(template, suffix);
-  }
-
-  String get _onSaleSortLabel {
-    final option = _buildOnSaleSortOptions().firstWhere(
-      (candidate) =>
-          candidate.field == _onSaleSortField &&
-          candidate.asc == _onSaleSortAsc,
-      orElse: () => const _OnSaleSortOption(
-        field: null,
-        asc: null,
-        labelKey: 'app.market.filter.sort',
-      ),
-    );
-    return _formatOnSaleSortLabel(option);
-  }
-
-  String get _onSaleWearLabel {
-    if (_onSaleWearMin == null && _onSaleWearMax == null) {
-      return 'app.market.filter.csgo.wear_interval'.tr;
-    }
-    final minText = (_onSaleWearMin ?? 0).toStringAsFixed(2);
-    final maxText = (_onSaleWearMax ?? 1).toStringAsFixed(2);
-    return '$minText-$maxText';
-  }
-
-  bool get _showOnSaleWearFilter {
-    if (controller.appId != 730) {
-      return false;
-    }
-    final exteriorKey = _templateDetail?.schema?.tags?.exterior?.key;
-    return _buildWearQuickOptions(exteriorKey).isNotEmpty;
   }
 
   Future<void> _applyOnSaleFilterWithCurrentState() {
@@ -1091,232 +1116,225 @@ class _MarketDetailPageState extends State<MarketDetailPage>
     );
   }
 
-  Future<void> _onSelectOnSaleSort(_OnSaleSortOption option) async {
-    setState(() {
-      _onSaleSortField = option.field;
-      _onSaleSortAsc = option.asc;
-    });
+  Future<void> _refreshOnSaleList() async {
+    if (controller.isLoadingOnSale.value) {
+      return;
+    }
     await _applyOnSaleFilterWithCurrentState();
   }
 
-  Future<void> _onSelectOnSaleWear(_OnSaleWearOption option) async {
-    setState(() {
-      _onSaleWearMin = option.min;
-      _onSaleWearMax = option.max;
-    });
-    await _applyOnSaleFilterWithCurrentState();
+  Future<void> _refreshBuyRequestList() async {
+    if (controller.isLoadingBuyRequests.value) {
+      return;
+    }
+    await controller.loadBuyRequests(reset: true);
   }
 
-  Widget _buildOnSaleToolbarChip({
-    required String label,
-    required bool enabled,
-    required bool active,
-  }) {
+  Future<void> _refreshTransactionList() async {
+    if (controller.isLoadingTransactions.value) {
+      return;
+    }
+    await controller.loadTransactions(reset: true);
+  }
+
+  Future<void> _refreshCurrentTabList() async {
+    if (_currentTabIndex == 0) {
+      await _refreshOnSaleList();
+      return;
+    }
+    if (_currentTabIndex == 1) {
+      await _refreshBuyRequestList();
+      return;
+    }
+    if (_currentTabIndex == 3) {
+      await _refreshTransactionList();
+    }
+  }
+
+  double get _tabAnimationValue {
+    final raw = _tabController.animation?.value ?? _currentTabIndex.toDouble();
+    return raw.clamp(0.0, (_tabController.length - 1).toDouble()).toDouble();
+  }
+
+  double get _topActionToolbarProgress {
+    final value = _tabAnimationValue;
+    if (value <= 1.0) {
+      return 1.0;
+    }
+    if (value <= 2.0) {
+      return (2.0 - value).clamp(0.0, 1.0).toDouble();
+    }
+    return (value - 2.0).clamp(0.0, 1.0).toDouble();
+  }
+
+  double get _topActionToolbarHeight =>
+      _topActionToolbarMaxHeight * _topActionToolbarProgress;
+
+  bool get _showTopActionToolbar => _topActionToolbarHeight > 0.001;
+
+  double get _topFilterButtonProgress {
+    if (!_showOnSaleFilter) {
+      return 0;
+    }
+    return (1.0 - _tabAnimationValue.abs()).clamp(0.0, 1.0).toDouble();
+  }
+
+  bool get _isToolbarInteractive => _topActionToolbarProgress > 0.98;
+
+  bool get _isCurrentTabRefreshing {
+    if (_currentTabIndex == 0) {
+      return controller.isLoadingOnSale.value;
+    }
+    if (_currentTabIndex == 1) {
+      return controller.isLoadingBuyRequests.value;
+    }
+    if (_currentTabIndex == 3) {
+      return controller.isLoadingTransactions.value;
+    }
+    return false;
+  }
+
+  Widget _buildTopActionToolbar() {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final colors = theme.colorScheme;
-    final borderColor = active
-        ? colors.primary.withValues(alpha: 0.45)
-        : colors.outline.withValues(alpha: 0.25);
-    final textColor = active ? colors.primary : colors.onSurfaceVariant;
+    final toolbarProgress = _topActionToolbarProgress;
+    final barColor = isDark ? colors.surface : Colors.white;
+    final baseButtonBackground = isDark
+        ? Colors.white.withValues(alpha: 0.08)
+        : colors.surfaceContainerHighest;
+    final filterButtonBackground = _hasOnSaleFilter
+        ? colors.primary.withValues(alpha: 0.12)
+        : baseButtonBackground;
+    final iconColor = _hasOnSaleFilter
+        ? colors.primary
+        : colors.onSurfaceVariant;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(16, 5, 16, 5),
       decoration: BoxDecoration(
-        color: enabled
-            ? colors.surfaceContainerHighest.withValues(alpha: 0.7)
-            : colors.surfaceContainerHighest.withValues(alpha: 0.4),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: borderColor),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11.5,
-              color: textColor.withValues(alpha: enabled ? 1 : 0.6),
-              fontWeight: active ? FontWeight.w600 : FontWeight.w500,
-            ),
-          ),
-          const SizedBox(width: 2),
-          Icon(
-            Icons.keyboard_arrow_down_rounded,
-            size: 14,
-            color: textColor.withValues(alpha: enabled ? 1 : 0.6),
+        color: barColor,
+        border: Border(
+          bottom: BorderSide(color: colors.outline.withValues(alpha: 0.08)),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.05),
+            offset: const Offset(0, 3),
+            blurRadius: 6,
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildOnSaleTab(CurrencyController currency) {
-    final body = _buildOnSaleListBody(currency);
-    if (!_showOnSaleFilter) {
-      return body;
-    }
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final iconColor = _hasOnSaleFilter
-        ? theme.colorScheme.primary
-        : theme.iconTheme.color;
-    final enabled = !controller.isLoadingOnSale.value;
-    final sortOptions = _buildOnSaleSortOptions();
-    final wearOptions = _buildOnSaleWearOptions();
-    final barBorderColor = theme.colorScheme.outline.withValues(
-      alpha: isDark ? 0.28 : 0.14,
-    );
-    final barBgColor = isDark
-        ? theme.colorScheme.surfaceContainerLow.withValues(alpha: 0.52)
-        : theme.colorScheme.surface.withValues(alpha: 0.98);
-    return Column(
-      children: [
-        Container(
-          margin: const EdgeInsets.fromLTRB(12, 6, 12, 2),
-          padding: const EdgeInsets.fromLTRB(10, 4, 8, 4),
-          decoration: BoxDecoration(
-            color: barBgColor,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: barBorderColor),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: isDark ? 0.16 : 0.04),
-                blurRadius: 6,
-                offset: const Offset(0, 1),
-              ),
-            ],
-          ),
+      child: IgnorePointer(
+        ignoring: !_isToolbarInteractive,
+        child: Opacity(
+          opacity: toolbarProgress,
           child: Row(
             children: [
-              Expanded(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      PopupMenuButton<_OnSaleSortOption>(
-                        enabled: enabled,
-                        tooltip: 'app.market.filter.sort'.tr,
-                        onSelected: (option) {
-                          _onSelectOnSaleSort(option);
-                        },
-                        itemBuilder: (context) {
-                          return sortOptions
-                              .map((option) {
-                                final label = _formatOnSaleSortLabel(option);
-                                final selected =
-                                    option.field == _onSaleSortField &&
-                                    option.asc == _onSaleSortAsc;
-                                return PopupMenuItem<_OnSaleSortOption>(
-                                  value: option,
-                                  child: Row(
-                                    children: [
-                                      Expanded(child: Text(label)),
-                                      if (selected)
-                                        Icon(
-                                          Icons.check_rounded,
-                                          size: 16,
-                                          color: theme.colorScheme.primary,
-                                        ),
-                                    ],
-                                  ),
-                                );
-                              })
-                              .toList(growable: false);
-                        },
-                        child: _buildOnSaleToolbarChip(
-                          label: _onSaleSortLabel,
-                          enabled: enabled,
-                          active: _onSaleSortField != null,
-                        ),
+              const Spacer(),
+              Tooltip(
+                message: 'app.common.refresh'.tr,
+                child: Material(
+                  color: baseButtonBackground,
+                  borderRadius: BorderRadius.circular(9),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(9),
+                    onTap: () {
+                      if (!_isToolbarInteractive || _isCurrentTabRefreshing) {
+                        return;
+                      }
+                      _refreshCurrentTabList();
+                    },
+                    child: SizedBox(
+                      width: 36,
+                      height: 36,
+                      child: Icon(
+                        Icons.refresh_rounded,
+                        color: colors.onSurfaceVariant,
+                        size: 18,
                       ),
-                      if (_showOnSaleWearFilter && wearOptions.isNotEmpty) ...[
-                        const SizedBox(width: 8),
-                        PopupMenuButton<_OnSaleWearOption>(
-                          enabled: enabled,
-                          tooltip: 'app.market.filter.csgo.wear_interval'.tr,
-                          onSelected: (option) {
-                            _onSelectOnSaleWear(option);
-                          },
-                          itemBuilder: (context) {
-                            return wearOptions
-                                .map((option) {
-                                  final selected =
-                                      option.min == _onSaleWearMin &&
-                                      option.max == _onSaleWearMax;
-                                  return PopupMenuItem<_OnSaleWearOption>(
-                                    value: option,
-                                    child: Row(
-                                      children: [
-                                        Expanded(child: Text(option.label)),
-                                        if (selected)
-                                          Icon(
-                                            Icons.check_rounded,
-                                            size: 16,
-                                            color: theme.colorScheme.primary,
-                                          ),
-                                      ],
-                                    ),
-                                  );
-                                })
-                                .toList(growable: false);
-                          },
-                          child: _buildOnSaleToolbarChip(
-                            label: _onSaleWearLabel,
-                            enabled: enabled,
-                            active:
-                                _onSaleWearMin != null ||
-                                _onSaleWearMax != null,
-                          ),
-                        ),
-                      ],
-                    ],
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(width: 4),
-              GestureDetector(
-                onLongPress:
-                    controller.isLoadingOnSale.value || !_hasOnSaleFilter
-                    ? null
-                    : () {
-                        _clearOnSaleFilter();
-                      },
-                child: Stack(
-                  children: [
-                    IconButton(
-                      tooltip: 'app.market.filter.text'.tr,
-                      iconSize: 18,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints.tightFor(
-                        width: 30,
-                        height: 30,
-                      ),
-                      onPressed: controller.isLoadingOnSale.value
-                          ? null
-                          : _openOnSaleFilterSheet,
-                      icon: Icon(Icons.filter_alt_outlined, color: iconColor),
-                    ),
-                    if (_hasOnSaleFilter)
-                      Positioned(
-                        right: 4,
-                        top: 4,
-                        child: Container(
-                          width: 6,
-                          height: 6,
-                          decoration: BoxDecoration(
-                            color: theme.colorScheme.primary,
-                            shape: BoxShape.circle,
+              ClipRect(
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  widthFactor: _topFilterButtonProgress,
+                  child: IgnorePointer(
+                    ignoring: _topFilterButtonProgress < 0.98,
+                    child: Opacity(
+                      opacity: _topFilterButtonProgress,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const SizedBox(width: 6),
+                          Tooltip(
+                            message: 'app.market.filter.text'.tr,
+                            child: Material(
+                              color: filterButtonBackground,
+                              borderRadius: BorderRadius.circular(9),
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(9),
+                                onTap: () {
+                                  if (controller.isLoadingOnSale.value) {
+                                    return;
+                                  }
+                                  _openOnSaleFilterSheet();
+                                },
+                                onLongPress: () {
+                                  if (controller.isLoadingOnSale.value ||
+                                      !_hasOnSaleFilter) {
+                                    return;
+                                  }
+                                  _clearOnSaleFilter();
+                                },
+                                child: SizedBox(
+                                  width: 36,
+                                  height: 36,
+                                  child: Stack(
+                                    children: [
+                                      Center(
+                                        child: Icon(
+                                          Icons.filter_alt_outlined,
+                                          color: iconColor,
+                                          size: 18,
+                                        ),
+                                      ),
+                                      if (_hasOnSaleFilter)
+                                        Positioned(
+                                          right: 8,
+                                          top: 8,
+                                          child: Container(
+                                            width: 6,
+                                            height: 6,
+                                            decoration: BoxDecoration(
+                                              color: colors.primary,
+                                              shape: BoxShape.circle,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
+                        ],
                       ),
-                  ],
+                    ),
+                  ),
                 ),
               ),
             ],
           ),
         ),
-        Expanded(child: body),
-      ],
+      ),
     );
+  }
+
+  Widget _buildOnSaleTab(CurrencyController currency) {
+    return _buildOnSaleListBody(currency);
   }
 
   Widget _buildOnSaleListBody(CurrencyController currency) {
@@ -1335,7 +1353,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
     final showFooter = showLoadingFooter || showNoMoreFooter;
     return ListView.separated(
       controller: _onSaleScroll,
-      padding: EdgeInsets.fromLTRB(16, _showOnSaleFilter ? 6 : 16, 16, 100),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
       itemCount: controller.onSaleItems.length + (showFooter ? 1 : 0),
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
@@ -1355,6 +1373,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
   bool get _showOnSaleFilter => controller.appId != 440;
 
   bool get _hasOnSaleFilter =>
+      _onSaleSortField != null ||
       _onSaleMinPrice != null ||
       _onSaleMaxPrice != null ||
       (_onSalePaintSeed?.isNotEmpty ?? false) ||
@@ -1390,7 +1409,10 @@ class _MarketDetailPageState extends State<MarketDetailPage>
     final maxPriceController = TextEditingController(
       text: _onSaleMaxPrice?.toString(),
     );
+    var selectedSortField = _onSaleSortField;
+    var selectedSortAsc = _onSaleSortAsc;
     var selectedPaintIndex = _onSalePaintIndex;
+    final sortOptions = _buildOnSaleSortOptions();
     final paintKits = _buildPaintKitOptions();
     final wearQuickOptions = _buildWearQuickOptions(
       _templateDetail?.schema?.tags?.exterior?.key,
@@ -1443,6 +1465,8 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                   void applyAndClose() {
                     Navigator.of(context).pop(
                       _OnSaleFilterValue(
+                        sortField: selectedSortField,
+                        sortAsc: selectedSortAsc,
                         minPrice: _parseOptionalDouble(minPriceController.text),
                         maxPrice: _parseOptionalDouble(maxPriceController.text),
                         paintSeed: _cleanText(paintSeedController.text),
@@ -1522,6 +1546,37 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                                             color: Colors.black,
                                           ),
                                     ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    'app.market.filter.sort'.tr,
+                                    style: theme.textTheme.bodyMedium,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: sortOptions
+                                        .map(
+                                          (option) => _buildOnSaleFilterChip(
+                                            context,
+                                            label: _formatOnSaleSortLabel(
+                                              option,
+                                            ),
+                                            selected:
+                                                option.field ==
+                                                    selectedSortField &&
+                                                option.asc == selectedSortAsc,
+                                            onSelected: (_) {
+                                              setModalState(() {
+                                                selectedSortField =
+                                                    option.field;
+                                                selectedSortAsc = option.asc;
+                                              });
+                                            },
+                                          ),
+                                        )
+                                        .toList(growable: false),
                                   ),
                                   if (showCsgoFilter) ...[
                                     const SizedBox(height: 8),
@@ -1817,6 +1872,8 @@ class _MarketDetailPageState extends State<MarketDetailPage>
       return;
     }
     setState(() {
+      _onSaleSortField = result.sortField;
+      _onSaleSortAsc = result.sortAsc;
       _onSaleMinPrice = result.minPrice;
       _onSaleMaxPrice = result.maxPrice;
       _onSalePaintSeed = result.paintSeed;
@@ -1954,9 +2011,10 @@ class _MarketDetailPageState extends State<MarketDetailPage>
         _extractText(asset, ['paint_wear', 'paintWear']) ??
         _extractText(item.raw, ['paint_wear', 'paintWear']) ??
         paintWearValue?.toString();
-    final stickers = parseStickerList(
-      asset?['stickers'] ?? item.raw['stickers'],
-      schemaMap: controller.schemas,
+    final stickers = _parseStickers(
+      asset: asset,
+      raw: item.raw,
+      schemas: controller.schemas,
       stickerMap: controller.stickers,
     );
     final gems = parseGemList(
@@ -1988,8 +2046,24 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                 children: [
                   SizedBox(
                     width: 90,
-                    height: 54,
-                    child: GameItemImage(imageUrl: imageUrl, appId: appId),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: 90,
+                          height: 54,
+                          child: GameItemImage(
+                            imageUrl: imageUrl,
+                            appId: appId,
+                          ),
+                        ),
+                        if (stickers.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: StickerRow(stickers: stickers, size: 16),
+                          ),
+                      ],
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -2116,17 +2190,13 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                 const SizedBox(height: 4),
                 WearProgressBar(paintWear: paintWearValue),
               ],
-              if (gems.isNotEmpty ||
-                  stickers.isNotEmpty ||
-                  keychains.isNotEmpty)
+              if (gems.isNotEmpty || keychains.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: Row(
                     children: [
                       if (gems.isNotEmpty) GemRow(gems: gems, size: 16),
                       if (gems.isNotEmpty) const SizedBox(width: 6),
-                      if (stickers.isNotEmpty)
-                        StickerRow(stickers: stickers, size: 16),
                       if (keychains.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(left: 6),
@@ -2737,6 +2807,29 @@ class _MarketDetailPageState extends State<MarketDetailPage>
       Get.snackbar('app.system.tips.title'.tr, 'app.trade.filter.failed'.tr);
       return;
     }
+    final currency = Get.find<CurrencyController>();
+    final confirmed = await Get.dialog<bool>(
+      AlertDialog(
+        title: Text('${'app.trade.buy.pay_text'.tr} ${currency.format(price)}'),
+        content: Text(
+          '${'app.trade.buy.pay_text_2'.tr} ${price.floor()}\n'
+          '${'app.trade.buy.pay_text_3'.tr}',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: Text('app.common.cancel'.tr),
+          ),
+          TextButton(
+            onPressed: () => Get.back(result: true),
+            child: Text('app.common.confirm'.tr),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) {
+      return;
+    }
     try {
       final res = await _shopProductApi.orderItemPurchase(
         appId: appId,
@@ -2778,20 +2871,16 @@ class _MarketDetailPageState extends State<MarketDetailPage>
         }
       }
       if (res.success) {
-        Get.snackbar(
-          'app.system.tips.title'.tr,
-          'app.trade.buy.message.success'.tr,
-        );
+        AppSnackbar.success('app.trade.buy.message.success'.tr);
         await controller.loadOnSale(reset: true);
         await controller.loadTransactions(reset: true);
       } else {
-        Get.snackbar(
-          'app.system.tips.title'.tr,
+        AppSnackbar.error(
           res.message.isNotEmpty ? res.message : 'app.trade.filter.failed'.tr,
         );
       }
     } catch (_) {
-      Get.snackbar('app.system.tips.title'.tr, 'app.trade.filter.failed'.tr);
+      AppSnackbar.error('app.trade.filter.failed'.tr);
     }
   }
 
@@ -2886,6 +2975,114 @@ class _MarketDetailPageState extends State<MarketDetailPage>
     return list;
   }
 
+  List<GameItemSticker> _parseStickers({
+    required Map<String, dynamic>? asset,
+    required Map<String, dynamic> raw,
+    required Map<String, MarketSchemaInfo> schemas,
+    required Map<String, dynamic> stickerMap,
+  }) {
+    final rawAsset = _asMap(raw['asset']) ?? _asMap(raw['itemAsset']);
+    final rawCsgoAsset = _asMap(raw['csgoAsset']) ?? _asMap(raw['csgo_asset']);
+    final rawTf2Asset = _asMap(raw['tf2Asset']) ?? _asMap(raw['tf2_asset']);
+    final rawDotaAsset =
+        _asMap(raw['dota2Asset']) ?? _asMap(raw['dota2_asset']);
+    final candidates = <dynamic>[
+      asset?['stickers'],
+      asset?['stickerList'],
+      asset?['sticker_list'],
+      asset?['sticker'],
+      rawAsset?['stickers'],
+      rawAsset?['stickerList'],
+      rawAsset?['sticker_list'],
+      rawCsgoAsset?['stickers'],
+      rawCsgoAsset?['stickerList'],
+      rawCsgoAsset?['sticker_list'],
+      rawTf2Asset?['stickers'],
+      rawTf2Asset?['stickerList'],
+      rawTf2Asset?['sticker_list'],
+      rawDotaAsset?['stickers'],
+      rawDotaAsset?['stickerList'],
+      rawDotaAsset?['sticker_list'],
+      raw['stickers'],
+      raw['stickerList'],
+      raw['sticker_list'],
+      raw['sticker'],
+    ];
+    for (final candidate in candidates) {
+      final parsed = parseStickerList(
+        _normalizeStickerRaw(candidate),
+        schemaMap: schemas,
+        stickerMap: stickerMap,
+      );
+      if (parsed.isNotEmpty) {
+        return parsed;
+      }
+    }
+    return const [];
+  }
+
+  dynamic _normalizeStickerRaw(dynamic raw) {
+    if (raw is List) {
+      return raw;
+    }
+    if (raw is Map) {
+      if (raw.containsKey('image_url') ||
+          raw.containsKey('imageUrl') ||
+          raw.containsKey('image') ||
+          raw.containsKey('id') ||
+          raw.containsKey('sticker_id') ||
+          raw.containsKey('schema_id')) {
+        return <dynamic>[raw];
+      }
+      final values = raw.values.toList(growable: false);
+      if (values.isNotEmpty) {
+        return values;
+      }
+    }
+    if (raw is String) {
+      final value = raw.trim();
+      if (value.isEmpty || value == 'null') {
+        return const <dynamic>[];
+      }
+      if (value.startsWith('[') && value.endsWith(']')) {
+        try {
+          final decoded = jsonDecode(value);
+          if (decoded is List) {
+            return decoded;
+          }
+        } catch (_) {}
+      }
+      if (value.contains(',')) {
+        final values = value
+            .split(',')
+            .map((entry) => entry.trim())
+            .where((entry) => entry.isNotEmpty)
+            .toList(growable: false);
+        if (values.isNotEmpty) {
+          return values;
+        }
+      }
+    }
+    if (raw is Iterable) {
+      return raw.toList(growable: false);
+    }
+    return raw;
+  }
+
+  Map<String, dynamic>? _asMap(dynamic value) {
+    if (value is Map<String, dynamic>) {
+      return value;
+    }
+    if (value is Map) {
+      final mapped = <String, dynamic>{};
+      value.forEach((key, mapValue) {
+        mapped[key.toString()] = mapValue;
+      });
+      return mapped;
+    }
+    return null;
+  }
+
   Widget _buildLoadMoreFooter({
     required bool showLoading,
     required bool showNoMore,
@@ -2970,16 +3167,10 @@ class _OnSaleSortOption {
   final String? suffix;
 }
 
-class _OnSaleWearOption {
-  const _OnSaleWearOption({required this.label, this.min, this.max});
-
-  final String label;
-  final double? min;
-  final double? max;
-}
-
 class _OnSaleFilterValue {
   const _OnSaleFilterValue({
+    this.sortField,
+    this.sortAsc,
     this.minPrice,
     this.maxPrice,
     this.paintSeed,
@@ -2988,6 +3179,8 @@ class _OnSaleFilterValue {
     this.paintWearMax,
   });
 
+  final String? sortField;
+  final bool? sortAsc;
   final double? minPrice;
   final double? maxPrice;
   final String? paintSeed;
@@ -3012,16 +3205,21 @@ class _WearQuickOption {
 }
 
 class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
-  _SliverTabBarDelegate(this._tabBar, {this.backgroundColor});
+  _SliverTabBarDelegate(
+    this._child, {
+    required this.height,
+    this.backgroundColor,
+  });
 
-  final TabBar _tabBar;
+  final Widget _child;
+  final double height;
   final Color? backgroundColor;
 
   @override
-  double get minExtent => _tabBar.preferredSize.height;
+  double get minExtent => height;
 
   @override
-  double get maxExtent => _tabBar.preferredSize.height;
+  double get maxExtent => height;
 
   @override
   Widget build(
@@ -3031,12 +3229,52 @@ class _SliverTabBarDelegate extends SliverPersistentHeaderDelegate {
   ) {
     return Container(
       color: backgroundColor ?? Theme.of(context).scaffoldBackgroundColor,
-      child: _tabBar,
+      child: _child,
     );
   }
 
   @override
   bool shouldRebuild(_SliverTabBarDelegate oldDelegate) {
-    return false;
+    return oldDelegate.height != height ||
+        oldDelegate._child != _child ||
+        oldDelegate.backgroundColor != backgroundColor;
+  }
+}
+
+class _FixedHeightHeaderDelegate extends SliverPersistentHeaderDelegate {
+  _FixedHeightHeaderDelegate({
+    required this.height,
+    required this.child,
+    this.backgroundColor,
+  });
+
+  final double height;
+  final Widget child;
+  final Color? backgroundColor;
+
+  @override
+  double get minExtent => height;
+
+  @override
+  double get maxExtent => height;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Container(
+      color: backgroundColor ?? Theme.of(context).scaffoldBackgroundColor,
+      alignment: Alignment.bottomCenter,
+      child: child,
+    );
+  }
+
+  @override
+  bool shouldRebuild(_FixedHeightHeaderDelegate oldDelegate) {
+    return oldDelegate.height != height ||
+        oldDelegate.child != child ||
+        oldDelegate.backgroundColor != backgroundColor;
   }
 }

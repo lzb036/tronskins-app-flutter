@@ -4,6 +4,7 @@ import 'package:tronskins_app/api/model/market/market_models.dart';
 import 'package:tronskins_app/api/shop_product.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
 import 'package:tronskins_app/common/storage/user_storage.dart';
+import 'package:tronskins_app/common/utils/app_snackbar.dart';
 import 'package:tronskins_app/components/game_item/game_item_image.dart';
 import 'package:tronskins_app/components/game_item/game_item_models.dart';
 import 'package:tronskins_app/components/game_item/gem_row.dart';
@@ -195,6 +196,29 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
       Get.snackbar('app.system.tips.title'.tr, 'app.trade.filter.failed'.tr);
       return;
     }
+    final currency = Get.find<CurrencyController>();
+    final confirmed = await Get.dialog<bool>(
+      AlertDialog(
+        title: Text('${'app.trade.buy.pay_text'.tr} ${currency.format(price)}'),
+        content: Text(
+          '${'app.trade.buy.pay_text_2'.tr} ${price.floor()}\n'
+          '${'app.trade.buy.pay_text_3'.tr}',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: Text('app.common.cancel'.tr),
+          ),
+          TextButton(
+            onPressed: () => Get.back(result: true),
+            child: Text('app.common.confirm'.tr),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) {
+      return;
+    }
     try {
       final res = await _shopApi.orderItemPurchase(
         appId: appId,
@@ -236,19 +260,15 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
         }
       }
       if (res.success) {
-        Get.snackbar(
-          'app.system.tips.title'.tr,
-          'app.trade.buy.message.success'.tr,
-        );
+        AppSnackbar.success('app.trade.buy.message.success'.tr);
         Get.back(result: true);
       } else {
-        Get.snackbar(
-          'app.system.tips.title'.tr,
+        AppSnackbar.error(
           res.message.isNotEmpty ? res.message : 'app.trade.filter.failed'.tr,
         );
       }
     } catch (_) {
-      Get.snackbar('app.system.tips.title'.tr, 'app.trade.filter.failed'.tr);
+      AppSnackbar.error('app.trade.filter.failed'.tr);
     }
   }
 

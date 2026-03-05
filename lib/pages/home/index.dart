@@ -29,7 +29,6 @@ class _HomePageState extends State<HomePage>
   final ScrollController _latestScroll = ScrollController();
   final ScrollController _hotScroll = ScrollController();
   final TextEditingController _searchController = TextEditingController();
-  double _tabDragDx = 0;
   String _sortField = 'price';
   bool _sortAsc = false;
   double? _priceMin;
@@ -200,71 +199,130 @@ class _HomePageState extends State<HomePage>
                             Expanded(
                               child: Align(
                                 alignment: Alignment.centerLeft,
-                                child: GestureDetector(
-                                  onHorizontalDragUpdate: (details) {
-                                    _tabDragDx += details.delta.dx;
-                                  },
-                                  onHorizontalDragEnd: (_) {
-                                    if (_tabDragDx.abs() < 16) {
-                                      _tabDragDx = 0;
-                                      return;
+                                child: LayoutBuilder(
+                                  builder: (context, tabConstraints) {
+                                    final dragWidth = tabConstraints.maxWidth;
+                                    final maxIndex = (_tabController.length - 1)
+                                        .toDouble();
+
+                                    void settleToClosestTab() {
+                                      if (_tabController.indexIsChanging) {
+                                        return;
+                                      }
+                                      final value =
+                                          _tabController.animation?.value ??
+                                          _tabController.index.toDouble();
+                                      final targetIndex = value.round().clamp(
+                                        0,
+                                        _tabController.length - 1,
+                                      );
+                                      if (targetIndex == _tabController.index) {
+                                        _tabController.offset = 0;
+                                        return;
+                                      }
+                                      _tabController.animateTo(
+                                        targetIndex,
+                                        duration: const Duration(
+                                          milliseconds: 180,
+                                        ),
+                                        curve: Curves.easeOutCubic,
+                                      );
                                     }
-                                    final nextIndex = _tabDragDx < 0
-                                        ? _tabController.index + 1
-                                        : _tabController.index - 1;
-                                    if (nextIndex >= 0 &&
-                                        nextIndex < _tabController.length) {
-                                      _tabController.animateTo(nextIndex);
-                                    }
-                                    _tabDragDx = 0;
+
+                                    return GestureDetector(
+                                      behavior: HitTestBehavior.opaque,
+                                      onHorizontalDragUpdate: (details) {
+                                        if (_tabController.indexIsChanging ||
+                                            dragWidth <= 0) {
+                                          return;
+                                        }
+                                        final currentValue =
+                                            _tabController.animation?.value ??
+                                            _tabController.index.toDouble();
+                                        final nextValue =
+                                            (currentValue -
+                                                    (details.delta.dx /
+                                                        dragWidth))
+                                                .clamp(0.0, maxIndex)
+                                                .toDouble();
+                                        final nextOffset =
+                                            (nextValue - _tabController.index)
+                                                .clamp(-1.0, 1.0)
+                                                .toDouble();
+                                        if (nextOffset >= 0.98 &&
+                                            _tabController.index <
+                                                _tabController.length - 1) {
+                                          _tabController.index =
+                                              _tabController.index + 1;
+                                          _tabController.offset = 0;
+                                          return;
+                                        }
+                                        if (nextOffset <= -0.98 &&
+                                            _tabController.index > 0) {
+                                          _tabController.index =
+                                              _tabController.index - 1;
+                                          _tabController.offset = 0;
+                                          return;
+                                        }
+                                        _tabController.offset = nextOffset;
+                                      },
+                                      onHorizontalDragEnd: (_) =>
+                                          settleToClosestTab(),
+                                      onHorizontalDragCancel:
+                                          settleToClosestTab,
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(top: 3),
+                                        child: TabBar(
+                                          controller: _tabController,
+                                          isScrollable: false,
+                                          padding: EdgeInsets.zero,
+                                          indicatorSize:
+                                              TabBarIndicatorSize.tab,
+                                          indicator: BoxDecoration(
+                                            color: colors.primary.withValues(
+                                              alpha: 0.12,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
+                                          ),
+                                          labelColor: colors.primary,
+                                          unselectedLabelColor: colors.onSurface
+                                              .withValues(alpha: 0.6),
+                                          labelStyle: theme
+                                              .textTheme
+                                              .labelMedium
+                                              ?.copyWith(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w600,
+                                                height: 1,
+                                              ),
+                                          unselectedLabelStyle: theme
+                                              .textTheme
+                                              .labelMedium
+                                              ?.copyWith(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w500,
+                                                height: 1,
+                                              ),
+                                          labelPadding: EdgeInsets.zero,
+                                          dividerColor: Colors.transparent,
+                                          splashBorderRadius:
+                                              BorderRadius.circular(16),
+                                          tabs: [
+                                            Tab(
+                                              height: 30,
+                                              text: 'app.market.latest'.tr,
+                                            ),
+                                            Tab(
+                                              height: 30,
+                                              text: 'app.market.popular'.tr,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
                                   },
-                                  child: Padding(
-                                    padding: const EdgeInsets.only(top: 3),
-                                    child: TabBar(
-                                      controller: _tabController,
-                                      isScrollable: false,
-                                      padding: EdgeInsets.zero,
-                                      indicatorSize: TabBarIndicatorSize.tab,
-                                      indicator: BoxDecoration(
-                                        color: colors.primary.withValues(
-                                          alpha: 0.12,
-                                        ),
-                                        borderRadius: BorderRadius.circular(16),
-                                      ),
-                                      labelColor: colors.primary,
-                                      unselectedLabelColor: colors.onSurface
-                                          .withValues(alpha: 0.6),
-                                      labelStyle: theme.textTheme.labelMedium
-                                          ?.copyWith(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w600,
-                                            height: 1,
-                                          ),
-                                      unselectedLabelStyle: theme
-                                          .textTheme
-                                          .labelMedium
-                                          ?.copyWith(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w500,
-                                            height: 1,
-                                          ),
-                                      labelPadding: EdgeInsets.zero,
-                                      dividerColor: Colors.transparent,
-                                      splashBorderRadius: BorderRadius.circular(
-                                        16,
-                                      ),
-                                      tabs: [
-                                        Tab(
-                                          height: 30,
-                                          text: 'app.market.latest'.tr,
-                                        ),
-                                        Tab(
-                                          height: 30,
-                                          text: 'app.market.popular'.tr,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
                                 ),
                               ),
                             ),
