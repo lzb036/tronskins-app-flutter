@@ -38,6 +38,12 @@ class MarketDetailController extends GetxController {
   bool _transactionHasMore = true;
   int _buyRequestPage = 1;
   bool _buyRequestHasMore = true;
+  double? _onSaleMinPrice;
+  double? _onSaleMaxPrice;
+  String? _onSalePaintSeed;
+  int? _onSalePaintIndex;
+  double? _onSalePaintWearMin;
+  double? _onSalePaintWearMax;
   bool get onSaleHasMore => _onSaleHasMore;
   bool get transactionHasMore => _transactionHasMore;
   bool get buyRequestHasMore => _buyRequestHasMore;
@@ -45,21 +51,6 @@ class MarketDetailController extends GetxController {
   int get appId => item.appId ?? 730;
   int? get schemaId => item.schemaId ?? item.id;
   String get marketHashName => item.marketHashName ?? item.marketName ?? '';
-
-  bool _hasMoreData({
-    required int fetchedCount,
-    required int accumulatedCount,
-    required int pageSize,
-    int? total,
-  }) {
-    if (fetchedCount <= 0) {
-      return false;
-    }
-    if (total != null && total > 0) {
-      return accumulatedCount < total;
-    }
-    return fetchedCount >= pageSize;
-  }
 
   @override
   void onInit() {
@@ -132,6 +123,12 @@ class MarketDetailController extends GetxController {
         schemaId: schemaId!,
         page: _onSalePage,
         pageSize: _onSalePageSize,
+        minPrice: _onSaleMinPrice,
+        maxPrice: _onSaleMaxPrice,
+        paintSeed: _onSalePaintSeed,
+        paintIndex: _onSalePaintIndex,
+        paintWearMin: _onSalePaintWearMin,
+        paintWearMax: _onSalePaintWearMax,
       );
       final data = res.datas;
       final fetchedCount = data?.items.length ?? 0;
@@ -139,15 +136,7 @@ class MarketDetailController extends GetxController {
         _onSaleHasMore = false;
       } else {
         onSaleItems.addAll(data.items);
-        _onSaleHasMore = _hasMoreData(
-          fetchedCount: fetchedCount,
-          accumulatedCount: onSaleItems.length,
-          pageSize: _onSalePageSize,
-          total: data.pager?.total,
-        );
-        if (_onSaleHasMore) {
-          _onSalePage += 1;
-        }
+        _onSaleHasMore = false;
       }
       users.addAll(data?.users ?? const {});
       schemas.addAll(data?.schemas ?? const {});
@@ -155,6 +144,23 @@ class MarketDetailController extends GetxController {
     } finally {
       isLoadingOnSale.value = false;
     }
+  }
+
+  Future<void> applyOnSaleFilter({
+    double? minPrice,
+    double? maxPrice,
+    String? paintSeed,
+    int? paintIndex,
+    double? paintWearMin,
+    double? paintWearMax,
+  }) async {
+    _onSaleMinPrice = minPrice;
+    _onSaleMaxPrice = maxPrice;
+    _onSalePaintSeed = paintSeed;
+    _onSalePaintIndex = paintIndex;
+    _onSalePaintWearMin = paintWearMin;
+    _onSalePaintWearMax = paintWearMax;
+    await loadOnSale(reset: true);
   }
 
   Future<void> loadTransactions({bool reset = false}) async {
@@ -183,15 +189,7 @@ class MarketDetailController extends GetxController {
         _transactionHasMore = false;
       } else {
         transactionItems.addAll(data.items);
-        _transactionHasMore = _hasMoreData(
-          fetchedCount: fetchedCount,
-          accumulatedCount: transactionItems.length,
-          pageSize: _transactionPageSize,
-          total: data.pager?.total,
-        );
-        if (_transactionHasMore) {
-          _transactionPage += 1;
-        }
+        _transactionHasMore = false;
       }
       users.addAll(data?.users ?? const {});
       schemas.addAll(data?.schemas ?? const {});
@@ -238,15 +236,7 @@ class MarketDetailController extends GetxController {
         _buyRequestHasMore = false;
       } else {
         buyRequests.addAll(data.items);
-        _buyRequestHasMore = _hasMoreData(
-          fetchedCount: fetchedCount,
-          accumulatedCount: buyRequests.length,
-          pageSize: _buyRequestPageSize,
-          total: data.total ?? data.pager?.total,
-        );
-        if (_buyRequestHasMore) {
-          _buyRequestPage += 1;
-        }
+        _buyRequestHasMore = false;
       }
       buyUsers.addAll(data?.users ?? const {});
       buySchemas.addAll(data?.schemas ?? const {});
