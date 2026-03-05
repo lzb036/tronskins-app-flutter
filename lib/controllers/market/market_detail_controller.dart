@@ -44,6 +44,8 @@ class MarketDetailController extends GetxController {
   int? _onSalePaintIndex;
   double? _onSalePaintWearMin;
   double? _onSalePaintWearMax;
+  String? _onSaleSortField;
+  bool? _onSaleSortAsc;
   bool get onSaleHasMore => _onSaleHasMore;
   bool get transactionHasMore => _transactionHasMore;
   bool get buyRequestHasMore => _buyRequestHasMore;
@@ -123,6 +125,8 @@ class MarketDetailController extends GetxController {
         schemaId: schemaId!,
         page: _onSalePage,
         pageSize: _onSalePageSize,
+        field: _onSaleSortField,
+        asc: _onSaleSortAsc,
         minPrice: _onSaleMinPrice,
         maxPrice: _onSaleMaxPrice,
         paintSeed: _onSalePaintSeed,
@@ -147,6 +151,8 @@ class MarketDetailController extends GetxController {
   }
 
   Future<void> applyOnSaleFilter({
+    String? sortField,
+    bool? sortAsc,
     double? minPrice,
     double? maxPrice,
     String? paintSeed,
@@ -154,6 +160,8 @@ class MarketDetailController extends GetxController {
     double? paintWearMin,
     double? paintWearMax,
   }) async {
+    _onSaleSortField = sortField;
+    _onSaleSortAsc = sortAsc;
     _onSaleMinPrice = minPrice;
     _onSaleMaxPrice = maxPrice;
     _onSalePaintSeed = paintSeed;

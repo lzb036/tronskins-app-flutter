@@ -49,6 +49,8 @@ class _MarketDetailPageState extends State<MarketDetailPage>
   int? _onSalePaintIndex;
   double? _onSaleWearMin;
   double? _onSaleWearMax;
+  String? _onSaleSortField;
+  bool? _onSaleSortAsc;
 
   @override
   void initState() {
@@ -411,34 +413,6 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                           ],
                         ),
                         const SizedBox(height: 8),
-                        if (displayTags?.rarity?.localizedName != null)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: _getRarityColor(
-                                displayTags?.rarity?.color,
-                              ).withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(4),
-                              border: Border.all(
-                                color: _getRarityColor(
-                                  displayTags?.rarity?.color,
-                                ).withValues(alpha: 0.5),
-                              ),
-                            ),
-                            child: Text(
-                              displayTags?.rarity?.localizedName ?? '',
-                              style: TextStyle(
-                                color: _getRarityColor(
-                                  displayTags?.rarity?.color,
-                                ),
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
                         const SizedBox(height: 16),
                         ..._buildAttributeRows(item),
                         if (_wearOptions.isNotEmpty) ...[
@@ -994,16 +968,6 @@ class _MarketDetailPageState extends State<MarketDetailPage>
     return '${currency.symbol} ${price.toString()}';
   }
 
-  Color _getRarityColor(String? colorHex) {
-    if (colorHex == null || colorHex.isEmpty) return Colors.grey;
-    try {
-      final hex = colorHex.replaceAll('#', '');
-      return Color(int.parse('0xFF$hex'));
-    } catch (_) {
-      return Colors.grey;
-    }
-  }
-
   int? _asInt(dynamic value) {
     if (value == null) {
       return null;
@@ -1017,22 +981,298 @@ class _MarketDetailPageState extends State<MarketDetailPage>
     return int.tryParse(value.toString());
   }
 
+  String _formatI18nPlaceholder(String template, String value) {
+    return template
+        .replaceAll('{0}', value)
+        .replaceAll('｛0｝', value)
+        .replaceAll(r'${0}', value);
+  }
+
+  List<_OnSaleSortOption> _buildOnSaleSortOptions() {
+    return const <_OnSaleSortOption>[
+      _OnSaleSortOption(
+        field: null,
+        asc: null,
+        labelKey: 'app.market.filter.sort',
+      ),
+      _OnSaleSortOption(
+        field: 'hot',
+        asc: true,
+        labelKey: 'app.market.filter.hot_sorting',
+        suffix: '↑',
+      ),
+      _OnSaleSortOption(
+        field: 'hot',
+        asc: false,
+        labelKey: 'app.market.filter.hot_sorting',
+        suffix: '↓',
+      ),
+      _OnSaleSortOption(
+        field: 'price',
+        asc: true,
+        labelKey: 'app.market.filter.price_sorting',
+        suffix: '↑',
+      ),
+      _OnSaleSortOption(
+        field: 'price',
+        asc: false,
+        labelKey: 'app.market.filter.price_sorting',
+        suffix: '↓',
+      ),
+    ];
+  }
+
+  List<_OnSaleWearOption> _buildOnSaleWearOptions() {
+    final options = <_OnSaleWearOption>[
+      _OnSaleWearOption(label: 'app.market.filter.all'.tr),
+    ];
+    final exteriorKey = _templateDetail?.schema?.tags?.exterior?.key;
+    for (final option in _buildWearQuickOptions(exteriorKey)) {
+      final min = double.tryParse(option.minText);
+      final max = double.tryParse(option.maxText);
+      if (min == null || max == null) {
+        continue;
+      }
+      options.add(_OnSaleWearOption(label: option.label, min: min, max: max));
+    }
+    return options;
+  }
+
+  String _formatOnSaleSortLabel(_OnSaleSortOption option) {
+    final template = option.labelKey.tr;
+    final suffix = option.suffix;
+    if (suffix == null || suffix.isEmpty) {
+      return template;
+    }
+    return _formatI18nPlaceholder(template, suffix);
+  }
+
+  String get _onSaleSortLabel {
+    final option = _buildOnSaleSortOptions().firstWhere(
+      (candidate) =>
+          candidate.field == _onSaleSortField &&
+          candidate.asc == _onSaleSortAsc,
+      orElse: () => const _OnSaleSortOption(
+        field: null,
+        asc: null,
+        labelKey: 'app.market.filter.sort',
+      ),
+    );
+    return _formatOnSaleSortLabel(option);
+  }
+
+  String get _onSaleWearLabel {
+    if (_onSaleWearMin == null && _onSaleWearMax == null) {
+      return 'app.market.filter.csgo.wear_interval'.tr;
+    }
+    final minText = (_onSaleWearMin ?? 0).toStringAsFixed(2);
+    final maxText = (_onSaleWearMax ?? 1).toStringAsFixed(2);
+    return '$minText-$maxText';
+  }
+
+  bool get _showOnSaleWearFilter {
+    if (controller.appId != 730) {
+      return false;
+    }
+    final exteriorKey = _templateDetail?.schema?.tags?.exterior?.key;
+    return _buildWearQuickOptions(exteriorKey).isNotEmpty;
+  }
+
+  Future<void> _applyOnSaleFilterWithCurrentState() {
+    return controller.applyOnSaleFilter(
+      sortField: _onSaleSortField,
+      sortAsc: _onSaleSortAsc,
+      minPrice: _onSaleMinPrice,
+      maxPrice: _onSaleMaxPrice,
+      paintSeed: _onSalePaintSeed,
+      paintIndex: _onSalePaintIndex,
+      paintWearMin: _onSaleWearMin,
+      paintWearMax: _onSaleWearMax,
+    );
+  }
+
+  Future<void> _onSelectOnSaleSort(_OnSaleSortOption option) async {
+    setState(() {
+      _onSaleSortField = option.field;
+      _onSaleSortAsc = option.asc;
+    });
+    await _applyOnSaleFilterWithCurrentState();
+  }
+
+  Future<void> _onSelectOnSaleWear(_OnSaleWearOption option) async {
+    setState(() {
+      _onSaleWearMin = option.min;
+      _onSaleWearMax = option.max;
+    });
+    await _applyOnSaleFilterWithCurrentState();
+  }
+
+  Widget _buildOnSaleToolbarChip({
+    required String label,
+    required bool enabled,
+    required bool active,
+  }) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final borderColor = active
+        ? colors.primary.withValues(alpha: 0.45)
+        : colors.outline.withValues(alpha: 0.25);
+    final textColor = active ? colors.primary : colors.onSurfaceVariant;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+      decoration: BoxDecoration(
+        color: enabled
+            ? colors.surfaceContainerHighest.withValues(alpha: 0.7)
+            : colors.surfaceContainerHighest.withValues(alpha: 0.4),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: borderColor),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11.5,
+              color: textColor.withValues(alpha: enabled ? 1 : 0.6),
+              fontWeight: active ? FontWeight.w600 : FontWeight.w500,
+            ),
+          ),
+          const SizedBox(width: 2),
+          Icon(
+            Icons.keyboard_arrow_down_rounded,
+            size: 14,
+            color: textColor.withValues(alpha: enabled ? 1 : 0.6),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildOnSaleTab(CurrencyController currency) {
     final body = _buildOnSaleListBody(currency);
     if (!_showOnSaleFilter) {
       return body;
     }
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final iconColor = _hasOnSaleFilter
         ? theme.colorScheme.primary
         : theme.iconTheme.color;
+    final enabled = !controller.isLoadingOnSale.value;
+    final sortOptions = _buildOnSaleSortOptions();
+    final wearOptions = _buildOnSaleWearOptions();
+    final barBorderColor = theme.colorScheme.outline.withValues(
+      alpha: isDark ? 0.28 : 0.14,
+    );
+    final barBgColor = isDark
+        ? theme.colorScheme.surfaceContainerLow.withValues(alpha: 0.52)
+        : theme.colorScheme.surface.withValues(alpha: 0.98);
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 4),
+        Container(
+          margin: const EdgeInsets.fromLTRB(12, 6, 12, 2),
+          padding: const EdgeInsets.fromLTRB(10, 4, 8, 4),
+          decoration: BoxDecoration(
+            color: barBgColor,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: barBorderColor),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.16 : 0.04),
+                blurRadius: 6,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.end,
             children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      PopupMenuButton<_OnSaleSortOption>(
+                        enabled: enabled,
+                        tooltip: 'app.market.filter.sort'.tr,
+                        onSelected: (option) {
+                          _onSelectOnSaleSort(option);
+                        },
+                        itemBuilder: (context) {
+                          return sortOptions
+                              .map((option) {
+                                final label = _formatOnSaleSortLabel(option);
+                                final selected =
+                                    option.field == _onSaleSortField &&
+                                    option.asc == _onSaleSortAsc;
+                                return PopupMenuItem<_OnSaleSortOption>(
+                                  value: option,
+                                  child: Row(
+                                    children: [
+                                      Expanded(child: Text(label)),
+                                      if (selected)
+                                        Icon(
+                                          Icons.check_rounded,
+                                          size: 16,
+                                          color: theme.colorScheme.primary,
+                                        ),
+                                    ],
+                                  ),
+                                );
+                              })
+                              .toList(growable: false);
+                        },
+                        child: _buildOnSaleToolbarChip(
+                          label: _onSaleSortLabel,
+                          enabled: enabled,
+                          active: _onSaleSortField != null,
+                        ),
+                      ),
+                      if (_showOnSaleWearFilter && wearOptions.isNotEmpty) ...[
+                        const SizedBox(width: 8),
+                        PopupMenuButton<_OnSaleWearOption>(
+                          enabled: enabled,
+                          tooltip: 'app.market.filter.csgo.wear_interval'.tr,
+                          onSelected: (option) {
+                            _onSelectOnSaleWear(option);
+                          },
+                          itemBuilder: (context) {
+                            return wearOptions
+                                .map((option) {
+                                  final selected =
+                                      option.min == _onSaleWearMin &&
+                                      option.max == _onSaleWearMax;
+                                  return PopupMenuItem<_OnSaleWearOption>(
+                                    value: option,
+                                    child: Row(
+                                      children: [
+                                        Expanded(child: Text(option.label)),
+                                        if (selected)
+                                          Icon(
+                                            Icons.check_rounded,
+                                            size: 16,
+                                            color: theme.colorScheme.primary,
+                                          ),
+                                      ],
+                                    ),
+                                  );
+                                })
+                                .toList(growable: false);
+                          },
+                          child: _buildOnSaleToolbarChip(
+                            label: _onSaleWearLabel,
+                            enabled: enabled,
+                            active:
+                                _onSaleWearMin != null ||
+                                _onSaleWearMax != null,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
               GestureDetector(
                 onLongPress:
                     controller.isLoadingOnSale.value || !_hasOnSaleFilter
@@ -1044,8 +1284,12 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                   children: [
                     IconButton(
                       tooltip: 'app.market.filter.text'.tr,
-                      iconSize: 20,
-                      visualDensity: VisualDensity.compact,
+                      iconSize: 18,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints.tightFor(
+                        width: 30,
+                        height: 30,
+                      ),
                       onPressed: controller.isLoadingOnSale.value
                           ? null
                           : _openOnSaleFilterSheet,
@@ -1053,11 +1297,11 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                     ),
                     if (_hasOnSaleFilter)
                       Positioned(
-                        right: 6,
-                        top: 6,
+                        right: 4,
+                        top: 4,
                         child: Container(
-                          width: 7,
-                          height: 7,
+                          width: 6,
+                          height: 6,
                           decoration: BoxDecoration(
                             color: theme.colorScheme.primary,
                             shape: BoxShape.circle,
@@ -1091,7 +1335,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
     final showFooter = showLoadingFooter || showNoMoreFooter;
     return ListView.separated(
       controller: _onSaleScroll,
-      padding: EdgeInsets.fromLTRB(16, _showOnSaleFilter ? 8 : 16, 16, 100),
+      padding: EdgeInsets.fromLTRB(16, _showOnSaleFilter ? 6 : 16, 16, 100),
       itemCount: controller.onSaleItems.length + (showFooter ? 1 : 0),
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
@@ -1120,6 +1364,8 @@ class _MarketDetailPageState extends State<MarketDetailPage>
 
   Future<void> _clearOnSaleFilter() async {
     setState(() {
+      _onSaleSortField = null;
+      _onSaleSortAsc = null;
       _onSaleMinPrice = null;
       _onSaleMaxPrice = null;
       _onSalePaintSeed = null;
@@ -1127,7 +1373,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
       _onSaleWearMin = null;
       _onSaleWearMax = null;
     });
-    await controller.applyOnSaleFilter();
+    await _applyOnSaleFilterWithCurrentState();
   }
 
   Future<void> _openOnSaleFilterSheet() async {
@@ -1190,15 +1436,8 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                       : colors.outline.withValues(alpha: 0.18);
                   const actionBarHeight = 56.0;
 
-                  void resetFields() {
-                    setModalState(() {
-                      paintSeedController.clear();
-                      wearMinController.clear();
-                      wearMaxController.clear();
-                      minPriceController.clear();
-                      maxPriceController.clear();
-                      selectedPaintIndex = null;
-                    });
+                  void resetAndClose() {
+                    Navigator.of(context).pop(const _OnSaleFilterValue());
                   }
 
                   void applyAndClose() {
@@ -1507,7 +1746,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                                           ),
                                         ),
                                       ),
-                                      onPressed: resetFields,
+                                      onPressed: resetAndClose,
                                       child: Text('app.market.filter.reset'.tr),
                                     ),
                                   ),
@@ -1585,14 +1824,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
       _onSaleWearMin = result.paintWearMin;
       _onSaleWearMax = result.paintWearMax;
     });
-    await controller.applyOnSaleFilter(
-      minPrice: _onSaleMinPrice,
-      maxPrice: _onSaleMaxPrice,
-      paintSeed: _onSalePaintSeed,
-      paintIndex: _onSalePaintIndex,
-      paintWearMin: _onSaleWearMin,
-      paintWearMax: _onSaleWearMax,
-    );
+    await _applyOnSaleFilterWithCurrentState();
   }
 
   List<_PaintKitOption> _buildPaintKitOptions() {
@@ -1716,24 +1948,12 @@ class _MarketDetailPageState extends State<MarketDetailPage>
     final appId = item.appId ?? controller.appId;
     final imageUrl =
         schema?.imageUrl ?? item.raw['image_url']?.toString() ?? '';
-    final title =
-        schema?.marketName ??
-        schema?.marketHashName ??
-        item.marketHashName ??
-        '-';
-    final tags = schema?.tags;
-    final rarity = TagInfo.fromMarketTag(tags?.rarity);
-    final quality = TagInfo.fromMarketTag(tags?.quality);
-    final exterior = TagInfo.fromMarketTag(tags?.exterior);
     final asset = _resolveAsset(item);
     final paintWearValue = _extractDouble(asset, ['paint_wear', 'paintWear']);
     final paintWearText =
         _extractText(asset, ['paint_wear', 'paintWear']) ??
         _extractText(item.raw, ['paint_wear', 'paintWear']) ??
         paintWearValue?.toString();
-    final paintSeed = _extractText(asset, ['paint_seed', 'paintSeed']);
-    final phase = _extractText(asset, ['phase']);
-    final percentage = _extractText(asset, ['percentage']);
     final stickers = parseStickerList(
       asset?['stickers'] ?? item.raw['stickers'],
       schemaMap: controller.schemas,
@@ -1769,35 +1989,13 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                   SizedBox(
                     width: 90,
                     height: 54,
-                    child: GameItemImage(
-                      imageUrl: imageUrl,
-                      appId: appId,
-                      rarity: rarity,
-                      quality: quality,
-                      exterior: exterior,
-                      paintSeed: paintSeed,
-                      phase: phase,
-                      percentage: percentage,
-                      paintWearText: paintWearText,
-                      stickers: stickers,
-                      gems: gems,
-                    ),
+                    child: GameItemImage(imageUrl: imageUrl, appId: appId),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: isDark ? Colors.white : Colors.black87,
-                            fontSize: 14,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
                         Obx(
                           () => Text(
                             currency.format(item.price ?? 0),
@@ -2756,6 +2954,28 @@ class _WearOption {
   final int id;
   final String label;
   final dynamic price;
+}
+
+class _OnSaleSortOption {
+  const _OnSaleSortOption({
+    required this.field,
+    required this.asc,
+    required this.labelKey,
+    this.suffix,
+  });
+
+  final String? field;
+  final bool? asc;
+  final String labelKey;
+  final String? suffix;
+}
+
+class _OnSaleWearOption {
+  const _OnSaleWearOption({required this.label, this.min, this.max});
+
+  final String label;
+  final double? min;
+  final double? max;
 }
 
 class _OnSaleFilterValue {
