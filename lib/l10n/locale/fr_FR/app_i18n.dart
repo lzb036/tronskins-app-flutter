@@ -453,6 +453,7 @@ final Map<String, String> fr_FR = {
   "app.user.wallet.withdraw_record": "Enregistrement",
   "app.user.wallet.balance": "équilibre",
   "app.user.wallet.gift": "Carte cadeau",
+  "app.user.wallet.gift_amount": "Cadeau verrouille",
   "app.user.wallet.account": "équilibre",
   "app.user.wallet.available": "Disponible",
   "app.user.wallet.unsettled": "Insoluble",

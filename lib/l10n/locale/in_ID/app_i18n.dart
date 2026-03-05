@@ -436,6 +436,7 @@ final Map<String, String> in_ID = {
   "app.user.wallet.withdraw_record": "Catatan",
   "app.user.wallet.balance": "Keseimbangan",
   "app.user.wallet.gift": "Kartu Hadiah",
+  "app.user.wallet.gift_amount": "Hadiah Terkunci",
   "app.user.wallet.account": "Keseimbangan",
   "app.user.wallet.available": "Tersedia",
   "app.user.wallet.unsettled": "Tidak ditetapkan",

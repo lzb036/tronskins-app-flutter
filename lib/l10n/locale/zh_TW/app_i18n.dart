@@ -359,6 +359,7 @@ final Map<String, String> zh_TW = {
   "app.user.wallet.withdraw_record": "記錄",
   "app.user.wallet.balance": "平衡",
   "app.user.wallet.gift": "禮品卡",
+  "app.user.wallet.gift_amount": "鎖定禮物",
   "app.user.wallet.account": "平衡",
   "app.user.wallet.available": "可用",
   "app.user.wallet.unsettled": "未解决的",

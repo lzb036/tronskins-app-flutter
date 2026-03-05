@@ -90,6 +90,8 @@ class WalletLockedItem {
   final int? lockType;
   final int? lockAmount;
   final int? createTime;
+  final dynamic lockTimeRaw;
+  final dynamic createTimeRaw;
 
   const WalletLockedItem({
     this.id,
@@ -98,16 +100,32 @@ class WalletLockedItem {
     this.lockType,
     this.lockAmount,
     this.createTime,
+    this.lockTimeRaw,
+    this.createTimeRaw,
   });
 
   factory WalletLockedItem.fromJson(Map<String, dynamic> json) {
+    final lockTimeRaw = json['lockAmount'] ??
+        json['lock_amount'] ??
+        json['lockTime'] ??
+        json['lock_time'] ??
+        json['lockedTime'] ??
+        json['locked_time'];
+    final createTimeRaw = json['createTime'] ??
+        json['create_time'] ??
+        json['createdAt'] ??
+        json['created_at'] ??
+        json['time'];
+
     return WalletLockedItem(
       id: _asInt(json['id']),
       amount: _asDouble(json['amount']),
       giftAmount: _asDouble(json['gift_amount'] ?? json['giftAmount']),
       lockType: _asInt(json['lockType'] ?? json['lock_type']),
-      lockAmount: _asInt(json['lockAmount'] ?? json['lock_amount']),
-      createTime: _asInt(json['createTime'] ?? json['create_time']),
+      lockAmount: _asTimestamp(lockTimeRaw),
+      createTime: _asTimestamp(createTimeRaw),
+      lockTimeRaw: lockTimeRaw,
+      createTimeRaw: createTimeRaw,
     );
   }
 }
@@ -635,6 +653,38 @@ int? _asInt(dynamic value) {
     return value.toInt();
   }
   return int.tryParse(value.toString());
+}
+
+int? _asTimestamp(dynamic value) {
+  if (value == null) {
+    return null;
+  }
+
+  int timestamp;
+  if (value is num) {
+    timestamp = value.toInt();
+  } else {
+    final text = value.toString().trim();
+    if (text.isEmpty) {
+      return null;
+    }
+    final numeric = num.tryParse(text);
+    if (numeric != null) {
+      timestamp = numeric.toInt();
+    } else {
+      final parsedDate = DateTime.tryParse(text);
+      return parsedDate?.millisecondsSinceEpoch;
+    }
+  }
+
+  if (timestamp <= 0 || timestamp < 1000000000) {
+    return null;
+  }
+
+  if (timestamp >= 1000000000000000) {
+    timestamp = (timestamp / 1000).round();
+  }
+  return timestamp;
 }
 
 double? _asDouble(dynamic value) {

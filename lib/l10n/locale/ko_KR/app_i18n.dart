@@ -378,6 +378,7 @@ final Map<String, String> ko_KR = {
   "app.user.wallet.withdraw_record": "기록",
   "app.user.wallet.balance": "균형",
   "app.user.wallet.gift": "선물 카드",
+  "app.user.wallet.gift_amount": "잠금 선물",
   "app.user.wallet.account": "균형",
   "app.user.wallet.available": "사용 가능",
   "app.user.wallet.unsettled": "고정되지 않은",

@@ -415,6 +415,7 @@ final Map<String, String> th_TH = {
   "app.user.wallet.withdraw_record": "บันทึก",
   "app.user.wallet.balance": "สมดุล",
   "app.user.wallet.gift": "บัตรของขวัญ",
+  "app.user.wallet.gift_amount": "ของขวัญที่ถูกล็อก",
   "app.user.wallet.account": "สมดุล",
   "app.user.wallet.available": "มีให้บริการ",
   "app.user.wallet.unsettled": "ไม่คงตั้ง",

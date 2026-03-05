@@ -357,6 +357,7 @@ final Map<String, String> zh_CN = {
   "app.user.wallet.withdraw_record": "提现记录",
   "app.user.wallet.balance": "余额",
   "app.user.wallet.gift": "礼物卡",
+  "app.user.wallet.gift_amount": "锁定礼物",
   "app.user.wallet.account": "账户余额",
   "app.user.wallet.available": "可用余额",
   "app.user.wallet.unsettled": "待结算金额",

@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:intl/intl.dart';
 import 'package:tronskins_app/api/shop_product.dart';
 import 'package:tronskins_app/api/steam.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
+import 'package:tronskins_app/common/storage/game_storage.dart';
 import 'package:tronskins_app/controllers/wallet/wallet_controller.dart';
 import 'package:tronskins_app/api/model/wallet/wallet_models.dart';
+import 'package:tronskins_app/components/game_item/game_item_image.dart';
+import 'package:tronskins_app/components/game_item/game_item_models.dart';
+import 'package:tronskins_app/components/game_item/sticker_row.dart';
+import 'package:tronskins_app/components/game_item/wear_progress_bar.dart';
 import 'package:tronskins_app/components/notify/notify_trade_deliver_sheet.dart';
 import 'package:tronskins_app/pages/wallet/widgets/wallet_ui.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
@@ -51,18 +55,6 @@ class _WalletLockedDetailPageState extends State<WalletLockedDetailPage> {
       _detail = detail;
       _loading = false;
     });
-  }
-
-  String _formatTime(int? value) {
-    if (value == null) {
-      return '-';
-    }
-    var timestamp = value;
-    if (timestamp < 10000000000) {
-      timestamp *= 1000;
-    }
-    final date = DateTime.fromMillisecondsSinceEpoch(timestamp);
-    return DateFormat('yyyy-MM-dd HH:mm').format(date);
   }
 
   Future<void> _copy(String text) async {
@@ -126,15 +118,174 @@ class _WalletLockedDetailPageState extends State<WalletLockedDetailPage> {
     return userId == sellerId;
   }
 
-  String? _schemaPaintWearText(WalletSchemaInfo? schema) {
-    final raw = schema?.raw;
-    if (raw != null) {
-      final value = raw['paint_wear'] ?? raw['paintWear'];
-      if (value != null) {
-        return value.toString();
-      }
+  String? _schemaPaintWearText(
+    WalletSchemaInfo? schema,
+    WalletLockedOrder? order,
+  ) {
+    final value =
+        _pickRawValue(schema?.raw, const ['paint_wear', 'paintWear']) ??
+        _pickRawValue(order?.raw, const ['paint_wear', 'paintWear']) ??
+        _pickRawValue(_pickRawMap(order?.raw['asset']), const [
+          'paint_wear',
+          'paintWear',
+        ]) ??
+        _pickRawValue(_pickRawMap(order?.raw['csgoAsset']), const [
+          'paint_wear',
+          'paintWear',
+        ]);
+    if (value != null) {
+      return value.toString();
     }
     return schema?.paintWear?.toString();
+  }
+
+  double? _schemaPaintWearValue(
+    WalletSchemaInfo? schema,
+    WalletLockedOrder? order,
+  ) {
+    return _asDouble(
+          _pickRawValue(schema?.raw, const ['paint_wear', 'paintWear']),
+        ) ??
+        _asDouble(
+          _pickRawValue(order?.raw, const ['paint_wear', 'paintWear']),
+        ) ??
+        _asDouble(
+          _pickRawValue(_pickRawMap(order?.raw['asset']), const [
+            'paint_wear',
+            'paintWear',
+          ]),
+        ) ??
+        _asDouble(
+          _pickRawValue(_pickRawMap(order?.raw['csgoAsset']), const [
+            'paint_wear',
+            'paintWear',
+          ]),
+        ) ??
+        schema?.paintWear;
+  }
+
+  TagInfo? _schemaTag(WalletSchemaInfo? schema, String key) {
+    final tags = schema?.raw['tags'];
+    if (tags is Map) {
+      return TagInfo.fromRaw(tags[key]);
+    }
+    return null;
+  }
+
+  int _resolveAppId(WalletSchemaInfo? schema, WalletLockedOrder? order) {
+    final rawAsset = _pickRawMap(order?.raw['asset']);
+    final rawCsgoAsset = _pickRawMap(order?.raw['csgoAsset']);
+    return schema?.appId ??
+        order?.appId ??
+        _asInt(_pickRawValue(schema?.raw, const ['app_id', 'appId'])) ??
+        _asInt(_pickRawValue(order?.raw, const ['app_id', 'appId'])) ??
+        _asInt(_pickRawValue(rawAsset, const ['app_id', 'appId'])) ??
+        _asInt(_pickRawValue(rawCsgoAsset, const ['app_id', 'appId'])) ??
+        GameStorage.getGameType();
+  }
+
+  String _resolveImageUrl(WalletSchemaInfo? schema, WalletLockedOrder? order) {
+    final rawAsset = _pickRawMap(order?.raw['asset']);
+    final rawCsgoAsset = _pickRawMap(order?.raw['csgoAsset']);
+    return schema?.imageUrl ??
+        _pickRawText(schema?.raw, const [
+          'image_url',
+          'imageUrl',
+          'icon_url',
+          'iconUrl',
+          'image',
+        ]) ??
+        _pickRawText(order?.raw, const [
+          'image_url',
+          'imageUrl',
+          'icon_url',
+          'iconUrl',
+          'image',
+        ]) ??
+        _pickRawText(rawAsset, const [
+          'image_url',
+          'imageUrl',
+          'icon_url',
+          'iconUrl',
+          'image',
+        ]) ??
+        _pickRawText(rawCsgoAsset, const [
+          'image_url',
+          'imageUrl',
+          'icon_url',
+          'iconUrl',
+          'image',
+        ]) ??
+        '';
+  }
+
+  List<GameItemSticker> _schemaStickers(
+    WalletSchemaInfo? schema,
+    WalletLockedOrder? order,
+  ) {
+    final rawAsset = _pickRawMap(order?.raw['asset']);
+    final rawCsgoAsset = _pickRawMap(order?.raw['csgoAsset']);
+    final stickerRaw =
+        _pickRawValue(schema?.raw, const ['stickers']) ??
+        _pickRawValue(order?.raw, const ['stickers']) ??
+        _pickRawValue(rawAsset, const ['stickers']) ??
+        _pickRawValue(rawCsgoAsset, const ['stickers']);
+    return parseStickerList(stickerRaw, stickerMap: _detail?.stickers);
+  }
+
+  Map? _pickRawMap(dynamic value) {
+    if (value is Map) {
+      return value;
+    }
+    return null;
+  }
+
+  dynamic _pickRawValue(dynamic source, List<String> keys) {
+    if (source is! Map) {
+      return null;
+    }
+    for (final key in keys) {
+      final value = source[key];
+      if (value != null) {
+        return value;
+      }
+    }
+    return null;
+  }
+
+  String? _pickRawText(dynamic source, List<String> keys) {
+    final value = _pickRawValue(source, keys);
+    if (value == null) {
+      return null;
+    }
+    final text = value.toString().trim();
+    return text.isEmpty ? null : text;
+  }
+
+  int? _asInt(dynamic value) {
+    if (value == null) {
+      return null;
+    }
+    if (value is int) {
+      return value;
+    }
+    if (value is num) {
+      return value.toInt();
+    }
+    return int.tryParse(value.toString());
+  }
+
+  double? _asDouble(dynamic value) {
+    if (value == null) {
+      return null;
+    }
+    if (value is double) {
+      return value;
+    }
+    if (value is num) {
+      return value.toDouble();
+    }
+    return double.tryParse(value.toString());
   }
 
   Future<void> _openDeliverDrawer(WalletLockedOrder order) async {
@@ -359,8 +510,9 @@ class _WalletLockedDetailPageState extends State<WalletLockedDetailPage> {
         title: Text('app.trade.order.details'.tr),
         actions: [
           IconButton(
+            tooltip: 'app.user.menu.feedback'.tr,
             onPressed: () => Get.toNamed(Routers.FEEDBACK_LIST),
-            icon: const Icon(Icons.support_agent_outlined),
+            icon: const Icon(Icons.headset_mic_outlined),
           ),
         ],
       ),
@@ -386,7 +538,6 @@ class _WalletLockedDetailPageState extends State<WalletLockedDetailPage> {
     final order = _detail?.order;
     final orderId = order?.id?.toString() ?? '-';
     final price = currency.formatUsd(order?.price ?? 0);
-    final time = _formatTime(order?.changeTime ?? order?.createTime);
     return Card(
       elevation: 0,
       shape: WalletUi.cardShape(context),
@@ -417,14 +568,6 @@ class _WalletLockedDetailPageState extends State<WalletLockedDetailPage> {
                 ),
               ],
             ),
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                Text('${'app.trade.order.time'.tr}:'),
-                const Spacer(),
-                Text(time),
-              ],
-            ),
           ],
         ),
       ),
@@ -433,10 +576,20 @@ class _WalletLockedDetailPageState extends State<WalletLockedDetailPage> {
 
   Widget _buildAssetInfo(CurrencyController currency) {
     final schema = _detail?.schema;
+    final order = _detail?.order;
     final name = schema?.marketName ?? schema?.marketHashName ?? '-';
     final sellMin = schema?.sellMin;
     final buyMax = schema?.buyMax;
-    final paintWearText = _schemaPaintWearText(schema);
+    final paintWearText = _schemaPaintWearText(schema, order);
+    final paintWear = _schemaPaintWearValue(schema, order);
+    final stickers = _schemaStickers(schema, order);
+    final appId = _resolveAppId(schema, order);
+    final imageUrl = _resolveImageUrl(schema, order);
+    final rarity = _schemaTag(schema, 'rarity');
+    final quality = _schemaTag(schema, 'quality');
+    final exterior = _schemaTag(schema, 'exterior');
+    final phase = _pickRawText(schema?.raw, const ['phase']);
+    final percentage = _pickRawText(schema?.raw, const ['percentage']);
     return Card(
       elevation: 0,
       shape: WalletUi.cardShape(context),
@@ -445,25 +598,66 @@ class _WalletLockedDetailPageState extends State<WalletLockedDetailPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(name, style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
-            if (sellMin != null)
-              Text(
-                '${'app.market.detail.sale_lowest'.tr} '
-                '${currency.formatUsd(sellMin)}',
-              ),
-            if (buyMax != null)
-              Text(
-                '${'app.market.detail.purchase_highest'.tr} '
-                '${currency.formatUsd(buyMax)}',
-              ),
-            if (paintWearText != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text(
-                  '${'app.market.csgo.abradability'.tr}: $paintWearText',
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 108,
+                  height: 66,
+                  child: GameItemImage(
+                    imageUrl: imageUrl,
+                    appId: appId,
+                    rarity: rarity,
+                    quality: quality,
+                    exterior: exterior,
+                    phase: phase,
+                    percentage: percentage,
+                  ),
                 ),
-              ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      if (sellMin != null)
+                        Text(
+                          '${'app.market.detail.sale_lowest'.tr} '
+                          '${currency.formatUsd(sellMin)}',
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      if (buyMax != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            '${'app.market.detail.purchase_highest'.tr} '
+                            '${currency.formatUsd(buyMax)}',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (paintWearText != null && paintWearText.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Text('${'app.market.csgo.abradability'.tr}: $paintWearText'),
+            ],
+            if (paintWear != null) ...[
+              const SizedBox(height: 6),
+              WearProgressBar(paintWear: paintWear),
+            ],
+            if (stickers.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              StickerRow(stickers: stickers, size: 24),
+            ],
           ],
         ),
       ),

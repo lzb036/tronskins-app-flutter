@@ -442,6 +442,7 @@ final Map<String, String> ru_RU = {
   "app.user.wallet.withdraw_record": "Запись",
   "app.user.wallet.balance": "Баланс",
   "app.user.wallet.gift": "Подарочная карта",
+  "app.user.wallet.gift_amount": "Заблокированный подарок",
   "app.user.wallet.account": "Баланс",
   "app.user.wallet.available": "Доступно",
   "app.user.wallet.unsettled": "Неурегулированный",

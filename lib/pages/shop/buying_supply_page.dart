@@ -9,6 +9,7 @@ import 'package:tronskins_app/common/storage/user_storage.dart';
 import 'package:tronskins_app/components/game_item/game_item_image.dart';
 import 'package:tronskins_app/components/game_item/game_item_models.dart';
 import 'package:tronskins_app/components/game_item/inventory_item_card.dart';
+import 'package:tronskins_app/components/layout/list_end_tip.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
 
 class BuyingSupplyPage extends StatefulWidget {
@@ -166,10 +167,7 @@ class _BuyingSupplyPageState extends State<BuyingSupplyPage> {
         (item.coolingDown ?? false) || (item.cooldown?.isNotEmpty == true);
     final isTradable = item.tradable ?? true;
     if (isCooling) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.market.product.cooling'.tr,
-      );
+      Get.snackbar('app.system.tips.title'.tr, 'app.market.product.cooling'.tr);
       return;
     }
     if (!isTradable) {
@@ -180,10 +178,7 @@ class _BuyingSupplyPageState extends State<BuyingSupplyPage> {
       return;
     }
     if (item.status == 2) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.inventory.in_supply'.tr,
-      );
+      Get.snackbar('app.system.tips.title'.tr, 'app.inventory.in_supply'.tr);
       return;
     }
     if (!_selectedIds.contains(id) && _maxNeed > 0) {
@@ -280,10 +275,7 @@ class _BuyingSupplyPageState extends State<BuyingSupplyPage> {
     final appId = _request.appId;
     final price = _request.price;
     if (requestId == null || appId == null || price == null) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.trade.filter.failed'.tr,
-      );
+      Get.snackbar('app.system.tips.title'.tr, 'app.trade.filter.failed'.tr);
       return;
     }
     setState(() => _isSubmitting = true);
@@ -339,14 +331,11 @@ class _BuyingSupplyPageState extends State<BuyingSupplyPage> {
         }
         if (datas.contains('Inventory privacy')) {
           final user = UserStorage.getUserInfo();
-          final nickname =
-              user?.config?.nickname ?? user?.nickname ?? '';
+          final nickname = user?.config?.nickname ?? user?.nickname ?? '';
           await Get.dialog<void>(
             AlertDialog(
               title: Text('app.system.tips.title'.tr),
-              content: Text(
-                '${'app.inventory.message.privacy'.tr}$nickname',
-              ),
+              content: Text('${'app.inventory.message.privacy'.tr}$nickname'),
               actions: [
                 TextButton(
                   onPressed: () => Get.back(),
@@ -368,9 +357,7 @@ class _BuyingSupplyPageState extends State<BuyingSupplyPage> {
       } else {
         Get.snackbar(
           'app.system.tips.title'.tr,
-          res.message.isNotEmpty
-              ? res.message
-              : 'app.trade.filter.failed'.tr,
+          res.message.isNotEmpty ? res.message : 'app.trade.filter.failed'.tr,
         );
       }
     } finally {
@@ -395,9 +382,10 @@ class _BuyingSupplyPageState extends State<BuyingSupplyPage> {
   @override
   Widget build(BuildContext context) {
     final currency = Get.find<CurrencyController>();
-    final fallbackSchema = _schema ??
-        _schemas[_request.schemaId?.toString() ?? ''];
-    final headerTitle = fallbackSchema?.marketName ??
+    final fallbackSchema =
+        _schema ?? _schemas[_request.schemaId?.toString() ?? ''];
+    final headerTitle =
+        fallbackSchema?.marketName ??
         fallbackSchema?.marketHashName ??
         _request.raw['market_name']?.toString() ??
         '-';
@@ -414,9 +402,7 @@ class _BuyingSupplyPageState extends State<BuyingSupplyPage> {
     final exterior = TagInfo.fromRaw(tags is Map ? tags['exterior'] : null);
     final headerAppId = _request.appId ?? 730;
     return Scaffold(
-      appBar: AppBar(
-        title: Text('app.trade.supply.inventory'.tr),
-      ),
+      appBar: AppBar(title: Text('app.trade.supply.inventory'.tr)),
       body: Column(
         children: [
           Padding(
@@ -452,12 +438,11 @@ class _BuyingSupplyPageState extends State<BuyingSupplyPage> {
                           Obx(
                             () => Text(
                               currency.format(price),
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleSmall
+                              style: Theme.of(context).textTheme.titleSmall
                                   ?.copyWith(
-                                    color:
-                                        Theme.of(context).colorScheme.primary,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
                                     fontWeight: FontWeight.w600,
                                   ),
                             ),
@@ -472,9 +457,9 @@ class _BuyingSupplyPageState extends State<BuyingSupplyPage> {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .secondaryContainer,
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.secondaryContainer,
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Text(
@@ -523,31 +508,29 @@ class _BuyingSupplyPageState extends State<BuyingSupplyPage> {
                       sliver: SliverGrid.builder(
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          mainAxisSpacing: 12,
-                          crossAxisSpacing: 12,
-                          childAspectRatio: 0.74,
-                        ),
+                              crossAxisCount: 2,
+                              mainAxisSpacing: 12,
+                              crossAxisSpacing: 12,
+                              childAspectRatio: 0.74,
+                            ),
                         itemCount: _items.length,
                         itemBuilder: (context, index) {
                           final item = _items[index];
                           final schema = _lookupSchema(item);
-                          final selected =
-                              _selectedIds.contains(item.id ?? -1);
+                          final selected = _selectedIds.contains(item.id ?? -1);
                           final isCooling =
                               (item.coolingDown ?? false) ||
-                                  (item.cooldown?.isNotEmpty == true);
+                              (item.cooldown?.isNotEmpty == true);
                           final isTradable = item.tradable ?? true;
                           final inSupply = item.status == 2;
-                          final disabled =
-                              !isTradable || isCooling || inSupply;
+                          final disabled = !isTradable || isCooling || inSupply;
                           final disabledLabel = !isTradable
                               ? 'app.trade.non_tradable'.tr
                               : isCooling
-                                  ? 'app.market.product.cooling'.tr
-                                  : inSupply
-                                      ? 'app.inventory.in_supply'.tr
-                                      : null;
+                              ? 'app.market.product.cooling'.tr
+                              : inSupply
+                              ? 'app.inventory.in_supply'.tr
+                              : null;
                           return InventoryItemCard(
                             item: item,
                             schema: schema,
@@ -558,20 +541,7 @@ class _BuyingSupplyPageState extends State<BuyingSupplyPage> {
                         },
                       ),
                     ),
-                  SliverToBoxAdapter(
-                    child: AnimatedOpacity(
-                      opacity: _isLoading ? 1 : 0,
-                      duration: const Duration(milliseconds: 200),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        child: Center(
-                          child: _isLoading
-                              ? const CircularProgressIndicator()
-                              : const SizedBox.shrink(),
-                        ),
-                      ),
-                    ),
-                  ),
+                  SliverToBoxAdapter(child: _buildLoadMoreFooter()),
                 ],
               ),
             ),
@@ -595,7 +565,9 @@ class _BuyingSupplyPageState extends State<BuyingSupplyPage> {
               IconButton(
                 onPressed: _toggleSelectAll,
                 icon: Icon(
-                  isAllSelected ? Icons.check_box : Icons.check_box_outline_blank,
+                  isAllSelected
+                      ? Icons.check_box
+                      : Icons.check_box_outline_blank,
                 ),
               ),
               Text(
@@ -604,8 +576,9 @@ class _BuyingSupplyPageState extends State<BuyingSupplyPage> {
               ),
               const Spacer(),
               FilledButton(
-                onPressed:
-                    _isSubmitting || _loadingFee ? null : _showConfirmDialog,
+                onPressed: _isSubmitting || _loadingFee
+                    ? null
+                    : _showConfirmDialog,
                 child: _isSubmitting
                     ? const SizedBox(
                         height: 18,
@@ -619,6 +592,25 @@ class _BuyingSupplyPageState extends State<BuyingSupplyPage> {
         ),
       ),
     );
+  }
+
+  Widget _buildLoadMoreFooter() {
+    if (_isLoading) {
+      return const Padding(
+        padding: EdgeInsets.fromLTRB(0, 4, 0, 12),
+        child: Center(
+          child: SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(strokeWidth: 2.2),
+          ),
+        ),
+      );
+    }
+    if (!_hasMore && _items.isNotEmpty) {
+      return const ListEndTip(padding: EdgeInsets.fromLTRB(8, 6, 8, 12));
+    }
+    return const SizedBox(height: 4);
   }
 }
 
@@ -714,21 +706,19 @@ class _SupplyConfirmDialog extends StatelessWidget {
     required String value,
     bool highlight = false,
   }) {
-    final style = Theme.of(context).textTheme.bodyMedium;
+    final style = Theme.of(context).textTheme.bodyMedium!;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
-          Expanded(
-            child: Text(label, style: style),
-          ),
+          Expanded(child: Text(label, style: style)),
           Text(
             value,
-            style: style?.copyWith(
+            style: style.copyWith(
               color: highlight
                   ? Theme.of(context).colorScheme.primary
-                  : style?.color,
-              fontWeight: highlight ? FontWeight.w600 : style?.fontWeight,
+                  : style.color,
+              fontWeight: highlight ? FontWeight.w600 : style.fontWeight,
             ),
           ),
         ],

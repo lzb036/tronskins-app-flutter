@@ -4,16 +4,14 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:tronskins_app/api/model/notify/notify_models.dart';
+import 'package:tronskins_app/components/layout/list_end_tip.dart';
 import 'package:tronskins_app/controllers/user/notify_controller.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
 
 class NotifyTradeList extends StatefulWidget {
   final NotifyController controller;
 
-  const NotifyTradeList({
-    super.key,
-    required this.controller,
-  });
+  const NotifyTradeList({super.key, required this.controller});
 
   @override
   State<NotifyTradeList> createState() => _NotifyTradeListState();
@@ -45,8 +43,9 @@ class _NotifyTradeListState extends State<NotifyTradeList> {
   String _formatTime(int? value) {
     if (value == null) return '--';
     final ts = value < 1000000000000 ? value * 1000 : value;
-    return DateFormat('yyyy-MM-dd HH:mm:ss')
-        .format(DateTime.fromMillisecondsSinceEpoch(ts));
+    return DateFormat(
+      'yyyy-MM-dd HH:mm:ss',
+    ).format(DateTime.fromMillisecondsSinceEpoch(ts));
   }
 
   Future<void> _handleRead(TradeNotifyItem item) async {
@@ -125,10 +124,7 @@ class _NotifyTradeListState extends State<NotifyTradeList> {
           fontWeight: textStyle?.fontWeight,
           lineHeight: LineHeight.number(1.4),
         ),
-        'body': Style(
-          margin: Margins.zero,
-          padding: HtmlPaddings.zero,
-        ),
+        'body': Style(margin: Margins.zero, padding: HtmlPaddings.zero),
       },
     );
   }
@@ -146,8 +142,9 @@ class _NotifyTradeListState extends State<NotifyTradeList> {
     final iconBg = isUnread
         ? colorScheme.primaryContainer
         : colorScheme.surfaceVariant.withOpacity(isDark ? 0.5 : 0.8);
-    final iconColor =
-        isUnread ? colorScheme.onPrimaryContainer : colorScheme.onSurface;
+    final iconColor = isUnread
+        ? colorScheme.onPrimaryContainer
+        : colorScheme.onSurface;
     final gradient = LinearGradient(
       colors: [
         colorScheme.surface,
@@ -237,19 +234,22 @@ class _NotifyTradeListState extends State<NotifyTradeList> {
       if (list.isEmpty) {
         return Center(child: Text('app.common.no_data'.tr));
       }
+      final showLoadingFooter = loading && list.isNotEmpty;
+      final showNoMoreFooter =
+          list.isNotEmpty && !loading && !widget.controller.tradeHasMore;
+      final showFooter = showLoadingFooter || showNoMoreFooter;
       return RefreshIndicator(
         onRefresh: () => widget.controller.loadTradeList(refresh: true),
         child: SlidableAutoCloseBehavior(
           child: ListView.builder(
             controller: _scrollController,
             padding: const EdgeInsets.all(16),
-            itemCount:
-                list.length + (widget.controller.tradeHasMore ? 1 : 0),
+            itemCount: list.length + (showFooter ? 1 : 0),
             itemBuilder: (context, index) {
               if (index >= list.length) {
-                return const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 12),
-                  child: Center(child: CircularProgressIndicator()),
+                return _buildLoadMoreFooter(
+                  showLoading: showLoadingFooter,
+                  showNoMore: showNoMoreFooter,
                 );
               }
               final item = list[index];
@@ -269,10 +269,12 @@ class _NotifyTradeListState extends State<NotifyTradeList> {
                           children: [
                             SlidableAction(
                               onPressed: (_) => _handleDelete(item),
-                              backgroundColor:
-                                  Theme.of(context).colorScheme.error,
-                              foregroundColor:
-                                  Theme.of(context).colorScheme.onError,
+                              backgroundColor: Theme.of(
+                                context,
+                              ).colorScheme.error,
+                              foregroundColor: Theme.of(
+                                context,
+                              ).colorScheme.onError,
                               icon: Icons.delete_outline,
                               label: 'app.common.delete'.tr,
                               borderRadius: const BorderRadius.horizontal(
@@ -283,10 +285,12 @@ class _NotifyTradeListState extends State<NotifyTradeList> {
                               onPressed: (context) {
                                 Slidable.of(context)?.close();
                               },
-                              backgroundColor:
-                                  Theme.of(context).colorScheme.surfaceVariant,
-                              foregroundColor:
-                                  Theme.of(context).colorScheme.onSurface,
+                              backgroundColor: Theme.of(
+                                context,
+                              ).colorScheme.surfaceVariant,
+                              foregroundColor: Theme.of(
+                                context,
+                              ).colorScheme.onSurface,
                               icon: Icons.close,
                               label: 'app.common.cancel'.tr,
                               borderRadius: const BorderRadius.horizontal(
@@ -304,6 +308,28 @@ class _NotifyTradeListState extends State<NotifyTradeList> {
         ),
       );
     });
+  }
+
+  Widget _buildLoadMoreFooter({
+    required bool showLoading,
+    required bool showNoMore,
+  }) {
+    if (showLoading) {
+      return const Padding(
+        padding: EdgeInsets.fromLTRB(0, 4, 0, 12),
+        child: Center(
+          child: SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(strokeWidth: 2.2),
+          ),
+        ),
+      );
+    }
+    if (showNoMore) {
+      return const ListEndTip(padding: EdgeInsets.fromLTRB(8, 6, 8, 12));
+    }
+    return const SizedBox(height: 4);
   }
 }
 

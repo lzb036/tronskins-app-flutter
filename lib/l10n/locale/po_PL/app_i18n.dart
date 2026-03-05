@@ -434,6 +434,7 @@ final Map<String, String> po_PL = {
   "app.user.wallet.withdraw_record": "Rekord",
   "app.user.wallet.balance": "Równowaga",
   "app.user.wallet.gift": "Karta upominkowa",
+  "app.user.wallet.gift_amount": "Zablokowany prezent",
   "app.user.wallet.account": "Równowaga",
   "app.user.wallet.available": "Dostępne",
   "app.user.wallet.unsettled": "Nieustawione",

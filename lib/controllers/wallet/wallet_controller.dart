@@ -28,29 +28,35 @@ class WalletController extends GetxController {
   final RxBool isLoadingFundFlows = false.obs;
   int _fundFlowPage = 1;
   bool _fundFlowHasMore = true;
+  bool get hasMoreFundFlows => _fundFlowHasMore;
 
   final RxList<WalletLockedItem> lockedItems = <WalletLockedItem>[].obs;
   final RxBool isLoadingLocked = false.obs;
   int _lockedPage = 1;
   bool _lockedHasMore = true;
+  final Set<String> _lockedSeenKeys = <String>{};
+  bool get hasMoreLocked => _lockedHasMore;
 
   final RxList<WalletRechargeRecord> rechargeRecords =
       <WalletRechargeRecord>[].obs;
   final RxBool isLoadingRechargeRecords = false.obs;
   int _rechargePage = 1;
   bool _rechargeHasMore = true;
+  bool get hasMoreRechargeRecords => _rechargeHasMore;
 
   final RxList<WalletWithdrawRecord> withdrawRecords =
       <WalletWithdrawRecord>[].obs;
   final RxBool isLoadingWithdrawRecords = false.obs;
   int _withdrawPage = 1;
   bool _withdrawHasMore = true;
+  bool get hasMoreWithdrawRecords => _withdrawHasMore;
 
   final RxList<WalletIntegralRecord> integralRecords =
       <WalletIntegralRecord>[].obs;
   final RxBool isLoadingIntegralRecords = false.obs;
   int _integralPage = 1;
   bool _integralHasMore = true;
+  bool get hasMoreIntegralRecords => _integralHasMore;
 
   final RxList<WalletSettlementRecord> settlementRecords =
       <WalletSettlementRecord>[].obs;
@@ -61,6 +67,7 @@ class WalletController extends GetxController {
   final RxBool isLoadingSettlement = false.obs;
   int _settlementPage = 1;
   bool _settlementHasMore = true;
+  bool get hasMoreSettlementRecords => _settlementHasMore;
 
   final RxList<WalletWithdrawAddress> withdrawAddresses =
       <WalletWithdrawAddress>[].obs;
@@ -133,6 +140,7 @@ class WalletController extends GetxController {
   }
 
   Future<void> loadLockedFunds({bool reset = false}) async {
+    const pageSize = 20;
     if (isLoadingLocked.value) {
       return;
     }
@@ -144,19 +152,52 @@ class WalletController extends GetxController {
       if (reset) {
         _lockedPage = 1;
         _lockedHasMore = true;
+        _lockedSeenKeys.clear();
         lockedItems.clear();
       }
-      final res = await _api.lockingFundList(page: _lockedPage, pageSize: 20);
+      final res = await _api.lockingFundList(
+        page: _lockedPage,
+        pageSize: pageSize,
+      );
       final list = res.datas ?? <WalletLockedItem>[];
       if (list.isEmpty) {
         _lockedHasMore = false;
       } else {
-        lockedItems.addAll(list);
+        final uniqueItems = list.where((item) {
+          final key = _lockedItemKey(item);
+          return _lockedSeenKeys.add(key);
+        }).toList();
+
+        if (uniqueItems.isEmpty) {
+          // Backend may return duplicate pages endlessly; stop loading.
+          _lockedHasMore = false;
+          return;
+        }
+
+        lockedItems.addAll(uniqueItems);
         _lockedPage += 1;
+
+        if (list.length < pageSize) {
+          _lockedHasMore = false;
+        }
       }
     } finally {
       isLoadingLocked.value = false;
     }
+  }
+
+  String _lockedItemKey(WalletLockedItem item) {
+    final id = item.id?.toString();
+    if (id != null && id.isNotEmpty) {
+      return id;
+    }
+    return [
+      item.lockType?.toString() ?? '',
+      item.lockAmount?.toString() ?? '',
+      item.createTime?.toString() ?? '',
+      item.amount?.toString() ?? '',
+      item.giftAmount?.toString() ?? '',
+    ].join('|');
   }
 
   Future<WalletLockedDetail?> loadLockedDetail({

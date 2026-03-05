@@ -13,6 +13,7 @@ import 'package:tronskins_app/components/game_item/game_item_models.dart';
 import 'package:tronskins_app/components/game_item/gem_row.dart';
 import 'package:tronskins_app/components/game_item/sticker_row.dart';
 import 'package:tronskins_app/components/game_item/wear_progress_bar.dart';
+import 'package:tronskins_app/components/layout/list_end_tip.dart';
 import 'package:tronskins_app/components/market/price_trend_chart.dart';
 import 'package:tronskins_app/controllers/market/market_detail_controller.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
@@ -1022,13 +1023,26 @@ class _MarketDetailPageState extends State<MarketDetailPage>
     if (controller.onSaleItems.isEmpty) {
       return Center(child: Text('app.common.no_data'.tr));
     }
+    final showLoadingFooter =
+        controller.isLoadingOnSale.value && controller.onSaleItems.isNotEmpty;
+    final showNoMoreFooter =
+        controller.onSaleItems.isNotEmpty &&
+        !controller.isLoadingOnSale.value &&
+        !controller.onSaleHasMore;
+    final showFooter = showLoadingFooter || showNoMoreFooter;
     // Add padding at bottom for the fixed bottom bar
     return ListView.separated(
       controller: _onSaleScroll,
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-      itemCount: controller.onSaleItems.length,
+      itemCount: controller.onSaleItems.length + (showFooter ? 1 : 0),
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
+        if (index >= controller.onSaleItems.length) {
+          return _buildLoadMoreFooter(
+            showLoading: showLoadingFooter,
+            showNoMore: showNoMoreFooter,
+          );
+        }
         final item = controller.onSaleItems[index];
         final user = controller.users[item.userId?.toString() ?? ''];
         return _buildItemCard(item, user, currency);
@@ -1430,12 +1444,26 @@ class _MarketDetailPageState extends State<MarketDetailPage>
     if (controller.buyRequests.isEmpty) {
       return Center(child: Text('app.common.no_data'.tr));
     }
+    final showLoadingFooter =
+        controller.isLoadingBuyRequests.value &&
+        controller.buyRequests.isNotEmpty;
+    final showNoMoreFooter =
+        controller.buyRequests.isNotEmpty &&
+        !controller.isLoadingBuyRequests.value &&
+        !controller.buyRequestHasMore;
+    final showFooter = showLoadingFooter || showNoMoreFooter;
     return ListView.separated(
       controller: _buyRequestScroll,
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-      itemCount: controller.buyRequests.length,
+      itemCount: controller.buyRequests.length + (showFooter ? 1 : 0),
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
+        if (index >= controller.buyRequests.length) {
+          return _buildLoadMoreFooter(
+            showLoading: showLoadingFooter,
+            showNoMore: showNoMoreFooter,
+          );
+        }
         final item = controller.buyRequests[index];
         final schema = _lookupBuySchema(item);
         final user = _lookupBuyUser(item);
@@ -1679,11 +1707,25 @@ class _MarketDetailPageState extends State<MarketDetailPage>
     if (controller.transactionItems.isEmpty) {
       return Center(child: Text('app.common.no_data'.tr));
     }
+    final showLoadingFooter =
+        controller.isLoadingTransactions.value &&
+        controller.transactionItems.isNotEmpty;
+    final showNoMoreFooter =
+        controller.transactionItems.isNotEmpty &&
+        !controller.isLoadingTransactions.value &&
+        !controller.transactionHasMore;
+    final showFooter = showLoadingFooter || showNoMoreFooter;
     return ListView.builder(
       controller: _transactionScroll,
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-      itemCount: controller.transactionItems.length,
+      itemCount: controller.transactionItems.length + (showFooter ? 1 : 0),
       itemBuilder: (context, index) {
+        if (index >= controller.transactionItems.length) {
+          return _buildLoadMoreFooter(
+            showLoading: showLoadingFooter,
+            showNoMore: showNoMoreFooter,
+          );
+        }
         final item = controller.transactionItems[index];
         final user = controller.users[item.userId?.toString() ?? ''];
         final schema = _lookupMarketSchema(item);
@@ -1988,6 +2030,28 @@ class _MarketDetailPageState extends State<MarketDetailPage>
       }
     }
     return list;
+  }
+
+  Widget _buildLoadMoreFooter({
+    required bool showLoading,
+    required bool showNoMore,
+  }) {
+    if (showLoading) {
+      return const Padding(
+        padding: EdgeInsets.fromLTRB(0, 4, 0, 12),
+        child: Center(
+          child: SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(strokeWidth: 2.2),
+          ),
+        ),
+      );
+    }
+    if (showNoMore) {
+      return const ListEndTip(padding: EdgeInsets.fromLTRB(8, 6, 8, 12));
+    }
+    return const SizedBox(height: 4);
   }
 
   Widget _buildDayChip(int days, String label) {

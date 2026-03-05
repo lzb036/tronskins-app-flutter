@@ -431,6 +431,7 @@ final Map<String, String> en_US = {
   "app.user.wallet.withdraw_record": "Record",
   "app.user.wallet.balance": "Balance",
   "app.user.wallet.gift": "Gift Card",
+  "app.user.wallet.gift_amount": "Locked Gift",
   "app.user.wallet.account": "Balance",
   "app.user.wallet.available": "Available",
   "app.user.wallet.unsettled": "Unsettled",

@@ -452,6 +452,7 @@ final Map<String, String> sp_ES = {
   "app.user.wallet.withdraw_record": "Registro",
   "app.user.wallet.balance": "Equilibrio",
   "app.user.wallet.gift": "Tarjeta Regalo",
+  "app.user.wallet.gift_amount": "Regalo bloqueado",
   "app.user.wallet.account": "Equilibrio",
   "app.user.wallet.available": "Disponible",
   "app.user.wallet.unsettled": "Inquieto",

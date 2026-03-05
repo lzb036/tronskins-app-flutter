@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:tronskins_app/components/layout/list_end_tip.dart';
 import 'package:tronskins_app/controllers/help/feedback_controller.dart';
 import 'package:tronskins_app/controllers/user/user_controller.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
@@ -55,8 +56,9 @@ class _FeedbackListPageState extends State<FeedbackListPage> {
   String _formatTime(int? value) {
     if (value == null) return '--';
     final ts = value < 1000000000000 ? value * 1000 : value;
-    return DateFormat('yyyy-MM-dd HH:mm:ss')
-        .format(DateTime.fromMillisecondsSinceEpoch(ts));
+    return DateFormat(
+      'yyyy-MM-dd HH:mm:ss',
+    ).format(DateTime.fromMillisecondsSinceEpoch(ts));
   }
 
   void _createFeedback() {
@@ -114,7 +116,9 @@ class _FeedbackListPageState extends State<FeedbackListPage> {
     return Obx(() {
       final loading = controller.listLoading.value;
       final list = controller.tickets;
-      final total = controller.total.value == 0 ? list.length : controller.total.value;
+      final total = controller.total.value == 0
+          ? list.length
+          : controller.total.value;
       final openCount = list.where((item) => item.status != 2).length;
       return Column(
         children: [
@@ -154,93 +158,114 @@ class _FeedbackListPageState extends State<FeedbackListPage> {
             child: loading && list.isEmpty
                 ? const Center(child: CircularProgressIndicator())
                 : list.isEmpty
-                    ? Center(child: Text('app.common.no_data'.tr))
-                    : RefreshIndicator(
-                        onRefresh: () => controller.loadTickets(refresh: true),
-                        child: ListView.builder(
-                          controller: _scrollController,
-                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                          itemCount: list.length + (controller.hasMore ? 1 : 0),
-                          itemBuilder: (context, index) {
-                            if (index >= list.length) {
-                              return const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 12),
-                                child: Center(child: CircularProgressIndicator()),
-                              );
-                            }
-                            final item = list[index];
-                            final status = item.status ?? 0;
-                            return Card(
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              child: InkWell(
-                                borderRadius: BorderRadius.circular(14),
-                                onTap: () => Get.toNamed(
-                                  Routers.FEEDBACK_DETAIL,
-                                  arguments: {
-                                    'id': item.id,
-                                    'status': item.status,
-                                  },
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(14),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                ? Center(child: Text('app.common.no_data'.tr))
+                : RefreshIndicator(
+                    onRefresh: () => controller.loadTickets(refresh: true),
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                      itemCount: list.length + 1,
+                      itemBuilder: (context, index) {
+                        if (index >= list.length) {
+                          return _buildLoadMoreFooter(
+                            loading: loading,
+                            hasMore: controller.hasMore,
+                          );
+                        }
+                        final item = list[index];
+                        final status = item.status ?? 0;
+                        return Card(
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(14),
+                            onTap: () => Get.toNamed(
+                              Routers.FEEDBACK_DETAIL,
+                              arguments: {'id': item.id, 'status': item.status},
+                            ),
+                            child: Padding(
+                              padding: const EdgeInsets.all(14),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
                                     children: [
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: Text(
-                                              item.title ?? '',
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .titleSmall
-                                                  ?.copyWith(
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
-                                            ),
-                                          ),
-                                          _StatusChip(status: status, label: item.statusName ?? ''),
-                                        ],
+                                      Expanded(
+                                        child: Text(
+                                          item.title ?? '',
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleSmall
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                        ),
                                       ),
-                                      const SizedBox(height: 10),
-                                      Row(
-                                        children: [
-                                          Icon(
-                                            Icons.schedule,
-                                            size: 14,
-                                            color: Theme.of(context)
-                                                .textTheme
-                                                .bodySmall
-                                                ?.color,
-                                          ),
-                                          const SizedBox(width: 6),
-                                          Text(
-                                            _formatTime(item.createTime),
-                                            style:
-                                                Theme.of(context).textTheme.bodySmall,
-                                          ),
-                                          const Spacer(),
-                                          Icon(
-                                            Icons.chevron_right,
-                                            color: Theme.of(context).dividerColor,
-                                          ),
-                                        ],
+                                      _StatusChip(
+                                        status: status,
+                                        label: item.statusName ?? '',
                                       ),
                                     ],
                                   ),
-                                ),
+                                  const SizedBox(height: 10),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.schedule,
+                                        size: 14,
+                                        color: Theme.of(
+                                          context,
+                                        ).textTheme.bodySmall?.color,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        _formatTime(item.createTime),
+                                        style: Theme.of(
+                                          context,
+                                        ).textTheme.bodySmall,
+                                      ),
+                                      const Spacer(),
+                                      Icon(
+                                        Icons.chevron_right,
+                                        color: Theme.of(context).dividerColor,
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ),
-                            );
-                          },
-                        ),
-                      ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
           ),
         ],
       );
     });
+  }
+
+  Widget _buildLoadMoreFooter({required bool loading, required bool hasMore}) {
+    if (loading && hasMore) {
+      return const Padding(
+        padding: EdgeInsets.fromLTRB(0, 4, 0, 12),
+        child: Center(
+          child: SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(strokeWidth: 2.2),
+          ),
+        ),
+      );
+    }
+
+    if (!hasMore) {
+      return const ListEndTip(padding: EdgeInsets.fromLTRB(8, 6, 8, 12));
+    }
+
+    return const SizedBox(height: 4);
   }
 }
 
@@ -289,10 +314,7 @@ class _StatTile extends StatelessWidget {
 }
 
 class _StatusChip extends StatelessWidget {
-  const _StatusChip({
-    required this.status,
-    required this.label,
-  });
+  const _StatusChip({required this.status, required this.label});
 
   final int status;
   final String label;

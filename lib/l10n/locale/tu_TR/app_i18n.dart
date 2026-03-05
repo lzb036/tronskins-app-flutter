@@ -425,6 +425,7 @@ final Map<String, String> tu_TR = {
   "app.user.wallet.withdraw_record": "Kayıt",
   "app.user.wallet.balance": "Denge",
   "app.user.wallet.gift": "Hediye Kartı",
+  "app.user.wallet.gift_amount": "Kilitli hediye",
   "app.user.wallet.account": "Denge",
   "app.user.wallet.available": "Mevcut",
   "app.user.wallet.unsettled": "Düzensiz",

@@ -9,6 +9,7 @@ import 'package:tronskins_app/common/storage/game_storage.dart';
 import 'package:tronskins_app/components/game/game_switch_menu.dart';
 import 'package:tronskins_app/components/filter/filter_models.dart';
 import 'package:tronskins_app/components/filter/order_filter_sheet.dart';
+import 'package:tronskins_app/components/layout/list_end_tip.dart';
 import 'package:tronskins_app/controllers/shop/shop_order_controller.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
 
@@ -30,7 +31,8 @@ class _MyPurchasePageState extends State<MyPurchasePage>
   late int _currentAppId;
   final ScrollController _receiptScroll = ScrollController();
   final ScrollController _recordScroll = ScrollController();
-  final TextEditingController _receiptSearchController = TextEditingController();
+  final TextEditingController _receiptSearchController =
+      TextEditingController();
   final TextEditingController _recordSearchController = TextEditingController();
   void _handleSearchTextChange() {
     if (mounted) {
@@ -61,7 +63,11 @@ class _MyPurchasePageState extends State<MyPurchasePage>
     if (initialTab < 0 || initialTab > 1) {
       initialTab = 0;
     }
-    _tabController = TabController(length: 2, vsync: this, initialIndex: initialTab);
+    _tabController = TabController(
+      length: 2,
+      vsync: this,
+      initialIndex: initialTab,
+    );
     _currentAppId = GameStorage.getGameType();
     _receiptScroll.addListener(_handleReceiptScroll);
     _recordScroll.addListener(_handleRecordScroll);
@@ -212,10 +218,7 @@ class _MyPurchasePageState extends State<MyPurchasePage>
           arguments: {'tradeOfferId': tradeOfferId},
         );
       } else {
-        Get.snackbar(
-          'app.system.tips.title'.tr,
-          'app.trade.filter.failed'.tr,
-        );
+        Get.snackbar('app.system.tips.title'.tr, 'app.trade.filter.failed'.tr);
       }
       return;
     }
@@ -240,15 +243,9 @@ class _MyPurchasePageState extends State<MyPurchasePage>
     }
     try {
       await controller.acceptTradeOffer(id);
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.system.message.success'.tr,
-      );
+      Get.snackbar('app.system.tips.title'.tr, 'app.system.message.success'.tr);
     } catch (_) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.trade.filter.failed'.tr,
-      );
+      Get.snackbar('app.system.tips.title'.tr, 'app.trade.filter.failed'.tr);
     }
   }
 
@@ -294,19 +291,16 @@ class _MyPurchasePageState extends State<MyPurchasePage>
       ),
       body: TabBarView(
         controller: _tabController,
-        children: [
-          _buildWaitingReceipts(),
-          _buildBuyRecords(currency),
-        ],
+        children: [_buildWaitingReceipts(), _buildBuyRecords(currency)],
       ),
     );
   }
 
-
   Widget _buildWaitingReceipts() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final fillColor =
-        isDark ? Colors.white.withOpacity(0.08) : const Color(0xFFF5F5F5);
+    final fillColor = isDark
+        ? Colors.white.withOpacity(0.08)
+        : const Color(0xFFF5F5F5);
     final hintColor = isDark ? Colors.white38 : Colors.grey[400];
     final hasKeyword = _receiptSearchController.text.trim().isNotEmpty;
     return Column(
@@ -325,8 +319,11 @@ class _MyPurchasePageState extends State<MyPurchasePage>
                     decoration: InputDecoration(
                       hintText: 'app.market.filter.search'.tr,
                       hintStyle: TextStyle(color: hintColor, fontSize: 14),
-                      prefixIcon:
-                          Icon(Icons.search, color: hintColor, size: 20),
+                      prefixIcon: Icon(
+                        Icons.search,
+                        color: hintColor,
+                        size: 20,
+                      ),
                       suffixIcon: hasKeyword
                           ? IconButton(
                               icon: const Icon(Icons.close, size: 18),
@@ -388,17 +385,33 @@ class _MyPurchasePageState extends State<MyPurchasePage>
                 controller.isLoadingWaiting.value) {
               return const Center(child: CircularProgressIndicator());
             }
+            final showLoadingFooter =
+                controller.isLoadingWaiting.value &&
+                controller.waitingReceipts.isNotEmpty;
+            final showNoMoreFooter =
+                controller.waitingReceipts.isNotEmpty &&
+                !controller.isLoadingWaiting.value &&
+                !controller.waitingHasMore;
+            final showFooter = showLoadingFooter || showNoMoreFooter;
             return RefreshIndicator(
               onRefresh: controller.refreshWaitingReceipts,
               child: ListView.separated(
                 controller: _receiptScroll,
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                itemCount: controller.waitingReceipts.length,
+                itemCount:
+                    controller.waitingReceipts.length + (showFooter ? 1 : 0),
                 separatorBuilder: (_, __) => const SizedBox(height: 12),
                 itemBuilder: (context, index) {
+                  if (index >= controller.waitingReceipts.length) {
+                    return _buildLoadMoreFooter(
+                      showLoading: showLoadingFooter,
+                      showNoMore: showNoMoreFooter,
+                    );
+                  }
                   final order = controller.waitingReceipts[index];
-                  final detail =
-                      order.details.isNotEmpty ? order.details.first : null;
+                  final detail = order.details.isNotEmpty
+                      ? order.details.first
+                      : null;
                   final schema = _lookupSchema(controller.schemas, detail);
                   final imageUrl = detail?.imageUrl ?? schema?.imageUrl ?? '';
                   final title = detail?.marketName ?? schema?.marketName ?? '-';
@@ -444,8 +457,9 @@ class _MyPurchasePageState extends State<MyPurchasePage>
 
   Widget _buildBuyRecords(CurrencyController currency) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final fillColor =
-        isDark ? Colors.white.withOpacity(0.08) : const Color(0xFFF5F5F5);
+    final fillColor = isDark
+        ? Colors.white.withOpacity(0.08)
+        : const Color(0xFFF5F5F5);
     final hintColor = isDark ? Colors.white38 : Colors.grey[400];
     final hasKeyword = _recordSearchController.text.trim().isNotEmpty;
     return Column(
@@ -464,8 +478,11 @@ class _MyPurchasePageState extends State<MyPurchasePage>
                     decoration: InputDecoration(
                       hintText: 'app.market.filter.search'.tr,
                       hintStyle: TextStyle(color: hintColor, fontSize: 14),
-                      prefixIcon:
-                          Icon(Icons.search, color: hintColor, size: 20),
+                      prefixIcon: Icon(
+                        Icons.search,
+                        color: hintColor,
+                        size: 20,
+                      ),
                       suffixIcon: hasKeyword
                           ? IconButton(
                               icon: const Icon(Icons.close, size: 18),
@@ -527,17 +544,32 @@ class _MyPurchasePageState extends State<MyPurchasePage>
                 controller.isLoadingRecords.value) {
               return const Center(child: CircularProgressIndicator());
             }
+            final showLoadingFooter =
+                controller.isLoadingRecords.value &&
+                controller.buyRecords.isNotEmpty;
+            final showNoMoreFooter =
+                controller.buyRecords.isNotEmpty &&
+                !controller.isLoadingRecords.value &&
+                !controller.recordHasMore;
+            final showFooter = showLoadingFooter || showNoMoreFooter;
             return RefreshIndicator(
               onRefresh: controller.refreshBuyRecords,
               child: ListView.separated(
                 controller: _recordScroll,
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                itemCount: controller.buyRecords.length,
+                itemCount: controller.buyRecords.length + (showFooter ? 1 : 0),
                 separatorBuilder: (_, __) => const SizedBox(height: 12),
                 itemBuilder: (context, index) {
+                  if (index >= controller.buyRecords.length) {
+                    return _buildLoadMoreFooter(
+                      showLoading: showLoadingFooter,
+                      showNoMore: showNoMoreFooter,
+                    );
+                  }
                   final order = controller.buyRecords[index];
-                  final detail =
-                      order.details.isNotEmpty ? order.details.first : null;
+                  final detail = order.details.isNotEmpty
+                      ? order.details.first
+                      : null;
                   final schema = _lookupSchema(controller.schemas, detail);
                   final imageUrl = detail?.imageUrl ?? schema?.imageUrl ?? '';
                   final title = detail?.marketName ?? schema?.marketName ?? '-';
@@ -574,12 +606,11 @@ class _MyPurchasePageState extends State<MyPurchasePage>
                           Obx(
                             () => Text(
                               currency.format(price),
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleSmall
+                              style: Theme.of(context).textTheme.titleSmall
                                   ?.copyWith(
-                                    color:
-                                        Theme.of(context).colorScheme.primary,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
                                     fontWeight: FontWeight.w600,
                                   ),
                             ),
@@ -600,5 +631,27 @@ class _MyPurchasePageState extends State<MyPurchasePage>
         ),
       ],
     );
+  }
+
+  Widget _buildLoadMoreFooter({
+    required bool showLoading,
+    required bool showNoMore,
+  }) {
+    if (showLoading) {
+      return const Padding(
+        padding: EdgeInsets.fromLTRB(0, 4, 0, 12),
+        child: Center(
+          child: SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(strokeWidth: 2.2),
+          ),
+        ),
+      );
+    }
+    if (showNoMore) {
+      return const ListEndTip(padding: EdgeInsets.fromLTRB(8, 6, 8, 12));
+    }
+    return const SizedBox(height: 4);
   }
 }

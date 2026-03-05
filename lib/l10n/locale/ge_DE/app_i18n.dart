@@ -446,6 +446,7 @@ final Map<String, String> ge_DE = {
   "app.user.wallet.withdraw_record": "Aufzeichnung",
   "app.user.wallet.balance": "Gleichgewicht",
   "app.user.wallet.gift": "Geschenkkarte",
+  "app.user.wallet.gift_amount": "Gesperrtes Geschenk",
   "app.user.wallet.account": "Gleichgewicht",
   "app.user.wallet.available": "Verfügbar",
   "app.user.wallet.unsettled": "Unsicher",

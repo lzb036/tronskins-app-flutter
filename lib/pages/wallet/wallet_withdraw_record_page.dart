@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:tronskins_app/components/layout/list_end_tip.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
 import 'package:tronskins_app/controllers/wallet/wallet_controller.dart';
 import 'package:tronskins_app/pages/wallet/widgets/wallet_ui.dart';
@@ -101,8 +102,14 @@ class _WalletWithdrawRecordPageState extends State<WalletWithdrawRecordPage> {
           child: ListView.builder(
             controller: _scrollController,
             padding: const EdgeInsets.all(16),
-            itemCount: controller.withdrawRecords.length,
+            itemCount: controller.withdrawRecords.length + 1,
             itemBuilder: (context, index) {
+              if (index >= controller.withdrawRecords.length) {
+                return _buildLoadMoreFooter(
+                  loading: controller.isLoadingWithdrawRecords.value,
+                  hasMore: controller.hasMoreWithdrawRecords,
+                );
+              }
               final item = controller.withdrawRecords[index];
               final canCancel =
                   (item.status ?? 0) == 0 && (item.id ?? '').isNotEmpty;
@@ -176,5 +183,24 @@ class _WalletWithdrawRecordPageState extends State<WalletWithdrawRecordPage> {
         );
       }),
     );
+  }
+
+  Widget _buildLoadMoreFooter({required bool loading, required bool hasMore}) {
+    if (loading && hasMore) {
+      return const Padding(
+        padding: EdgeInsets.fromLTRB(0, 4, 0, 12),
+        child: Center(
+          child: SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(strokeWidth: 2.2),
+          ),
+        ),
+      );
+    }
+    if (!hasMore) {
+      return const ListEndTip(padding: EdgeInsets.fromLTRB(8, 6, 8, 12));
+    }
+    return const SizedBox(height: 4);
   }
 }

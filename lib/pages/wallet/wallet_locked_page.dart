@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:tronskins_app/components/layout/list_end_tip.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
 import 'package:tronskins_app/controllers/wallet/wallet_controller.dart';
 import 'package:tronskins_app/pages/wallet/widgets/wallet_ui.dart';
@@ -41,16 +42,49 @@ class _WalletLockedPageState extends State<WalletLockedPage> {
     }
   }
 
-  String _formatTime(int? value) {
+  String _formatTime(dynamic value) {
     if (value == null) {
       return '-';
     }
-    var timestamp = value;
-    if (timestamp < 10000000000) {
-      timestamp *= 1000;
+
+    DateTime? dateTime;
+    int? timestamp;
+
+    if (value is DateTime) {
+      dateTime = value;
+    } else if (value is num) {
+      timestamp = value.toInt();
+    } else {
+      final text = value.toString().trim();
+      if (text.isEmpty) {
+        return '-';
+      }
+      final numeric = num.tryParse(text);
+      if (numeric != null) {
+        timestamp = numeric.toInt();
+      } else {
+        dateTime =
+            DateTime.tryParse(text) ??
+            DateTime.tryParse(text.replaceAll('/', '-'));
+        if (dateTime == null) {
+          return '-';
+        }
+      }
     }
-    final date = DateTime.fromMillisecondsSinceEpoch(timestamp);
-    return DateFormat('yyyy-MM-dd HH:mm:ss').format(date);
+
+    if (dateTime == null) {
+      if (timestamp == null || timestamp <= 0 || timestamp < 1000000000) {
+        return '-';
+      }
+      if (timestamp < 1000000000000) {
+        timestamp *= 1000;
+      } else if (timestamp >= 1000000000000000) {
+        timestamp = (timestamp / 1000).round();
+      }
+      dateTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
+    }
+
+    return DateFormat('yyyy-MM-dd HH:mm:ss').format(dateTime.toLocal());
   }
 
   @override
@@ -72,10 +106,24 @@ class _WalletLockedPageState extends State<WalletLockedPage> {
           child: ListView.builder(
             controller: _scrollController,
             padding: const EdgeInsets.all(16),
-            itemCount: controller.lockedItems.length,
+            itemCount: controller.lockedItems.length + 1,
             itemBuilder: (context, index) {
+              if (index >= controller.lockedItems.length) {
+                return _buildLoadMoreFooter(
+                  loading: controller.isLoadingLocked.value,
+                  hasMore: controller.hasMoreLocked,
+                );
+              }
               final item = controller.lockedItems[index];
-              final time = _formatTime(item.lockAmount ?? item.createTime);
+              final timeCandidates = [
+                item.lockTimeRaw,
+                item.lockAmount,
+                item.createTimeRaw,
+                item.createTime,
+              ];
+              final time = timeCandidates
+                  .map(_formatTime)
+                  .firstWhere((value) => value != '-', orElse: () => '-');
               return Card(
                 margin: const EdgeInsets.only(bottom: 12),
                 elevation: 0,
@@ -95,7 +143,7 @@ class _WalletLockedPageState extends State<WalletLockedPage> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '${'app.user.wallet.gift'.tr}: '
+                          '${'app.user.wallet.gift_amount'.tr}: '
                           '${currency.formatUsd(item.giftAmount ?? 0)}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -120,5 +168,26 @@ class _WalletLockedPageState extends State<WalletLockedPage> {
         );
       }),
     );
+  }
+
+  Widget _buildLoadMoreFooter({required bool loading, required bool hasMore}) {
+    if (loading) {
+      return const Padding(
+        padding: EdgeInsets.fromLTRB(0, 4, 0, 16),
+        child: Center(
+          child: SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(strokeWidth: 2.2),
+          ),
+        ),
+      );
+    }
+
+    if (!hasMore) {
+      return const ListEndTip(padding: EdgeInsets.fromLTRB(8, 6, 8, 12));
+    }
+
+    return const SizedBox(height: 4);
   }
 }

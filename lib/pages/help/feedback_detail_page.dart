@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:tronskins_app/api/model/feedback/feedback_models.dart';
+import 'package:tronskins_app/components/layout/list_end_tip.dart';
 import 'package:tronskins_app/controllers/help/feedback_controller.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
 
@@ -179,6 +180,9 @@ class _FeedbackDetailPageState extends State<FeedbackDetailPage> {
         final loading = controller.replyLoading.value;
         final list = controller.replies;
         final detail = controller.detail.value;
+        final showLoadingFooter = loading && list.isNotEmpty;
+        final showNoMoreFooter =
+            list.isNotEmpty && !loading && !controller.repliesHasMore;
         if (loading && list.isEmpty && detail == null) {
           return const Center(child: CircularProgressIndicator());
         }
@@ -198,16 +202,37 @@ class _FeedbackDetailPageState extends State<FeedbackDetailPage> {
                 )
               else
                 ...list.map((item) => _buildReplyBubble(context, item)),
-              if (controller.repliesHasMore)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 12),
-                  child: Center(child: CircularProgressIndicator()),
-                ),
+              _buildLoadMoreFooter(
+                showLoading: showLoadingFooter,
+                showNoMore: showNoMoreFooter,
+              ),
             ],
           ),
         );
       }),
     );
+  }
+
+  Widget _buildLoadMoreFooter({
+    required bool showLoading,
+    required bool showNoMore,
+  }) {
+    if (showLoading) {
+      return const Padding(
+        padding: EdgeInsets.fromLTRB(0, 4, 0, 12),
+        child: Center(
+          child: SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(strokeWidth: 2.2),
+          ),
+        ),
+      );
+    }
+    if (showNoMore) {
+      return const ListEndTip(padding: EdgeInsets.fromLTRB(8, 6, 8, 12));
+    }
+    return const SizedBox(height: 4);
   }
 
   Widget _buildHeader(BuildContext context, FeedbackDetail detail) {
@@ -221,15 +246,18 @@ class _FeedbackDetailPageState extends State<FeedbackDetailPage> {
           children: [
             Text(
               detail.title ?? '',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 8),
             Row(
               children: [
-                Icon(Icons.schedule,
-                    size: 14, color: Theme.of(context).hintColor),
+                Icon(
+                  Icons.schedule,
+                  size: 14,
+                  color: Theme.of(context).hintColor,
+                ),
                 const SizedBox(width: 6),
                 Text(
                   _formatTime(detail.createTime),
@@ -359,10 +387,7 @@ class _FeedbackDetailPageState extends State<FeedbackDetailPage> {
 }
 
 class _StatusChip extends StatelessWidget {
-  const _StatusChip({
-    required this.status,
-    required this.label,
-  });
+  const _StatusChip({required this.status, required this.label});
 
   final int status;
   final String label;

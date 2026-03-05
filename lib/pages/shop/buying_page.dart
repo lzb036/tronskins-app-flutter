@@ -6,6 +6,7 @@ import 'package:tronskins_app/common/storage/game_storage.dart';
 import 'package:tronskins_app/common/storage/user_storage.dart';
 import 'package:tronskins_app/components/game/game_switch_menu.dart';
 import 'package:tronskins_app/components/game_item/buy_request_item_body.dart';
+import 'package:tronskins_app/components/layout/list_end_tip.dart';
 import 'package:tronskins_app/controllers/shop/buy_request_controller.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
 
@@ -20,8 +21,8 @@ class _BuyingPageState extends State<BuyingPage>
     with SingleTickerProviderStateMixin {
   final BuyRequestController controller =
       Get.isRegistered<BuyRequestController>()
-          ? Get.find<BuyRequestController>()
-          : Get.put(BuyRequestController());
+      ? Get.find<BuyRequestController>()
+      : Get.put(BuyRequestController());
 
   late final TabController _tabController;
   late int _currentAppId;
@@ -177,10 +178,7 @@ class _BuyingPageState extends State<BuyingPage>
       ),
       body: TabBarView(
         controller: _tabController,
-        children: [
-          _buildMyBuyingTab(),
-          _buildRecordTab(),
-        ],
+        children: [_buildMyBuyingTab(), _buildRecordTab()],
       ),
     );
   }
@@ -202,8 +200,8 @@ class _BuyingPageState extends State<BuyingPage>
                     prefixIcon: const Icon(Icons.search),
                     suffixIcon: IconButton(
                       icon: const Icon(Icons.send),
-                      onPressed: () => controller
-                          .searchMyBuying(_mySearchController.text),
+                      onPressed: () =>
+                          controller.searchMyBuying(_mySearchController.text),
                     ),
                   ),
                 ),
@@ -213,9 +211,7 @@ class _BuyingPageState extends State<BuyingPage>
                 final asc = controller.buyingSortAsc.value;
                 return IconButton(
                   tooltip: 'app.market.filter.price'.tr,
-                  icon: Icon(
-                    asc ? Icons.arrow_upward : Icons.arrow_downward,
-                  ),
+                  icon: Icon(asc ? Icons.arrow_upward : Icons.arrow_downward),
                   onPressed: controller.togglePriceSort,
                 );
               }),
@@ -232,12 +228,26 @@ class _BuyingPageState extends State<BuyingPage>
             if (controller.myBuying.isEmpty) {
               return Center(child: Text('app.common.no_data'.tr));
             }
+            final showLoadingFooter =
+                controller.isLoadingMyBuying.value &&
+                controller.myBuying.isNotEmpty;
+            final showNoMoreFooter =
+                controller.myBuying.isNotEmpty &&
+                !controller.isLoadingMyBuying.value &&
+                !controller.myBuyingHasMore;
+            final showFooter = showLoadingFooter || showNoMoreFooter;
             return ListView.separated(
               controller: _myBuyingScroll,
               padding: const EdgeInsets.all(16),
-              itemCount: controller.myBuying.length,
+              itemCount: controller.myBuying.length + (showFooter ? 1 : 0),
               separatorBuilder: (_, __) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
+                if (index >= controller.myBuying.length) {
+                  return _buildLoadMoreFooter(
+                    showLoading: showLoadingFooter,
+                    showNoMore: showNoMoreFooter,
+                  );
+                }
                 final item = controller.myBuying[index];
                 final schema = _lookupSchema(item);
                 return Card(
@@ -312,8 +322,7 @@ class _BuyingPageState extends State<BuyingPage>
                                         TextButton(
                                           onPressed: () =>
                                               Get.back(result: true),
-                                          child:
-                                              Text('app.common.confirm'.tr),
+                                          child: Text('app.common.confirm'.tr),
                                         ),
                                       ],
                                     ),
@@ -360,8 +369,9 @@ class _BuyingPageState extends State<BuyingPage>
                     prefixIcon: const Icon(Icons.search),
                     suffixIcon: IconButton(
                       icon: const Icon(Icons.send),
-                      onPressed: () =>
-                          controller.searchRecords(_recordSearchController.text),
+                      onPressed: () => controller.searchRecords(
+                        _recordSearchController.text,
+                      ),
                     ),
                   ),
                 ),
@@ -371,9 +381,7 @@ class _BuyingPageState extends State<BuyingPage>
                 final asc = controller.recordSortAsc.value;
                 return IconButton(
                   tooltip: 'app.market.filter.time'.tr,
-                  icon: Icon(
-                    asc ? Icons.arrow_upward : Icons.arrow_downward,
-                  ),
+                  icon: Icon(asc ? Icons.arrow_upward : Icons.arrow_downward),
                   onPressed: controller.toggleRecordSort,
                 );
               }),
@@ -390,12 +398,26 @@ class _BuyingPageState extends State<BuyingPage>
             if (controller.buyRecords.isEmpty) {
               return Center(child: Text('app.common.no_data'.tr));
             }
+            final showLoadingFooter =
+                controller.isLoadingRecords.value &&
+                controller.buyRecords.isNotEmpty;
+            final showNoMoreFooter =
+                controller.buyRecords.isNotEmpty &&
+                !controller.isLoadingRecords.value &&
+                !controller.recordHasMore;
+            final showFooter = showLoadingFooter || showNoMoreFooter;
             return ListView.separated(
               controller: _recordScroll,
               padding: const EdgeInsets.all(16),
-              itemCount: controller.buyRecords.length,
+              itemCount: controller.buyRecords.length + (showFooter ? 1 : 0),
               separatorBuilder: (_, __) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
+                if (index >= controller.buyRecords.length) {
+                  return _buildLoadMoreFooter(
+                    showLoading: showLoadingFooter,
+                    showNoMore: showNoMoreFooter,
+                  );
+                }
                 final item = controller.buyRecords[index];
                 final schema = _lookupSchema(item);
                 final statusName = item.statusName ?? '-';
@@ -431,5 +453,27 @@ class _BuyingPageState extends State<BuyingPage>
         ),
       ],
     );
+  }
+
+  Widget _buildLoadMoreFooter({
+    required bool showLoading,
+    required bool showNoMore,
+  }) {
+    if (showLoading) {
+      return const Padding(
+        padding: EdgeInsets.fromLTRB(0, 4, 0, 12),
+        child: Center(
+          child: SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(strokeWidth: 2.2),
+          ),
+        ),
+      );
+    }
+    if (showNoMore) {
+      return const ListEndTip(padding: EdgeInsets.fromLTRB(8, 6, 8, 12));
+    }
+    return const SizedBox(height: 4);
   }
 }

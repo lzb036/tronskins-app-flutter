@@ -425,6 +425,7 @@ final Map<String, String> vi_VN = {
   "app.user.wallet.withdraw_record": "Đăng ký",
   "app.user.wallet.balance": "Sự cân bằng",
   "app.user.wallet.gift": "Thẻ quà tặng",
+  "app.user.wallet.gift_amount": "Quà tặng bị khóa",
   "app.user.wallet.account": "Sự cân bằng",
   "app.user.wallet.available": "Có sẵn",
   "app.user.wallet.unsettled": "Không ổn định",

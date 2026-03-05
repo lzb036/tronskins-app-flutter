@@ -370,6 +370,7 @@ final Map<String, String> ja_JP = {
   "app.user.wallet.withdraw_record": "レコード",
   "app.user.wallet.balance": "バランス",
   "app.user.wallet.gift": "ギフトカード",
+  "app.user.wallet.gift_amount": "ロックされたギフト",
   "app.user.wallet.account": "バランス",
   "app.user.wallet.available": "利用可能",
   "app.user.wallet.unsettled": "未定",

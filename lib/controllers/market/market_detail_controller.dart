@@ -38,6 +38,9 @@ class MarketDetailController extends GetxController {
   bool _transactionHasMore = true;
   int _buyRequestPage = 1;
   bool _buyRequestHasMore = true;
+  bool get onSaleHasMore => _onSaleHasMore;
+  bool get transactionHasMore => _transactionHasMore;
+  bool get buyRequestHasMore => _buyRequestHasMore;
 
   int get appId => item.appId ?? 730;
   int? get schemaId => item.schemaId ?? item.id;

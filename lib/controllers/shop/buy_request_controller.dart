@@ -28,6 +28,8 @@ class BuyRequestController extends GetxController {
   int _recordPage = 1;
   bool _myBuyingHasMore = true;
   bool _recordHasMore = true;
+  bool get myBuyingHasMore => _myBuyingHasMore;
+  bool get recordHasMore => _recordHasMore;
 
   String _buyingSortField = 'upTime';
 

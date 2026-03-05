@@ -45,6 +45,8 @@ class ShopOrderController extends GetxController {
   bool _waitingHasMore = true;
   bool _recordHasMore = true;
   bool get pendingHasMore => _pendingHasMore;
+  bool get waitingHasMore => _waitingHasMore;
+  bool get recordHasMore => _recordHasMore;
 
   int get appId => GameStorage.getGameType();
 

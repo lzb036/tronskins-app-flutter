@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:tronskins_app/components/layout/list_end_tip.dart';
 import 'package:tronskins_app/controllers/wallet/wallet_controller.dart';
 import 'package:tronskins_app/pages/wallet/widgets/wallet_ui.dart';
 
@@ -70,8 +71,14 @@ class _WalletIntegralRecordPageState extends State<WalletIntegralRecordPage> {
           child: ListView.builder(
             controller: _scrollController,
             padding: const EdgeInsets.all(16),
-            itemCount: controller.integralRecords.length,
+            itemCount: controller.integralRecords.length + 1,
             itemBuilder: (context, index) {
+              if (index >= controller.integralRecords.length) {
+                return _buildLoadMoreFooter(
+                  loading: controller.isLoadingIntegralRecords.value,
+                  hasMore: controller.hasMoreIntegralRecords,
+                );
+              }
               final item = controller.integralRecords[index];
               final isNegative = item.type == 3;
               final color = isNegative
@@ -149,5 +156,24 @@ class _WalletIntegralRecordPageState extends State<WalletIntegralRecordPage> {
         );
       }),
     );
+  }
+
+  Widget _buildLoadMoreFooter({required bool loading, required bool hasMore}) {
+    if (loading && hasMore) {
+      return const Padding(
+        padding: EdgeInsets.fromLTRB(0, 4, 0, 12),
+        child: Center(
+          child: SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(strokeWidth: 2.2),
+          ),
+        ),
+      );
+    }
+    if (!hasMore) {
+      return const ListEndTip(padding: EdgeInsets.fromLTRB(8, 6, 8, 12));
+    }
+    return const SizedBox(height: 4);
   }
 }

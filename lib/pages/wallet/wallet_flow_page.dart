@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:tronskins_app/components/layout/list_end_tip.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
 import 'package:tronskins_app/controllers/wallet/wallet_controller.dart';
 import 'package:tronskins_app/pages/wallet/widgets/wallet_ui.dart';
@@ -81,6 +82,7 @@ class _WalletFlowPageState extends State<WalletFlowPage> {
                 return _buildLoadMoreFooter(
                   context,
                   loading: controller.isLoadingFundFlows.value,
+                  hasMore: controller.hasMoreFundFlows,
                 );
               }
               final item = controller.fundFlows[index];
@@ -249,7 +251,11 @@ class _WalletFlowPageState extends State<WalletFlowPage> {
     );
   }
 
-  Widget _buildLoadMoreFooter(BuildContext context, {required bool loading}) {
+  Widget _buildLoadMoreFooter(
+    BuildContext context, {
+    required bool loading,
+    required bool hasMore,
+  }) {
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 260),
       switchInCurve: Curves.easeOut,
@@ -269,7 +275,12 @@ class _WalletFlowPageState extends State<WalletFlowPage> {
                 ),
               ),
             )
-          : const SizedBox(key: ValueKey('flow_idle'), height: 4),
+          : hasMore
+          ? const SizedBox(key: ValueKey('flow_idle'), height: 4)
+          : const ListEndTip(
+              key: ValueKey('flow_no_more'),
+              padding: EdgeInsets.fromLTRB(8, 6, 8, 12),
+            ),
     );
   }
 }

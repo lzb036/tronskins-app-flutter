@@ -2,16 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:tronskins_app/api/model/notify/notify_models.dart';
+import 'package:tronskins_app/components/layout/list_end_tip.dart';
 import 'package:tronskins_app/controllers/user/notify_controller.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
 
 class NotifyBulletinList extends StatefulWidget {
   final NotifyController controller;
 
-  const NotifyBulletinList({
-    super.key,
-    required this.controller,
-  });
+  const NotifyBulletinList({super.key, required this.controller});
 
   @override
   State<NotifyBulletinList> createState() => _NotifyBulletinListState();
@@ -43,8 +41,9 @@ class _NotifyBulletinListState extends State<NotifyBulletinList> {
   String _formatTime(int? value) {
     if (value == null) return '--';
     final ts = value < 1000000000000 ? value * 1000 : value;
-    return DateFormat('yyyy-MM-dd HH:mm:ss')
-        .format(DateTime.fromMillisecondsSinceEpoch(ts));
+    return DateFormat(
+      'yyyy-MM-dd HH:mm:ss',
+    ).format(DateTime.fromMillisecondsSinceEpoch(ts));
   }
 
   Widget _buildNoticeCard(
@@ -60,8 +59,9 @@ class _NotifyBulletinListState extends State<NotifyBulletinList> {
     final iconBg = isUnread
         ? colorScheme.tertiaryContainer
         : colorScheme.surfaceVariant.withOpacity(isDark ? 0.5 : 0.8);
-    final iconColor =
-        isUnread ? colorScheme.onTertiaryContainer : colorScheme.onSurface;
+    final iconColor = isUnread
+        ? colorScheme.onTertiaryContainer
+        : colorScheme.onSurface;
     final gradient = LinearGradient(
       colors: [
         colorScheme.surface,
@@ -170,18 +170,21 @@ class _NotifyBulletinListState extends State<NotifyBulletinList> {
       if (list.isEmpty) {
         return Center(child: Text('app.common.no_data'.tr));
       }
+      final showLoadingFooter = loading && list.isNotEmpty;
+      final showNoMoreFooter =
+          list.isNotEmpty && !loading && !widget.controller.noticeHasMore;
+      final showFooter = showLoadingFooter || showNoMoreFooter;
       return RefreshIndicator(
         onRefresh: () => widget.controller.loadNoticeList(refresh: true),
         child: ListView.builder(
           controller: _scrollController,
           padding: const EdgeInsets.all(16),
-          itemCount:
-              list.length + (widget.controller.noticeHasMore ? 1 : 0),
+          itemCount: list.length + (showFooter ? 1 : 0),
           itemBuilder: (context, index) {
             if (index >= list.length) {
-              return const Padding(
-                padding: EdgeInsets.symmetric(vertical: 12),
-                child: Center(child: CircularProgressIndicator()),
+              return _buildLoadMoreFooter(
+                showLoading: showLoadingFooter,
+                showNoMore: showNoMoreFooter,
               );
             }
             final item = list[index];
@@ -194,6 +197,28 @@ class _NotifyBulletinListState extends State<NotifyBulletinList> {
         ),
       );
     });
+  }
+
+  Widget _buildLoadMoreFooter({
+    required bool showLoading,
+    required bool showNoMore,
+  }) {
+    if (showLoading) {
+      return const Padding(
+        padding: EdgeInsets.fromLTRB(0, 4, 0, 12),
+        child: Center(
+          child: SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(strokeWidth: 2.2),
+          ),
+        ),
+      );
+    }
+    if (showNoMore) {
+      return const ListEndTip(padding: EdgeInsets.fromLTRB(8, 6, 8, 12));
+    }
+    return const SizedBox(height: 4);
   }
 }
 

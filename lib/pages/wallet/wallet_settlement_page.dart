@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
+import 'package:tronskins_app/components/layout/list_end_tip.dart';
 import 'package:tronskins_app/controllers/wallet/wallet_controller.dart';
 import 'package:tronskins_app/api/model/wallet/wallet_models.dart';
 import 'package:tronskins_app/pages/wallet/wallet_settlement_detail_page.dart';
@@ -117,8 +118,14 @@ class _WalletSettlementPageState extends State<WalletSettlementPage> {
                 child: ListView.builder(
                   controller: _scrollController,
                   padding: const EdgeInsets.all(16),
-                  itemCount: controller.settlementRecords.length,
+                  itemCount: controller.settlementRecords.length + 1,
                   itemBuilder: (context, index) {
+                    if (index >= controller.settlementRecords.length) {
+                      return _buildLoadMoreFooter(
+                        loading: controller.isLoadingSettlement.value,
+                        hasMore: controller.hasMoreSettlementRecords,
+                      );
+                    }
                     final item = controller.settlementRecords[index];
                     return Card(
                       margin: const EdgeInsets.only(bottom: 12),
@@ -252,6 +259,25 @@ class _WalletSettlementPageState extends State<WalletSettlementPage> {
         ),
       ],
     );
+  }
+
+  Widget _buildLoadMoreFooter({required bool loading, required bool hasMore}) {
+    if (loading && hasMore) {
+      return const Padding(
+        padding: EdgeInsets.fromLTRB(0, 4, 0, 12),
+        child: Center(
+          child: SizedBox(
+            width: 22,
+            height: 22,
+            child: CircularProgressIndicator(strokeWidth: 2.2),
+          ),
+        ),
+      );
+    }
+    if (!hasMore) {
+      return const ListEndTip(padding: EdgeInsets.fromLTRB(8, 6, 8, 12));
+    }
+    return const SizedBox(height: 4);
   }
 
   Widget _buildItemImage(String url, {double size = 64}) {
