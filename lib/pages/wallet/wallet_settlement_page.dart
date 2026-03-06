@@ -110,70 +110,79 @@ class _WalletSettlementPageState extends State<WalletSettlementPage> {
                   controller.settlementRecords.isEmpty) {
                 return const Center(child: CircularProgressIndicator());
               }
-              if (controller.settlementRecords.isEmpty) {
-                return Center(child: Text('app.common.no_data'.tr));
-              }
               return RefreshIndicator(
                 onRefresh: () => controller.loadSettlementRecords(reset: true),
-                child: ListView.builder(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.all(16),
-                  itemCount: controller.settlementRecords.length + 1,
-                  itemBuilder: (context, index) {
-                    if (index >= controller.settlementRecords.length) {
-                      return _buildLoadMoreFooter(
-                        loading: controller.isLoadingSettlement.value,
-                        hasMore: controller.hasMoreSettlementRecords,
-                      );
-                    }
-                    final item = controller.settlementRecords[index];
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      elevation: 0,
-                      shape: WalletUi.cardShape(context),
-                      child: InkWell(
-                        borderRadius: WalletUi.cardRadius,
-                        onTap: () => _openSettlementDetail(item),
-                        child: Padding(
-                          padding: const EdgeInsets.all(12),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      _formatTime(item.protectionTime),
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.bodySmall,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
+                child: controller.settlementRecords.isEmpty
+                    ? ListView(
+                        controller: _scrollController,
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.all(16),
+                        children: [
+                          const SizedBox(height: 180),
+                          Center(child: Text('app.common.no_data'.tr)),
+                        ],
+                      )
+                    : ListView.builder(
+                        controller: _scrollController,
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.all(16),
+                        itemCount: controller.settlementRecords.length + 1,
+                        itemBuilder: (context, index) {
+                          if (index >= controller.settlementRecords.length) {
+                            return _buildLoadMoreFooter(
+                              loading: controller.isLoadingSettlement.value,
+                              hasMore: controller.hasMoreSettlementRecords,
+                            );
+                          }
+                          final item = controller.settlementRecords[index];
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            elevation: 0,
+                            shape: WalletUi.cardShape(context),
+                            child: InkWell(
+                              borderRadius: WalletUi.cardRadius,
+                              onTap: () => _openSettlementDetail(item),
+                              child: Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            _formatTime(item.protectionTime),
+                                            style: Theme.of(
+                                              context,
+                                            ).textTheme.bodySmall,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                        if (item.protectionTime != null &&
+                                            (item.status ?? 0) == 5) ...[
+                                          const SizedBox(width: 12),
+                                          Flexible(
+                                            child: CountdownText(
+                                              endTimeSeconds:
+                                                  item.protectionTime!,
+                                              style: Theme.of(
+                                                context,
+                                              ).textTheme.bodySmall,
+                                            ),
+                                          ),
+                                        ],
+                                      ],
                                     ),
-                                  ),
-                                  if (item.protectionTime != null &&
-                                      (item.status ?? 0) == 5) ...[
-                                    const SizedBox(width: 12),
-                                    Flexible(
-                                      child: CountdownText(
-                                        endTimeSeconds: item.protectionTime!,
-                                        style: Theme.of(
-                                          context,
-                                        ).textTheme.bodySmall,
-                                      ),
-                                    ),
+                                    const SizedBox(height: 12),
+                                    _buildDetailRow(item, currency),
                                   ],
-                                ],
+                                ),
                               ),
-                              const SizedBox(height: 12),
-                              _buildDetailRow(item, currency),
-                            ],
-                          ),
-                        ),
+                            ),
+                          );
+                        },
                       ),
-                    );
-                  },
-                ),
               );
             }),
           ),

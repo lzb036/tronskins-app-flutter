@@ -94,92 +94,107 @@ class _WalletWithdrawRecordPageState extends State<WalletWithdrawRecordPage> {
             controller.withdrawRecords.isEmpty) {
           return const Center(child: CircularProgressIndicator());
         }
-        if (controller.withdrawRecords.isEmpty) {
-          return Center(child: Text('app.common.no_data'.tr));
-        }
         return RefreshIndicator(
           onRefresh: () => controller.loadWithdrawRecords(reset: true),
-          child: ListView.builder(
-            controller: _scrollController,
-            padding: const EdgeInsets.all(16),
-            itemCount: controller.withdrawRecords.length + 1,
-            itemBuilder: (context, index) {
-              if (index >= controller.withdrawRecords.length) {
-                return _buildLoadMoreFooter(
-                  loading: controller.isLoadingWithdrawRecords.value,
-                  hasMore: controller.hasMoreWithdrawRecords,
-                );
-              }
-              final item = controller.withdrawRecords[index];
-              final canCancel =
-                  (item.status ?? 0) == 0 && (item.id ?? '').isNotEmpty;
-              return Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                elevation: 0,
-                shape: WalletUi.cardShape(context),
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        child: Column(
+          child: controller.withdrawRecords.isEmpty
+              ? ListView(
+                  controller: _scrollController,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    const SizedBox(height: 180),
+                    Center(child: Text('app.common.no_data'.tr)),
+                  ],
+                )
+              : ListView.builder(
+                  controller: _scrollController,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16),
+                  itemCount: controller.withdrawRecords.length + 1,
+                  itemBuilder: (context, index) {
+                    if (index >= controller.withdrawRecords.length) {
+                      return _buildLoadMoreFooter(
+                        loading: controller.isLoadingWithdrawRecords.value,
+                        hasMore: controller.hasMoreWithdrawRecords,
+                      );
+                    }
+                    final item = controller.withdrawRecords[index];
+                    final canCancel =
+                        (item.status ?? 0) == 0 && (item.id ?? '').isNotEmpty;
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      elevation: 0,
+                      shape: WalletUi.cardShape(context),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              '${'app.trade.order.number'.tr}: ${item.id ?? '-'}',
-                              style: Theme.of(context).textTheme.bodySmall,
-                              softWrap: true,
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${'app.trade.order.number'.tr}: ${item.id ?? '-'}',
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodySmall,
+                                    softWrap: true,
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    _formatTime(item.createTime),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    '${'app.user.withdraw.amount'.tr}: '
+                                    '${currency.formatUsd(item.amount ?? 0)}',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    '${'app.user.wallet.address'.tr}: '
+                                    '${item.account ?? '-'}',
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodySmall,
+                                    softWrap: true,
+                                  ),
+                                ],
+                              ),
                             ),
-                            const SizedBox(height: 6),
-                            Text(
-                              _formatTime(item.createTime),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              '${'app.user.withdraw.amount'.tr}: '
-                              '${currency.formatUsd(item.amount ?? 0)}',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              '${'app.user.wallet.address'.tr}: '
-                              '${item.account ?? '-'}',
-                              style: Theme.of(context).textTheme.bodySmall,
-                              softWrap: true,
+                            const SizedBox(width: 12),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                ConstrainedBox(
+                                  constraints: const BoxConstraints(
+                                    maxWidth: 120,
+                                  ),
+                                  child: Text(
+                                    item.statusName ?? '-',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                if (canCancel)
+                                  OutlinedButton(
+                                    onPressed: () =>
+                                        _cancelWithdraw(item.id ?? ''),
+                                    child: Text('app.common.cancel'.tr),
+                                  ),
+                              ],
                             ),
                           ],
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 120),
-                            child: Text(
-                              item.statusName ?? '-',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          if (canCancel)
-                            OutlinedButton(
-                              onPressed: () => _cancelWithdraw(item.id ?? ''),
-                              child: Text('app.common.cancel'.tr),
-                            ),
-                        ],
-                      ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
         );
       }),
     );

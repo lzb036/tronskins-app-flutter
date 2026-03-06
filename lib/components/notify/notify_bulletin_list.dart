@@ -167,34 +167,42 @@ class _NotifyBulletinListState extends State<NotifyBulletinList> {
       if (list.isEmpty && loading) {
         return const Center(child: CircularProgressIndicator());
       }
-      if (list.isEmpty) {
-        return Center(child: Text('app.common.no_data'.tr));
-      }
       final showLoadingFooter = loading && list.isNotEmpty;
       final showNoMoreFooter =
           list.isNotEmpty && !loading && !widget.controller.noticeHasMore;
       final showFooter = showLoadingFooter || showNoMoreFooter;
       return RefreshIndicator(
         onRefresh: () => widget.controller.loadNoticeList(refresh: true),
-        child: ListView.builder(
-          controller: _scrollController,
-          padding: const EdgeInsets.all(16),
-          itemCount: list.length + (showFooter ? 1 : 0),
-          itemBuilder: (context, index) {
-            if (index >= list.length) {
-              return _buildLoadMoreFooter(
-                showLoading: showLoadingFooter,
-                showNoMore: showNoMoreFooter,
-              );
-            }
-            final item = list[index];
-            final time = _formatTime(item.createTime);
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _buildNoticeCard(context, item, time),
-            );
-          },
-        ),
+        child: list.isEmpty
+            ? ListView(
+                controller: _scrollController,
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                children: [
+                  const SizedBox(height: 180),
+                  Center(child: Text('app.common.no_data'.tr)),
+                ],
+              )
+            : ListView.builder(
+                controller: _scrollController,
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                itemCount: list.length + (showFooter ? 1 : 0),
+                itemBuilder: (context, index) {
+                  if (index >= list.length) {
+                    return _buildLoadMoreFooter(
+                      showLoading: showLoadingFooter,
+                      showNoMore: showNoMoreFooter,
+                    );
+                  }
+                  final item = list[index];
+                  final time = _formatTime(item.createTime);
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _buildNoticeCard(context, item, time),
+                  );
+                },
+              ),
       );
     });
   }

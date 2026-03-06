@@ -98,73 +98,81 @@ class _WalletLockedPageState extends State<WalletLockedPage> {
             controller.lockedItems.isEmpty) {
           return const Center(child: CircularProgressIndicator());
         }
-        if (controller.lockedItems.isEmpty) {
-          return Center(child: Text('app.common.no_data'.tr));
-        }
         return RefreshIndicator(
           onRefresh: () => controller.loadLockedFunds(reset: true),
-          child: ListView.builder(
-            controller: _scrollController,
-            padding: const EdgeInsets.all(16),
-            itemCount: controller.lockedItems.length + 1,
-            itemBuilder: (context, index) {
-              if (index >= controller.lockedItems.length) {
-                return _buildLoadMoreFooter(
-                  loading: controller.isLoadingLocked.value,
-                  hasMore: controller.hasMoreLocked,
-                );
-              }
-              final item = controller.lockedItems[index];
-              final timeCandidates = [
-                item.lockTimeRaw,
-                item.lockAmount,
-                item.createTimeRaw,
-                item.createTime,
-              ];
-              final time = timeCandidates
-                  .map(_formatTime)
-                  .firstWhere((value) => value != '-', orElse: () => '-');
-              return Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                elevation: 0,
-                shape: WalletUi.cardShape(context),
-                child: ListTile(
-                  title: Text(time),
-                  subtitle: Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${'app.user.wallet.lock_amount'.tr}: '
-                          '${currency.formatUsd(item.amount ?? 0)}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+          child: controller.lockedItems.isEmpty
+              ? ListView(
+                  controller: _scrollController,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    const SizedBox(height: 180),
+                    Center(child: Text('app.common.no_data'.tr)),
+                  ],
+                )
+              : ListView.builder(
+                  controller: _scrollController,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16),
+                  itemCount: controller.lockedItems.length + 1,
+                  itemBuilder: (context, index) {
+                    if (index >= controller.lockedItems.length) {
+                      return _buildLoadMoreFooter(
+                        loading: controller.isLoadingLocked.value,
+                        hasMore: controller.hasMoreLocked,
+                      );
+                    }
+                    final item = controller.lockedItems[index];
+                    final timeCandidates = [
+                      item.lockTimeRaw,
+                      item.lockAmount,
+                      item.createTimeRaw,
+                      item.createTime,
+                    ];
+                    final time = timeCandidates
+                        .map(_formatTime)
+                        .firstWhere((value) => value != '-', orElse: () => '-');
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      elevation: 0,
+                      shape: WalletUi.cardShape(context),
+                      child: ListTile(
+                        title: Text(time),
+                        subtitle: Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${'app.user.wallet.lock_amount'.tr}: '
+                                '${currency.formatUsd(item.amount ?? 0)}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${'app.user.wallet.gift_amount'.tr}: '
+                                '${currency.formatUsd(item.giftAmount ?? 0)}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${'app.user.wallet.gift_amount'.tr}: '
-                          '${currency.formatUsd(item.giftAmount ?? 0)}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: item.id == null
-                      ? null
-                      : () => Get.toNamed(
-                          Routers.WALLET_LOCKED_DETAIL,
-                          arguments: {
-                            'id': item.id.toString(),
-                            'lockType': item.lockType,
-                          },
-                        ),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: item.id == null
+                            ? null
+                            : () => Get.toNamed(
+                                Routers.WALLET_LOCKED_DETAIL,
+                                arguments: {
+                                  'id': item.id.toString(),
+                                  'lockType': item.lockType,
+                                },
+                              ),
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
         );
       }),
     );

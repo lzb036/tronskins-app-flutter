@@ -65,6 +65,7 @@ class _ShopPageState extends State<ShopPage>
       TextEditingController();
   final TextEditingController _recordSearchController = TextEditingController();
   final Set<int> _selectedIds = <int>{};
+  final Set<int> _refreshingPendingBuyerOrderIds = <int>{};
   Worker? _loginWorker;
   Worker? _shopTargetTabWorker;
   static const List<StatusOption> _statusOptions = [
@@ -355,15 +356,286 @@ class _ShopPageState extends State<ShopPage>
     return total;
   }
 
-  int _sumOrderCount(ShopOrderItem order) {
-    if (order.nums != null) {
-      return order.nums!;
+  int _pendingShippingType(ShopOrderItem order) {
+    if (order.type != null) {
+      return order.type!;
     }
-    int total = 0;
     for (final detail in order.details) {
-      total += detail.count ?? 1;
+      if (detail.type == 2) {
+        return 2;
+      }
     }
-    return total;
+    return 1;
+  }
+
+  double _pendingShippingHours(ShopOrderItem order) {
+    final status = order.status;
+    final type = _pendingShippingType(order);
+    if (status == 3) {
+      return 0.5;
+    }
+    if (type == 2 && status == 2) {
+      return 0.5;
+    }
+    if (type == 1 && status == 2) {
+      return 18;
+    }
+    if (status == 4) {
+      return 18;
+    }
+    return 18;
+  }
+
+  int _pendingDeadlineMs(ShopOrderItem order) {
+    final changeTime = order.changeTime;
+    if (changeTime == null || changeTime <= 0) {
+      return 0;
+    }
+    final shippingMs = (_pendingShippingHours(order) * 3600 * 1000).round();
+    return changeTime * 1000 + shippingMs;
+  }
+
+  int _pendingRemainMs(ShopOrderItem order) {
+    final deadline = _pendingDeadlineMs(order);
+    if (deadline <= 0) {
+      return 0;
+    }
+    final remain = deadline - DateTime.now().millisecondsSinceEpoch;
+    return remain > 0 ? remain : 0;
+  }
+
+  bool _showPendingCountdown(ShopOrderItem order) {
+    return _pendingRemainMs(order) > 0;
+  }
+
+  int _pendingOrderKey(ShopOrderItem order) {
+    return order.id ?? order.hashCode;
+  }
+
+  ShopOrderItem _copyOrderWithUser(ShopOrderItem source, ShopUserInfo? user) {
+    return ShopOrderItem(
+      raw: source.raw,
+      id: source.id,
+      status: source.status,
+      statusName: source.statusName,
+      createTime: source.createTime,
+      changeTime: source.changeTime,
+      price: source.price,
+      totalPrice: source.totalPrice,
+      nums: source.nums,
+      protectionTime: source.protectionTime,
+      type: source.type,
+      tradeOfferId: source.tradeOfferId,
+      cancelDesc: source.cancelDesc,
+      buyerId: source.buyerId,
+      details: source.details,
+      user: user,
+    );
+  }
+
+  Future<void> _refreshPendingBuyer(ShopOrderItem order) async {
+    final buyerId = (order.buyerId ?? order.user?.id ?? '').trim();
+    if (buyerId.isEmpty) {
+      return;
+    }
+    final orderKey = _pendingOrderKey(order);
+    if (_refreshingPendingBuyerOrderIds.contains(orderKey)) {
+      return;
+    }
+    setState(() {
+      _refreshingPendingBuyerOrderIds.add(orderKey);
+    });
+    try {
+      final res = await ApiSteamServer().getSteamUserInfo(id: buyerId);
+      final data = res.datas;
+      if (res.code == 0 && data != null) {
+        final mergedUser = ShopUserInfo(
+          id: data['id']?.toString() ?? order.user?.id ?? buyerId,
+          uuid: data['uuid']?.toString() ?? order.user?.uuid,
+          avatar: data['avatar']?.toString() ?? order.user?.avatar,
+          nickname: data['nickname']?.toString() ?? order.user?.nickname,
+          level: _asInt(data['level']) ?? order.user?.level,
+          yearsLevel: _asInt(data['yearsLevel']) ?? order.user?.yearsLevel,
+        );
+        orderController.users[buyerId] = mergedUser;
+        final updated = orderController.pendingShipments
+            .map((item) {
+              final sameOrder = order.id != null && item.id == order.id;
+              final sameBuyer = item.buyerId == buyerId;
+              if (!sameOrder && !sameBuyer) {
+                return item;
+              }
+              return _copyOrderWithUser(item, mergedUser);
+            })
+            .toList(growable: false);
+        orderController.pendingShipments.assignAll(updated);
+      } else {
+        AppSnackbar.error(
+          res.message.isNotEmpty ? res.message : 'app.trade.filter.failed'.tr,
+        );
+      }
+    } catch (_) {
+      AppSnackbar.error('app.trade.filter.failed'.tr);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _refreshingPendingBuyerOrderIds.remove(orderKey);
+        });
+      }
+    }
+  }
+
+  Widget _buildPendingBuyerInfo(ShopOrderItem order) {
+    final user = order.user;
+    if (user == null) {
+      return const SizedBox.shrink();
+    }
+    final nickname = (user.nickname ?? '').trim();
+    final level = user.level;
+    final yearsLevel = user.yearsLevel;
+    final refreshing = _refreshingPendingBuyerOrderIds.contains(
+      _pendingOrderKey(order),
+    );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final showLevel = level != null && constraints.maxWidth >= 180;
+        final showYears = yearsLevel != null && constraints.maxWidth >= 230;
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF3F5FB),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.max,
+            children: [
+              Image.asset(
+                'assets/images/login/steam-icon.png',
+                width: 18,
+                height: 18,
+                errorBuilder: (_, __, ___) => const Icon(
+                  Icons.sports_esports,
+                  size: 18,
+                  color: Color(0xFF888888),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  nickname.isEmpty ? '-' : nickname,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: const Color(0xFF4A4A4A),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              if (showLevel) ...[
+                const SizedBox(width: 6),
+                Container(
+                  width: 22,
+                  height: 22,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: const Color(0xFF9B9B9B),
+                      width: 1.2,
+                    ),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      '$level',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: const Color(0xFF4A4A4A),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+              if (showYears) ...[
+                const SizedBox(width: 6),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: Image.network(
+                    'https://community.cloudflare.steamstatic.com/public/images/badges/02_years/steamyears${yearsLevel}_80.png',
+                    width: 22,
+                    height: 22,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                  ),
+                ),
+              ],
+              const SizedBox(width: 6),
+              InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: refreshing ? null : () => _refreshPendingBuyer(order),
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: Center(
+                    child: refreshing
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(
+                            Icons.refresh,
+                            size: 15,
+                            color: Color(0xFF888888),
+                          ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPendingStatusAction(ShopOrderItem order) {
+    final status = order.status;
+    if (status == 2) {
+      return FilledButton(
+        style: FilledButton.styleFrom(
+          minimumSize: const Size(92, 34),
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          backgroundColor: const Color(0xFF4973C7),
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          textStyle: Theme.of(
+            context,
+          ).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600),
+        ),
+        onPressed: () => _openDeliverSheet(order),
+        child: Text('app.market.product.deliver'.tr),
+      );
+    }
+    if (status == 3) {
+      return Text(
+        'app.steam.message.confirm_quote'.tr,
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: const Color(0xFF008B00),
+          fontWeight: FontWeight.w600,
+        ),
+      );
+    }
+    final statusText = (order.statusName ?? '').trim().isEmpty
+        ? '-'
+        : (order.statusName ?? '').trim();
+    final statusColor = status == -1 ? Colors.grey : const Color(0xFFC22121);
+    return Text(
+      statusText,
+      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+        color: statusColor,
+        fontWeight: FontWeight.w600,
+      ),
+    );
   }
 
   String _resolveDetailTitle(
@@ -1172,7 +1444,7 @@ class _ShopPageState extends State<ShopPage>
     final isDark = theme.brightness == Brightness.dark;
     final fillColor = isDark
         ? Colors.white.withValues(alpha: 0.08)
-        : colors.surfaceVariant;
+        : colors.surfaceContainerHighest;
     final hintColor = isDark
         ? Colors.white38
         : colors.onSurface.withValues(alpha: 0.4);
@@ -1259,7 +1531,7 @@ class _ShopPageState extends State<ShopPage>
     final isDark = theme.brightness == Brightness.dark;
     final baseColor = isDark
         ? Colors.white.withValues(alpha: 0.08)
-        : colors.surfaceVariant;
+        : colors.surfaceContainerHighest;
     final iconColor = colors.onSurfaceVariant;
     return Tooltip(
       message: tooltip,
@@ -1293,6 +1565,22 @@ class _ShopPageState extends State<ShopPage>
       return const ListEndTip();
     }
     return const SizedBox.shrink();
+  }
+
+  Widget _buildPullToRefreshEmpty({
+    required Future<void> Function() onRefresh,
+  }) {
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(12),
+        children: [
+          const SizedBox(height: 180),
+          Center(child: Text('app.common.no_data'.tr)),
+        ],
+      ),
+    );
   }
 
   Widget _buildSharedTabSearchBar() {
@@ -1335,7 +1623,9 @@ class _ShopPageState extends State<ShopPage>
         return const Center(child: CircularProgressIndicator());
       }
       if (salesController.onSaleItems.isEmpty) {
-        return Center(child: Text('app.common.no_data'.tr));
+        return _buildPullToRefreshEmpty(
+          onRefresh: salesController.refreshOnSale,
+        );
       }
       final showLoadingFooter =
           salesController.isLoadingOnSale.value &&
@@ -1348,6 +1638,7 @@ class _ShopPageState extends State<ShopPage>
         onRefresh: salesController.refreshOnSale,
         child: CustomScrollView(
           controller: _onSaleScroll,
+          physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
             SliverPadding(
               padding: const EdgeInsets.all(10),
@@ -1391,180 +1682,256 @@ class _ShopPageState extends State<ShopPage>
   }
 
   Widget _buildPendingShipmentTab(CurrencyController currency) {
-    return Column(
-      children: [
-        Expanded(
-          child: Obx(() {
-            if (orderController.pendingShipments.isEmpty &&
-                orderController.isLoadingPending.value) {
-              return const Center(child: CircularProgressIndicator());
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    return Obx(() {
+      if (orderController.pendingShipments.isEmpty &&
+          orderController.isLoadingPending.value) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      if (orderController.pendingShipments.isEmpty) {
+        return _buildPullToRefreshEmpty(
+          onRefresh: orderController.refreshPending,
+        );
+      }
+      final pendingShipments = orderController.pendingShipments;
+      final showLoadingFooter =
+          orderController.isLoadingPending.value && pendingShipments.isNotEmpty;
+      final showNoMoreFooter =
+          pendingShipments.isNotEmpty &&
+          !orderController.isLoadingPending.value &&
+          !orderController.pendingHasMore;
+      final showFooter = showLoadingFooter || showNoMoreFooter;
+      return RefreshIndicator(
+        onRefresh: orderController.refreshPending,
+        child: ListView.separated(
+          controller: _pendingScroll,
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(12),
+          itemCount: pendingShipments.length + (showFooter ? 1 : 0),
+          separatorBuilder: (_, __) => const SizedBox(height: 12),
+          itemBuilder: (context, index) {
+            if (index >= pendingShipments.length) {
+              return _buildListFooter(
+                showLoading: showLoadingFooter,
+                showNoMore: showNoMoreFooter,
+              );
             }
-            if (orderController.pendingShipments.isEmpty) {
-              return Center(child: Text('app.common.no_data'.tr));
-            }
-            final pendingShipments = orderController.pendingShipments;
-            final showLoadingFooter =
-                orderController.isLoadingPending.value &&
-                pendingShipments.isNotEmpty;
-            final showNoMoreFooter =
-                pendingShipments.isNotEmpty &&
-                !orderController.isLoadingPending.value &&
-                !orderController.pendingHasMore;
-            final showFooter = showLoadingFooter || showNoMoreFooter;
-            return RefreshIndicator(
-              onRefresh: orderController.refreshPending,
-              child: ListView.separated(
-                controller: _pendingScroll,
-                padding: const EdgeInsets.all(12),
-                itemCount: pendingShipments.length + (showFooter ? 1 : 0),
-                separatorBuilder: (_, __) => const SizedBox(height: 12),
-                itemBuilder: (context, index) {
-                  if (index >= pendingShipments.length) {
-                    return _buildListFooter(
-                      showLoading: showLoadingFooter,
-                      showNoMore: showNoMoreFooter,
-                    );
-                  }
-                  final order = pendingShipments[index];
-                  final totalPrice = _sumOrderPrice(order);
-                  final totalCount = _sumOrderCount(order);
-                  return Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
+            final order = pendingShipments[index];
+            final details = order.details;
+            final hasMultipleDetails = details.length > 1;
+            final totalPrice = _sumOrderPrice(order);
+            final showCountdown = _showPendingCountdown(order);
+            final deadlineMs = _pendingDeadlineMs(order);
+            return Material(
+              color: Colors.transparent,
+              child: Ink(
+                decoration: BoxDecoration(
+                  color: colorScheme.surface,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.35),
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (hasMultipleDetails)
+                        Container(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          margin: const EdgeInsets.only(bottom: 10),
+                          decoration: BoxDecoration(
+                            border: Border(
+                              bottom: BorderSide(
+                                color: colorScheme.outlineVariant.withValues(
+                                  alpha: 0.35,
+                                ),
+                              ),
+                            ),
+                          ),
+                          child: Row(
                             children: [
                               Expanded(
                                 child: Text(
-                                  '${'app.trade.order.number'.tr}: '
-                                  '${order.id ?? '-'}',
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
-                              ),
-                              Text(
-                                order.statusName ?? '',
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          if (order.details.isEmpty)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: Text('app.common.no_data'.tr),
-                            )
-                          else
-                            ...order.details.map((detail) {
-                              final schema = _lookupSchema(
-                                orderController.schemas,
-                                detail.marketHashName,
-                                detail.schemaId,
-                              );
-                              final appId = _resolveDetailAppId(detail, schema);
-                              final imageUrl =
-                                  detail.imageUrl ?? schema?.imageUrl ?? '';
-                              final title =
-                                  detail.marketName ??
-                                  schema?.marketName ??
-                                  detail.marketHashName ??
-                                  '-';
-                              final count = detail.count ?? 1;
-                              final rarity = _schemaTag(schema, 'rarity');
-                              final quality = _schemaTag(schema, 'quality');
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 8),
-                                child: Row(
-                                  children: [
-                                    SizedBox(
-                                      width: 72,
-                                      height: 43,
-                                      child: GameItemImage(
-                                        imageUrl: imageUrl,
-                                        appId: appId,
-                                        rarity: rarity,
-                                        quality: quality,
-                                        count: count > 1 ? count : null,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Text(
-                                        title,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                      ),
-                                    ),
-                                    if (count > 1)
-                                      Text(
-                                        'x$count',
-                                        style: Theme.of(
-                                          context,
-                                        ).textTheme.bodySmall,
-                                      ),
-                                  ],
-                                ),
-                              );
-                            }),
-                          Row(
-                            children: [
-                              Text(
-                                '${'app.inventory.count'.tr}: $totalCount',
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                              const Spacer(),
-                              Obx(
-                                () => Text(
                                   currency.format(totalPrice),
-                                  style: Theme.of(context).textTheme.titleSmall
-                                      ?.copyWith(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.primary,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              if ((order.user?.nickname ?? '').isNotEmpty)
-                                Expanded(
-                                  child: Text(
-                                    order.user?.nickname ?? '',
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodySmall,
-                                    overflow: TextOverflow.ellipsis,
+                                  style: textTheme.titleMedium?.copyWith(
+                                    color: colorScheme.onSurface,
+                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
-                              const SizedBox(width: 12),
-                              if (order.status == 2)
-                                FilledButton(
-                                  onPressed: () => _openDeliverSheet(order),
-                                  child: Text('app.market.product.deliver'.tr),
-                                )
-                              else
-                                Text(
-                                  'app.trade.deliver.message.go_steam'.tr,
-                                  style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                              if (showCountdown)
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.schedule,
+                                      size: 14,
+                                      color: Colors.orange.shade700,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    _PendingShipmentCountdown(
+                                      endTimeMs: deadlineMs,
+                                      style: textTheme.labelMedium?.copyWith(
+                                        color: colorScheme.onSurfaceVariant,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                             ],
                           ),
+                        ),
+                      if (details.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Text('app.common.no_data'.tr),
+                        )
+                      else
+                        ...details.map((detail) {
+                          final schema = _lookupSchema(
+                            orderController.schemas,
+                            detail.marketHashName,
+                            detail.schemaId,
+                          );
+                          final appId = _resolveDetailAppId(detail, schema);
+                          final imageUrl =
+                              detail.imageUrl ?? schema?.imageUrl ?? '';
+                          final title =
+                              detail.marketName ??
+                              schema?.marketName ??
+                              detail.marketHashName ??
+                              '-';
+                          final count = detail.count ?? 1;
+                          final rarity = _schemaTag(schema, 'rarity');
+                          final quality = _schemaTag(schema, 'quality');
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Expanded(
+                                  child: Row(
+                                    children: [
+                                      SizedBox(
+                                        width: 72,
+                                        height: 43,
+                                        child: GameItemImage(
+                                          imageUrl: imageUrl,
+                                          appId: appId,
+                                          rarity: rarity,
+                                          quality: quality,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              title,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: textTheme.bodyMedium
+                                                  ?.copyWith(
+                                                    color: colorScheme
+                                                        .onSurfaceVariant,
+                                                  ),
+                                            ),
+                                            if (!hasMultipleDetails &&
+                                                count > 1)
+                                              Padding(
+                                                padding: const EdgeInsets.only(
+                                                  top: 2,
+                                                ),
+                                                child: Text(
+                                                  'x$count',
+                                                  style: textTheme.bodySmall
+                                                      ?.copyWith(
+                                                        color: colorScheme
+                                                            .onSurfaceVariant,
+                                                      ),
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (hasMultipleDetails)
+                                  Text(
+                                    'x$count',
+                                    style: textTheme.bodyMedium?.copyWith(
+                                      color: colorScheme.onSurfaceVariant,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  )
+                                else
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      if (showCountdown)
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                            bottom: 3,
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                Icons.schedule,
+                                                size: 12,
+                                                color: Colors.orange.shade700,
+                                              ),
+                                              const SizedBox(width: 3),
+                                              _PendingShipmentCountdown(
+                                                endTimeMs: deadlineMs,
+                                                style: textTheme.labelSmall
+                                                    ?.copyWith(
+                                                      color: colorScheme
+                                                          .onSurfaceVariant,
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                    ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      Text(
+                                        currency.format(totalPrice),
+                                        style: textTheme.titleSmall?.copyWith(
+                                          color: colorScheme.onSurface,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                              ],
+                            ),
+                          );
+                        }),
+                      const SizedBox(height: 4),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Expanded(child: _buildPendingBuyerInfo(order)),
+                          const SizedBox(width: 12),
+                          _buildPendingStatusAction(order),
                         ],
                       ),
-                    ),
-                  );
-                },
+                    ],
+                  ),
+                ),
               ),
             );
-          }),
+          },
         ),
-      ],
-    );
+      );
+    });
   }
 
   Widget _buildSellRecordTab(CurrencyController currency) {
@@ -1577,7 +1944,9 @@ class _ShopPageState extends State<ShopPage>
               return const Center(child: CircularProgressIndicator());
             }
             if (salesController.sellRecords.isEmpty) {
-              return Center(child: Text('app.common.no_data'.tr));
+              return _buildPullToRefreshEmpty(
+                onRefresh: salesController.refreshSellRecords,
+              );
             }
             final sellRecords = salesController.sellRecords;
             final showLoadingFooter =
@@ -1592,6 +1961,7 @@ class _ShopPageState extends State<ShopPage>
               onRefresh: salesController.refreshSellRecords,
               child: ListView.separated(
                 controller: _recordScroll,
+                physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.all(12),
                 itemCount: sellRecords.length + (showFooter ? 1 : 0),
                 separatorBuilder: (_, __) => const SizedBox(height: 12),
@@ -2252,6 +2622,79 @@ class _ShopTabSwitchOption extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+class _PendingShipmentCountdown extends StatefulWidget {
+  const _PendingShipmentCountdown({required this.endTimeMs, this.style});
+
+  final int endTimeMs;
+  final TextStyle? style;
+
+  @override
+  State<_PendingShipmentCountdown> createState() =>
+      _PendingShipmentCountdownState();
+}
+
+class _PendingShipmentCountdownState extends State<_PendingShipmentCountdown> {
+  Timer? _timer;
+  String _text = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _tick();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
+  }
+
+  @override
+  void didUpdateWidget(covariant _PendingShipmentCountdown oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.endTimeMs != widget.endTimeMs) {
+      _tick();
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _tick() {
+    final next = _format(widget.endTimeMs);
+    if (!mounted) {
+      return;
+    }
+    if (_text != next) {
+      setState(() => _text = next);
+    }
+    if (next.isEmpty) {
+      _timer?.cancel();
+    }
+  }
+
+  String _format(int endTimeMs) {
+    final remainMs = endTimeMs - DateTime.now().millisecondsSinceEpoch;
+    if (remainMs <= 0) {
+      return '';
+    }
+    final totalSeconds = remainMs ~/ 1000;
+    final hours = totalSeconds ~/ 3600;
+    final minutes = (totalSeconds % 3600) ~/ 60;
+    final seconds = totalSeconds % 60;
+    final h = hours.toString().padLeft(2, '0');
+    final m = minutes.toString().padLeft(2, '0');
+    final s = seconds.toString().padLeft(2, '0');
+    return '$h:$m:$s';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_text.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return Text(_text, style: widget.style);
   }
 }
 

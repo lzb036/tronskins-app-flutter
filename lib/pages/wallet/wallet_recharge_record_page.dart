@@ -65,82 +65,90 @@ class _WalletRechargeRecordPageState extends State<WalletRechargeRecordPage> {
             controller.rechargeRecords.isEmpty) {
           return const Center(child: CircularProgressIndicator());
         }
-        if (controller.rechargeRecords.isEmpty) {
-          return Center(child: Text('app.common.no_data'.tr));
-        }
         return RefreshIndicator(
           onRefresh: () => controller.loadRechargeRecords(reset: true),
-          child: ListView.builder(
-            controller: _scrollController,
-            padding: const EdgeInsets.all(16),
-            itemCount: controller.rechargeRecords.length + 1,
-            itemBuilder: (context, index) {
-              if (index >= controller.rechargeRecords.length) {
-                return _buildLoadMoreFooter(
-                  loading: controller.isLoadingRechargeRecords.value,
-                  hasMore: controller.hasMoreRechargeRecords,
-                );
-              }
-              final item = controller.rechargeRecords[index];
-              final statusColor = (item.status ?? 0) == 0
-                  ? Theme.of(context).colorScheme.error
-                  : Colors.green;
-              return Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                elevation: 0,
-                shape: WalletUi.cardShape(context),
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              _formatTime(item.createTime),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+          child: controller.rechargeRecords.isEmpty
+              ? ListView(
+                  controller: _scrollController,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    const SizedBox(height: 180),
+                    Center(child: Text('app.common.no_data'.tr)),
+                  ],
+                )
+              : ListView.builder(
+                  controller: _scrollController,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16),
+                  itemCount: controller.rechargeRecords.length + 1,
+                  itemBuilder: (context, index) {
+                    if (index >= controller.rechargeRecords.length) {
+                      return _buildLoadMoreFooter(
+                        loading: controller.isLoadingRechargeRecords.value,
+                        hasMore: controller.hasMoreRechargeRecords,
+                      );
+                    }
+                    final item = controller.rechargeRecords[index];
+                    final statusColor = (item.status ?? 0) == 0
+                        ? Theme.of(context).colorScheme.error
+                        : Colors.green;
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      elevation: 0,
+                      shape: WalletUi.cardShape(context),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    _formatTime(item.createTime),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Flexible(
+                                  child: Text(
+                                    item.statusName ?? '-',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    textAlign: TextAlign.end,
+                                    style: TextStyle(color: statusColor),
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Flexible(
-                            child: Text(
-                              item.statusName ?? '-',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.end,
-                              style: TextStyle(color: statusColor),
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    item.modeName ?? '-',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  currency.formatUsd(item.amount ?? 0),
+                                  style: Theme.of(context).textTheme.titleSmall
+                                      ?.copyWith(fontWeight: FontWeight.w600),
+                                ),
+                              ],
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              item.modeName ?? '-',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            currency.formatUsd(item.amount ?? 0),
-                            style: Theme.of(context).textTheme.titleSmall
-                                ?.copyWith(fontWeight: FontWeight.w600),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
         );
       }),
     );

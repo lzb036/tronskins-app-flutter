@@ -231,81 +231,89 @@ class _NotifyTradeListState extends State<NotifyTradeList> {
       if (list.isEmpty && loading) {
         return const Center(child: CircularProgressIndicator());
       }
-      if (list.isEmpty) {
-        return Center(child: Text('app.common.no_data'.tr));
-      }
       final showLoadingFooter = loading && list.isNotEmpty;
       final showNoMoreFooter =
           list.isNotEmpty && !loading && !widget.controller.tradeHasMore;
       final showFooter = showLoadingFooter || showNoMoreFooter;
       return RefreshIndicator(
         onRefresh: () => widget.controller.loadTradeList(refresh: true),
-        child: SlidableAutoCloseBehavior(
-          child: ListView.builder(
-            controller: _scrollController,
-            padding: const EdgeInsets.all(16),
-            itemCount: list.length + (showFooter ? 1 : 0),
-            itemBuilder: (context, index) {
-              if (index >= list.length) {
-                return _buildLoadMoreFooter(
-                  showLoading: showLoadingFooter,
-                  showNoMore: showNoMoreFooter,
-                );
-              }
-              final item = list[index];
-              final time = _formatTime(item.createTime);
-              final canDelete = item.id != null && item.id!.isNotEmpty;
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Slidable(
-                  key: ValueKey(
-                    item.id ?? 'trade-$index-${item.createTime ?? ''}',
-                  ),
-                  enabled: canDelete,
-                  endActionPane: canDelete
-                      ? ActionPane(
-                          motion: const StretchMotion(),
-                          extentRatio: 0.5,
-                          children: [
-                            SlidableAction(
-                              onPressed: (_) => _handleDelete(item),
-                              backgroundColor: Theme.of(
-                                context,
-                              ).colorScheme.error,
-                              foregroundColor: Theme.of(
-                                context,
-                              ).colorScheme.onError,
-                              icon: Icons.delete_outline,
-                              label: 'app.common.delete'.tr,
-                              borderRadius: const BorderRadius.horizontal(
-                                left: Radius.circular(16),
-                              ),
-                            ),
-                            SlidableAction(
-                              onPressed: (context) {
-                                Slidable.of(context)?.close();
-                              },
-                              backgroundColor: Theme.of(
-                                context,
-                              ).colorScheme.surfaceVariant,
-                              foregroundColor: Theme.of(
-                                context,
-                              ).colorScheme.onSurface,
-                              icon: Icons.close,
-                              label: 'app.common.cancel'.tr,
-                              borderRadius: const BorderRadius.horizontal(
-                                right: Radius.circular(16),
-                              ),
-                            ),
-                          ],
-                        )
-                      : null,
-                  child: _buildTradeCard(context, item, time),
+        child: list.isEmpty
+            ? ListView(
+                controller: _scrollController,
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.all(16),
+                children: [
+                  const SizedBox(height: 180),
+                  Center(child: Text('app.common.no_data'.tr)),
+                ],
+              )
+            : SlidableAutoCloseBehavior(
+                child: ListView.builder(
+                  controller: _scrollController,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16),
+                  itemCount: list.length + (showFooter ? 1 : 0),
+                  itemBuilder: (context, index) {
+                    if (index >= list.length) {
+                      return _buildLoadMoreFooter(
+                        showLoading: showLoadingFooter,
+                        showNoMore: showNoMoreFooter,
+                      );
+                    }
+                    final item = list[index];
+                    final time = _formatTime(item.createTime);
+                    final canDelete = item.id != null && item.id!.isNotEmpty;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Slidable(
+                        key: ValueKey(
+                          item.id ?? 'trade-$index-${item.createTime ?? ''}',
+                        ),
+                        enabled: canDelete,
+                        endActionPane: canDelete
+                            ? ActionPane(
+                                motion: const StretchMotion(),
+                                extentRatio: 0.5,
+                                children: [
+                                  SlidableAction(
+                                    onPressed: (_) => _handleDelete(item),
+                                    backgroundColor: Theme.of(
+                                      context,
+                                    ).colorScheme.error,
+                                    foregroundColor: Theme.of(
+                                      context,
+                                    ).colorScheme.onError,
+                                    icon: Icons.delete_outline,
+                                    label: 'app.common.delete'.tr,
+                                    borderRadius: const BorderRadius.horizontal(
+                                      left: Radius.circular(16),
+                                    ),
+                                  ),
+                                  SlidableAction(
+                                    onPressed: (context) {
+                                      Slidable.of(context)?.close();
+                                    },
+                                    backgroundColor: Theme.of(
+                                      context,
+                                    ).colorScheme.surfaceVariant,
+                                    foregroundColor: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurface,
+                                    icon: Icons.close,
+                                    label: 'app.common.cancel'.tr,
+                                    borderRadius: const BorderRadius.horizontal(
+                                      right: Radius.circular(16),
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : null,
+                        child: _buildTradeCard(context, item, time),
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
-        ),
+              ),
       );
     });
   }

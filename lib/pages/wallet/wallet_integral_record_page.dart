@@ -63,96 +63,109 @@ class _WalletIntegralRecordPageState extends State<WalletIntegralRecordPage> {
             controller.integralRecords.isEmpty) {
           return const Center(child: CircularProgressIndicator());
         }
-        if (controller.integralRecords.isEmpty) {
-          return Center(child: Text('app.common.no_data'.tr));
-        }
         return RefreshIndicator(
           onRefresh: () => controller.loadIntegralRecords(reset: true),
-          child: ListView.builder(
-            controller: _scrollController,
-            padding: const EdgeInsets.all(16),
-            itemCount: controller.integralRecords.length + 1,
-            itemBuilder: (context, index) {
-              if (index >= controller.integralRecords.length) {
-                return _buildLoadMoreFooter(
-                  loading: controller.isLoadingIntegralRecords.value,
-                  hasMore: controller.hasMoreIntegralRecords,
-                );
-              }
-              final item = controller.integralRecords[index];
-              final isNegative = item.type == 3;
-              final color = isNegative
-                  ? Theme.of(context).colorScheme.error
-                  : Colors.green;
-              final valueText = '${isNegative ? '-' : '+'}${item.value ?? 0}';
-              return Card(
-                margin: const EdgeInsets.only(bottom: 12),
-                elevation: 0,
-                shape: WalletUi.cardShape(context),
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              '${'app.trade.order.details'.tr}: ${item.id ?? '-'}',
-                              style: Theme.of(context).textTheme.bodySmall,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+          child: controller.integralRecords.isEmpty
+              ? ListView(
+                  controller: _scrollController,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    const SizedBox(height: 180),
+                    Center(child: Text('app.common.no_data'.tr)),
+                  ],
+                )
+              : ListView.builder(
+                  controller: _scrollController,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16),
+                  itemCount: controller.integralRecords.length + 1,
+                  itemBuilder: (context, index) {
+                    if (index >= controller.integralRecords.length) {
+                      return _buildLoadMoreFooter(
+                        loading: controller.isLoadingIntegralRecords.value,
+                        hasMore: controller.hasMoreIntegralRecords,
+                      );
+                    }
+                    final item = controller.integralRecords[index];
+                    final isNegative = item.type == 3;
+                    final color = isNegative
+                        ? Theme.of(context).colorScheme.error
+                        : Colors.green;
+                    final valueText =
+                        '${isNegative ? '-' : '+'}${item.value ?? 0}';
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      elevation: 0,
+                      shape: WalletUi.cardShape(context),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    '${'app.trade.order.details'.tr}: ${item.id ?? '-'}',
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodySmall,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Flexible(
+                                  child: Text(
+                                    _formatTime(item.createTime),
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodySmall,
+                                    textAlign: TextAlign.end,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Flexible(
-                            child: Text(
-                              _formatTime(item.createTime),
-                              style: Theme.of(context).textTheme.bodySmall,
-                              textAlign: TextAlign.end,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    item.typeName ?? '-',
+                                    style: TextStyle(color: color),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  valueText,
+                                  style: TextStyle(
+                                    color: color,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              item.typeName ?? '-',
-                              style: TextStyle(color: color),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                            const SizedBox(height: 8),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: Text(
+                                '${item.changedIntegral ?? 0}',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            valueText,
-                            style: TextStyle(
-                              color: color,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: Text(
-                          '${item.changedIntegral ?? 0}',
-                          style: Theme.of(context).textTheme.bodySmall,
+                          ],
                         ),
                       ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
         );
       }),
     );

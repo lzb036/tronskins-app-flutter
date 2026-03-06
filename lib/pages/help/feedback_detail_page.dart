@@ -191,6 +191,7 @@ class _FeedbackDetailPageState extends State<FeedbackDetailPage> {
               controller.loadReplies(ticketId: _ticketId, refresh: true),
           child: ListView(
             controller: _scrollController,
+            physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
             children: [
               if (detail != null) _buildHeader(context, detail),

@@ -157,89 +157,105 @@ class _FeedbackListPageState extends State<FeedbackListPage> {
           Expanded(
             child: loading && list.isEmpty
                 ? const Center(child: CircularProgressIndicator())
-                : list.isEmpty
-                ? Center(child: Text('app.common.no_data'.tr))
                 : RefreshIndicator(
                     onRefresh: () => controller.loadTickets(refresh: true),
-                    child: ListView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                      itemCount: list.length + 1,
-                      itemBuilder: (context, index) {
-                        if (index >= list.length) {
-                          return _buildLoadMoreFooter(
-                            loading: loading,
-                            hasMore: controller.hasMore,
-                          );
-                        }
-                        final item = list[index];
-                        final status = item.status ?? 0;
-                        return Card(
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(14),
-                            onTap: () => Get.toNamed(
-                              Routers.FEEDBACK_DETAIL,
-                              arguments: {'id': item.id, 'status': item.status},
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.all(14),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          item.title ?? '',
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .titleSmall
-                                              ?.copyWith(
-                                                fontWeight: FontWeight.w600,
+                    child: list.isEmpty
+                        ? ListView(
+                            controller: _scrollController,
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                            children: [
+                              const SizedBox(height: 180),
+                              Center(child: Text('app.common.no_data'.tr)),
+                            ],
+                          )
+                        : ListView.builder(
+                            controller: _scrollController,
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                            itemCount: list.length + 1,
+                            itemBuilder: (context, index) {
+                              if (index >= list.length) {
+                                return _buildLoadMoreFooter(
+                                  loading: loading,
+                                  hasMore: controller.hasMore,
+                                );
+                              }
+                              final item = list[index];
+                              final status = item.status ?? 0;
+                              return Card(
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(14),
+                                  onTap: () => Get.toNamed(
+                                    Routers.FEEDBACK_DETAIL,
+                                    arguments: {
+                                      'id': item.id,
+                                      'status': item.status,
+                                    },
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(14),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                item.title ?? '',
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .titleSmall
+                                                    ?.copyWith(
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                    ),
                                               ),
+                                            ),
+                                            _StatusChip(
+                                              status: status,
+                                              label: item.statusName ?? '',
+                                            ),
+                                          ],
                                         ),
-                                      ),
-                                      _StatusChip(
-                                        status: status,
-                                        label: item.statusName ?? '',
-                                      ),
-                                    ],
+                                        const SizedBox(height: 10),
+                                        Row(
+                                          children: [
+                                            Icon(
+                                              Icons.schedule,
+                                              size: 14,
+                                              color: Theme.of(
+                                                context,
+                                              ).textTheme.bodySmall?.color,
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Text(
+                                              _formatTime(item.createTime),
+                                              style: Theme.of(
+                                                context,
+                                              ).textTheme.bodySmall,
+                                            ),
+                                            const Spacer(),
+                                            Icon(
+                                              Icons.chevron_right,
+                                              color: Theme.of(
+                                                context,
+                                              ).dividerColor,
+                                            ),
+                                          ],
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                  const SizedBox(height: 10),
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        Icons.schedule,
-                                        size: 14,
-                                        color: Theme.of(
-                                          context,
-                                        ).textTheme.bodySmall?.color,
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        _formatTime(item.createTime),
-                                        style: Theme.of(
-                                          context,
-                                        ).textTheme.bodySmall,
-                                      ),
-                                      const Spacer(),
-                                      Icon(
-                                        Icons.chevron_right,
-                                        color: Theme.of(context).dividerColor,
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
+                                ),
+                              );
+                            },
                           ),
-                        );
-                      },
-                    ),
                   ),
           ),
         ],

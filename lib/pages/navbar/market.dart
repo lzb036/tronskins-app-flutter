@@ -312,6 +312,7 @@ class _MarketPageState extends State<MarketPage> {
         onRefresh: () => controller.refresh(reset: true),
         child: CustomScrollView(
           controller: _scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
             if (controller.items.isEmpty)
               SliverFillRemaining(

@@ -385,6 +385,7 @@ class _InventoryPageState extends State<InventoryPage> {
           onNotification: _onInventoryScrollNotification,
           child: CustomScrollView(
             key: scrollViewKey,
+            physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
               if (controller.items.isEmpty)
                 SliverFillRemaining(

@@ -36,14 +36,8 @@ class _ShopSettingPageState extends State<ShopSettingPage> {
     if (shop == null) {
       return;
     }
-    final initial = TimeOfDay(
-      hour: shop.hour ?? 0,
-      minute: shop.minute ?? 0,
-    );
-    final result = await showTimePicker(
-      context: context,
-      initialTime: initial,
-    );
+    final initial = TimeOfDay(hour: shop.hour ?? 0, minute: shop.minute ?? 0);
+    final result = await showTimePicker(context: context, initialTime: initial);
     if (result == null) {
       return;
     }
@@ -54,9 +48,7 @@ class _ShopSettingPageState extends State<ShopSettingPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('app.user.shop.setting'.tr),
-      ),
+      appBar: AppBar(title: Text('app.user.shop.setting'.tr)),
       body: Obx(() {
         final shop = controller.shop.value;
         if (shop == null) {
@@ -68,6 +60,7 @@ class _ShopSettingPageState extends State<ShopSettingPage> {
         return RefreshIndicator(
           onRefresh: controller.loadShop,
           child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.all(16),
             children: [
               Card(

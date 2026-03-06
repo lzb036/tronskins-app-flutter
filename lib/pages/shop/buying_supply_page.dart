@@ -493,6 +493,7 @@ class _BuyingSupplyPageState extends State<BuyingSupplyPage> {
               onRefresh: _refresh,
               child: CustomScrollView(
                 controller: _scrollController,
+                physics: const AlwaysScrollableScrollPhysics(),
                 slivers: [
                   if (_items.isEmpty && _isLoading)
                     const SliverFillRemaining(

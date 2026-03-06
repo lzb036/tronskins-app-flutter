@@ -528,6 +528,7 @@ class _HomePageState extends State<HomePage>
       onRefresh: onRefresh,
       child: CustomScrollView(
         controller: scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
           if (items.isEmpty)
             SliverFillRemaining(

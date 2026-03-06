@@ -68,35 +68,43 @@ class _WalletFlowPageState extends State<WalletFlowPage> {
             controller.fundFlows.isEmpty) {
           return const Center(child: CircularProgressIndicator());
         }
-        if (controller.fundFlows.isEmpty) {
-          return Center(child: Text('app.common.no_data'.tr));
-        }
         return RefreshIndicator(
           onRefresh: () => controller.loadFundFlows(reset: true),
-          child: ListView.builder(
-            controller: _scrollController,
-            padding: const EdgeInsets.all(16),
-            itemCount: controller.fundFlows.length + 1,
-            itemBuilder: (context, index) {
-              if (index >= controller.fundFlows.length) {
-                return _buildLoadMoreFooter(
-                  context,
-                  loading: controller.isLoadingFundFlows.value,
-                  hasMore: controller.hasMoreFundFlows,
-                );
-              }
-              final item = controller.fundFlows[index];
-              final positive = _isPositive(item.type);
-              final amountValue = item.amount?.abs() ?? item.amount ?? 0;
-              return _buildFlowCard(
-                context,
-                currency,
-                item: item,
-                positive: positive,
-                amountValue: amountValue,
-              );
-            },
-          ),
+          child: controller.fundFlows.isEmpty
+              ? ListView(
+                  controller: _scrollController,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    const SizedBox(height: 180),
+                    Center(child: Text('app.common.no_data'.tr)),
+                  ],
+                )
+              : ListView.builder(
+                  controller: _scrollController,
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16),
+                  itemCount: controller.fundFlows.length + 1,
+                  itemBuilder: (context, index) {
+                    if (index >= controller.fundFlows.length) {
+                      return _buildLoadMoreFooter(
+                        context,
+                        loading: controller.isLoadingFundFlows.value,
+                        hasMore: controller.hasMoreFundFlows,
+                      );
+                    }
+                    final item = controller.fundFlows[index];
+                    final positive = _isPositive(item.type);
+                    final amountValue = item.amount?.abs() ?? item.amount ?? 0;
+                    return _buildFlowCard(
+                      context,
+                      currency,
+                      item: item,
+                      positive: positive,
+                      amountValue: amountValue,
+                    );
+                  },
+                ),
         );
       }),
     );

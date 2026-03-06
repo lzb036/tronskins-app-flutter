@@ -18,10 +18,9 @@ class TwoFaTokenPage extends StatefulWidget {
 }
 
 class _TwoFaTokenPageState extends State<TwoFaTokenPage> {
-  final TwoFactorController controller =
-      Get.isRegistered<TwoFactorController>()
-          ? Get.find<TwoFactorController>()
-          : Get.put(TwoFactorController());
+  final TwoFactorController controller = Get.isRegistered<TwoFactorController>()
+      ? Get.find<TwoFactorController>()
+      : Get.put(TwoFactorController());
   final UserController userController = Get.find<UserController>();
 
   @override
@@ -87,10 +86,7 @@ class _TwoFaTokenPageState extends State<TwoFaTokenPage> {
     await showDialog<void>(
       context: context,
       builder: (context) {
-        return _TwoFaBindDialog(
-          email: emailValue,
-          controller: controller,
-        );
+        return _TwoFaBindDialog(email: emailValue, controller: controller);
       },
     );
   }
@@ -100,7 +96,8 @@ class _TwoFaTokenPageState extends State<TwoFaTokenPage> {
     return Obx(() {
       final loggedIn = userController.isLoggedIn.value;
       final currentUser = userController.user.value;
-      final hasCurrentUserToken = currentUser != null &&
+      final hasCurrentUserToken =
+          currentUser != null &&
           controller.tokens.any(
             (token) =>
                 token.userId == (currentUser.id ?? '') &&
@@ -123,9 +120,6 @@ class _TwoFaTokenPageState extends State<TwoFaTokenPage> {
             ? Obx(() {
                 final currentUser = UserStorage.getUserInfo();
                 final _ = controller.tick.value;
-                if (controller.tokens.isEmpty) {
-                  return Center(child: Text('app.common.no_data'.tr));
-                }
                 final remaining = controller.remainingSeconds();
                 final progress = remaining / 30;
                 return RefreshIndicator(
@@ -133,32 +127,44 @@ class _TwoFaTokenPageState extends State<TwoFaTokenPage> {
                     await controller.loadTokens();
                     await controller.refreshStatus();
                   },
-                  child: ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                    itemCount: controller.tokens.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 12),
-                    itemBuilder: (context, index) {
-                      final token = controller.tokens[index];
-                      final isCurrent = currentUser != null &&
-                          currentUser.id == token.userId &&
-                          currentUser.appUse == token.appUse;
-                      final hasSecret = token.secret.isNotEmpty;
-                      final code = hasSecret
-                          ? controller.codeForToken(token)
-                          : 'app.user.guard.bind_tips'.tr;
-                      return _TwoFaTokenCard(
-                        token: token,
-                        isCurrent: isCurrent,
-                        code: code,
-                        hasSecret: hasSecret,
-                        progress: progress,
-                        remaining: remaining,
-                        onCopy: () => _copyCode(code),
-                        onBind: _openBindDialog,
-                        onDelete: () => _confirmDelete(token),
-                      );
-                    },
-                  ),
+                  child: controller.tokens.isEmpty
+                      ? ListView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                          children: [
+                            const SizedBox(height: 180),
+                            Center(child: Text('app.common.no_data'.tr)),
+                          ],
+                        )
+                      : ListView.separated(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                          itemCount: controller.tokens.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 12),
+                          itemBuilder: (context, index) {
+                            final token = controller.tokens[index];
+                            final isCurrent =
+                                currentUser != null &&
+                                currentUser.id == token.userId &&
+                                currentUser.appUse == token.appUse;
+                            final hasSecret = token.secret.isNotEmpty;
+                            final code = hasSecret
+                                ? controller.codeForToken(token)
+                                : 'app.user.guard.bind_tips'.tr;
+                            return _TwoFaTokenCard(
+                              token: token,
+                              isCurrent: isCurrent,
+                              code: code,
+                              hasSecret: hasSecret,
+                              progress: progress,
+                              remaining: remaining,
+                              onCopy: () => _copyCode(code),
+                              onBind: _openBindDialog,
+                              onDelete: () => _confirmDelete(token),
+                            );
+                          },
+                        ),
                 );
               })
             : _buildLoginPrompt(),
@@ -184,10 +190,7 @@ class _TwoFaTokenPageState extends State<TwoFaTokenPage> {
 }
 
 class _TwoFaBindDialog extends StatefulWidget {
-  const _TwoFaBindDialog({
-    required this.email,
-    required this.controller,
-  });
+  const _TwoFaBindDialog({required this.email, required this.controller});
 
   final String email;
   final TwoFactorController controller;
@@ -243,10 +246,7 @@ class _TwoFaBindDialogState extends State<_TwoFaBindDialog> {
     return null;
   }
 
-  String _resolveMessage(
-    BaseHttpResponse<dynamic> result,
-    String fallbackKey,
-  ) {
+  String _resolveMessage(BaseHttpResponse<dynamic> result, String fallbackKey) {
     if (result.message.isNotEmpty) {
       return result.message;
     }
@@ -304,8 +304,9 @@ class _TwoFaBindDialogState extends State<_TwoFaBindDialog> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final fillColor =
-        isDark ? Colors.white.withOpacity(0.08) : const Color(0xFFF5F5F5);
+    final fillColor = isDark
+        ? Colors.white.withOpacity(0.08)
+        : const Color(0xFFF5F5F5);
     final hintColor = isDark ? Colors.white38 : Colors.grey[400];
     final textColor = Theme.of(context).textTheme.bodyMedium?.color;
     final sendLabel = _countdown == 0
@@ -315,9 +316,9 @@ class _TwoFaBindDialogState extends State<_TwoFaBindDialog> {
       title: Text(
         'app.user.guard.bind_tips'.tr,
         textAlign: TextAlign.center,
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+        style: Theme.of(
+          context,
+        ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
       ),
       titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
       contentPadding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
@@ -333,8 +334,10 @@ class _TwoFaBindDialogState extends State<_TwoFaBindDialog> {
             decoration: InputDecoration(
               filled: true,
               fillColor: fillColor,
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 12,
+              ),
               disabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide: BorderSide.none,
@@ -350,8 +353,10 @@ class _TwoFaBindDialogState extends State<_TwoFaBindDialog> {
               hintStyle: TextStyle(color: hintColor, fontSize: 14),
               filled: true,
               fillColor: fillColor,
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 12,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
                 borderSide: BorderSide.none,
@@ -362,8 +367,9 @@ class _TwoFaBindDialogState extends State<_TwoFaBindDialog> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
-                borderSide:
-                    BorderSide(color: Theme.of(context).colorScheme.primary),
+                borderSide: BorderSide(
+                  color: Theme.of(context).colorScheme.primary,
+                ),
               ),
             ),
           ),
@@ -371,8 +377,11 @@ class _TwoFaBindDialogState extends State<_TwoFaBindDialog> {
             const SizedBox(height: 8),
             Row(
               children: [
-                const Icon(Icons.error_outline,
-                    size: 14, color: Colors.redAccent),
+                const Icon(
+                  Icons.error_outline,
+                  size: 14,
+                  color: Colors.redAccent,
+                ),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
@@ -477,16 +486,17 @@ class _TwoFaTokenCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final bgColor =
-        isCurrent ? colorScheme.primaryContainer : colorScheme.surface;
+    final bgColor = isCurrent
+        ? colorScheme.primaryContainer
+        : colorScheme.surface;
     final borderColor = isCurrent
         ? colorScheme.primary.withOpacity(0.2)
         : colorScheme.outlineVariant.withOpacity(0.5);
     final codeStyle = Theme.of(context).textTheme.headlineSmall?.copyWith(
-          color: hasSecret ? colorScheme.primary : colorScheme.onSurface,
-          fontWeight: FontWeight.w700,
-          letterSpacing: hasSecret ? 2 : 0,
-        );
+      color: hasSecret ? colorScheme.primary : colorScheme.onSurface,
+      fontWeight: FontWeight.w700,
+      letterSpacing: hasSecret ? 2 : 0,
+    );
 
     return Material(
       color: bgColor,
@@ -508,8 +518,8 @@ class _TwoFaTokenCard extends StatelessWidget {
                   Text(
                     '[${token.appUse}]',
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   const SizedBox(width: 6),
                   Expanded(
@@ -520,10 +530,7 @@ class _TwoFaTokenCard extends StatelessWidget {
                     ),
                   ),
                   if (hasSecret)
-                    _CountdownRing(
-                      progress: progress,
-                      remaining: remaining,
-                    ),
+                    _CountdownRing(progress: progress, remaining: remaining),
                 ],
               ),
               const SizedBox(height: 10),
@@ -553,10 +560,7 @@ class _TwoFaTokenCard extends StatelessWidget {
 }
 
 class _CountdownRing extends StatelessWidget {
-  const _CountdownRing({
-    required this.progress,
-    required this.remaining,
-  });
+  const _CountdownRing({required this.progress, required this.remaining});
 
   final double progress;
   final int remaining;
@@ -569,15 +573,12 @@ class _CountdownRing extends StatelessWidget {
       child: Stack(
         alignment: Alignment.center,
         children: [
-          CircularProgressIndicator(
-            value: progress,
-            strokeWidth: 3,
-          ),
+          CircularProgressIndicator(value: progress, strokeWidth: 3),
           Text(
             remaining.toString(),
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w600),
           ),
         ],
       ),

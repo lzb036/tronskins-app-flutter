@@ -397,6 +397,7 @@ class _MyPurchasePageState extends State<MyPurchasePage>
               onRefresh: controller.refreshWaitingReceipts,
               child: ListView.separated(
                 controller: _receiptScroll,
+                physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                 itemCount:
                     controller.waitingReceipts.length + (showFooter ? 1 : 0),
@@ -556,6 +557,7 @@ class _MyPurchasePageState extends State<MyPurchasePage>
               onRefresh: controller.refreshBuyRecords,
               child: ListView.separated(
                 controller: _recordScroll,
+                physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                 itemCount: controller.buyRecords.length + (showFooter ? 1 : 0),
                 separatorBuilder: (_, __) => const SizedBox(height: 12),
