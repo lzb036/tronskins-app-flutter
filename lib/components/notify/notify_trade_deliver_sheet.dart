@@ -8,6 +8,7 @@ import 'package:tronskins_app/api/steam.dart';
 import 'package:tronskins_app/api/tradeoffer.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
 import 'package:tronskins_app/common/storage/game_storage.dart';
+import 'package:tronskins_app/components/game_item/wear_progress_bar.dart';
 import 'package:tronskins_app/controllers/user/user_controller.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
 
@@ -138,9 +139,7 @@ class _NotifyTradeDeliverSheetState extends State<NotifyTradeDeliverSheet> {
   int _totalItems() {
     var total = 0;
     for (final order in _orders) {
-      for (final detail in order.details) {
-        total += detail.count ?? 1;
-      }
+      total += order.details.length;
     }
     return total;
   }
@@ -163,6 +162,17 @@ class _NotifyTradeDeliverSheetState extends State<NotifyTradeDeliverSheet> {
       return value.toString();
     }
     return detail.paintWear?.toString();
+  }
+
+  double? _paintWearValue(ShopOrderDetail detail) {
+    final value = detail.raw['paint_wear'] ?? detail.raw['paintWear'];
+    if (value is num) {
+      return value.toDouble();
+    }
+    if (value != null) {
+      return double.tryParse(value.toString());
+    }
+    return detail.paintWear;
   }
 
   String _formatTime(int? timestamp) {
@@ -270,6 +280,8 @@ class _NotifyTradeDeliverSheetState extends State<NotifyTradeDeliverSheet> {
         widget.status ?? (_orders.isNotEmpty ? _orders.first.status : null);
     final maxHeight = MediaQuery.of(context).size.height * 0.8;
     final currency = Get.find<CurrencyController>();
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
     return SafeArea(
       child: ConstrainedBox(
         constraints: BoxConstraints(maxHeight: maxHeight),
@@ -316,6 +328,11 @@ class _NotifyTradeDeliverSheetState extends State<NotifyTradeDeliverSheet> {
                             'assets/images/login/steam-icon.png',
                             width: 20,
                             height: 20,
+                            errorBuilder: (_, __, ___) => const Icon(
+                              Icons.sports_esports,
+                              size: 20,
+                              color: Color(0xFF888888),
+                            ),
                           ),
                           const SizedBox(width: 8),
                           if ((buyerInfo.nickname ?? '').isNotEmpty)
@@ -418,76 +435,125 @@ class _NotifyTradeDeliverSheetState extends State<NotifyTradeDeliverSheet> {
                                     final count = detail.count ?? 1;
                                     final price = detail.price ?? 0;
                                     final wearText = _paintWearText(detail);
-                                    return Padding(
-                                      padding: const EdgeInsets.only(top: 8),
-                                      child: Row(
+                                    final wearValue = _paintWearValue(detail);
+                                    return Container(
+                                      margin: const EdgeInsets.only(top: 8),
+                                      padding: const EdgeInsets.fromLTRB(
+                                        6,
+                                        6,
+                                        6,
+                                        8,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        border: Border(
+                                          bottom: BorderSide(
+                                            color: colorScheme.outlineVariant
+                                                .withValues(alpha: 0.35),
+                                          ),
+                                        ),
+                                      ),
+                                      child: Column(
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
-                                          ClipRRect(
-                                            borderRadius: BorderRadius.circular(
-                                              8,
-                                            ),
-                                            child: CachedNetworkImage(
-                                              imageUrl: imageUrl,
-                                              width: 48,
-                                              height: 48,
-                                              fit: BoxFit.cover,
-                                              placeholder: (context, _) =>
-                                                  const SizedBox(
-                                                    width: 48,
-                                                    height: 48,
-                                                    child: Center(
-                                                      child:
-                                                          CircularProgressIndicator(
-                                                            strokeWidth: 2,
+                                          Row(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              ClipRRect(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                child: CachedNetworkImage(
+                                                  imageUrl: imageUrl,
+                                                  width: 66,
+                                                  height: 48,
+                                                  fit: BoxFit.contain,
+                                                  placeholder: (context, _) =>
+                                                      const SizedBox(
+                                                        width: 66,
+                                                        height: 48,
+                                                        child: Center(
+                                                          child:
+                                                              CircularProgressIndicator(
+                                                                strokeWidth: 2,
+                                                              ),
+                                                        ),
+                                                      ),
+                                                  errorWidget:
+                                                      (
+                                                        context,
+                                                        _,
+                                                        __,
+                                                      ) => const Icon(
+                                                        Icons
+                                                            .image_not_supported_outlined,
+                                                      ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 10),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      title,
+                                                      maxLines: 2,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                      style: textTheme
+                                                          .bodyMedium
+                                                          ?.copyWith(
+                                                            fontWeight:
+                                                                FontWeight.w600,
                                                           ),
                                                     ),
-                                                  ),
-                                              errorWidget: (context, _, __) =>
-                                                  const Icon(
-                                                    Icons
-                                                        .image_not_supported_outlined,
+                                                    const SizedBox(height: 4),
+                                                    Text(
+                                                      '${'app.inventory.count'.tr}: $count',
+                                                      style: textTheme.bodySmall
+                                                          ?.copyWith(
+                                                            color: colorScheme
+                                                                .onSurfaceVariant,
+                                                          ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                currency.format(price),
+                                                style: textTheme.titleSmall
+                                                    ?.copyWith(
+                                                      color:
+                                                          colorScheme.primary,
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                    ),
+                                              ),
+                                            ],
+                                          ),
+                                          if (wearText != null) ...[
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              '${'app.market.csgo.abradability'.tr}: $wearText',
+                                              style: textTheme.bodySmall
+                                                  ?.copyWith(
+                                                    color: colorScheme
+                                                        .onSurfaceVariant,
                                                   ),
                                             ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(title, maxLines: 2),
-                                                const SizedBox(height: 4),
-                                                Text(
-                                                  '${'app.inventory.count'.tr}: $count',
-                                                  style: Theme.of(
-                                                    context,
-                                                  ).textTheme.bodySmall,
-                                                ),
-                                                if (wearText != null)
-                                                  Text(
-                                                    '${'app.market.csgo.abradability'.tr}: $wearText',
-                                                    style: Theme.of(
-                                                      context,
-                                                    ).textTheme.bodySmall,
-                                                  ),
-                                              ],
+                                          ],
+                                          if (wearValue != null) ...[
+                                            const SizedBox(height: 6),
+                                            SizedBox(
+                                              width: double.infinity,
+                                              child: WearProgressBar(
+                                                paintWear: wearValue,
+                                                height: 16,
+                                              ),
                                             ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            currency.format(price),
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .titleSmall
-                                                ?.copyWith(
-                                                  color: Theme.of(
-                                                    context,
-                                                  ).colorScheme.primary,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                          ),
+                                          ],
                                         ],
                                       ),
                                     );
