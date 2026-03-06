@@ -44,6 +44,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
   int _selectedDays = 30;
   MarketTemplateDetail? _templateDetail;
   bool _loadingTemplate = false;
+  bool _steamPriceResolved = false;
   List<_WearOption> _wearOptions = <_WearOption>[];
   List<String> _qualityKeys = <String>[];
   int _qualityIndex = 0;
@@ -179,6 +180,9 @@ class _MarketDetailPageState extends State<MarketDetailPage>
     final appId = controller.appId;
     final targetId = schemaId ?? controller.schemaId;
     if (targetId == null) {
+      if (mounted && !_steamPriceResolved) {
+        setState(() => _steamPriceResolved = true);
+      }
       return;
     }
     setState(() => _loadingTemplate = true);
@@ -215,7 +219,12 @@ class _MarketDetailPageState extends State<MarketDetailPage>
       }
     } finally {
       if (mounted) {
-        setState(() => _loadingTemplate = false);
+        setState(() {
+          _loadingTemplate = false;
+          _steamPriceResolved = true;
+        });
+      } else {
+        _steamPriceResolved = true;
       }
     }
   }
@@ -255,6 +264,234 @@ class _MarketDetailPageState extends State<MarketDetailPage>
     final selectedKey = _qualityKeys[_qualityIndex];
     _wearOptions = _parseWearOptions(qualityMap[selectedKey]);
     setState(() {});
+  }
+
+  Widget _buildMarketCountSummary({
+    required BuildContext context,
+    required int? sellNum,
+    required int? buyNum,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final visible = sellNum != null || buyNum != null;
+    if (!visible && !_loadingTemplate) {
+      return const SizedBox.shrink();
+    }
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 280),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      transitionBuilder: (child, animation) {
+        if (child.key == const ValueKey('market_count_summary_visible')) {
+          return ClipRect(
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0.22, 0),
+                end: Offset.zero,
+              ).animate(
+                CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
+              ),
+              child: child,
+            ),
+          );
+        }
+        return child;
+      },
+      child: visible
+          ? Padding(
+              key: const ValueKey('market_count_summary_visible'),
+              padding: const EdgeInsets.only(top: 12),
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.28,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: colorScheme.outline.withValues(alpha: 0.14),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _buildMarketCountTile(
+                        context: context,
+                        icon: Icons.local_offer_outlined,
+                        label: 'app.trade.onSale.text'.tr,
+                        value: '${sellNum ?? 0}${'app.market.unit_qty'.tr}',
+                        accent: colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildMarketCountTile(
+                        context: context,
+                        icon: Icons.shopping_bag_outlined,
+                        label: 'app.trade.purchase.text'.tr,
+                        value: '${buyNum ?? 0}${'app.market.unit_qty'.tr}',
+                        accent: colorScheme.tertiary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          : Padding(
+              key: const ValueKey('market_count_summary_loading'),
+              padding: const EdgeInsets.only(top: 12),
+              child: Container(
+                height: 64,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.28,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: colorScheme.outline.withValues(alpha: 0.14),
+                  ),
+                ),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+    );
+  }
+
+  Widget _buildMarketCountTile({
+    required BuildContext context,
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color accent,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      decoration: BoxDecoration(
+        color: accent.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: accent.withValues(alpha: 0.28)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 22,
+            height: 22,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.22),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Icon(icon, size: 14, color: accent),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: accent,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBottomSteamPrice({
+    required BuildContext context,
+    required CurrencyController currency,
+    required double referencePrice,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    if (!_steamPriceResolved) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: colorScheme.primary,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                width: 72,
+                height: 14,
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerHighest.withValues(
+                    alpha: 0.8,
+                  ),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'app.market.detail.steam_price'.tr,
+            style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 10),
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Obx(
+          () => Text(
+            currency.format(referencePrice),
+            style: TextStyle(
+              color: colorScheme.primary,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        Text(
+          'app.market.detail.steam_price'.tr,
+          style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 10),
+        ),
+      ],
+    );
   }
 
   Future<void> _selectWear(int schemaId) async {
@@ -297,6 +534,8 @@ class _MarketDetailPageState extends State<MarketDetailPage>
   Widget build(BuildContext context) {
     final item = controller.item;
     final currency = Get.find<CurrencyController>();
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final templateSchema = _templateDetail?.schema;
     final displayTags = templateSchema?.tags ?? item.tags;
@@ -420,53 +659,11 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                           const SizedBox(height: 12),
                           _buildWearList(currency),
                         ],
-                        if (sellNum != null || buyNum != null) ...[
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      '${sellNum ?? 0}${'app.market.unit_qty'.tr}',
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.titleSmall,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'app.trade.onSale.text'.tr,
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.bodySmall,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      '${buyNum ?? 0}${'app.market.unit_qty'.tr}',
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.titleSmall,
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'app.trade.purchase.text'.tr,
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.bodySmall,
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+                        _buildMarketCountSummary(
+                          context: context,
+                          sellNum: sellNum,
+                          buyNum: buyNum,
+                        ),
                       ],
                     ),
                   ),
@@ -593,28 +790,10 @@ class _MarketDetailPageState extends State<MarketDetailPage>
               child: SafeArea(
                 child: Row(
                   children: [
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Obx(
-                          () => Text(
-                            currency.format(referencePrice),
-                            style: const TextStyle(
-                              color: Color(0xFFFFB800), // Gold color
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        Text(
-                          'app.market.detail.steam_price'.tr,
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 10,
-                          ),
-                        ),
-                      ],
+                    _buildBottomSteamPrice(
+                      context: context,
+                      currency: currency,
+                      referencePrice: referencePrice,
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -626,17 +805,13 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                               child: OutlinedButton(
                                 onPressed: _openBuying,
                                 style: OutlinedButton.styleFrom(
-                                  foregroundColor: Theme.of(
-                                    context,
-                                  ).colorScheme.primary,
-                                  side: BorderSide(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.primary,
-                                  ),
+                                  foregroundColor: colorScheme.primary,
+                                  side: BorderSide(color: colorScheme.primary),
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(4),
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
+                                  textStyle: theme.textTheme.labelLarge
+                                      ?.copyWith(fontWeight: FontWeight.w600),
                                 ),
                                 child: Text(
                                   'app.market.detail.release_purchase'.tr,
@@ -647,15 +822,16 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                             ),
                             const SizedBox(width: 8),
                             Expanded(
-                              child: ElevatedButton(
+                              child: FilledButton(
                                 onPressed: _openBulkBuying,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF4C81E7),
-                                  foregroundColor: Colors.white,
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: colorScheme.primary,
+                                  foregroundColor: colorScheme.onPrimary,
                                   shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(4),
+                                    borderRadius: BorderRadius.circular(8),
                                   ),
-                                  elevation: 0,
+                                  textStyle: theme.textTheme.labelLarge
+                                      ?.copyWith(fontWeight: FontWeight.w600),
                                 ),
                                 child: Text(
                                   'app.market.detail.bulk_buying.title'.tr,
@@ -1994,6 +2170,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
     MarketUserInfo? user,
     CurrencyController currency,
   ) {
+    final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final schema = _lookupMarketSchema(item);
     final appId = item.appId ?? controller.appId;
@@ -2067,8 +2244,8 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                         Obx(
                           () => Text(
                             currency.format(item.price ?? 0),
-                            style: const TextStyle(
-                              color: Color(0xFFFFB800),
+                            style: TextStyle(
+                              color: colorScheme.primary,
                               fontWeight: FontWeight.bold,
                               fontSize: 14,
                             ),
@@ -2106,11 +2283,11 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                   ),
                   const SizedBox(width: 8),
                   if (!isOwn)
-                    ElevatedButton(
+                    FilledButton(
                       onPressed: canBuy ? () => _purchaseItem(item) : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF4C81E7),
-                        foregroundColor: Colors.white,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: colorScheme.primary,
+                        foregroundColor: colorScheme.onPrimary,
                         minimumSize: const Size(60, 32),
                         padding: EdgeInsets.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -2355,6 +2532,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
   }
 
   Widget _buildBuyRequestTab(CurrencyController currency) {
+    final colorScheme = Theme.of(context).colorScheme;
     if (controller.isLoadingBuyRequests.value &&
         controller.buyRequests.isEmpty) {
       return const Center(child: CircularProgressIndicator());
@@ -2386,16 +2564,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
         final schema = _lookupBuySchema(item);
         final user = _lookupBuyUser(item);
         final avatar = _resolveAvatar(user?.avatar);
-        final title =
-            schema?.marketName ??
-            schema?.marketHashName ??
-            item.raw['market_name']?.toString() ??
-            '-';
         final imageUrl = schema?.imageUrl ?? '';
-        final tags = schema?.raw['tags'];
-        final rarity = TagInfo.fromRaw(tags is Map ? tags['rarity'] : null);
-        final quality = TagInfo.fromRaw(tags is Map ? tags['quality'] : null);
-        final exterior = TagInfo.fromRaw(tags is Map ? tags['exterior'] : null);
         final wearMinText =
             item.raw['paint_wear_min']?.toString() ??
             item.raw['paintWearMin']?.toString() ??
@@ -2417,16 +2586,15 @@ class _MarketDetailPageState extends State<MarketDetailPage>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(
-                  width: 72,
-                  height: 43,
-                  child: GameItemImage(
-                    imageUrl: imageUrl,
-                    appId: item.appId,
-                    rarity: rarity,
-                    quality: quality,
-                    exterior: exterior,
-                    phase: item.phase,
-                    count: need > 0 ? need : null,
+                  width: 90,
+                  child: SizedBox(
+                    width: 90,
+                    height: 54,
+                    child: GameItemImage(
+                      imageUrl: imageUrl,
+                      appId: item.appId,
+                      count: need > 0 ? need : null,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -2434,69 +2602,49 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: isDark ? Colors.white : Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
                       Obx(
                         () => Text(
                           currency.format(item.price ?? 0),
-                          style: const TextStyle(
-                            color: Color(0xFFFFB800),
+                          style: TextStyle(
+                            color: colorScheme.primary,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
                       if (wearMinText != null && wearMaxText != null)
                         Padding(
-                          padding: const EdgeInsets.only(top: 6),
+                          padding: const EdgeInsets.only(top: 4),
                           child: Text(
                             '${'app.market.csgo.wear'.tr}: '
                             '$wearMinText - $wearMaxText',
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                         ),
-                      const SizedBox(height: 6),
-                      Row(
-                        children: [
-                          Text(
-                            '${'app.inventory.count'.tr}: $need',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                          const SizedBox(width: 8),
-                          if ((user?.nickname ?? '').isNotEmpty)
-                            Expanded(
-                              child: Row(
-                                children: [
-                                  CircleAvatar(
-                                    radius: 10,
-                                    backgroundImage: avatar.isNotEmpty
-                                        ? CachedNetworkImageProvider(avatar)
-                                        : null,
-                                    child: avatar.isEmpty
-                                        ? const Icon(Icons.person, size: 12)
-                                        : null,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Text(
-                                      user?.nickname ?? '',
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.bodySmall,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
+                      if ((user?.nickname ?? '').isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 10,
+                                backgroundImage: avatar.isNotEmpty
+                                    ? CachedNetworkImageProvider(avatar)
+                                    : null,
+                                child: avatar.isEmpty
+                                    ? const Icon(Icons.person, size: 12)
+                                    : null,
                               ),
-                            ),
-                        ],
-                      ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  user?.nickname ?? '',
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -2541,70 +2689,107 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                         child: Text('app.trade.supply.text'.tr),
                       ),
                     if (isOwn) ...[
-                      OutlinedButton(
-                        onPressed: () async {
-                          await Get.toNamed(
-                            Routers.BUYING_UPDATE_PRICE,
-                            arguments: {'item': item, 'schema': schema},
-                          );
-                          await controller.loadBuyRequests(reset: true);
-                        },
-                        child: Text('app.inventory.price_change'.tr),
+                      SizedBox(
+                        height: 32,
+                        child: OutlinedButton(
+                          onPressed: () async {
+                            await Get.toNamed(
+                              Routers.BUYING_UPDATE_PRICE,
+                              arguments: {'item': item, 'schema': schema},
+                            );
+                            await controller.loadBuyRequests(reset: true);
+                          },
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size(74, 32),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 0,
+                            ),
+                            side: BorderSide(
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                          child: Text(
+                            'app.inventory.price_change'.tr,
+                            style: const TextStyle(fontSize: 11),
+                          ),
+                        ),
                       ),
                       const SizedBox(height: 6),
-                      OutlinedButton(
-                        onPressed: () async {
-                          final id = item.id?.toString();
-                          if (id == null) {
-                            return;
-                          }
-                          final confirm = await Get.dialog<bool>(
-                            AlertDialog(
-                              title: Text('app.system.tips.title'.tr),
-                              content: Text(
-                                'app.trade.purchase.message.confirm_terminate'
-                                    .tr,
+                      SizedBox(
+                        height: 32,
+                        child: OutlinedButton(
+                          onPressed: () async {
+                            final id = item.id?.toString();
+                            if (id == null) {
+                              return;
+                            }
+                            final confirm = await Get.dialog<bool>(
+                              AlertDialog(
+                                title: Text('app.system.tips.title'.tr),
+                                content: Text(
+                                  'app.trade.purchase.message.confirm_terminate'
+                                      .tr,
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Get.back(result: false),
+                                    child: Text('app.common.cancel'.tr),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => Get.back(result: true),
+                                    child: Text('app.common.confirm'.tr),
+                                  ),
+                                ],
                               ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Get.back(result: false),
-                                  child: Text('app.common.cancel'.tr),
-                                ),
-                                TextButton(
-                                  onPressed: () => Get.back(result: true),
-                                  child: Text('app.common.confirm'.tr),
-                                ),
-                              ],
-                            ),
-                          );
-                          if (confirm != true) {
-                            return;
-                          }
-                          try {
-                            final res = await _shopProductApi
-                                .orderItemCancelBuy(id: id);
-                            if (res.success) {
+                            );
+                            if (confirm != true) {
+                              return;
+                            }
+                            try {
+                              final res = await _shopProductApi
+                                  .orderItemCancelBuy(id: id);
+                              if (res.success) {
+                                Get.snackbar(
+                                  'app.system.tips.title'.tr,
+                                  'app.system.message.success'.tr,
+                                );
+                              } else {
+                                Get.snackbar(
+                                  'app.system.tips.title'.tr,
+                                  res.message.isNotEmpty
+                                      ? res.message
+                                      : 'app.trade.filter.failed'.tr,
+                                );
+                              }
+                            } catch (_) {
                               Get.snackbar(
                                 'app.system.tips.title'.tr,
-                                'app.system.message.success'.tr,
-                              );
-                            } else {
-                              Get.snackbar(
-                                'app.system.tips.title'.tr,
-                                res.message.isNotEmpty
-                                    ? res.message
-                                    : 'app.trade.filter.failed'.tr,
+                                'app.trade.filter.failed'.tr,
                               );
                             }
-                          } catch (_) {
-                            Get.snackbar(
-                              'app.system.tips.title'.tr,
-                              'app.trade.filter.failed'.tr,
-                            );
-                          }
-                          await controller.loadBuyRequests(reset: true);
-                        },
-                        child: Text('app.common.delete'.tr),
+                            await controller.loadBuyRequests(reset: true);
+                          },
+                          style: OutlinedButton.styleFrom(
+                            minimumSize: const Size(74, 32),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 0,
+                            ),
+                            foregroundColor: Theme.of(
+                              context,
+                            ).colorScheme.error,
+                            side: BorderSide(
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                          ),
+                          child: Text(
+                            'app.common.delete'.tr,
+                            style: const TextStyle(fontSize: 11),
+                          ),
+                        ),
                       ),
                     ],
                   ],
@@ -2618,6 +2803,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
   }
 
   Widget _buildTransactionTab(CurrencyController currency) {
+    final colorScheme = Theme.of(context).colorScheme;
     if (controller.isLoadingTransactions.value &&
         controller.transactionItems.isEmpty) {
       return const Center(child: CircularProgressIndicator());
@@ -2648,25 +2834,10 @@ class _MarketDetailPageState extends State<MarketDetailPage>
         final user = controller.users[item.userId?.toString() ?? ''];
         final schema = _lookupMarketSchema(item);
         final imageUrl = schema?.imageUrl ?? '';
-        final title =
-            schema?.marketName ??
-            schema?.marketHashName ??
-            item.marketHashName ??
-            '-';
         final appId = item.appId ?? controller.appId;
-        final tags = schema?.tags;
-        final rarity = TagInfo.fromMarketTag(tags?.rarity);
-        final quality = TagInfo.fromMarketTag(tags?.quality);
-        final exterior = TagInfo.fromMarketTag(tags?.exterior);
-        final asset = _resolveAsset(item);
-        final paintWearValue = _extractDouble(asset, [
-          'paint_wear',
-          'paintWear',
-        ]);
-        final paintWearText =
-            _extractText(asset, ['paint_wear', 'paintWear']) ??
-            _extractText(item.raw, ['paint_wear', 'paintWear']) ??
-            paintWearValue?.toString();
+        final count =
+            _asInt(item.raw['count'] ?? item.raw['nums'] ?? item.raw['num']) ??
+            1;
         final isDark = Theme.of(context).brightness == Brightness.dark;
         return Card(
           color: isDark ? const Color(0xFF26272B) : Colors.white,
@@ -2675,17 +2846,18 @@ class _MarketDetailPageState extends State<MarketDetailPage>
             child: Padding(
               padding: const EdgeInsets.all(12),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox(
-                    width: 72,
-                    height: 43,
-                    child: GameItemImage(
-                      imageUrl: imageUrl,
-                      appId: appId,
-                      rarity: rarity,
-                      quality: quality,
-                      exterior: exterior,
-                      paintWearText: paintWearText,
+                    width: 90,
+                    child: SizedBox(
+                      width: 90,
+                      height: 54,
+                      child: GameItemImage(
+                        imageUrl: imageUrl,
+                        appId: appId,
+                        count: count > 1 ? count : null,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -2693,20 +2865,11 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: isDark ? Colors.white : Colors.black87,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
                         Obx(
                           () => Text(
                             currency.format(item.price ?? 0),
-                            style: const TextStyle(
-                              color: Color(0xFFFFB800),
+                            style: TextStyle(
+                              color: colorScheme.primary,
                               fontWeight: FontWeight.bold,
                             ),
                           ),

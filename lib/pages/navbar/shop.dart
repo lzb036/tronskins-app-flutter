@@ -1021,38 +1021,38 @@ class _ShopPageState extends State<ShopPage>
                           const SizedBox(width: 6),
                           Builder(
                             builder: (iconContext) {
-                              final currentAppId = GameStorage.getGameType();
-                              final hasOtherGameShippingNotice =
-                                  shippingNoticeController.hasOtherPending(
-                                    currentAppId,
-                                  );
-                              return _buildTopActionWithDot(
-                                visible: hasOtherGameShippingNotice,
-                                dotColor: Colors.orange.shade600,
-                                child: GameIconButton(
-                                  appId: currentAppId,
-                                  size: 34,
-                                  onTap: () async {
-                                    final selected = await showGameSwitchMenu(
-                                      iconContext: iconContext,
-                                      currentAppId: currentAppId,
-                                      pendingTotalsByAppId:
-                                          shippingNoticeController
-                                              .snapshotTotals(),
-                                    );
-                                    if (selected == null) {
-                                      return;
-                                    }
-                                    await GameStorage.setGameType(selected);
-                                    salesController.refreshOnSale();
-                                    orderController.refreshPending();
-                                    salesController.refreshSellRecords();
-                                    shippingNoticeController
-                                        .refreshPendingTotals();
-                                    setState(() {});
-                                  },
-                                ),
-                              );
+                              return Obx(() {
+                                final currentAppId = GameStorage.getGameType();
+                                final hasPendingInAnyGame =
+                                    shippingNoticeController.hasAnyPending;
+                                return _buildTopActionWithDot(
+                                  visible: hasPendingInAnyGame,
+                                  dotColor: Colors.orange.shade600,
+                                  child: GameIconButton(
+                                    appId: currentAppId,
+                                    size: 34,
+                                    onTap: () async {
+                                      final selected = await showGameSwitchMenu(
+                                        iconContext: iconContext,
+                                        currentAppId: currentAppId,
+                                        pendingTotalsByAppId:
+                                            shippingNoticeController
+                                                .snapshotTotals(),
+                                      );
+                                      if (selected == null) {
+                                        return;
+                                      }
+                                      await GameStorage.setGameType(selected);
+                                      salesController.refreshOnSale();
+                                      orderController.refreshPending();
+                                      salesController.refreshSellRecords();
+                                      shippingNoticeController
+                                          .refreshPendingTotals();
+                                      setState(() {});
+                                    },
+                                  ),
+                                );
+                              });
                             },
                           ),
                         ],

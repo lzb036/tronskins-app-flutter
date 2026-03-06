@@ -1,12 +1,14 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:tronskins_app/api/model/market/market_models.dart';
+import 'package:tronskins_app/api/shop.dart';
 import 'package:tronskins_app/api/shop_product.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
 import 'package:tronskins_app/common/storage/user_storage.dart';
 import 'package:tronskins_app/common/utils/app_snackbar.dart';
-import 'package:tronskins_app/components/game_item/game_item_image.dart';
 import 'package:tronskins_app/components/game_item/game_item_models.dart';
+import 'package:tronskins_app/components/game_item/game_item_utils.dart';
 import 'package:tronskins_app/components/game_item/gem_row.dart';
 import 'package:tronskins_app/components/game_item/sticker_row.dart';
 import 'package:tronskins_app/components/game_item/wear_progress_bar.dart';
@@ -19,6 +21,7 @@ class MarketItemDetailPage extends StatefulWidget {
 }
 
 class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
+  final ApiShopServer _shopServer = ApiShopServer();
   final ApiShopProductServer _shopApi = ApiShopProductServer();
 
   late final MarketListItem _item;
@@ -26,6 +29,9 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
   MarketUserInfo? _user;
   Map<String, MarketSchemaInfo> _schemas = {};
   Map<String, dynamic> _stickers = {};
+  Map<String, dynamic>? _shopInfo;
+  bool _loadingShopInfo = false;
+  bool _shopStatsIsWeek = true;
 
   @override
   void initState() {
@@ -36,6 +42,7 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
     _user = _parseUser(args['user']);
     _schemas = _parseSchemas(args['schemas']);
     _stickers = _parseStickerMap(args['stickers']);
+    _loadShopInfo();
   }
 
   MarketListItem _parseItem(dynamic raw) {
@@ -139,6 +146,33 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
       }
     }
     return null;
+  }
+
+  int? _asInt(dynamic value) {
+    if (value == null) {
+      return null;
+    }
+    if (value is int) {
+      return value;
+    }
+    if (value is num) {
+      return value.toInt();
+    }
+    return int.tryParse(value.toString());
+  }
+
+  bool _isOwnOnSaleItem() {
+    if (_item.own == true) {
+      return true;
+    }
+    final currentUser = UserStorage.getUserInfo();
+    final currentUserId = _asInt(currentUser?.id);
+    final currentShopId = _asInt(currentUser?.shop?.id);
+    final sellerId = _item.userId;
+    if (sellerId == null) {
+      return false;
+    }
+    return sellerId == currentUserId || sellerId == currentShopId;
   }
 
   List<GameItemSticker> _parseKeychains(dynamic raw) {
@@ -272,6 +306,353 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
     }
   }
 
+  String? _resolveSellerUuid() {
+    final fromUser = _user?.uuid?.trim();
+    if (fromUser != null && fromUser.isNotEmpty) {
+      return fromUser;
+    }
+    final fromRawUser = _item.raw['user'];
+    if (fromRawUser is Map) {
+      final uuid = fromRawUser['uuid']?.toString().trim();
+      if (uuid != null && uuid.isNotEmpty) {
+        return uuid;
+      }
+    }
+    final fromRaw = _item.raw['uuid']?.toString().trim();
+    if (fromRaw != null && fromRaw.isNotEmpty) {
+      return fromRaw;
+    }
+    return null;
+  }
+
+  String _resolveAvatarUrl(String? avatar) {
+    if (avatar == null || avatar.isEmpty) {
+      return '';
+    }
+    if (avatar.startsWith('http')) {
+      return avatar;
+    }
+    return 'https://www.tronskins.com/fms/image$avatar';
+  }
+
+  Future<void> _loadShopInfo() async {
+    final uuid = _resolveSellerUuid();
+    if (uuid == null || uuid.isEmpty) {
+      return;
+    }
+    if (mounted) {
+      setState(() => _loadingShopInfo = true);
+    }
+    try {
+      final res = await _shopServer.getUserShopInfo(params: {'uuid': uuid});
+      if (!mounted) {
+        return;
+      }
+      if (res.success && res.datas != null) {
+        setState(() => _shopInfo = res.datas);
+      }
+    } catch (_) {
+      // Ignore failures here. Shop info is supplemental content.
+    } finally {
+      if (mounted) {
+        setState(() => _loadingShopInfo = false);
+      }
+    }
+  }
+
+  int _shopMetricInt(String key) => _asInt(_shopInfo?[key]) ?? 0;
+
+  double _shopMetricDouble(String key) =>
+      _extractDouble(_shopInfo, <String>[key]) ?? 0;
+
+  String _deliverySuccessRate({required int total, required int notSend}) {
+    if (total <= 0) {
+      return '0%';
+    }
+    final rate = ((total - notSend) / total * 100).clamp(0, 100);
+    return '${rate.toStringAsFixed(2)}%';
+  }
+
+  String _formatAverageDelivery(double avgMinutes) {
+    final minutes = avgMinutes.isNaN || avgMinutes.isInfinite
+        ? 0
+        : avgMinutes.round();
+    if (minutes > 60) {
+      final hours = minutes ~/ 60;
+      final remain = minutes % 60;
+      return '$hours${'app.common.hours'.tr}$remain${'app.common.minutes'.tr}';
+    }
+    return '$minutes${'app.common.minutes'.tr}';
+  }
+
+  void _showShopDeliverTips() {
+    Get.dialog<void>(
+      AlertDialog(
+        title: Text('app.system.tips.warm'.tr),
+        content: Text('app.user.shop.message.order_placed'.tr),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: Text('app.user.shop.deliver_iknow'.tr),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShopMetricRow({required String label, required String value}) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              label,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            value,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: colorScheme.onSurface,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShopDaysToggle() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    Widget buildItem({required bool isWeek, required int days}) {
+      final active = _shopStatsIsWeek == isWeek;
+      return InkWell(
+        onTap: () {
+          if (_shopStatsIsWeek == isWeek) {
+            return;
+          }
+          setState(() => _shopStatsIsWeek = isWeek);
+        },
+        borderRadius: BorderRadius.circular(7),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: active
+                ? colorScheme.primary.withValues(alpha: 0.14)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(7),
+          ),
+          child: Text(
+            '$days${'app.common.day'.tr}',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: active
+                  ? colorScheme.primary
+                  : colorScheme.onSurfaceVariant,
+              fontWeight: active ? FontWeight.w700 : FontWeight.w500,
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.8),
+        ),
+        borderRadius: BorderRadius.circular(9),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          buildItem(isWeek: true, days: 7),
+          const SizedBox(width: 2),
+          buildItem(isWeek: false, days: 30),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShopInfoCard() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    if (_loadingShopInfo) {
+      return Container(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        decoration: BoxDecoration(
+          color: theme.cardColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.6),
+          ),
+        ),
+        alignment: Alignment.center,
+        child: const SizedBox(
+          width: 22,
+          height: 22,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      );
+    }
+
+    final shopInfo = _shopInfo;
+    if (shopInfo == null || shopInfo.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final isWeek = _shopStatsIsWeek;
+    final days = isWeek ? 7 : 30;
+    final avgKey = isWeek ? 'last7daysAvg' : 'last30daysAvg';
+    final numsKey = isWeek ? 'last7daysNums' : 'last30daysNums';
+    final notSendKey = isWeek ? 'last7daysNotSend' : 'last30daysNotSend';
+
+    final avg = _shopMetricDouble(avgKey);
+    final nums = _shopMetricInt(numsKey);
+    final notSend = _shopMetricInt(notSendKey);
+
+    final fallbackName = _user?.nickname?.trim();
+    final shopName =
+        _extractText(shopInfo, <String>['name', 'shopName']) ??
+        ((fallbackName != null && fallbackName.isNotEmpty)
+            ? fallbackName
+            : '-');
+    final avatar = _resolveAvatarUrl(
+      _extractText(shopInfo, <String>['avatar']) ?? _user?.avatar,
+    );
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+      decoration: BoxDecoration(
+        color: theme.cardColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.6),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 18,
+                backgroundColor: colorScheme.surfaceContainerHighest,
+                backgroundImage: avatar.isNotEmpty
+                    ? NetworkImage(avatar)
+                    : null,
+                child: avatar.isEmpty
+                    ? Icon(
+                        Icons.storefront_outlined,
+                        size: 18,
+                        color: colorScheme.onSurfaceVariant,
+                      )
+                    : null,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  shopName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              _buildShopDaysToggle(),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 96,
+                child: Column(
+                  children: [
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: colorScheme.primary.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(19),
+                      ),
+                      child: Icon(
+                        Icons.local_shipping_outlined,
+                        size: 20,
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    InkWell(
+                      onTap: _showShopDeliverTips,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              'app.user.shop.deliver'.tr,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(
+                            Icons.help_outline,
+                            size: 14,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  children: [
+                    _buildShopMetricRow(
+                      label:
+                          '${'app.user.shop.deliver_rate_success'.tr}/$days${'app.common.day'.tr}',
+                      value: _deliverySuccessRate(
+                        total: nums,
+                        notSend: notSend,
+                      ),
+                    ),
+                    _buildShopMetricRow(
+                      label:
+                          '${'app.user.shop.deliver_time_average'.tr}/$days${'app.common.day'.tr}',
+                      value: _formatAverageDelivery(avg),
+                    ),
+                    _buildShopMetricRow(
+                      label:
+                          '${'app.user.shop.undelivered_times'.tr}/$days${'app.common.day'.tr}',
+                      value: '$notSend${'app.common.times'.tr}',
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildTagChip(TagInfo tag) {
     final color = _parseHex(tag.color) ?? Theme.of(context).colorScheme.primary;
     return Container(
@@ -303,6 +684,62 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
     return null;
   }
 
+  Widget _buildTopHeroImage({
+    required String imageUrl,
+    required TagInfo? rarity,
+  }) {
+    return Container(
+      height: 320,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset(
+            rarityBgAsset(rarity?.color),
+            fit: BoxFit.cover,
+            errorBuilder: (context, _, __) => Image.asset(
+              'assets/images/game/item/b0c3d9.png',
+              fit: BoxFit.cover,
+            ),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withValues(alpha: 0.1),
+                  Colors.transparent,
+                  Colors.black.withValues(alpha: 0.08),
+                ],
+                stops: const [0.0, 0.6, 1.0],
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Spacer(),
+                Center(
+                  child: CachedNetworkImage(
+                    imageUrl: imageUrl,
+                    height: 220,
+                    fit: BoxFit.contain,
+                    placeholder: (context, _) =>
+                        const CircularProgressIndicator(strokeWidth: 2),
+                    errorWidget: (context, _, __) =>
+                        const Icon(Icons.image_not_supported_outlined),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final currency = Get.find<CurrencyController>();
@@ -313,11 +750,6 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
         _extractText(asset, ['image_url', 'imageUrl']) ??
         _item.raw['image_url']?.toString() ??
         '';
-    final title =
-        _schema?.marketName ??
-        _item.raw['market_name']?.toString() ??
-        _item.marketHashName ??
-        '-';
     final tags = _schema?.tags;
     final rarity = TagInfo.fromMarketTag(tags?.rarity);
     final quality = TagInfo.fromMarketTag(tags?.quality);
@@ -364,121 +796,135 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
       if (rarity != null) tagChips.add(rarity);
       if (quality != null) tagChips.add(quality);
     }
+    final isOwnOnSale = _isOwnOnSaleItem();
 
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          SizedBox(
-            height: 220,
-            child: GameItemImage(
-              imageUrl: imageUrl,
-              appId: appId,
-              rarity: rarity,
-              quality: quality,
-              exterior: exterior,
-              paintSeed: paintSeed,
-              phase: phase,
-              percentage: percentage,
-              paintWearText: paintWearText,
-              stickers: stickers,
-              gems: gems,
+      appBar: AppBar(
+        titleSpacing: 0,
+        title: ShaderMask(
+          shaderCallback: (bounds) => LinearGradient(
+            colors: [
+              Theme.of(context).colorScheme.primary,
+              Theme.of(context).colorScheme.secondary,
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ).createShader(bounds),
+          child: const Text(
+            'Tronskins',
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.w900,
+              fontStyle: FontStyle.italic,
+              color: Colors.white,
             ),
           ),
-          const SizedBox(height: 16),
-          if (tagChips.isNotEmpty)
-            Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              children: tagChips.map(_buildTagChip).toList(growable: false),
+        ),
+      ),
+      body: ListView(
+        padding: EdgeInsets.zero,
+        children: [
+          _buildTopHeroImage(imageUrl: imageUrl, rarity: rarity),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (appId == 570 && hero?.label?.isNotEmpty == true) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    '${'app.market.dota2.hero_use'.tr}: ${hero?.label ?? ''}',
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+                if (appId == 730) ...[
+                  if (paintSeed != null || percentage != null) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      '${'app.market.csgo.paint_index'.tr}: '
+                      '${paintSeed ?? ''}'
+                      '${percentage != null ? ' (${percentage.endsWith('%') ? percentage : '$percentage%'})' : ''}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                  if (paintIndex != null ||
+                      phase != null ||
+                      tier != null ||
+                      fireIce != null) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      '${'app.market.detail.skin_number'.tr}: '
+                      '${paintIndex ?? ''}'
+                      '${phase != null ? ' ($phase)' : ''}'
+                      '${tier != null ? ' ($tier)' : ''}'
+                      '${fireIce != null ? ' ($fireIce)' : ''}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                  if (paintWearValue != null && paintWearText != null) ...[
+                    const SizedBox(height: 10),
+                    Text(
+                      '${'app.market.csgo.abradability'.tr}: $paintWearText',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: 6),
+                    WearProgressBar(paintWear: paintWearValue),
+                  ],
+                ],
+                if (gems.isNotEmpty && (appId == 570 || appId == 440)) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    'app.market.filter.dota2.gemstones_contains'.tr,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 6),
+                  GemRow(gems: gems, size: 24),
+                ],
+                if (stickers.isNotEmpty) ...[
+                  const SizedBox(height: 12),
+                  StickerRow(stickers: stickers, size: 24),
+                ],
+                if (keychains.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  StickerRow(stickers: keychains, size: 24),
+                ],
+                if (tags != null) ...[
+                  const SizedBox(height: 16),
+                  Text(
+                    'app.market.detail.attribute'.tr,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    children: tagChips
+                        .map(_buildTagChip)
+                        .toList(growable: false),
+                  ),
+                  if (exterior?.label?.isNotEmpty == true) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      '${'app.market.filter.appearance'.tr}: ${exterior?.label ?? ''}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                  if (itemSet?.label?.isNotEmpty == true) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      itemSet?.label ?? '',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ],
+                if (_loadingShopInfo || (_shopInfo?.isNotEmpty ?? false)) ...[
+                  const SizedBox(height: 16),
+                  _buildShopInfoCard(),
+                ],
+                const SizedBox(height: 100),
+              ],
             ),
-          if (appId == 570 && hero?.label?.isNotEmpty == true) ...[
-            const SizedBox(height: 8),
-            Text(
-              '${'app.market.dota2.hero_use'.tr}: ${hero?.label ?? ''}',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ],
-          if (appId == 730) ...[
-            if (paintSeed != null || percentage != null) ...[
-              const SizedBox(height: 12),
-              Text(
-                '${'app.market.csgo.paint_index'.tr}: '
-                '${paintSeed ?? ''}'
-                '${percentage != null ? ' (${percentage.endsWith('%') ? percentage : '$percentage%'})' : ''}',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ],
-            if (paintIndex != null ||
-                phase != null ||
-                tier != null ||
-                fireIce != null) ...[
-              const SizedBox(height: 6),
-              Text(
-                '${'app.market.detail.skin_number'.tr}: '
-                '${paintIndex ?? ''}'
-                '${phase != null ? ' ($phase)' : ''}'
-                '${tier != null ? ' ($tier)' : ''}'
-                '${fireIce != null ? ' ($fireIce)' : ''}',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ],
-            if (paintWearValue != null && paintWearText != null) ...[
-              const SizedBox(height: 10),
-              Text(
-                '${'app.market.csgo.abradability'.tr}: $paintWearText',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              const SizedBox(height: 6),
-              WearProgressBar(paintWear: paintWearValue),
-            ],
-          ],
-          if (gems.isNotEmpty && (appId == 570 || appId == 440)) ...[
-            const SizedBox(height: 12),
-            Text(
-              'app.market.filter.dota2.gemstones_contains'.tr,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            const SizedBox(height: 6),
-            GemRow(gems: gems, size: 24),
-          ],
-          if (stickers.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            StickerRow(stickers: stickers, size: 24),
-          ],
-          if (keychains.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            StickerRow(stickers: keychains, size: 24),
-          ],
-          if (tags != null) ...[
-            const SizedBox(height: 16),
-            Text(
-              'app.market.detail.attribute'.tr,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-            const SizedBox(height: 6),
-            Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              children: tagChips.map(_buildTagChip).toList(growable: false),
-            ),
-            if (exterior?.label?.isNotEmpty == true) ...[
-              const SizedBox(height: 6),
-              Text(
-                '${'app.market.filter.appearance'.tr}: ${exterior?.label ?? ''}',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ],
-            if (itemSet?.label?.isNotEmpty == true) ...[
-              const SizedBox(height: 4),
-              Text(
-                itemSet?.label ?? '',
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ],
-          ],
-          const SizedBox(height: 100),
+          ),
         ],
       ),
       bottomNavigationBar: Container(
@@ -500,21 +946,24 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
                 child: Obx(
                   () => Text(
                     currency.format(_item.price ?? 0),
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: const Color(0xFFFFB800),
-                      fontWeight: FontWeight.w600,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
               ),
               SizedBox(
                 height: 42,
-                child: ElevatedButton(
-                  onPressed: _item.id != null && _item.price != null
-                      ? _purchase
-                      : null,
-                  child: Text('app.trade.buy.text'.tr),
-                ),
+                child: isOwnOnSale
+                    ? const SizedBox.shrink()
+                    : ElevatedButton(
+                        onPressed: _item.id != null && _item.price != null
+                            ? _purchase
+                            : null,
+                        child: Text('app.trade.buy.text'.tr),
+                      ),
               ),
             ],
           ),

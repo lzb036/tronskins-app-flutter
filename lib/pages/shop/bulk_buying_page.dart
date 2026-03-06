@@ -335,10 +335,9 @@ class _BulkBuyingPageState extends State<BulkBuyingPage> {
                         Expanded(
                           child: OutlinedButton(
                             onPressed: () {
-                              setModalState(() {
-                                wearMinController.clear();
-                                wearMaxController.clear();
-                              });
+                              Navigator.of(context).pop(
+                                const _BulkWearRange(),
+                              );
                             },
                             child: Text('app.market.filter.reset'.tr),
                           ),
@@ -659,15 +658,56 @@ class _BulkBuyingPageState extends State<BulkBuyingPage> {
   }) {
     final colors = Theme.of(context).colorScheme;
     return Container(
-      margin: EdgeInsets.only(top: withTopGap ? 10 : 0),
+      margin: EdgeInsets.fromLTRB(14, withTopGap ? 12 : 0, 14, 0),
       decoration: BoxDecoration(
-        color: colors.surface,
-        border: Border(
-          top: BorderSide(color: colors.outline.withValues(alpha: 0.14)),
-          bottom: BorderSide(color: colors.outline.withValues(alpha: 0.14)),
-        ),
+        color: colors.surface.withValues(alpha: 0.94),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: colors.outline.withValues(alpha: 0.12)),
+        boxShadow: [
+          BoxShadow(
+            color: colors.shadow.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: child,
+    );
+  }
+
+  Widget _buildHeaderPill(
+    BuildContext context, {
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        '$label $value',
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: color,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInputShell(BuildContext context, {required Widget child}) {
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      height: 40,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: colors.surfaceContainerHighest.withValues(alpha: 0.32),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Center(child: child),
     );
   }
 
@@ -689,197 +729,252 @@ class _BulkBuyingPageState extends State<BulkBuyingPage> {
 
     return Scaffold(
       appBar: AppBar(title: Text('app.market.detail.bulk_buying.title'.tr)),
-      body: ListView(
-        padding: const EdgeInsets.only(bottom: 96),
-        children: [
-          _buildRowContainer(
-            context,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: CachedNetworkImage(
-                      imageUrl: imageUrl,
-                      width: 82,
-                      height: 82,
-                      fit: BoxFit.cover,
-                      placeholder: (context, _) => const SizedBox(
-                        width: 82,
-                        height: 82,
-                        child: Center(
-                          child: CircularProgressIndicator(strokeWidth: 2),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              colors.primary.withValues(alpha: 0.05),
+              colors.surface,
+              colors.surface,
+            ],
+            stops: const [0.0, 0.24, 1.0],
+          ),
+        ),
+        child: ListView(
+          padding: const EdgeInsets.only(bottom: 108),
+          children: [
+            _buildRowContainer(
+              context,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 84,
+                      height: 84,
+                      decoration: BoxDecoration(
+                        color: colors.surfaceContainerHighest.withValues(
+                          alpha: 0.38,
+                        ),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: CachedNetworkImage(
+                          imageUrl: imageUrl,
+                          fit: BoxFit.contain,
+                          placeholder: (context, _) => const SizedBox(
+                            width: 84,
+                            height: 84,
+                            child: Center(
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
+                          errorWidget: (context, _, __) =>
+                              const Icon(Icons.image_not_supported_outlined),
                         ),
                       ),
-                      errorWidget: (context, _, __) =>
-                          const Icon(Icons.image_not_supported_outlined),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              height: 1.25,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Obx(
+                            () => Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                _buildHeaderPill(
+                                  context,
+                                  label:
+                                      '${'app.market.detail.sale_lowest'.tr}:',
+                                  value: currency.format(sellMin),
+                                  color: colors.primary,
+                                ),
+                                _buildHeaderPill(
+                                  context,
+                                  label:
+                                      '${'app.market.detail.purchase_highest'.tr}:',
+                                  value: currency.format(buyMax),
+                                  color: colors.tertiary,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            if (_showFilter)
+              _buildRowContainer(
+                context,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(14),
+                  onTap: _openFilterSheet,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+                    child: Row(
                       children: [
-                        Text(
-                          title,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
+                        Icon(
+                          Icons.filter_alt_rounded,
+                          size: 18,
+                          color: colors.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        SizedBox(
+                          width: 96,
+                          child: Text(
+                            'app.market.filter.text'.tr,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        Obx(
-                          () => Text(
-                            '${'app.market.detail.sale_lowest'.tr}: ${currency.format(sellMin)}',
-                            style: theme.textTheme.bodySmall?.copyWith(
+                        Expanded(
+                          child: Text(
+                            _filterLabel ?? 'app.common.unlimited'.tr,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodyMedium?.copyWith(
                               color: colors.onSurfaceVariant,
                             ),
                           ),
                         ),
-                        const SizedBox(height: 4),
-                        Obx(
-                          () => Text(
-                            '${'app.market.detail.purchase_highest'.tr}: ${currency.format(buyMax)}',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: colors.onSurfaceVariant,
-                            ),
-                          ),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          color: colors.onSurfaceVariant,
                         ),
                       ],
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
-          ),
-          if (_showFilter)
             _buildRowContainer(
               context,
-              child: InkWell(
-                onTap: _openFilterSheet,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
-                  child: Row(
-                    children: [
-                      SizedBox(
-                        width: 112,
-                        child: Text(
-                          'app.market.filter.text'.tr,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodyMedium,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 96,
+                      child: Text(
+                        'app.market.detail.bulk_buying.price_highest'.tr,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildInputShell(
+                        context,
+                        child: TextField(
+                          controller: _priceController,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          decoration: InputDecoration(
+                            isDense: true,
+                            hintText: 'app.trade.buy.price_placeholder'.tr,
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                          onChanged: _sanitizePrice,
+                          onEditingComplete: _queryMatchedOnSale,
+                          onSubmitted: (_) => _queryMatchedOnSale(),
                         ),
                       ),
-                      Expanded(
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            _buildRowContainer(
+              context,
+              withTopGap: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 96,
+                      child: Text(
+                        'app.trade.buy.quantity'.tr,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildInputShell(
+                        context,
+                        child: TextField(
+                          controller: _numController,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            isDense: true,
+                            hintText: 'app.trade.purchase.num_placeholder'.tr,
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                          onChanged: _sanitizeNum,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    if (_isLoadingMatches)
+                      const SizedBox(
+                        width: 14,
+                        height: 14,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    else
+                      Container(
+                        constraints: const BoxConstraints(maxWidth: 136),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: colors.surfaceContainerHighest.withValues(
+                            alpha: 0.4,
+                          ),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
                         child: Text(
-                          _filterLabel ?? 'app.common.unlimited'.tr,
+                          '${_matchedItems.length}${'app.market.detail.bulk_buying.match'.tr}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodyMedium?.copyWith(
+                          textAlign: TextAlign.right,
+                          style: theme.textTheme.bodySmall?.copyWith(
                             color: colors.onSurfaceVariant,
                           ),
                         ),
                       ),
-                      Icon(
-                        Icons.chevron_right_rounded,
-                        color: colors.onSurfaceVariant,
-                      ),
-                    ],
-                  ),
+                  ],
                 ),
               ),
             ),
-          _buildRowContainer(
-            context,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 112,
-                    child: Text(
-                      'app.market.detail.bulk_buying.price_highest'.tr,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodyMedium,
-                    ),
-                  ),
-                  Expanded(
-                    child: TextField(
-                      controller: _priceController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      decoration: InputDecoration(
-                        isDense: true,
-                        hintText: 'app.trade.buy.price_placeholder'.tr,
-                        border: InputBorder.none,
-                      ),
-                      onChanged: _sanitizePrice,
-                      onEditingComplete: _queryMatchedOnSale,
-                      onSubmitted: (_) => _queryMatchedOnSale(),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          _buildRowContainer(
-            context,
-            withTopGap: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 112,
-                    child: Text(
-                      'app.trade.buy.quantity'.tr,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.bodyMedium,
-                    ),
-                  ),
-                  Expanded(
-                    child: TextField(
-                      controller: _numController,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(
-                        isDense: true,
-                        hintText: 'app.trade.buy.num_placeholder'.tr,
-                        border: InputBorder.none,
-                      ),
-                      onChanged: _sanitizeNum,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  if (_isLoadingMatches)
-                    const SizedBox(
-                      width: 14,
-                      height: 14,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  else
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 130),
-                      child: Text(
-                        '${_matchedItems.length}${'app.market.detail.bulk_buying.match'.tr}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.right,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colors.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
       bottomNavigationBar: SafeArea(
         top: false,
@@ -889,8 +984,15 @@ class _BulkBuyingPageState extends State<BulkBuyingPage> {
             border: Border(
               top: BorderSide(color: colors.outline.withValues(alpha: 0.16)),
             ),
+            boxShadow: [
+              BoxShadow(
+                color: colors.shadow.withValues(alpha: 0.08),
+                blurRadius: 12,
+                offset: const Offset(0, -3),
+              ),
+            ],
           ),
-          padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
           child: Row(
             children: [
               Expanded(
@@ -917,9 +1019,15 @@ class _BulkBuyingPageState extends State<BulkBuyingPage> {
                 ),
               ),
               SizedBox(
-                height: 40,
+                height: 42,
                 child: FilledButton(
                   onPressed: _isSubmitting ? null : _submit,
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 18),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
                   child: _isSubmitting
                       ? const SizedBox(
                           width: 16,

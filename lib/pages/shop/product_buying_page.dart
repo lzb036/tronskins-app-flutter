@@ -7,6 +7,7 @@ import 'package:tronskins_app/api/shop.dart';
 import 'package:tronskins_app/api/shop_product.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
 import 'package:tronskins_app/common/storage/user_storage.dart';
+import 'package:tronskins_app/common/utils/app_snackbar.dart';
 import 'package:tronskins_app/common/utils/string_utils.dart';
 import 'package:tronskins_app/controllers/shop/buy_request_controller.dart';
 
@@ -38,7 +39,6 @@ class _ProductBuyingPageState extends State<ProductBuyingPage> {
 
   double? _wearMin;
   double? _wearMax;
-  int? _paintIndex;
   String? _filterLabel;
 
   @override
@@ -99,6 +99,7 @@ class _ProductBuyingPageState extends State<ProductBuyingPage> {
           _minPrice = double.tryParse(rawMin?.toString() ?? '') ?? 0;
         }
       }
+      _filterLabel = _buildFilterLabel();
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -106,20 +107,23 @@ class _ProductBuyingPageState extends State<ProductBuyingPage> {
     }
   }
 
-  bool get _showFilter => _appId == 730;
+  bool get _showFilter {
+    if (_appId != 730) {
+      return false;
+    }
+    final typeKey = _schema?.tags?.type?.key ?? _schema?.tags?.type?.name;
+    const excludedTypes = <String>{
+      'CSGO_Type_WeaponCase',
+      'Type_CustomPlayer',
+      'CSGO_Tool_Sticker',
+    };
+    return !excludedTypes.contains(typeKey);
+  }
 
   double _totalAmount() {
     final price = double.tryParse(_priceController.text) ?? 0;
     final nums = int.tryParse(_numController.text) ?? 0;
     return price * nums;
-  }
-
-  double _enteredPrice() {
-    return double.tryParse(_priceController.text) ?? 0;
-  }
-
-  int _enteredQuantity() {
-    return int.tryParse(_numController.text) ?? 0;
   }
 
   Future<bool> _checkPurchaseOnline() async {
@@ -153,10 +157,13 @@ class _ProductBuyingPageState extends State<ProductBuyingPage> {
 
   void _sanitizeNum(String value) {
     if (value.contains('.')) {
-      final integer = value.split('.').first;
-      _numController.text = integer;
+      _numController.text = value.split('.').first;
       _numController.selection = TextSelection.fromPosition(
         TextPosition(offset: _numController.text.length),
+      );
+      Get.snackbar(
+        'app.system.tips.title'.tr,
+        'app.market.detail.message.num_error'.tr,
       );
     }
     final numValue = int.tryParse(_numController.text) ?? 0;
@@ -168,119 +175,342 @@ class _ProductBuyingPageState extends State<ProductBuyingPage> {
     }
   }
 
-  Future<void> _openFilterSheet() async {
-    final paintController = TextEditingController(
-      text: _paintIndex?.toString() ?? '',
+  void _calibratePrice() {
+    final value = _priceController.text.trim();
+    if (value.isEmpty) {
+      return;
+    }
+    final parsed = double.tryParse(value);
+    if (parsed == null) {
+      return;
+    }
+    var next = parsed;
+    if (next < _minPrice) {
+      next = _minPrice;
+    }
+    final text = next.toStringAsFixed(2);
+    _priceController.text = text;
+    _priceController.selection = TextSelection.fromPosition(
+      TextPosition(offset: _priceController.text.length),
     );
+  }
+
+  Future<void> _openFilterSheet() async {
+    final exteriorKey = _schema?.tags?.exterior?.key;
+    final wearQuickOptions = _buildWearQuickOptions(exteriorKey);
+    final minWearHint = wearQuickOptions.first.minText;
+    final maxWearHint = wearQuickOptions.last.maxText;
+
     final wearMinController = TextEditingController(
-      text: _wearMin?.toString() ?? '',
+      text: _wearMin != null ? _formatWearValue(_wearMin!) : '',
     );
     final wearMaxController = TextEditingController(
-      text: _wearMax?.toString() ?? '',
+      text: _wearMax != null ? _formatWearValue(_wearMax!) : '',
     );
-    final result = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 16,
-            right: 16,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-            top: 16,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'app.market.filter.text'.tr,
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: paintController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: 'app.market.csgo.paint_index'.tr,
-                  hintText: 'app.market.csgo.paint_index_placeholder'.tr,
+
+    try {
+      final result = await showModalBottomSheet<_ProductFilterResult>(
+        context: context,
+        isScrollControlled: true,
+        builder: (context) {
+          return StatefulBuilder(
+            builder: (context, setModalState) {
+              bool isQuickSelected(_ProductWearQuickOption option) {
+                final min = double.tryParse(wearMinController.text.trim());
+                final max = double.tryParse(wearMaxController.text.trim());
+                if (min == null || max == null) {
+                  return false;
+                }
+                return (min - option.min).abs() < 0.000001 &&
+                    (max - option.max).abs() < 0.000001;
+              }
+
+              return Padding(
+                padding: EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+                  top: 16,
                 ),
-              ),
-              const SizedBox(height: 12),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: wearMinController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      decoration: InputDecoration(
-                        labelText: 'app.market.filter.price_lowest'.tr,
-                      ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'app.market.filter.text'.tr,
+                      style: Theme.of(context).textTheme.titleMedium,
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextField(
-                      controller: wearMaxController,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      decoration: InputDecoration(
-                        labelText: 'app.market.filter.price_highest'.tr,
-                      ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'app.market.filter.csgo.wear_interval'.tr,
+                      style: Theme.of(context).textTheme.bodyMedium,
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.of(context).pop(false),
-                      child: Text('app.common.cancel'.tr),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: wearMinController,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                            onChanged: (_) => setModalState(() {}),
+                            decoration: InputDecoration(
+                              labelText: 'app.market.filter.price_lowest'.tr,
+                              hintText: minWearHint,
+                            ),
+                          ),
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 8),
+                          child: Text('~'),
+                        ),
+                        Expanded(
+                          child: TextField(
+                            controller: wearMaxController,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                            ),
+                            onChanged: (_) => setModalState(() {}),
+                            decoration: InputDecoration(
+                              labelText: 'app.market.filter.price_highest'.tr,
+                              hintText: maxWearHint,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: FilledButton(
-                      onPressed: () => Navigator.of(context).pop(true),
-                      child: Text('app.common.confirm'.tr),
+                    const SizedBox(height: 10),
+                    Text(
+                      'app.market.filter.selection_quick'.tr,
+                      style: Theme.of(context).textTheme.bodySmall,
                     ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
-    );
-    if (result == true) {
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: wearQuickOptions
+                          .map(
+                            (option) => _buildFilterChip(
+                              context,
+                              label: option.label,
+                              selected: isQuickSelected(option),
+                              onSelected: () {
+                                setModalState(() {
+                                  wearMinController.text = option.minText;
+                                  wearMaxController.text = option.maxText;
+                                });
+                              },
+                            ),
+                          )
+                          .toList(growable: false),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () {
+                              Navigator.of(context).pop(
+                                const _ProductFilterResult(),
+                              );
+                            },
+                            child: Text('app.market.filter.reset'.tr),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: FilledButton(
+                            onPressed: () {
+                              final normalized = _normalizeWearRange(
+                                minInput: wearMinController.text,
+                                maxInput: wearMaxController.text,
+                                exteriorKey: exteriorKey,
+                              );
+                              Navigator.of(context).pop(
+                                _ProductFilterResult(
+                                  wearMin: normalized.min,
+                                  wearMax: normalized.max,
+                                ),
+                              );
+                            },
+                            child: Text('app.market.filter.finish'.tr),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            },
+          );
+        },
+      );
+      if (result == null) {
+        return;
+      }
       setState(() {
-        _paintIndex = int.tryParse(paintController.text);
-        _wearMin = double.tryParse(wearMinController.text);
-        _wearMax = double.tryParse(wearMaxController.text);
+        _wearMin = result.wearMin;
+        _wearMax = result.wearMax;
         _filterLabel = _buildFilterLabel();
       });
+    } finally {
+      wearMinController.dispose();
+      wearMaxController.dispose();
     }
   }
 
   String _buildFilterLabel() {
     final parts = <String>[];
-    if (_paintIndex != null) {
-      parts.add('${'app.market.csgo.paint_index'.tr}: $_paintIndex');
-    }
     if (_wearMin != null || _wearMax != null) {
       parts.add(
         '${'app.market.filter.csgo.wear_interval'.tr}: '
-        '${_wearMin ?? '-'} - ${_wearMax ?? '-'}',
+        '${_wearMin != null ? _formatWearValue(_wearMin!) : '-'} - '
+        '${_wearMax != null ? _formatWearValue(_wearMax!) : '-'}',
       );
     }
     if (parts.isEmpty) {
       return 'app.common.unlimited'.tr;
     }
     return parts.join(' / ');
+  }
+
+  List<_ProductWearQuickOption> _buildWearQuickOptions(String? exteriorKey) {
+    switch (exteriorKey) {
+      case 'WearCategory0':
+        return const <_ProductWearQuickOption>[
+          _ProductWearQuickOption(0.00, 0.01),
+          _ProductWearQuickOption(0.01, 0.02),
+          _ProductWearQuickOption(0.02, 0.03),
+          _ProductWearQuickOption(0.03, 0.04),
+          _ProductWearQuickOption(0.04, 0.07),
+        ];
+      case 'WearCategory1':
+        return const <_ProductWearQuickOption>[
+          _ProductWearQuickOption(0.07, 0.08),
+          _ProductWearQuickOption(0.08, 0.09),
+          _ProductWearQuickOption(0.09, 0.10),
+          _ProductWearQuickOption(0.10, 0.11),
+          _ProductWearQuickOption(0.11, 0.15),
+        ];
+      case 'WearCategory2':
+        return const <_ProductWearQuickOption>[
+          _ProductWearQuickOption(0.15, 0.18),
+          _ProductWearQuickOption(0.18, 0.21),
+          _ProductWearQuickOption(0.21, 0.24),
+          _ProductWearQuickOption(0.24, 0.27),
+          _ProductWearQuickOption(0.27, 0.38),
+        ];
+      case 'WearCategory3':
+        return const <_ProductWearQuickOption>[
+          _ProductWearQuickOption(0.38, 0.39),
+          _ProductWearQuickOption(0.39, 0.40),
+          _ProductWearQuickOption(0.40, 0.41),
+          _ProductWearQuickOption(0.41, 0.42),
+          _ProductWearQuickOption(0.42, 0.45),
+        ];
+      case 'WearCategory4':
+        return const <_ProductWearQuickOption>[
+          _ProductWearQuickOption(0.45, 0.50),
+          _ProductWearQuickOption(0.50, 0.63),
+          _ProductWearQuickOption(0.63, 0.76),
+          _ProductWearQuickOption(0.76, 0.90),
+          _ProductWearQuickOption(0.90, 1.00),
+        ];
+      default:
+        return const <_ProductWearQuickOption>[
+          _ProductWearQuickOption(0.00, 0.01),
+          _ProductWearQuickOption(0.01, 0.02),
+          _ProductWearQuickOption(0.02, 0.03),
+          _ProductWearQuickOption(0.03, 0.04),
+          _ProductWearQuickOption(0.04, 0.07),
+        ];
+    }
+  }
+
+  _ProductWearRange _normalizeWearRange({
+    required String minInput,
+    required String maxInput,
+    required String? exteriorKey,
+  }) {
+    final quickOptions = _buildWearQuickOptions(exteriorKey);
+    final minAllowed = quickOptions.first.min;
+    final maxAllowed = quickOptions.last.max;
+
+    var min = _toDouble(minInput.trim());
+    var max = _toDouble(maxInput.trim());
+
+    if (min != null) {
+      if (min < minAllowed) {
+        min = minAllowed;
+      } else if (min > maxAllowed) {
+        min = maxAllowed;
+      }
+    }
+
+    if (max != null) {
+      if (max < minAllowed) {
+        max = minAllowed;
+      } else if (max > maxAllowed) {
+        max = maxAllowed;
+      }
+    }
+
+    if (min != null && max != null && min > max) {
+      max = min;
+    }
+
+    return _ProductWearRange(
+      min: min != null ? double.parse(min.toStringAsFixed(2)) : null,
+      max: max != null ? double.parse(max.toStringAsFixed(2)) : null,
+    );
+  }
+
+  Widget _buildFilterChip(
+    BuildContext context, {
+    required String label,
+    required bool selected,
+    required VoidCallback onSelected,
+  }) {
+    final colors = Theme.of(context).colorScheme;
+    return FilterChip(
+      selected: selected,
+      label: Text(label),
+      onSelected: (_) => onSelected(),
+      showCheckmark: false,
+      selectedColor: colors.primary.withValues(alpha: 0.16),
+      side: BorderSide(
+        color: selected
+            ? colors.primary.withValues(alpha: 0.85)
+            : colors.outline.withValues(alpha: 0.45),
+      ),
+      labelStyle: Theme.of(context).textTheme.bodySmall?.copyWith(
+        color: selected ? colors.primary : colors.onSurface,
+        fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+      ),
+      backgroundColor: colors.surfaceContainerHighest.withValues(alpha: 0.35),
+      visualDensity: const VisualDensity(horizontal: -2, vertical: -2),
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    );
+  }
+
+  String _formatWearValue(double value) => value.toStringAsFixed(2);
+
+  double? _toDouble(dynamic value) {
+    if (value == null) {
+      return null;
+    }
+    if (value is double) {
+      return value;
+    }
+    if (value is num) {
+      return value.toDouble();
+    }
+    final text = value.toString().trim();
+    if (text.isEmpty) {
+      return null;
+    }
+    return double.tryParse(text);
   }
 
   Future<void> _submit() async {
@@ -379,7 +609,6 @@ class _ProductBuyingPageState extends State<ProductBuyingPage> {
           'price': price,
           'appId': _appId,
           'schemaId': _schemaId,
-          'paintIndex': _paintIndex,
           'paintWearMax': _wearMax,
           'paintWearMin': _wearMin,
         }..removeWhere((key, value) => value == null),
@@ -421,10 +650,7 @@ class _ProductBuyingPageState extends State<ProductBuyingPage> {
 
       if (res.success) {
         Get.back(result: true);
-        Get.snackbar(
-          'app.system.tips.title'.tr,
-          'app.system.message.success'.tr,
-        );
+        AppSnackbar.success('app.system.message.success'.tr);
         final controller = Get.isRegistered<BuyRequestController>()
             ? Get.find<BuyRequestController>()
             : null;
@@ -442,311 +668,100 @@ class _ProductBuyingPageState extends State<ProductBuyingPage> {
     }
   }
 
-  Widget _buildHeaderCard({
-    required BuildContext context,
-    required CurrencyController currency,
-    required String imageUrl,
-    required String title,
-    required double sellMin,
-    required double buyMax,
-    required double reference,
-  }) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            colors.primary.withValues(alpha: isDark ? 0.24 : 0.14),
-            colors.secondary.withValues(alpha: isDark ? 0.2 : 0.1),
-          ],
-        ),
-      ),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: colors.outlineVariant.withValues(alpha: 0.5),
-          ),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 86,
-              height: 86,
-              decoration: BoxDecoration(
-                color: colors.surface.withValues(alpha: isDark ? 0.42 : 0.82),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(14),
-                child: CachedNetworkImage(
-                  imageUrl: imageUrl,
-                  fit: BoxFit.cover,
-                  placeholder: (context, _) => const Center(
-                    child: SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    ),
-                  ),
-                  errorWidget: (context, _, __) =>
-                      const Icon(Icons.image_not_supported_outlined),
-                ),
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      _buildStatPill(
-                        context: context,
-                        icon: Icons.south_west_rounded,
-                        label: 'app.market.detail.sale_lowest'.tr,
-                        value: currency.format(sellMin),
-                        accent: colors.primary,
-                      ),
-                      _buildStatPill(
-                        context: context,
-                        icon: Icons.north_east_rounded,
-                        label: 'app.market.detail.purchase_highest'.tr,
-                        value: currency.format(buyMax),
-                        accent: colors.tertiary,
-                      ),
-                      if (reference > 0)
-                        _buildStatPill(
-                          context: context,
-                          icon: Icons.public_rounded,
-                          label: 'app.market.detail.steam_price'.tr,
-                          value: currency.format(reference),
-                          accent: colors.secondary,
-                        ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatPill({
-    required BuildContext context,
-    required IconData icon,
-    required String label,
-    required String value,
-    required Color accent,
+  Widget _buildRowContainer(
+    BuildContext context, {
+    required Widget child,
+    bool withTopGap = true,
   }) {
     final colors = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      margin: EdgeInsets.fromLTRB(14, withTopGap ? 12 : 0, 14, 0),
       decoration: BoxDecoration(
-        color: colors.surface.withValues(alpha: 0.75),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: accent),
-          const SizedBox(width: 5),
-          Text(
-            '$label: $value',
-            style: Theme.of(
-              context,
-            ).textTheme.labelMedium?.copyWith(color: colors.onSurface),
+        color: colors.surface.withValues(alpha: 0.94),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: colors.outline.withValues(alpha: 0.12)),
+        boxShadow: [
+          BoxShadow(
+            color: colors.shadow.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
+      child: child,
     );
   }
 
-  Widget _buildTradeConfigCard({
-    required BuildContext context,
-    required CurrencyController currency,
-    required String purchaseTips,
+  Widget _buildHeaderPill(
+    BuildContext context, {
+    required String label,
+    required String value,
+    required Color color,
   }) {
     final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-    return Card(
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.tune_rounded, color: colors.primary, size: 18),
-                const SizedBox(width: 6),
-                Text(
-                  'app.trade.purchase.text'.tr,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            if (_showFilter)
-              Material(
-                color: colors.surfaceContainerHighest.withValues(alpha: 0.42),
-                borderRadius: BorderRadius.circular(12),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(12),
-                  onTap: _openFilterSheet,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            _filterLabel ?? 'app.common.unlimited'.tr,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.bodySmall,
-                          ),
-                        ),
-                        Icon(
-                          Icons.chevron_right_rounded,
-                          color: colors.onSurfaceVariant,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            if (_showFilter) const SizedBox(height: 12),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _priceController,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    decoration: InputDecoration(
-                      labelText: 'app.trade.purchase.price'.tr,
-                      hintText:
-                          '${'app.market.filter.price_lowest'.tr}${currency.format(_purMinPrice)}',
-                      prefixIcon: const Icon(Icons.attach_money_rounded),
-                      filled: true,
-                      fillColor: colors.surfaceContainerHighest.withValues(
-                        alpha: 0.28,
-                      ),
-                    ),
-                    onChanged: _sanitizePrice,
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: TextField(
-                    controller: _numController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: 'app.trade.purchase.num'.tr,
-                      hintText: 'app.trade.purchase.num_placeholder'.tr,
-                      prefixIcon: const Icon(
-                        Icons.format_list_numbered_rounded,
-                      ),
-                      filled: true,
-                      fillColor: colors.surfaceContainerHighest.withValues(
-                        alpha: 0.28,
-                      ),
-                    ),
-                    onChanged: _sanitizeNum,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                color: colors.surfaceContainerHighest.withValues(alpha: 0.38),
-              ),
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 6,
-                children: [
-                  Text(
-                    purchaseTips,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Text(
-                    '${'app.market.filter.price_lowest'.tr}: ${currency.format(_purMinPrice)}',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colors.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        '$label $value',
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: color,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );
   }
 
-  Widget _buildNoticeCard(BuildContext context) {
+  Widget _buildInputShell(BuildContext context, {required Widget child}) {
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      height: 40,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: colors.surfaceContainerHighest.withValues(alpha: 0.32),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Center(child: child),
+    );
+  }
+
+  Widget _buildNoticeSection(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
-    return Card(
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+        decoration: BoxDecoration(
+          color: colors.surfaceContainerHighest.withValues(alpha: 0.22),
+          borderRadius: BorderRadius.circular(12),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.info_outline_rounded,
-                  size: 18,
-                  color: colors.primary,
+            RichText(
+              text: TextSpan(
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colors.onSurfaceVariant,
                 ),
-                const SizedBox(width: 6),
-                Text(
-                  'app.system.tips.title'.tr,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
+                children: [
+                  TextSpan(text: '1.${'app.trade.purchase.buyer_notice_1'.tr}'),
+                  TextSpan(
+                    text: ' ${'app.trade.purchase.buyer_notice_2'.tr} ',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colors.error,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-              ],
+                  TextSpan(text: ' ${'app.trade.purchase.buyer_notice_3'.tr}'),
+                ],
+              ),
             ),
             const SizedBox(height: 8),
-            Text(
-              '1.${'app.trade.purchase.buyer_notice_1'.tr}'
-              '${'app.trade.purchase.buyer_notice_2'.tr}'
-              '${'app.trade.purchase.buyer_notice_3'.tr}',
-              style: theme.textTheme.bodySmall,
-            ),
-            const SizedBox(height: 6),
             Text(
               '2.${'app.trade.purchase.buyer_notice_4'.tr}',
               style: theme.textTheme.bodySmall?.copyWith(
@@ -770,7 +785,6 @@ class _ProductBuyingPageState extends State<ProductBuyingPage> {
     final schema = _schema;
     final imageUrl = schema?.imageUrl ?? '';
     final title = schema?.marketName ?? schema?.marketHashName ?? '-';
-    final reference = schema?.referencePrice ?? 0;
     final sellMin = schema?.sellMin ?? 0;
     final buyMax = schema?.buyMax ?? 0;
     final purchaseTips = formatWithParams(
@@ -779,38 +793,248 @@ class _ProductBuyingPageState extends State<ProductBuyingPage> {
     );
     return Scaffold(
       appBar: AppBar(title: Text('app.trade.purchase.text'.tr)),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 120),
-        children: [
-          Obx(
-            () => _buildHeaderCard(
-              context: context,
-              currency: currency,
-              imageUrl: imageUrl,
-              title: title,
-              sellMin: sellMin,
-              buyMax: buyMax,
-              reference: reference,
-            ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              colors.primary.withValues(alpha: 0.05),
+              colors.surface,
+              colors.surface,
+            ],
+            stops: const [0.0, 0.24, 1.0],
           ),
-          const SizedBox(height: 12),
-          Obx(
-            () => _buildTradeConfigCard(
-              context: context,
-              currency: currency,
-              purchaseTips: purchaseTips,
+        ),
+        child: ListView(
+          padding: const EdgeInsets.only(bottom: 108),
+          children: [
+            _buildRowContainer(
+              context,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 84,
+                      height: 84,
+                      decoration: BoxDecoration(
+                        color: colors.surfaceContainerHighest.withValues(
+                          alpha: 0.38,
+                        ),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: CachedNetworkImage(
+                          imageUrl: imageUrl,
+                          fit: BoxFit.contain,
+                          placeholder: (context, _) => const SizedBox(
+                            width: 82,
+                            height: 82,
+                            child: Center(
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
+                          errorWidget: (context, _, __) =>
+                              const Icon(Icons.image_not_supported_outlined),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              height: 1.25,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Obx(
+                            () => Wrap(
+                              spacing: 8,
+                              runSpacing: 8,
+                              children: [
+                                _buildHeaderPill(
+                                  context,
+                                  label:
+                                      '${'app.market.detail.sale_lowest'.tr}:',
+                                  value: currency.format(sellMin),
+                                  color: colors.primary,
+                                ),
+                                _buildHeaderPill(
+                                  context,
+                                  label:
+                                      '${'app.market.detail.purchase_highest'.tr}:',
+                                  value: currency.format(buyMax),
+                                  color: colors.tertiary,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
-          _buildNoticeCard(context),
-        ],
+            if (_showFilter)
+              _buildRowContainer(
+                context,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(14),
+                  onTap: _openFilterSheet,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.filter_alt_rounded,
+                          size: 18,
+                          color: colors.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        SizedBox(
+                          width: 96,
+                          child: Text(
+                            'app.market.filter.text'.tr,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Text(
+                            _filterLabel ?? 'app.common.unlimited'.tr,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: colors.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            _buildRowContainer(
+              context,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 96,
+                      child: Text(
+                        'app.trade.purchase.price'.tr,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildInputShell(
+                        context,
+                        child: TextField(
+                          controller: _priceController,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          decoration: InputDecoration(
+                            isDense: true,
+                            hintText:
+                                '${'app.market.filter.price_lowest'.tr}${currency.format(_purMinPrice)}',
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                          onChanged: _sanitizePrice,
+                          onEditingComplete: _calibratePrice,
+                          onSubmitted: (_) => _calibratePrice(),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            _buildRowContainer(
+              context,
+              withTopGap: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 96,
+                      child: Text(
+                        'app.trade.purchase.num'.tr,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                    ),
+                    Expanded(
+                      child: _buildInputShell(
+                        context,
+                        child: TextField(
+                          controller: _numController,
+                          keyboardType: TextInputType.number,
+                          decoration: InputDecoration(
+                            isDense: true,
+                            hintText: 'app.trade.purchase.num_placeholder'.tr,
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.zero,
+                          ),
+                          onChanged: _sanitizeNum,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            if (_purchaseNum >= 0 && _remainNum >= 0)
+              _buildRowContainer(
+                context,
+                withTopGap: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                  child: Text(
+                    purchaseTips,
+                    textAlign: TextAlign.left,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ),
+            _buildNoticeSection(context),
+          ],
+        ),
       ),
       bottomNavigationBar: SafeArea(
         top: false,
         child: Container(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
           decoration: BoxDecoration(
             color: colors.surface,
+            border: Border(
+              top: BorderSide(color: colors.outline.withValues(alpha: 0.16)),
+            ),
             boxShadow: [
               BoxShadow(
                 color: colors.shadow.withValues(alpha: 0.08),
@@ -819,51 +1043,49 @@ class _ProductBuyingPageState extends State<ProductBuyingPage> {
               ),
             ],
           ),
+          padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
           child: Row(
             children: [
               Expanded(
                 child: Obx(
-                  () => Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
+                  () => Row(
                     children: [
                       Text(
-                        '${'app.market.price_total'.tr}: ${currency.format(_totalAmount())}',
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
+                        '${'app.market.price_total'.tr}: ',
+                        style: theme.textTheme.titleSmall,
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${'app.trade.purchase.price'.tr}: '
-                        '${currency.format(_enteredPrice())}  ·  '
-                        '${'app.trade.purchase.num'.tr}: ${_enteredQuantity()}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colors.onSurfaceVariant,
+                      Flexible(
+                        child: Text(
+                          currency.format(_totalAmount()),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.titleSmall?.copyWith(
+                            color: colors.primary,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
               ),
-              FilledButton.icon(
-                onPressed: _isSubmitting ? null : _submit,
-                icon: _isSubmitting
-                    ? const SizedBox(
-                        height: 16,
-                        width: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(
-                        Icons.shopping_cart_checkout_rounded,
-                        size: 18,
-                      ),
-                label: Text('app.market.detail.release_purchase'.tr),
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
+              SizedBox(
+                height: 42,
+                child: FilledButton(
+                  onPressed: _isSubmitting ? null : _submit,
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 18),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text('app.market.detail.release_purchase'.tr),
                 ),
               ),
             ],
@@ -872,4 +1094,34 @@ class _ProductBuyingPageState extends State<ProductBuyingPage> {
       ),
     );
   }
+}
+
+class _ProductWearQuickOption {
+  final double min;
+  final double max;
+
+  const _ProductWearQuickOption(this.min, this.max);
+
+  String get minText => min.toStringAsFixed(2);
+
+  String get maxText => max.toStringAsFixed(2);
+
+  String get label => '${min.toStringAsFixed(2)}-${max.toStringAsFixed(2)}';
+}
+
+class _ProductWearRange {
+  final double? min;
+  final double? max;
+
+  const _ProductWearRange({this.min, this.max});
+}
+
+class _ProductFilterResult {
+  final double? wearMin;
+  final double? wearMax;
+
+  const _ProductFilterResult({
+    this.wearMin,
+    this.wearMax,
+  });
 }
