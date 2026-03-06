@@ -92,11 +92,13 @@ class MarketDetailController extends GetxController {
         pricePoints.clear();
         return;
       }
+      final useAuth = UserStorage.getUserInfo() != null;
       final res = await _api.priceTrend(
         appId: appId,
         marketHashName: marketHashName,
         days: days,
-        useAuth: false,
+        useAuth: useAuth,
+        fallbackToPublicOnFail: true,
       );
       pricePoints
         ..clear()
@@ -120,6 +122,7 @@ class MarketDetailController extends GetxController {
         _onSaleHasMore = true;
         onSaleItems.clear();
       }
+      final useAuth = UserStorage.getUserInfo() != null;
       final res = await _api.onSaleList(
         appId: appId,
         schemaId: schemaId!,
@@ -133,6 +136,8 @@ class MarketDetailController extends GetxController {
         paintIndex: _onSalePaintIndex,
         paintWearMin: _onSalePaintWearMin,
         paintWearMax: _onSalePaintWearMax,
+        useAuth: useAuth,
+        fallbackToPublicOnFail: true,
       );
       final data = res.datas;
       final fetchedCount = data?.items.length ?? 0;
@@ -222,22 +227,14 @@ class MarketDetailController extends GetxController {
         buyRequests.clear();
       }
       final useAuth = UserStorage.getUserInfo() != null;
-      var res = await _api.buyRequestList(
+      final res = await _api.buyRequestList(
         appId: appId,
         schemaId: schemaId!,
         page: _buyRequestPage,
         pageSize: _buyRequestPageSize,
         useAuth: useAuth,
+        fallbackToPublicOnFail: true,
       );
-      if (!res.success && useAuth) {
-        res = await _api.buyRequestList(
-          appId: appId,
-          schemaId: schemaId!,
-          page: _buyRequestPage,
-          pageSize: _buyRequestPageSize,
-          useAuth: false,
-        );
-      }
       final data = res.datas;
       final fetchedCount = data?.items.length ?? 0;
       if (data == null || fetchedCount == 0) {

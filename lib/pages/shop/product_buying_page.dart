@@ -62,18 +62,12 @@ class _ProductBuyingPageState extends State<ProductBuyingPage> {
     setState(() => _isLoading = true);
     try {
       final useAuth = UserStorage.getUserInfo() != null;
-      var res = await _marketApi.marketTemplateDetail(
+      final res = await _marketApi.marketTemplateDetail(
         appId: _appId,
         schemaId: _schemaId,
         useAuth: useAuth,
+        fallbackToPublicOnFail: true,
       );
-      if (!res.success && useAuth) {
-        res = await _marketApi.marketTemplateDetail(
-          appId: _appId,
-          schemaId: _schemaId,
-          useAuth: false,
-        );
-      }
       _schema = res.datas?.schema;
       _paintKits = res.datas?.paintKits;
 
@@ -158,12 +152,15 @@ class _ProductBuyingPageState extends State<ProductBuyingPage> {
   }
 
   Future<void> _openFilterSheet() async {
-    final paintController =
-        TextEditingController(text: _paintIndex?.toString() ?? '');
-    final wearMinController =
-        TextEditingController(text: _wearMin?.toString() ?? '');
-    final wearMaxController =
-        TextEditingController(text: _wearMax?.toString() ?? '');
+    final paintController = TextEditingController(
+      text: _paintIndex?.toString() ?? '',
+    );
+    final wearMinController = TextEditingController(
+      text: _wearMin?.toString() ?? '',
+    );
+    final wearMaxController = TextEditingController(
+      text: _wearMax?.toString() ?? '',
+    );
     final result = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
@@ -197,8 +194,9 @@ class _ProductBuyingPageState extends State<ProductBuyingPage> {
                   Expanded(
                     child: TextField(
                       controller: wearMinController,
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                       decoration: InputDecoration(
                         labelText: 'app.market.filter.price_lowest'.tr,
                       ),
@@ -208,8 +206,9 @@ class _ProductBuyingPageState extends State<ProductBuyingPage> {
                   Expanded(
                     child: TextField(
                       controller: wearMaxController,
-                      keyboardType:
-                          const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                       decoration: InputDecoration(
                         labelText: 'app.market.filter.price_highest'.tr,
                       ),
@@ -273,10 +272,7 @@ class _ProductBuyingPageState extends State<ProductBuyingPage> {
     }
     final user = UserStorage.getUserInfo();
     if (user == null) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.system.message.nologin'.tr,
-      );
+      Get.snackbar('app.system.tips.title'.tr, 'app.system.message.nologin'.tr);
       return;
     }
     if (!await _checkPurchaseOnline()) {
@@ -419,9 +415,7 @@ class _ProductBuyingPageState extends State<ProductBuyingPage> {
       } else {
         Get.snackbar(
           'app.system.tips.title'.tr,
-          res.message.isNotEmpty
-              ? res.message
-              : 'app.trade.filter.failed'.tr,
+          res.message.isNotEmpty ? res.message : 'app.trade.filter.failed'.tr,
         );
       }
     } finally {
@@ -435,9 +429,7 @@ class _ProductBuyingPageState extends State<ProductBuyingPage> {
   Widget build(BuildContext context) {
     final currency = Get.find<CurrencyController>();
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     final schema = _schema;
     final imageUrl = schema?.imageUrl ?? '';
@@ -450,9 +442,7 @@ class _ProductBuyingPageState extends State<ProductBuyingPage> {
       [_purchaseNum, _remainNum],
     );
     return Scaffold(
-      appBar: AppBar(
-        title: Text('app.trade.purchase.text'.tr),
-      ),
+      appBar: AppBar(title: Text('app.trade.purchase.text'.tr)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -484,7 +474,11 @@ class _ProductBuyingPageState extends State<ProductBuyingPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(title, maxLines: 2, overflow: TextOverflow.ellipsis),
+                        Text(
+                          title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                         const SizedBox(height: 8),
                         Obx(
                           () => Text(
@@ -529,7 +523,9 @@ class _ProductBuyingPageState extends State<ProductBuyingPage> {
           Obx(
             () => TextField(
               controller: _priceController,
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
               decoration: InputDecoration(
                 labelText: 'app.trade.purchase.price'.tr,
                 hintText:

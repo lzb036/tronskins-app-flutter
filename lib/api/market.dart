@@ -7,6 +7,18 @@ import 'package:tronskins_app/common/http/model/base_response.dart';
 class ApiMarketServer {
   final HttpHelper http = HttpHelper.getInstance();
 
+  Future<BaseHttpResponse<T>> _requestWithPublicFallback<T>({
+    required bool useAuth,
+    required bool fallbackToPublicOnFail,
+    required Future<BaseHttpResponse<T>> Function(bool useAuth) request,
+  }) async {
+    var res = await request(useAuth);
+    if (fallbackToPublicOnFail && useAuth && !res.success) {
+      res = await request(false);
+    }
+    return res;
+  }
+
   Future<BaseHttpResponse<List<MarketItemEntity>>> marketNews({
     required int appId,
     int page = 1,
@@ -120,31 +132,42 @@ class ApiMarketServer {
     int? paintIndex,
     double? paintWearMin,
     double? paintWearMax,
+    bool useAuth = true,
+    bool fallbackToPublicOnFail = false,
   }) async {
-    final response = await http.post(
-      'api/app/order/sell/details/list',
-      data: {
-        'appId': appId,
-        'schemaId': schemaId,
-        'page': page,
-        'pageSize': pageSize,
-        'field': field,
-        'asc': asc,
-        'minPrice': minPrice,
-        'maxPrice': maxPrice,
-        'paintSeed': paintSeed,
-        'userId': userId,
-        'paintIndex': paintIndex,
-        'paintWearMin': paintWearMin,
-        'paintWearMax': paintWearMax,
-      }..removeWhere((_, value) => value == null),
-    );
-    return BaseHttpResponse.fromJson(
-      response.data as Map<String, dynamic>,
-      (json) => MarketListResponse.fromJson(
-        json as Map<String, dynamic>,
-        listKey: 'sells',
-      ),
+    return _requestWithPublicFallback(
+      useAuth: useAuth,
+      fallbackToPublicOnFail: fallbackToPublicOnFail,
+      request: (auth) async {
+        final path = auth
+            ? 'api/app/order/sell/details/list'
+            : 'api/public/order/sell/details/list';
+        final response = await http.post(
+          path,
+          data: {
+            'appId': appId,
+            'schemaId': schemaId,
+            'page': page,
+            'pageSize': pageSize,
+            'field': field,
+            'asc': asc,
+            'minPrice': minPrice,
+            'maxPrice': maxPrice,
+            'paintSeed': paintSeed,
+            'userId': userId,
+            'paintIndex': paintIndex,
+            'paintWearMin': paintWearMin,
+            'paintWearMax': paintWearMax,
+          }..removeWhere((_, value) => value == null),
+        );
+        return BaseHttpResponse.fromJson(
+          response.data as Map<String, dynamic>,
+          (json) => MarketListResponse.fromJson(
+            json as Map<String, dynamic>,
+            listKey: 'sells',
+          ),
+        );
+      },
     );
   }
 
@@ -178,22 +201,29 @@ class ApiMarketServer {
     int days = 30,
     String market = 'steam',
     bool useAuth = false,
+    bool fallbackToPublicOnFail = false,
   }) async {
-    final path = useAuth
-        ? 'api/app/goods/price/history/list'
-        : 'api/public/goods/price/history/list';
-    final response = await http.post(
-      path,
-      data: {
-        'appId': appId,
-        'marketHashName': marketHashName,
-        'days': days,
-        'market': market,
+    return _requestWithPublicFallback(
+      useAuth: useAuth,
+      fallbackToPublicOnFail: fallbackToPublicOnFail,
+      request: (auth) async {
+        final path = auth
+            ? 'api/app/goods/price/history/list'
+            : 'api/public/goods/price/history/list';
+        final response = await http.post(
+          path,
+          data: {
+            'appId': appId,
+            'marketHashName': marketHashName,
+            'days': days,
+            'market': market,
+          },
+        );
+        return BaseHttpResponse.fromJson(
+          response.data as Map<String, dynamic>,
+          (json) => MarketPriceTrendData.fromJson(json as Map<String, dynamic>),
+        );
       },
-    );
-    return BaseHttpResponse.fromJson(
-      response.data as Map<String, dynamic>,
-      (json) => MarketPriceTrendData.fromJson(json as Map<String, dynamic>),
     );
   }
 
@@ -201,14 +231,21 @@ class ApiMarketServer {
     required int appId,
     required int schemaId,
     bool useAuth = false,
+    bool fallbackToPublicOnFail = false,
   }) async {
-    final path = useAuth
-        ? 'api/app/goods/$appId/$schemaId/show'
-        : 'api/public/goods/$appId/$schemaId/show';
-    final response = await http.get(path);
-    return BaseHttpResponse.fromJson(
-      response.data as Map<String, dynamic>,
-      (json) => MarketTemplateDetail.fromJson(json as Map<String, dynamic>),
+    return _requestWithPublicFallback(
+      useAuth: useAuth,
+      fallbackToPublicOnFail: fallbackToPublicOnFail,
+      request: (auth) async {
+        final path = auth
+            ? 'api/app/goods/$appId/$schemaId/show'
+            : 'api/public/goods/$appId/$schemaId/show';
+        final response = await http.get(path);
+        return BaseHttpResponse.fromJson(
+          response.data as Map<String, dynamic>,
+          (json) => MarketTemplateDetail.fromJson(json as Map<String, dynamic>),
+        );
+      },
     );
   }
 
@@ -218,26 +255,33 @@ class ApiMarketServer {
     int page = 1,
     int pageSize = 20,
     bool useAuth = false,
+    bool fallbackToPublicOnFail = false,
   }) async {
-    final path = useAuth
-        ? 'api/app/order/buy/details/list'
-        : 'api/public/order/buy/details/list';
-    final response = await http.post(
-      path,
-      data: {
-        'appId': appId,
-        'schemaId': schemaId,
-        'page': page,
-        'pageSize': pageSize,
+    return _requestWithPublicFallback(
+      useAuth: useAuth,
+      fallbackToPublicOnFail: fallbackToPublicOnFail,
+      request: (auth) async {
+        final path = auth
+            ? 'api/app/order/buy/details/list'
+            : 'api/public/order/buy/details/list';
+        final response = await http.post(
+          path,
+          data: {
+            'appId': appId,
+            'schemaId': schemaId,
+            'page': page,
+            'pageSize': pageSize,
+          },
+        );
+        return BaseHttpResponse.fromJson(
+          response.data as Map<String, dynamic>,
+          (json) => ShopListResponse.fromJson(
+            json as Map<String, dynamic>,
+            BuyRequestItem.fromJson,
+            listKey: 'assets',
+          ),
+        );
       },
-    );
-    return BaseHttpResponse.fromJson(
-      response.data as Map<String, dynamic>,
-      (json) => ShopListResponse.fromJson(
-        json as Map<String, dynamic>,
-        BuyRequestItem.fromJson,
-        listKey: 'assets',
-      ),
     );
   }
 

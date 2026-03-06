@@ -184,18 +184,12 @@ class _MarketDetailPageState extends State<MarketDetailPage>
     setState(() => _loadingTemplate = true);
     try {
       final useAuth = UserStorage.getUserInfo() != null;
-      var res = await _marketApi.marketTemplateDetail(
+      final res = await _marketApi.marketTemplateDetail(
         appId: appId,
         schemaId: targetId,
         useAuth: useAuth,
+        fallbackToPublicOnFail: true,
       );
-      if (!res.success && useAuth) {
-        res = await _marketApi.marketTemplateDetail(
-          appId: appId,
-          schemaId: targetId,
-          useAuth: false,
-        );
-      }
       final detail = res.datas;
       if (detail == null) {
         return;

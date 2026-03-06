@@ -73,18 +73,12 @@ class _BulkBuyingPageState extends State<BulkBuyingPage> {
     setState(() => _isLoading = true);
     try {
       final useAuth = UserStorage.getUserInfo() != null;
-      var res = await _marketApi.marketTemplateDetail(
+      final res = await _marketApi.marketTemplateDetail(
         appId: _appId,
         schemaId: _schemaId,
         useAuth: useAuth,
+        fallbackToPublicOnFail: true,
       );
-      if (!res.success && useAuth) {
-        res = await _marketApi.marketTemplateDetail(
-          appId: _appId,
-          schemaId: _schemaId,
-          useAuth: false,
-        );
-      }
       _schema = res.datas?.schema;
       _paintKits = res.datas?.paintKits;
       _showPaintKits = _isShowPaintKits(_schema, _paintKits);
@@ -162,7 +156,9 @@ class _BulkBuyingPageState extends State<BulkBuyingPage> {
       }
       return;
     }
-    final userId = int.tryParse(UserStorage.getUserInfo()?.id ?? '');
+    final user = UserStorage.getUserInfo();
+    final useAuth = user != null;
+    final userId = int.tryParse(user?.id ?? '');
     setState(() => _isLoadingMatches = true);
     try {
       final res = await _marketApi.onSaleList(
@@ -175,6 +171,8 @@ class _BulkBuyingPageState extends State<BulkBuyingPage> {
         paintIndex: _paintIndex,
         paintWearMin: _wearMin,
         paintWearMax: _wearMax,
+        useAuth: useAuth,
+        fallbackToPublicOnFail: true,
       );
       final items = res.datas?.items ?? <MarketListItem>[];
       items.sort((a, b) => (a.price ?? 0).compareTo(b.price ?? 0));
