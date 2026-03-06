@@ -701,9 +701,12 @@ class _ShopPageState extends State<ShopPage>
 
   Future<void> _openShopTabSwitchMenu(BuildContext iconContext) async {
     final currentFilter = _currentShopTabFilter();
+    final currentAppId = GameStorage.getGameType();
+    final pendingTotal = shippingNoticeController.pendingCount(currentAppId);
     final selected = await _showShopTabSwitchMenu(
       iconContext: iconContext,
       currentFilter: currentFilter,
+      pendingTotal: pendingTotal,
     );
     if (selected == null || selected == currentFilter) {
       return;
@@ -733,35 +736,45 @@ class _ShopPageState extends State<ShopPage>
             child: InkWell(
               borderRadius: BorderRadius.circular(8),
               onTap: () => _openShopTabSwitchMenu(iconContext),
-              child: SizedBox(
-                height: 34,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        _shopTabIcon(filter),
-                        size: 18,
-                        color: colors.onSurfaceVariant,
-                      ),
-                      const SizedBox(width: 4),
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 72),
-                        child: Text(
-                          label,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: colors.onSurfaceVariant,
-                            fontWeight: FontWeight.w600,
+              child: Obx(() {
+                final currentAppId = GameStorage.getGameType();
+                final hasPendingInCurrentGame =
+                    shippingNoticeController.pendingCount(currentAppId) > 0;
+                final content = SizedBox(
+                  height: 34,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _shopTabIcon(filter),
+                          size: 18,
+                          color: colors.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 4),
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 72),
+                          child: Text(
+                            label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: colors.onSurfaceVariant,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ),
+                );
+                return _buildTopActionWithDot(
+                  visible: hasPendingInCurrentGame,
+                  dotColor: Colors.orange.shade600,
+                  child: content,
+                );
+              }),
             ),
           ),
         );
@@ -2001,6 +2014,7 @@ class _ShopPageState extends State<ShopPage>
 Future<_ShopTabFilter?> _showShopTabSwitchMenu({
   required BuildContext iconContext,
   required _ShopTabFilter currentFilter,
+  required int pendingTotal,
 }) {
   final overlay =
       Overlay.of(iconContext).context.findRenderObject() as RenderBox;
@@ -2031,6 +2045,7 @@ Future<_ShopTabFilter?> _showShopTabSwitchMenu({
         alignment: alignment,
         top: panelTop,
         currentFilter: currentFilter,
+        pendingTotal: pendingTotal,
       );
     },
   );
@@ -2042,12 +2057,14 @@ class _ShopTabSwitchOverlay extends StatelessWidget {
     required this.alignment,
     required this.top,
     required this.currentFilter,
+    required this.pendingTotal,
   });
 
   final Animation<double> animation;
   final Alignment alignment;
   final double top;
   final _ShopTabFilter currentFilter;
+  final int pendingTotal;
 
   @override
   Widget build(BuildContext context) {
@@ -2073,7 +2090,10 @@ class _ShopTabSwitchOverlay extends StatelessWidget {
                 scale: Tween<double>(begin: 0.2, end: 1).animate(curved),
                 child: FadeTransition(
                   opacity: curved,
-                  child: _ShopTabSwitchPanel(currentFilter: currentFilter),
+                  child: _ShopTabSwitchPanel(
+                    currentFilter: currentFilter,
+                    pendingTotal: pendingTotal,
+                  ),
                 ),
               ),
             ),
@@ -2085,9 +2105,13 @@ class _ShopTabSwitchOverlay extends StatelessWidget {
 }
 
 class _ShopTabSwitchPanel extends StatelessWidget {
-  const _ShopTabSwitchPanel({required this.currentFilter});
+  const _ShopTabSwitchPanel({
+    required this.currentFilter,
+    required this.pendingTotal,
+  });
 
   final _ShopTabFilter currentFilter;
+  final int pendingTotal;
 
   @override
   Widget build(BuildContext context) {
@@ -2111,6 +2135,7 @@ class _ShopTabSwitchPanel extends StatelessWidget {
             icon: Icons.local_shipping_outlined,
             labelKey: 'app.market.product.wait_for_sending',
             selected: currentFilter == _ShopTabFilter.pending,
+            pendingTotal: pendingTotal,
           ),
           Divider(height: 1, color: divider),
           _ShopTabSwitchOption(
@@ -2131,16 +2156,22 @@ class _ShopTabSwitchOption extends StatelessWidget {
     required this.icon,
     required this.labelKey,
     required this.selected,
+    this.pendingTotal = 0,
   });
 
   final _ShopTabFilter filter;
   final IconData icon;
   final String labelKey;
   final bool selected;
+  final int pendingTotal;
 
   @override
   Widget build(BuildContext context) {
     const selectedColor = Color(0xFFFFB800);
+    const pendingColor = Color(0xFFFF9800);
+    final hasPendingHint = filter == _ShopTabFilter.pending && pendingTotal > 0;
+    final dividerColor = Theme.of(context).dividerColor;
+    final colors = Theme.of(context).colorScheme;
     return InkWell(
       onTap: () => Navigator.of(context).pop(filter),
       child: Padding(
@@ -2158,7 +2189,64 @@ class _ShopTabSwitchOption extends StatelessWidget {
                 ),
               ),
             ),
-            if (selected)
+            if (hasPendingHint)
+              Container(
+                margin: const EdgeInsets.only(left: 10),
+                padding: const EdgeInsets.only(left: 10),
+                decoration: BoxDecoration(
+                  border: Border(
+                    left: BorderSide(
+                      color: dividerColor.withValues(alpha: 0.7),
+                    ),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: const BoxDecoration(
+                        color: pendingColor,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 88),
+                      child: Text(
+                        'app.system.tips.pending'.tr,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: pendingColor,
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: Text(
+                        '$pendingTotal',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else if (selected)
               const Icon(Icons.check, color: selectedColor, size: 18),
           ],
         ),
