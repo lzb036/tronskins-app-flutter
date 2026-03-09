@@ -713,203 +713,197 @@ class _ShopPriceChangePageState extends State<ShopPriceChangePage> {
   }
 
   Widget _buildHeaderCard(BuildContext context, CurrencyController currency) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Card(
-      margin: const EdgeInsets.fromLTRB(16, 6, 16, 4),
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(
-          color: Theme.of(context).dividerColor.withValues(alpha: 0.4),
-        ),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              colorScheme.primaryContainer.withValues(alpha: 0.42),
-              colorScheme.surface,
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: isDark ? colorScheme.surface : Colors.white,
+        border: Border(
+          bottom: BorderSide(
+            color: colorScheme.outline.withValues(alpha: isDark ? 0.22 : 0.1),
           ),
         ),
-        padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final amountStyle = Theme.of(
-                  context,
-                ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600);
-                final feeText = _loadingParams
-                    ? '--'
-                    : currency.format(_totalFee());
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.12 : 0.05),
+            offset: const Offset(0, 3),
+            blurRadius: 6,
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final amountStyle = Theme.of(
+              context,
+            ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600);
+            final feeText = _loadingParams
+                ? '--'
+                : currency.format(_totalFee());
 
-                if (constraints.maxWidth >= 560) {
-                  return Row(
-                    children: [
-                      Expanded(
-                        child: _buildSummaryStat(
-                          context: context,
-                          icon: Icons.inventory_2_outlined,
-                          label: 'app.inventory.upshop.nums'.tr,
-                          value: Text('${_items.length}', style: amountStyle),
+            if (constraints.maxWidth >= 560) {
+              return Row(
+                children: [
+                  Expanded(
+                    child: _buildSummaryStat(
+                      context: context,
+                      icon: Icons.inventory_2_outlined,
+                      label: 'app.inventory.upshop.nums'.tr,
+                      value: Text('${_items.length}', style: amountStyle),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _buildSummaryStat(
+                      context: context,
+                      icon: Icons.receipt_long_outlined,
+                      label: 'app.inventory.upshop.handling_charge'.tr,
+                      value: Text(
+                        feeText,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: amountStyle,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _buildSummaryStat(
+                      context: context,
+                      icon: Icons.insights_outlined,
+                      label: 'app.inventory.price_appraise'.tr,
+                      value: Obx(
+                        () => Text(
+                          currency.format(_totalAppraise()),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: amountStyle,
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _buildSummaryStat(
-                          context: context,
-                          icon: Icons.receipt_long_outlined,
-                          label: 'app.inventory.upshop.handling_charge'.tr,
-                          value: Text(
-                            feeText,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: amountStyle,
-                          ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _buildSummaryStat(
+                      context: context,
+                      icon: Icons.payments_outlined,
+                      label: 'app.inventory.upshop.expected_income'.tr,
+                      value: Obx(
+                        () => Text(
+                          currency.format(_totalIncome()),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: amountStyle,
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _buildSummaryStat(
-                          context: context,
-                          icon: Icons.insights_outlined,
-                          label: 'app.inventory.price_appraise'.tr,
-                          value: Obx(
-                            () => Text(
-                              currency.format(_totalAppraise()),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: amountStyle,
-                            ),
-                          ),
-                        ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _buildSummaryStat(
+                      context: context,
+                      icon: Icons.stars_rounded,
+                      label: 'app.inventory.upshop.expected_reward'.tr,
+                      value: Text(
+                        '${_totalRewardPoints()} ${'app.user.integral.unit'.tr}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: amountStyle,
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _buildSummaryStat(
-                          context: context,
-                          icon: Icons.payments_outlined,
-                          label: 'app.inventory.upshop.expected_income'.tr,
-                          value: Obx(
-                            () => Text(
-                              currency.format(_totalIncome()),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: amountStyle,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _buildSummaryStat(
-                          context: context,
-                          icon: Icons.stars_rounded,
-                          label: 'app.inventory.upshop.expected_reward'.tr,
-                          value: Text(
-                            '${_totalRewardPoints()} ${'app.user.integral.unit'.tr}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: amountStyle,
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                }
+                    ),
+                  ),
+                ],
+              );
+            }
 
-                return Column(
+            return Column(
+              children: [
+                Row(
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildSummaryStat(
-                            context: context,
-                            icon: Icons.inventory_2_outlined,
-                            label: 'app.inventory.upshop.nums'.tr,
-                            value: Text('${_items.length}', style: amountStyle),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _buildSummaryStat(
-                            context: context,
-                            icon: Icons.receipt_long_outlined,
-                            label: 'app.inventory.upshop.handling_charge'.tr,
-                            value: Text(
-                              feeText,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: amountStyle,
-                            ),
-                          ),
-                        ),
-                      ],
+                    Expanded(
+                      child: _buildSummaryStat(
+                        context: context,
+                        icon: Icons.inventory_2_outlined,
+                        label: 'app.inventory.upshop.nums'.tr,
+                        value: Text('${_items.length}', style: amountStyle),
+                      ),
                     ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildSummaryStat(
-                            context: context,
-                            icon: Icons.insights_outlined,
-                            label: 'app.inventory.price_appraise'.tr,
-                            value: Obx(
-                              () => Text(
-                                currency.format(_totalAppraise()),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: amountStyle,
-                              ),
-                            ),
-                          ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildSummaryStat(
+                        context: context,
+                        icon: Icons.receipt_long_outlined,
+                        label: 'app.inventory.upshop.handling_charge'.tr,
+                        value: Text(
+                          feeText,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: amountStyle,
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: _buildSummaryStat(
-                            context: context,
-                            icon: Icons.payments_outlined,
-                            label: 'app.inventory.upshop.expected_income'.tr,
-                            value: Obx(
-                              () => Text(
-                                currency.format(_totalIncome()),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: amountStyle,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildSummaryStat(
-                            context: context,
-                            icon: Icons.stars_rounded,
-                            label: 'app.inventory.upshop.expected_reward'.tr,
-                            value: Text(
-                              '${_totalRewardPoints()} ${'app.user.integral.unit'.tr}',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: amountStyle,
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ],
-                );
-              },
-            ),
-          ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildSummaryStat(
+                        context: context,
+                        icon: Icons.insights_outlined,
+                        label: 'app.inventory.price_appraise'.tr,
+                        value: Obx(
+                          () => Text(
+                            currency.format(_totalAppraise()),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: amountStyle,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildSummaryStat(
+                        context: context,
+                        icon: Icons.payments_outlined,
+                        label: 'app.inventory.upshop.expected_income'.tr,
+                        value: Obx(
+                          () => Text(
+                            currency.format(_totalIncome()),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: amountStyle,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildSummaryStat(
+                        context: context,
+                        icon: Icons.stars_rounded,
+                        label: 'app.inventory.upshop.expected_reward'.tr,
+                        value: Text(
+                          '${_totalRewardPoints()} ${'app.user.integral.unit'.tr}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: amountStyle,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
