@@ -210,6 +210,27 @@ final Map<String, String> fr_FR = {
   "app.user.recharge.secretKey_placeholder":
       "Veuillez saisir votre clé de recharge.",
   "app.user.recharge.payment_collection_address": "Adresse de réception :",
+  "app.user.shop.message.confirm_online_on": "Confirm putting the shop online?",
+  "app.user.shop.message.confirm_online_off":
+      "Confirm taking the shop offline?",
+  "app.user.shop.message.confirm_auto_offline_on":
+      "Confirm enabling automatic offline?",
+  "app.user.shop.message.confirm_auto_offline_off":
+      "Confirm disabling automatic offline?",
+  "app.user.shop.message.online_on_success":
+      "Shop has been put online successfully.",
+  "app.user.shop.message.online_off_success":
+      "Shop has been taken offline successfully.",
+  "app.user.shop.message.auto_offline_on_success":
+      "Automatic offline has been enabled successfully.",
+  "app.user.shop.message.auto_offline_off_success":
+      "Automatic offline has been disabled successfully.",
+  "app.user.shop.message.online_on_failed": "Failed to put the shop online.",
+  "app.user.shop.message.online_off_failed": "Failed to take the shop offline.",
+  "app.user.shop.message.auto_offline_on_failed":
+      "Failed to enable automatic offline.",
+  "app.user.shop.message.auto_offline_off_failed":
+      "Failed to disable automatic offline.",
   "app.user.recharge.message.success": "Recharge réussie !",
   "app.user.recharge.remain_time":
       "Vous avez encore {0} minutes pour effectuer le paiement.",
@@ -477,7 +498,10 @@ final Map<String, String> fr_FR = {
   "app.inventory.upshop.confirm_title": "Confirmation de l'étagère",
   "app.inventory.upshop.nums": "Nombre d'étagères",
   "app.inventory.upshop.handling_charge": "Frais de manutention",
-  "app.inventory.upshop.expected_reward": "Récompense estimée",
+  
+  "app.inventory.upshop.expected_reward": "Points de recompense",
+  "app.inventory.upshop.listing_details_expand": "Afficher details de mise en vente",
+  "app.inventory.upshop.listing_details_collapse": "Masquer details de mise en vente",  
   "app.inventory.upshop.expected_income": "Recettes estimées",
   "app.inventory.upshop.combining": "Fusionner des éléments",
   "app.inventory.delist": "Délist",
@@ -714,3 +738,8 @@ final Map<String, String> fr_FR = {
   "app.system.version.download_failed":
       "Impossible de télécharger le paquet de mise à jour",
 };
+
+
+
+
+

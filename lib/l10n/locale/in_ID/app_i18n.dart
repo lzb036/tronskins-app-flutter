@@ -203,6 +203,27 @@ final Map<String, String> in_ID = {
   "app.user.recharge.secretKey_placeholder":
       "Silakan masukkan kunci pengisian ulang Anda.",
   "app.user.recharge.payment_collection_address": "Alamat penerimaan:",
+  "app.user.shop.message.confirm_online_on": "Confirm putting the shop online?",
+  "app.user.shop.message.confirm_online_off":
+      "Confirm taking the shop offline?",
+  "app.user.shop.message.confirm_auto_offline_on":
+      "Confirm enabling automatic offline?",
+  "app.user.shop.message.confirm_auto_offline_off":
+      "Confirm disabling automatic offline?",
+  "app.user.shop.message.online_on_success":
+      "Shop has been put online successfully.",
+  "app.user.shop.message.online_off_success":
+      "Shop has been taken offline successfully.",
+  "app.user.shop.message.auto_offline_on_success":
+      "Automatic offline has been enabled successfully.",
+  "app.user.shop.message.auto_offline_off_success":
+      "Automatic offline has been disabled successfully.",
+  "app.user.shop.message.online_on_failed": "Failed to put the shop online.",
+  "app.user.shop.message.online_off_failed": "Failed to take the shop offline.",
+  "app.user.shop.message.auto_offline_on_failed":
+      "Failed to enable automatic offline.",
+  "app.user.shop.message.auto_offline_off_failed":
+      "Failed to disable automatic offline.",
   "app.user.recharge.message.success": "Pengisian ulang berhasil!",
   "app.user.recharge.remain_time":
       "Anda masih memiliki {0} menit untuk melakukan pembayaran.",
@@ -460,7 +481,10 @@ final Map<String, String> in_ID = {
   "app.inventory.upshop.confirm_title": "Konfirmasi Rak",
   "app.inventory.upshop.nums": "Jumlah Rak",
   "app.inventory.upshop.handling_charge": "Biaya penanganan",
-  "app.inventory.upshop.expected_reward": "Perkiraan Hadiah",
+  
+  "app.inventory.upshop.expected_reward": "Poin Hadiah",
+  "app.inventory.upshop.listing_details_expand": "Tampilkan Detail Listing",
+  "app.inventory.upshop.listing_details_collapse": "Sembunyikan Detail Listing",  
   "app.inventory.upshop.expected_income": "Perkiraan Pendapatan",
   "app.inventory.upshop.combining": "Menggabungkan item",
   "app.inventory.delist": "Delist",
@@ -692,3 +716,8 @@ final Map<String, String> in_ID = {
   "app.system.version.latest_discover": "Temukan versi terbaru",
   "app.system.version.download_failed": "Gagal mengunduh paket pembaruan",
 };
+
+
+
+
+

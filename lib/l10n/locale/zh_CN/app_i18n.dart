@@ -172,6 +172,18 @@ final Map<String, String> zh_CN = {
   "app.user.recharge.disable": "充值功能暂时关闭，请稍候再试！",
   "app.user.recharge.secretKey_placeholder": "请输入您的充值密钥",
   "app.user.recharge.payment_collection_address": "收款地址：",
+  "app.user.shop.message.confirm_online_on": "确认店铺上线吗？",
+  "app.user.shop.message.confirm_online_off": "确认店铺下线吗？",
+  "app.user.shop.message.confirm_auto_offline_on": "确认开启自动离线吗？",
+  "app.user.shop.message.confirm_auto_offline_off": "确认关闭自动离线吗？",
+  "app.user.shop.message.online_on_success": "店铺上线成功！",
+  "app.user.shop.message.online_off_success": "店铺下线成功！",
+  "app.user.shop.message.auto_offline_on_success": "开启自动离线成功！",
+  "app.user.shop.message.auto_offline_off_success": "关闭自动离线成功！",
+  "app.user.shop.message.online_on_failed": "店铺上线失败！",
+  "app.user.shop.message.online_off_failed": "店铺下线失败！",
+  "app.user.shop.message.auto_offline_on_failed": "开启自动离线失败！",
+  "app.user.shop.message.auto_offline_off_failed": "关闭自动离线失败！",
   "app.user.recharge.message.success": "充值成功！",
   "app.user.recharge.remain_time": "您还有 {0} 分钟的时间付款",
   "app.user.recharge.tips": "请注意，该USDT钱包位于TRC-20网络上。",
@@ -380,7 +392,10 @@ final Map<String, String> zh_CN = {
   "app.inventory.upshop.confirm_title": "上架确认",
   "app.inventory.upshop.nums": "上架数量",
   "app.inventory.upshop.handling_charge": "手续费",
-  "app.inventory.upshop.expected_reward": "预计奖励",
+  
+  "app.inventory.upshop.expected_reward": "积分奖励",
+  "app.inventory.upshop.listing_details_expand": "展开上架详情",
+  "app.inventory.upshop.listing_details_collapse": "收起上架详情",  
   "app.inventory.upshop.expected_income": "预计收入",
   "app.inventory.upshop.combining": "合并相同项",
   "app.inventory.delist": "下架",
@@ -563,3 +578,8 @@ final Map<String, String> zh_CN = {
   "app.system.version.latest_discover": "发现最新版本",
   "app.system.version.download_failed": "更新包下载失败",
 };
+
+
+
+
+

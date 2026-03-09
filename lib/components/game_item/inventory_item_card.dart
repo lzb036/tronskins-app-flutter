@@ -183,8 +183,6 @@ String? _formatWear(double? wear) {
   return wear.toString();
 }
 
-const double _minDisplayPrice = 0.02;
-
 double _parsePriceValue(dynamic value) {
   if (value is num) {
     return value.toDouble();
@@ -197,39 +195,25 @@ double _normalizePrice(double value) {
     return 0;
   }
   final rounded = double.parse(value.toStringAsFixed(2));
-  if (rounded < _minDisplayPrice) {
-    return _minDisplayPrice;
-  }
   return rounded;
 }
 
 double _extractPrice(ShopSchemaInfo? schema, double fallback) {
-  // Keep inventory card pricing aligned with tronskins-app:
-  // prefer the item's own price, then schema buff min price.
+  // Keep inventory card pricing aligned with tronskins-app ItemBag:
+  // use schema.buff_min_price directly.
+  if (schema != null) {
+    final raw = schema.raw;
+    final buffMinPrice = _parsePriceValue(
+      raw['buff_min_price'] ?? raw['buffMinPrice'],
+    );
+    if (buffMinPrice > 0) {
+      return _normalizePrice(buffMinPrice);
+    }
+    return 0;
+  }
   final directPrice = _parsePriceValue(fallback);
   if (directPrice > 0) {
     return _normalizePrice(directPrice);
-  }
-  if (schema == null) {
-    return 0;
-  }
-  final raw = schema.raw;
-  final buffMinPrice = _parsePriceValue(raw['buff_min_price']);
-  if (buffMinPrice > 0) {
-    return _normalizePrice(buffMinPrice);
-  }
-
-  final candidates = [
-    raw['sell_min'],
-    raw['market_price'],
-    raw['reference_price'],
-    raw['price'],
-  ];
-  for (final value in candidates) {
-    final parsed = _parsePriceValue(value);
-    if (parsed > 0) {
-      return _normalizePrice(parsed);
-    }
   }
   return 0;
 }

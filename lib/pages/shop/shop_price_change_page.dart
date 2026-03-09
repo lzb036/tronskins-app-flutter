@@ -30,8 +30,23 @@ class _ShopPriceChangePageState extends State<ShopPriceChangePage> {
   bool _loadingParams = true;
   bool _isSubmitting = false;
   bool _showOverview = false;
+  final Set<int> _expandedDetailIds = <int>{};
 
   static const double _minSellPrice = 0.02;
+
+  bool _isDetailExpanded(int id) {
+    return _expandedDetailIds.contains(id);
+  }
+
+  void _toggleDetailExpanded(int id) {
+    setState(() {
+      if (_expandedDetailIds.contains(id)) {
+        _expandedDetailIds.remove(id);
+      } else {
+        _expandedDetailIds.add(id);
+      }
+    });
+  }
 
   @override
   void initState() {
@@ -341,6 +356,11 @@ class _ShopPriceChangePageState extends State<ShopPriceChangePage> {
                 '${'app.inventory.upshop.expected_income'.tr}: '
                 '${currency.format(_totalIncome())}',
               ),
+              const SizedBox(height: 8),
+              Text(
+                '${'app.inventory.upshop.expected_reward'.tr}: '
+                '${_totalRewardPoints()} ${'app.user.integral.unit'.tr}',
+              ),
               if (warningLines.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 Text(
@@ -419,6 +439,17 @@ class _ShopPriceChangePageState extends State<ShopPriceChangePage> {
     return total - fee;
   }
 
+  int _pointsFromAmount(double amount) {
+    if (!amount.isFinite || amount <= 0) {
+      return 0;
+    }
+    return amount.floor();
+  }
+
+  int _totalRewardPoints() {
+    return _pointsFromAmount(_totalPrice());
+  }
+
   double _totalAppraise() {
     double total = 0;
     for (final item in _items) {
@@ -476,6 +507,10 @@ class _ShopPriceChangePageState extends State<ShopPriceChangePage> {
       return 0;
     }
     return total - _itemFee(item);
+  }
+
+  int _itemRewardPoints(ShopItemAsset item) {
+    return _pointsFromAmount(_itemTotalPrice(item));
   }
 
   Future<void> _showImagePreview({
@@ -770,6 +805,20 @@ class _ShopPriceChangePageState extends State<ShopPriceChangePage> {
                           ),
                         ),
                       ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _buildSummaryStat(
+                          context: context,
+                          icon: Icons.stars_rounded,
+                          label: 'app.inventory.upshop.expected_reward'.tr,
+                          value: Text(
+                            '${_totalRewardPoints()} ${'app.user.integral.unit'.tr}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: amountStyle,
+                          ),
+                        ),
+                      ),
                     ],
                   );
                 }
@@ -833,6 +882,24 @@ class _ShopPriceChangePageState extends State<ShopPriceChangePage> {
                                 overflow: TextOverflow.ellipsis,
                                 style: amountStyle,
                               ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildSummaryStat(
+                            context: context,
+                            icon: Icons.stars_rounded,
+                            label: 'app.inventory.upshop.expected_reward'.tr,
+                            value: Text(
+                              '${_totalRewardPoints()} ${'app.user.integral.unit'.tr}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: amountStyle,
                             ),
                           ),
                         ),
@@ -937,7 +1004,9 @@ class _ShopPriceChangePageState extends State<ShopPriceChangePage> {
     final itemAppraise = _itemAppraise(item);
     final itemFee = _itemFee(item);
     final itemIncome = _itemIncome(item);
+    final rewardPoints = _itemRewardPoints(item);
     final colorScheme = Theme.of(context).colorScheme;
+    final detailsExpanded = _isDetailExpanded(id);
 
     return Card(
       elevation: 0,
@@ -1109,89 +1178,185 @@ class _ShopPriceChangePageState extends State<ShopPriceChangePage> {
               onChanged: (value) => _handlePriceChanged(id, value),
               onEditingComplete: () => _normalizeInputOnBlur(id),
             ),
-            const SizedBox(height: 10),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                const spacing = 8.0;
-                final itemWidth = (constraints.maxWidth - spacing) / 2;
-                return Wrap(
-                  spacing: spacing,
-                  runSpacing: spacing,
-                  children: [
-                    SizedBox(
-                      width: itemWidth,
-                      child: _buildItemStatCell(
-                        context: context,
-                        icon: Icons.inventory_2_outlined,
-                        label: 'app.inventory.upshop.nums'.tr,
-                        value: '$itemCount',
-                      ),
+            const SizedBox(height: 8),
+            Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(10),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(10),
+                onTap: () => _toggleDetailExpanded(id),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest.withValues(
+                      alpha: 0.38,
                     ),
-                    SizedBox(
-                      width: itemWidth,
-                      child: _buildItemStatCell(
-                        context: context,
-                        icon: Icons.insights_outlined,
-                        label: 'app.inventory.price_appraise'.tr,
-                        value: currency.format(itemAppraise),
-                      ),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: colorScheme.outlineVariant.withValues(alpha: 0.4),
                     ),
-                    SizedBox(
-                      width: itemWidth,
-                      child: _buildItemStatCell(
-                        context: context,
-                        icon: Icons.receipt_long_outlined,
-                        label: 'app.inventory.upshop.handling_charge'.tr,
-                        value: _loadingParams ? '--' : currency.format(itemFee),
-                      ),
-                    ),
-                    SizedBox(
-                      width: itemWidth,
-                      child: _buildItemStatCell(
-                        context: context,
-                        icon: Icons.payments_outlined,
-                        label: 'app.inventory.upshop.expected_income'.tr,
-                        value: _loadingParams
-                            ? '--'
-                            : currency.format(itemIncome),
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-            if (showWarning) ...[
-              const SizedBox(height: 10),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: colorScheme.errorContainer.withValues(alpha: 0.6),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.warning_amber_rounded,
-                      size: 16,
-                      color: colorScheme.error,
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        'app.inventory.pricing_abnormal'.tr,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: colorScheme.error,
-                          fontWeight: FontWeight.w600,
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          detailsExpanded
+                              ? 'app.inventory.upshop.listing_details_collapse'
+                                    .tr
+                              : 'app.inventory.upshop.listing_details_expand'
+                                    .tr,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.labelMedium
+                              ?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w600,
+                              ),
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 8),
+                      AnimatedRotation(
+                        duration: const Duration(milliseconds: 220),
+                        curve: Curves.easeOutCubic,
+                        turns: detailsExpanded ? 0.5 : 0,
+                        child: Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          size: 18,
+                          color: colorScheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ],
+            ),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 320),
+              curve: Curves.easeOutCubic,
+              alignment: Alignment.topCenter,
+              child: ClipRect(
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  heightFactor: detailsExpanded ? 1 : 0,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            const spacing = 8.0;
+                            final itemWidth =
+                                (constraints.maxWidth - spacing) / 2;
+                            return Wrap(
+                              spacing: spacing,
+                              runSpacing: spacing,
+                              children: [
+                                SizedBox(
+                                  width: itemWidth,
+                                  child: _buildItemStatCell(
+                                    context: context,
+                                    icon: Icons.inventory_2_outlined,
+                                    label: 'app.inventory.upshop.nums'.tr,
+                                    value: '$itemCount',
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: itemWidth,
+                                  child: _buildItemStatCell(
+                                    context: context,
+                                    icon: Icons.insights_outlined,
+                                    label: 'app.inventory.price_appraise'.tr,
+                                    value: currency.format(itemAppraise),
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: itemWidth,
+                                  child: _buildItemStatCell(
+                                    context: context,
+                                    icon: Icons.receipt_long_outlined,
+                                    label:
+                                        'app.inventory.upshop.handling_charge'
+                                            .tr,
+                                    value: _loadingParams
+                                        ? '--'
+                                        : currency.format(itemFee),
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: itemWidth,
+                                  child: _buildItemStatCell(
+                                    context: context,
+                                    icon: Icons.payments_outlined,
+                                    label:
+                                        'app.inventory.upshop.expected_income'
+                                            .tr,
+                                    value: _loadingParams
+                                        ? '--'
+                                        : currency.format(itemIncome),
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: itemWidth,
+                                  child: _buildItemStatCell(
+                                    context: context,
+                                    icon: Icons.stars_rounded,
+                                    label:
+                                        'app.inventory.upshop.expected_reward'
+                                            .tr,
+                                    value:
+                                        '$rewardPoints ${'app.user.integral.unit'.tr}',
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                        if (showWarning) ...[
+                          const SizedBox(height: 10),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colorScheme.errorContainer.withValues(
+                                alpha: 0.6,
+                              ),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.warning_amber_rounded,
+                                  size: 16,
+                                  color: colorScheme.error,
+                                ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    'app.inventory.pricing_abnormal'.tr,
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(
+                                          color: colorScheme.error,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),

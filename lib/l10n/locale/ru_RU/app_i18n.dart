@@ -209,6 +209,27 @@ final Map<String, String> ru_RU = {
   "app.user.recharge.secretKey_placeholder":
       "Пожалуйста, введите ключ для зарядки.",
   "app.user.recharge.payment_collection_address": "Адрес получения:",
+  "app.user.shop.message.confirm_online_on": "Confirm putting the shop online?",
+  "app.user.shop.message.confirm_online_off":
+      "Confirm taking the shop offline?",
+  "app.user.shop.message.confirm_auto_offline_on":
+      "Confirm enabling automatic offline?",
+  "app.user.shop.message.confirm_auto_offline_off":
+      "Confirm disabling automatic offline?",
+  "app.user.shop.message.online_on_success":
+      "Shop has been put online successfully.",
+  "app.user.shop.message.online_off_success":
+      "Shop has been taken offline successfully.",
+  "app.user.shop.message.auto_offline_on_success":
+      "Automatic offline has been enabled successfully.",
+  "app.user.shop.message.auto_offline_off_success":
+      "Automatic offline has been disabled successfully.",
+  "app.user.shop.message.online_on_failed": "Failed to put the shop online.",
+  "app.user.shop.message.online_off_failed": "Failed to take the shop offline.",
+  "app.user.shop.message.auto_offline_on_failed":
+      "Failed to enable automatic offline.",
+  "app.user.shop.message.auto_offline_off_failed":
+      "Failed to disable automatic offline.",
   "app.user.recharge.message.success": "Зарядка успешна!",
   "app.user.recharge.remain_time": "У вас остается {0} минут для оплаты.",
   "app.user.recharge.tips":
@@ -466,7 +487,10 @@ final Map<String, String> ru_RU = {
   "app.inventory.upshop.confirm_title": "Подтверждение полки",
   "app.inventory.upshop.nums": "Количество полок",
   "app.inventory.upshop.handling_charge": "сбор за обработку",
-  "app.inventory.upshop.expected_reward": "Оценка вознаграждения",
+  
+  "app.inventory.upshop.expected_reward": "Наградные баллы",
+  "app.inventory.upshop.listing_details_expand": "Показать детали листинга",
+  "app.inventory.upshop.listing_details_collapse": "Скрыть детали листинга",  
   "app.inventory.upshop.expected_income": "Оценочные поступления",
   "app.inventory.upshop.combining": "Объединение элементов",
   "app.inventory.delist": "Делист",
@@ -699,3 +723,8 @@ final Map<String, String> ru_RU = {
   "app.system.version.latest_discover": "Открыть последнюю версию",
   "app.system.version.download_failed": "Не удалось загрузить пакет обновлений",
 };
+
+
+
+
+

@@ -181,6 +181,27 @@ final Map<String, String> ko_KR = {
   "app.user.recharge.disable": "재충전 기능은 일시적으로 비활성화되어 있으므로 나중에 다시 시도하십시오!",
   "app.user.recharge.secretKey_placeholder": "충전 키를 입력하십시오.",
   "app.user.recharge.payment_collection_address": "주소 수신:",
+  "app.user.shop.message.confirm_online_on": "Confirm putting the shop online?",
+  "app.user.shop.message.confirm_online_off":
+      "Confirm taking the shop offline?",
+  "app.user.shop.message.confirm_auto_offline_on":
+      "Confirm enabling automatic offline?",
+  "app.user.shop.message.confirm_auto_offline_off":
+      "Confirm disabling automatic offline?",
+  "app.user.shop.message.online_on_success":
+      "Shop has been put online successfully.",
+  "app.user.shop.message.online_off_success":
+      "Shop has been taken offline successfully.",
+  "app.user.shop.message.auto_offline_on_success":
+      "Automatic offline has been enabled successfully.",
+  "app.user.shop.message.auto_offline_off_success":
+      "Automatic offline has been disabled successfully.",
+  "app.user.shop.message.online_on_failed": "Failed to put the shop online.",
+  "app.user.shop.message.online_off_failed": "Failed to take the shop offline.",
+  "app.user.shop.message.auto_offline_on_failed":
+      "Failed to enable automatic offline.",
+  "app.user.shop.message.auto_offline_off_failed":
+      "Failed to disable automatic offline.",
   "app.user.recharge.message.success": "재충전이 성공했습니다!",
   "app.user.recharge.remain_time": "지불 시간은 여전히 {0} 분이 있습니다.",
   "app.user.recharge.tips": "이 USDT 지갑은 TRC-20 네트워크에 있습니다.",
@@ -402,7 +423,10 @@ final Map<String, String> ko_KR = {
   "app.inventory.upshop.confirm_title": "선반 확인",
   "app.inventory.upshop.nums": "선반 수",
   "app.inventory.upshop.handling_charge": "처리 요금",
-  "app.inventory.upshop.expected_reward": "추정된 보상",
+  
+  "app.inventory.upshop.expected_reward": "보상 포인트",
+  "app.inventory.upshop.listing_details_expand": "등록 상세 펼치기",
+  "app.inventory.upshop.listing_details_collapse": "등록 상세 접기",  
   "app.inventory.upshop.expected_income": "예상 수익",
   "app.inventory.upshop.combining": "항목 합병",
   "app.inventory.delist": "Delist는",
@@ -609,3 +633,8 @@ final Map<String, String> ko_KR = {
   "app.system.version.latest_discover": "최신 버전을 발견",
   "app.system.version.download_failed": "업데이트 패키지 다운로드 실패",
 };
+
+
+
+
+

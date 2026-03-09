@@ -193,6 +193,27 @@ final Map<String, String> th_TH = {
       "ฟังก์ชันการชาร์จใหม่ถูกปิดใช้งานชั่วคราว โปรดลองอีกครั้งในภายหลัง!",
   "app.user.recharge.secretKey_placeholder": "กรุณาป้อนกุญแจชาร์จของคุณ",
   "app.user.recharge.payment_collection_address": "ที่อยู่ที่ได้รับ:",
+  "app.user.shop.message.confirm_online_on": "Confirm putting the shop online?",
+  "app.user.shop.message.confirm_online_off":
+      "Confirm taking the shop offline?",
+  "app.user.shop.message.confirm_auto_offline_on":
+      "Confirm enabling automatic offline?",
+  "app.user.shop.message.confirm_auto_offline_off":
+      "Confirm disabling automatic offline?",
+  "app.user.shop.message.online_on_success":
+      "Shop has been put online successfully.",
+  "app.user.shop.message.online_off_success":
+      "Shop has been taken offline successfully.",
+  "app.user.shop.message.auto_offline_on_success":
+      "Automatic offline has been enabled successfully.",
+  "app.user.shop.message.auto_offline_off_success":
+      "Automatic offline has been disabled successfully.",
+  "app.user.shop.message.online_on_failed": "Failed to put the shop online.",
+  "app.user.shop.message.online_off_failed": "Failed to take the shop offline.",
+  "app.user.shop.message.auto_offline_on_failed":
+      "Failed to enable automatic offline.",
+  "app.user.shop.message.auto_offline_off_failed":
+      "Failed to disable automatic offline.",
   "app.user.recharge.message.success": "การชาร์จใหม่ประสบความสำเร็จ!",
   "app.user.recharge.remain_time": "คุณยังมีเวลา {0} นาทีในการชำระเงิน",
   "app.user.recharge.tips":
@@ -439,7 +460,10 @@ final Map<String, String> th_TH = {
   "app.inventory.upshop.confirm_title": "การยืนยันชั้นวาง",
   "app.inventory.upshop.nums": "จํานวนชั้นวาง",
   "app.inventory.upshop.handling_charge": "ค่าธรรมเนียมการจัดการ",
-  "app.inventory.upshop.expected_reward": "รางวัลประมาณ",
+  
+  "app.inventory.upshop.expected_reward": "คะแนนรางวัล",
+  "app.inventory.upshop.listing_details_expand": "แสดงรายละเอียดการลงขาย",
+  "app.inventory.upshop.listing_details_collapse": "ซ่อนรายละเอียดการลงขาย",  
   "app.inventory.upshop.expected_income": "รายได้ประมาณ",
   "app.inventory.upshop.combining": "รวมรายการ",
   "app.inventory.delist": "ดีลิสต์",
@@ -668,3 +692,8 @@ final Map<String, String> th_TH = {
   "app.system.version.download_failed":
       "ล้มเหลวในการดาวน์โหลดแพคเกจการปรับปรุง",
 };
+
+
+
+
+

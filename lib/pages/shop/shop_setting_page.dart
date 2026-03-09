@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:tronskins_app/common/utils/app_snackbar.dart';
 import 'package:tronskins_app/controllers/shop/shop_controller.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
 
@@ -14,6 +15,8 @@ class _ShopSettingPageState extends State<ShopSettingPage> {
   final ShopController controller = Get.isRegistered<ShopController>()
       ? Get.find<ShopController>()
       : Get.put(ShopController());
+  bool _isSwitchingShopOnline = false;
+  bool _isSwitchingAutoOffline = false;
 
   @override
   void initState() {
@@ -21,28 +24,108 @@ class _ShopSettingPageState extends State<ShopSettingPage> {
     controller.loadShop();
   }
 
-  String _formatTime(int? value) {
-    if (value == null) {
-      return '00';
-    }
-    if (value < 10) {
-      return '0$value';
-    }
-    return value.toString();
+  Future<bool> _confirmSwitch(String messageKey) async {
+    final confirmed = await Get.dialog<bool>(
+      AlertDialog(
+        title: Text('app.system.tips.title'.tr),
+        content: Text(messageKey.tr),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: Text('app.common.cancel'.tr),
+          ),
+          TextButton(
+            onPressed: () => Get.back(result: true),
+            child: Text('app.common.confirm'.tr),
+          ),
+        ],
+      ),
+    );
+    return confirmed == true;
   }
 
-  Future<void> _pickTime() async {
-    final shop = controller.shop.value;
-    if (shop == null) {
+  String _shopOnlineConfirmKey(bool value) => value
+      ? 'app.user.shop.message.confirm_online_on'
+      : 'app.user.shop.message.confirm_online_off';
+
+  String _shopOnlineSuccessKey(bool value) => value
+      ? 'app.user.shop.message.online_on_success'
+      : 'app.user.shop.message.online_off_success';
+
+  String _shopOnlineFailedKey(bool value) => value
+      ? 'app.user.shop.message.online_on_failed'
+      : 'app.user.shop.message.online_off_failed';
+
+  String _autoOfflineConfirmKey(bool value) => value
+      ? 'app.user.shop.message.confirm_auto_offline_on'
+      : 'app.user.shop.message.confirm_auto_offline_off';
+
+  String _autoOfflineSuccessKey(bool value) => value
+      ? 'app.user.shop.message.auto_offline_on_success'
+      : 'app.user.shop.message.auto_offline_off_success';
+
+  String _autoOfflineFailedKey(bool value) => value
+      ? 'app.user.shop.message.auto_offline_on_failed'
+      : 'app.user.shop.message.auto_offline_off_failed';
+
+  Future<void> _handleShopOnlineChanged(bool value) async {
+    if (_isSwitchingShopOnline) {
       return;
     }
-    final initial = TimeOfDay(hour: shop.hour ?? 0, minute: shop.minute ?? 0);
-    final result = await showTimePicker(context: context, initialTime: initial);
-    if (result == null) {
+    final confirmed = await _confirmSwitch(_shopOnlineConfirmKey(value));
+    if (!confirmed) {
       return;
     }
-    await controller.setAutoCloseTime(result.hour, result.minute);
-    Get.snackbar('app.system.tips.title'.tr, 'app.system.message.success'.tr);
+    if (!mounted) {
+      return;
+    }
+    setState(() => _isSwitchingShopOnline = true);
+    try {
+      final res = await controller.toggleShopStatus();
+      if (res.success) {
+        AppSnackbar.success(_shopOnlineSuccessKey(value).tr);
+      } else {
+        AppSnackbar.error(_shopOnlineFailedKey(value).tr);
+        await controller.loadShop();
+      }
+    } catch (_) {
+      AppSnackbar.error(_shopOnlineFailedKey(value).tr);
+      await controller.loadShop();
+    } finally {
+      if (mounted) {
+        setState(() => _isSwitchingShopOnline = false);
+      }
+    }
+  }
+
+  Future<void> _handleAutoOfflineChanged(bool value) async {
+    if (_isSwitchingAutoOffline) {
+      return;
+    }
+    final confirmed = await _confirmSwitch(_autoOfflineConfirmKey(value));
+    if (!confirmed) {
+      return;
+    }
+    if (!mounted) {
+      return;
+    }
+    setState(() => _isSwitchingAutoOffline = true);
+    try {
+      final res = await controller.toggleAutoOffline(value);
+      if (res.success) {
+        AppSnackbar.success(_autoOfflineSuccessKey(value).tr);
+      } else {
+        AppSnackbar.error(_autoOfflineFailedKey(value).tr);
+        await controller.loadShop();
+      }
+    } catch (_) {
+      AppSnackbar.error(_autoOfflineFailedKey(value).tr);
+      await controller.loadShop();
+    } finally {
+      if (mounted) {
+        setState(() => _isSwitchingAutoOffline = false);
+      }
+    }
   }
 
   @override
@@ -55,8 +138,6 @@ class _ShopSettingPageState extends State<ShopSettingPage> {
           return const Center(child: CircularProgressIndicator());
         }
         final autoClose = shop.openAutoClose ?? false;
-        final autoTime =
-            '${_formatTime(shop.hour)}:${_formatTime(shop.minute)}';
         return RefreshIndicator(
           onRefresh: controller.loadShop,
           child: ListView(
@@ -83,25 +164,17 @@ class _ShopSettingPageState extends State<ShopSettingPage> {
                     SwitchListTile(
                       title: Text('app.user.shop.online_title'.tr),
                       value: shop.isOnline ?? false,
-                      onChanged: (value) async {
-                        await controller.toggleShopStatus();
-                        await controller.loadShop();
-                      },
+                      onChanged: _isSwitchingShopOnline
+                          ? null
+                          : _handleShopOnlineChanged,
                     ),
                     const Divider(height: 1),
                     SwitchListTile(
                       title: Text('app.user.shop.automatic_offline'.tr),
                       value: autoClose,
-                      onChanged: (value) async {
-                        await controller.toggleAutoOffline(value);
-                        await controller.loadShop();
-                      },
-                    ),
-                    ListTile(
-                      title: Text('app.user.shop.deliver_time'.tr),
-                      subtitle: Text(autoClose ? autoTime : '--:--'),
-                      trailing: const Icon(Icons.schedule),
-                      onTap: autoClose ? _pickTime : null,
+                      onChanged: _isSwitchingAutoOffline
+                          ? null
+                          : _handleAutoOfflineChanged,
                     ),
                   ],
                 ),

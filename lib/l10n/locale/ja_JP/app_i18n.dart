@@ -177,6 +177,27 @@ final Map<String, String> ja_JP = {
   "app.user.recharge.disable": "充電機能は一時的に無効です。後で再試してください。",
   "app.user.recharge.secretKey_placeholder": "充電キーを入力してください。",
   "app.user.recharge.payment_collection_address": "受信アドレス:",
+  "app.user.shop.message.confirm_online_on": "Confirm putting the shop online?",
+  "app.user.shop.message.confirm_online_off":
+      "Confirm taking the shop offline?",
+  "app.user.shop.message.confirm_auto_offline_on":
+      "Confirm enabling automatic offline?",
+  "app.user.shop.message.confirm_auto_offline_off":
+      "Confirm disabling automatic offline?",
+  "app.user.shop.message.online_on_success":
+      "Shop has been put online successfully.",
+  "app.user.shop.message.online_off_success":
+      "Shop has been taken offline successfully.",
+  "app.user.shop.message.auto_offline_on_success":
+      "Automatic offline has been enabled successfully.",
+  "app.user.shop.message.auto_offline_off_success":
+      "Automatic offline has been disabled successfully.",
+  "app.user.shop.message.online_on_failed": "Failed to put the shop online.",
+  "app.user.shop.message.online_off_failed": "Failed to take the shop offline.",
+  "app.user.shop.message.auto_offline_on_failed":
+      "Failed to enable automatic offline.",
+  "app.user.shop.message.auto_offline_off_failed":
+      "Failed to disable automatic offline.",
   "app.user.recharge.message.success": "充電成功しました！",
   "app.user.recharge.remain_time": "お支払いの時間はまだ1分です。",
   "app.user.recharge.tips": "このUSDTウォレットはTRC-20ネットワークに位置しています.",
@@ -394,7 +415,10 @@ final Map<String, String> ja_JP = {
   "app.inventory.upshop.confirm_title": "棚の確認",
   "app.inventory.upshop.nums": "棚の数",
   "app.inventory.upshop.handling_charge": "取扱料金",
-  "app.inventory.upshop.expected_reward": "推定報酬",
+  
+  "app.inventory.upshop.expected_reward": "報酬ポイント",
+  "app.inventory.upshop.listing_details_expand": "出品詳細を表示",
+  "app.inventory.upshop.listing_details_collapse": "出品詳細を非表示",  
   "app.inventory.upshop.expected_income": "推定収益",
   "app.inventory.upshop.combining": "アイテムを合わせる",
   "app.inventory.delist": "デリスト",
@@ -595,3 +619,8 @@ final Map<String, String> ja_JP = {
   "app.system.version.latest_discover": "最新バージョンを発見する",
   "app.system.version.download_failed": "更新プログラムをダウンロードできなかった",
 };
+
+
+
+
+

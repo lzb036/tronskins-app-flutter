@@ -32,6 +32,7 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
   Map<String, dynamic>? _shopInfo;
   bool _loadingShopInfo = false;
   bool _shopStatsIsWeek = true;
+  bool _isPurchasing = false;
 
   @override
   void initState() {
@@ -218,6 +219,9 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
   }
 
   Future<void> _purchase() async {
+    if (_isPurchasing) {
+      return;
+    }
     final user = UserStorage.getUserInfo();
     if (user == null) {
       Get.snackbar('app.system.tips.title'.tr, 'app.system.message.nologin'.tr);
@@ -253,6 +257,10 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
     if (confirmed != true) {
       return;
     }
+    if (!mounted) {
+      return;
+    }
+    setState(() => _isPurchasing = true);
     try {
       final res = await _shopApi.orderItemPurchase(
         appId: appId,
@@ -262,47 +270,32 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
       final datas = res.datas;
       if (datas is String) {
         if (datas.contains('Steam issue')) {
-          await Get.dialog<void>(
-            AlertDialog(
-              title: Text('app.system.tips.title'.tr),
-              content: Text('app.steam.message.trading_restrictions'.tr),
-              actions: [
-                TextButton(
-                  onPressed: () => Get.back(),
-                  child: Text('app.common.confirm'.tr),
-                ),
-              ],
-            ),
-          );
+          AppSnackbar.error('app.steam.message.trading_restrictions'.tr);
           return;
         }
         if (datas.contains('Inventory privacy')) {
           final nickname = user.config?.nickname ?? user.nickname ?? '';
-          await Get.dialog<void>(
-            AlertDialog(
-              title: Text('app.system.tips.title'.tr),
-              content: Text('${'app.inventory.message.privacy'.tr}$nickname'),
-              actions: [
-                TextButton(
-                  onPressed: () => Get.back(),
-                  child: Text('app.common.confirm'.tr),
-                ),
-              ],
-            ),
-          );
+          AppSnackbar.error('${'app.inventory.message.privacy'.tr}$nickname');
           return;
         }
       }
       if (res.success) {
-        AppSnackbar.success('app.trade.buy.message.success'.tr);
         Get.back(result: true);
       } else {
         AppSnackbar.error(
-          res.message.isNotEmpty ? res.message : 'app.trade.filter.failed'.tr,
+          res.message.isNotEmpty
+              ? res.message
+              : (datas is String && datas.trim().isNotEmpty
+                    ? datas
+                    : 'app.trade.filter.failed'.tr),
         );
       }
     } catch (_) {
       AppSnackbar.error('app.trade.filter.failed'.tr);
+    } finally {
+      if (mounted) {
+        setState(() => _isPurchasing = false);
+      }
     }
   }
 
@@ -743,6 +736,8 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
   @override
   Widget build(BuildContext context) {
     final currency = Get.find<CurrencyController>();
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     final appId = _item.appId ?? _schema?.appId ?? 730;
     final asset = _resolveAsset();
     final imageUrl =
@@ -947,7 +942,7 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
                   () => Text(
                     currency.format(_item.price ?? 0),
                     style: TextStyle(
-                      color: Theme.of(context).colorScheme.primary,
+                      color: colorScheme.primary,
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
@@ -958,11 +953,34 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
                 height: 42,
                 child: isOwnOnSale
                     ? const SizedBox.shrink()
-                    : ElevatedButton(
-                        onPressed: _item.id != null && _item.price != null
+                    : FilledButton(
+                        onPressed:
+                            _item.id != null &&
+                                _item.price != null &&
+                                !_isPurchasing
                             ? _purchase
                             : null,
-                        child: Text('app.trade.buy.text'.tr),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: colorScheme.primary,
+                          foregroundColor: colorScheme.onPrimary,
+                          minimumSize: const Size(96, 42),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          textStyle: theme.textTheme.labelLarge?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        child: _isPurchasing
+                            ? SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: colorScheme.onPrimary,
+                                ),
+                              )
+                            : Text('app.trade.buy.text'.tr),
                       ),
               ),
             ],

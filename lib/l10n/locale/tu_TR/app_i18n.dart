@@ -196,6 +196,27 @@ final Map<String, String> tu_TR = {
       "Şarj fonksiyonu geçici olarak devre dışı, lütfen daha sonra tekrar deneyin!",
   "app.user.recharge.secretKey_placeholder": "Lütfen şarj anahtarınızı girin.",
   "app.user.recharge.payment_collection_address": "Alıcı Adresi:",
+  "app.user.shop.message.confirm_online_on": "Confirm putting the shop online?",
+  "app.user.shop.message.confirm_online_off":
+      "Confirm taking the shop offline?",
+  "app.user.shop.message.confirm_auto_offline_on":
+      "Confirm enabling automatic offline?",
+  "app.user.shop.message.confirm_auto_offline_off":
+      "Confirm disabling automatic offline?",
+  "app.user.shop.message.online_on_success":
+      "Shop has been put online successfully.",
+  "app.user.shop.message.online_off_success":
+      "Shop has been taken offline successfully.",
+  "app.user.shop.message.auto_offline_on_success":
+      "Automatic offline has been enabled successfully.",
+  "app.user.shop.message.auto_offline_off_success":
+      "Automatic offline has been disabled successfully.",
+  "app.user.shop.message.online_on_failed": "Failed to put the shop online.",
+  "app.user.shop.message.online_off_failed": "Failed to take the shop offline.",
+  "app.user.shop.message.auto_offline_on_failed":
+      "Failed to enable automatic offline.",
+  "app.user.shop.message.auto_offline_off_failed":
+      "Failed to disable automatic offline.",
   "app.user.recharge.message.success": "Başarılı şarj!",
   "app.user.recharge.remain_time":
       "Ödemeyi yapmak için hala {0} dakikanız var.",
@@ -449,7 +470,10 @@ final Map<String, String> tu_TR = {
   "app.inventory.upshop.confirm_title": "Rafın Onaylanması",
   "app.inventory.upshop.nums": "Rafların Sayısı",
   "app.inventory.upshop.handling_charge": "İşlem Ücreti",
-  "app.inventory.upshop.expected_reward": "Tahmini Ödül",
+  
+  "app.inventory.upshop.expected_reward": "Odul Puanlari",
+  "app.inventory.upshop.listing_details_expand": "Listeleme ayrintilarini goster",
+  "app.inventory.upshop.listing_details_collapse": "Listeleme ayrintilarini gizle",  
   "app.inventory.upshop.expected_income": "Tahmini gelir",
   "app.inventory.upshop.combining": "Öğeleri birleştir",
   "app.inventory.delist": "Delist'in",
@@ -681,3 +705,8 @@ final Map<String, String> tu_TR = {
   "app.system.version.latest_discover": "En son sürümünü keşfedin",
   "app.system.version.download_failed": "Güncelleme paketini indiremedi",
 };
+
+
+
+
+

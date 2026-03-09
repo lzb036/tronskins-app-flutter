@@ -173,6 +173,18 @@ final Map<String, String> zh_TW = {
   "app.user.recharge.disable": "充電功能暫時禁用，請稍後再試！",
   "app.user.recharge.secretKey_placeholder": "請輸入您的充值金鑰。",
   "app.user.recharge.payment_collection_address": "收貨地址：",
+  "app.user.shop.message.confirm_online_on": "確認店鋪上線嗎？",
+  "app.user.shop.message.confirm_online_off": "確認店鋪下線嗎？",
+  "app.user.shop.message.confirm_auto_offline_on": "確認開啟自動離線嗎？",
+  "app.user.shop.message.confirm_auto_offline_off": "確認關閉自動離線嗎？",
+  "app.user.shop.message.online_on_success": "店鋪上線成功！",
+  "app.user.shop.message.online_off_success": "店鋪下線成功！",
+  "app.user.shop.message.auto_offline_on_success": "開啟自動離線成功！",
+  "app.user.shop.message.auto_offline_off_success": "關閉自動離線成功！",
+  "app.user.shop.message.online_on_failed": "店鋪上線失敗！",
+  "app.user.shop.message.online_off_failed": "店鋪下線失敗！",
+  "app.user.shop.message.auto_offline_on_failed": "開啟自動離線失敗！",
+  "app.user.shop.message.auto_offline_off_failed": "關閉自動離線失敗！",
   "app.user.recharge.message.success": "充值成功！",
   "app.user.recharge.remain_time": "您還有｛0｝分鐘的時間付款。",
   "app.user.recharge.tips": "請注意，此USDT錢包位於TRC-20網絡上。",
@@ -383,7 +395,10 @@ final Map<String, String> zh_TW = {
   "app.inventory.upshop.confirm_title": "貨架確認",
   "app.inventory.upshop.nums": "貨架數量",
   "app.inventory.upshop.handling_charge": "手續費",
-  "app.inventory.upshop.expected_reward": "預計獎勵",
+  
+  "app.inventory.upshop.expected_reward": "積分獎勵",
+  "app.inventory.upshop.listing_details_expand": "展開上架詳情",
+  "app.inventory.upshop.listing_details_collapse": "收起上架詳情",  
   "app.inventory.upshop.expected_income": "估計收入",
   "app.inventory.upshop.combining": "合併項目",
   "app.inventory.delist": "退市",
@@ -570,3 +585,8 @@ final Map<String, String> zh_TW = {
   "app.system.version.latest_discover": "發現最新版本",
   "app.system.version.download_failed": "下載更新包失敗",
 };
+
+
+
+
+

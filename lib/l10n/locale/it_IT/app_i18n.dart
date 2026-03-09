@@ -204,6 +204,27 @@ final Map<String, String> it_IT = {
   "app.user.recharge.secretKey_placeholder":
       "Inserisci la tua chiave di ricarica.",
   "app.user.recharge.payment_collection_address": "Indirizzo di ricevimento:",
+  "app.user.shop.message.confirm_online_on": "Confirm putting the shop online?",
+  "app.user.shop.message.confirm_online_off":
+      "Confirm taking the shop offline?",
+  "app.user.shop.message.confirm_auto_offline_on":
+      "Confirm enabling automatic offline?",
+  "app.user.shop.message.confirm_auto_offline_off":
+      "Confirm disabling automatic offline?",
+  "app.user.shop.message.online_on_success":
+      "Shop has been put online successfully.",
+  "app.user.shop.message.online_off_success":
+      "Shop has been taken offline successfully.",
+  "app.user.shop.message.auto_offline_on_success":
+      "Automatic offline has been enabled successfully.",
+  "app.user.shop.message.auto_offline_off_success":
+      "Automatic offline has been disabled successfully.",
+  "app.user.shop.message.online_on_failed": "Failed to put the shop online.",
+  "app.user.shop.message.online_off_failed": "Failed to take the shop offline.",
+  "app.user.shop.message.auto_offline_on_failed":
+      "Failed to enable automatic offline.",
+  "app.user.shop.message.auto_offline_off_failed":
+      "Failed to disable automatic offline.",
   "app.user.recharge.message.success": "Ricarica riuscita!",
   "app.user.recharge.remain_time":
       "Hai ancora {0} minuti per effettuare il pagamento.",
@@ -465,7 +486,10 @@ final Map<String, String> it_IT = {
   "app.inventory.upshop.confirm_title": "Conferma dello scaffale",
   "app.inventory.upshop.nums": "Numero di scaffali",
   "app.inventory.upshop.handling_charge": "Tassa di gestione",
-  "app.inventory.upshop.expected_reward": "Ricompensa stimata",
+  
+  "app.inventory.upshop.expected_reward": "Punti premio",
+  "app.inventory.upshop.listing_details_expand": "Mostra dettagli di vendita",
+  "app.inventory.upshop.listing_details_collapse": "Nascondi dettagli di vendita",  
   "app.inventory.upshop.expected_income": "Reditto stimato",
   "app.inventory.upshop.combining": "Unisci elementi",
   "app.inventory.delist": "Delist",
@@ -700,3 +724,8 @@ final Map<String, String> it_IT = {
   "app.system.version.download_failed":
       "Impossibile scaricare il pacchetto di aggiornamento",
 };
+
+
+
+
+

@@ -207,6 +207,27 @@ final Map<String, String> ge_DE = {
   "app.user.recharge.secretKey_placeholder":
       "Bitte geben Sie Ihren Aufladungsschlüssel ein.",
   "app.user.recharge.payment_collection_address": "Empfangsadresse:",
+  "app.user.shop.message.confirm_online_on": "Confirm putting the shop online?",
+  "app.user.shop.message.confirm_online_off":
+      "Confirm taking the shop offline?",
+  "app.user.shop.message.confirm_auto_offline_on":
+      "Confirm enabling automatic offline?",
+  "app.user.shop.message.confirm_auto_offline_off":
+      "Confirm disabling automatic offline?",
+  "app.user.shop.message.online_on_success":
+      "Shop has been put online successfully.",
+  "app.user.shop.message.online_off_success":
+      "Shop has been taken offline successfully.",
+  "app.user.shop.message.auto_offline_on_success":
+      "Automatic offline has been enabled successfully.",
+  "app.user.shop.message.auto_offline_off_success":
+      "Automatic offline has been disabled successfully.",
+  "app.user.shop.message.online_on_failed": "Failed to put the shop online.",
+  "app.user.shop.message.online_off_failed": "Failed to take the shop offline.",
+  "app.user.shop.message.auto_offline_on_failed":
+      "Failed to enable automatic offline.",
+  "app.user.shop.message.auto_offline_off_failed":
+      "Failed to disable automatic offline.",
   "app.user.recharge.message.success": "Aufladen erfolgreich!",
   "app.user.recharge.remain_time": "Sie haben noch {0} Minuten zur Zahlung.",
   "app.user.recharge.tips":
@@ -470,7 +491,10 @@ final Map<String, String> ge_DE = {
   "app.inventory.upshop.confirm_title": "Bestätigung des Regals",
   "app.inventory.upshop.nums": "Anzahl der Regale",
   "app.inventory.upshop.handling_charge": "Handhabungsgebühr",
-  "app.inventory.upshop.expected_reward": "Geschätzte Belohnung",
+  
+  "app.inventory.upshop.expected_reward": "Belohnungspunkte",
+  "app.inventory.upshop.listing_details_expand": "Angebotsdetails anzeigen",
+  "app.inventory.upshop.listing_details_collapse": "Angebotsdetails ausblenden",  
   "app.inventory.upshop.expected_income": "Geschätzte Einnahmen",
   "app.inventory.upshop.combining": "Elemente zusammenfügen",
   "app.inventory.delist": "Delist",
@@ -709,3 +733,8 @@ final Map<String, String> ge_DE = {
   "app.system.version.download_failed":
       "Das Updatepaket wurde nicht heruntergeladen",
 };
+
+
+
+
+

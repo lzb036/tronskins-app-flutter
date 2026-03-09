@@ -207,6 +207,27 @@ final Map<String, String> po_PT = {
   "app.user.recharge.secretKey_placeholder":
       "Por favor, insira sua chave de recarga.",
   "app.user.recharge.payment_collection_address": "Endereço de recepção:",
+  "app.user.shop.message.confirm_online_on": "Confirm putting the shop online?",
+  "app.user.shop.message.confirm_online_off":
+      "Confirm taking the shop offline?",
+  "app.user.shop.message.confirm_auto_offline_on":
+      "Confirm enabling automatic offline?",
+  "app.user.shop.message.confirm_auto_offline_off":
+      "Confirm disabling automatic offline?",
+  "app.user.shop.message.online_on_success":
+      "Shop has been put online successfully.",
+  "app.user.shop.message.online_off_success":
+      "Shop has been taken offline successfully.",
+  "app.user.shop.message.auto_offline_on_success":
+      "Automatic offline has been enabled successfully.",
+  "app.user.shop.message.auto_offline_off_success":
+      "Automatic offline has been disabled successfully.",
+  "app.user.shop.message.online_on_failed": "Failed to put the shop online.",
+  "app.user.shop.message.online_off_failed": "Failed to take the shop offline.",
+  "app.user.shop.message.auto_offline_on_failed":
+      "Failed to enable automatic offline.",
+  "app.user.shop.message.auto_offline_off_failed":
+      "Failed to disable automatic offline.",
   "app.user.recharge.message.success": "Recarga bem sucedida!",
   "app.user.recharge.remain_time":
       "Você ainda tem {0} minutos para fazer o pagamento.",
@@ -468,7 +489,10 @@ final Map<String, String> po_PT = {
   "app.inventory.upshop.confirm_title": "Confirmação da prateleira",
   "app.inventory.upshop.nums": "Número de prateleiras",
   "app.inventory.upshop.handling_charge": "Taxa de manuseio",
-  "app.inventory.upshop.expected_reward": "Recompensa Estimada",
+  
+  "app.inventory.upshop.expected_reward": "Pontos de Recompensa",
+  "app.inventory.upshop.listing_details_expand": "Mostrar detalhes do anuncio",
+  "app.inventory.upshop.listing_details_collapse": "Ocultar detalhes do anuncio",  
   "app.inventory.upshop.expected_income": "Receita estimada",
   "app.inventory.upshop.combining": "Mesclar itens",
   "app.inventory.delist": "Deslista",
@@ -705,3 +729,8 @@ final Map<String, String> po_PT = {
   "app.system.version.download_failed":
       "Não foi possível baixar o pacote de atualização",
 };
+
+
+
+
+

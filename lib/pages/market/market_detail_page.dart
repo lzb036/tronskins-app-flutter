@@ -56,6 +56,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
   double? _onSaleWearMax;
   String? _onSaleSortField;
   bool? _onSaleSortAsc;
+  final Set<String> _onSalePurchasingIds = <String>{};
 
   @override
   void initState() {
@@ -88,6 +89,18 @@ class _MarketDetailPageState extends State<MarketDetailPage>
     final key = item.schemaId?.toString();
     if (key != null && controller.buySchemas.containsKey(key)) {
       return controller.buySchemas[key];
+    }
+    return null;
+  }
+
+  String? _onSalePurchaseKey(MarketListItem item) {
+    final id = item.id?.toString();
+    if (id != null && id.isNotEmpty) {
+      return id;
+    }
+    final rawId = item.raw['id']?.toString();
+    if (rawId != null && rawId.isNotEmpty) {
+      return rawId;
     }
     return null;
   }
@@ -286,12 +299,16 @@ class _MarketDetailPageState extends State<MarketDetailPage>
         if (child.key == const ValueKey('market_count_summary_visible')) {
           return ClipRect(
             child: SlideTransition(
-              position: Tween<Offset>(
-                begin: const Offset(0.22, 0),
-                end: Offset.zero,
-              ).animate(
-                CurvedAnimation(parent: animation, curve: Curves.easeOutCubic),
-              ),
+              position:
+                  Tween<Offset>(
+                    begin: const Offset(0.22, 0),
+                    end: Offset.zero,
+                  ).animate(
+                    CurvedAnimation(
+                      parent: animation,
+                      curve: Curves.easeOutCubic,
+                    ),
+                  ),
               child: child,
             ),
           );
@@ -2201,6 +2218,9 @@ class _MarketDetailPageState extends State<MarketDetailPage>
     );
     final avatar = _resolveAvatar(user?.avatar);
     final canBuy = item.id != null && item.price != null;
+    final purchaseKey = _onSalePurchaseKey(item);
+    final isPurchasing =
+        purchaseKey != null && _onSalePurchasingIds.contains(purchaseKey);
     final isOwn = _isOwnOnSaleItem(item);
 
     return Card(
@@ -2284,7 +2304,9 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                   const SizedBox(width: 8),
                   if (!isOwn)
                     FilledButton(
-                      onPressed: canBuy ? () => _purchaseItem(item) : null,
+                      onPressed: canBuy && !isPurchasing
+                          ? () => _purchaseItem(item)
+                          : null,
                       style: FilledButton.styleFrom(
                         backgroundColor: colorScheme.primary,
                         foregroundColor: colorScheme.onPrimary,
@@ -2292,7 +2314,16 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                         padding: EdgeInsets.zero,
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
-                      child: Text('app.trade.buy.text'.tr),
+                      child: isPurchasing
+                          ? SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: colorScheme.onPrimary,
+                              ),
+                            )
+                          : Text('app.trade.buy.text'.tr),
                     ),
                   if (isOwn)
                     Column(
@@ -2946,12 +2977,17 @@ class _MarketDetailPageState extends State<MarketDetailPage>
       },
     );
     if (result == true) {
+      AppSnackbar.success('app.trade.buy.message.success'.tr);
       await controller.loadOnSale(reset: true);
       await controller.loadTransactions(reset: true);
     }
   }
 
   Future<void> _purchaseItem(MarketListItem item) async {
+    final purchaseKey = _onSalePurchaseKey(item);
+    if (purchaseKey != null && _onSalePurchasingIds.contains(purchaseKey)) {
+      return;
+    }
     final user = UserStorage.getUserInfo();
     if (user == null) {
       Get.snackbar('app.system.tips.title'.tr, 'app.system.message.nologin'.tr);
@@ -2986,6 +3022,9 @@ class _MarketDetailPageState extends State<MarketDetailPage>
     );
     if (confirmed != true) {
       return;
+    }
+    if (purchaseKey != null && mounted) {
+      setState(() => _onSalePurchasingIds.add(purchaseKey));
     }
     try {
       final res = await _shopProductApi.orderItemPurchase(
@@ -3038,6 +3077,10 @@ class _MarketDetailPageState extends State<MarketDetailPage>
       }
     } catch (_) {
       AppSnackbar.error('app.trade.filter.failed'.tr);
+    } finally {
+      if (purchaseKey != null && mounted) {
+        setState(() => _onSalePurchasingIds.remove(purchaseKey));
+      }
     }
   }
 

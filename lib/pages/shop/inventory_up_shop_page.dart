@@ -47,6 +47,7 @@ class _InventoryUpShopPageState extends State<InventoryUpShopPage> {
   bool _isSubmitting = false;
   bool _showOverview = false;
   bool _mergeSameItems = false;
+  final Set<String> _expandedDetailKeys = <String>{};
 
   static const double _minSellPrice = 0.02;
 
@@ -268,6 +269,20 @@ class _InventoryUpShopPageState extends State<InventoryUpShopPage> {
     return _buildMergedGroups();
   }
 
+  bool _isDetailExpanded(String key) {
+    return _expandedDetailKeys.contains(key);
+  }
+
+  void _toggleDetailExpanded(String key) {
+    setState(() {
+      if (_expandedDetailKeys.contains(key)) {
+        _expandedDetailKeys.remove(key);
+      } else {
+        _expandedDetailKeys.add(key);
+      }
+    });
+  }
+
   List<int> _groupIds(_InventoryMergeGroup group) {
     return group.items
         .map((item) => item.id)
@@ -319,6 +334,10 @@ class _InventoryUpShopPageState extends State<InventoryUpShopPage> {
       return 0;
     }
     return total - _groupFee(group);
+  }
+
+  int _groupRewardPoints(_InventoryMergeGroup group) {
+    return _pointsFromAmount(_groupTotalPrice(group));
   }
 
   bool _groupHasWarning(_InventoryMergeGroup group) {
@@ -473,32 +492,27 @@ class _InventoryUpShopPageState extends State<InventoryUpShopPage> {
   }
 
   double _extractReference(InventoryItem item, ShopSchemaInfo? schema) {
-    // Keep up-shop pricing aligned with inventory list item pricing.
-    final directPrice = _parsePriceValue(item.price);
-    if (directPrice > 0) {
-      return _normalizePrice(directPrice);
-    }
+    // Keep up-shop appraisal pricing aligned with tronskins-app getReferencePrice:
+    // 1) sell_min > 0: use min(buff_min_price, sell_min), and enforce >= 0.02
+    // 2) no sell_min: use buff_min_price directly
+    // 3) fallback to 0
     if (schema == null) {
       return 0;
     }
     final raw = schema.raw;
-
-    final buffMinPrice = _parsePriceValue(raw['buff_min_price']);
-    if (buffMinPrice > 0) {
-      return _normalizePrice(buffMinPrice);
-    }
-
-    final candidates = [
-      raw['sell_min'],
-      raw['market_price'],
-      raw['reference_price'],
-      raw['price'],
-    ];
-    for (final value in candidates) {
-      final parsed = _parsePriceValue(value);
-      if (parsed > 0) {
-        return _normalizePrice(parsed);
+    final sellMinPrice = _parsePriceValue(raw['sell_min'] ?? raw['sellMin']);
+    final buffMinPrice = _parsePriceValue(
+      raw['buff_min_price'] ?? raw['buffMinPrice'],
+    );
+    if (sellMinPrice > 0) {
+      if (buffMinPrice > 0) {
+        final price = buffMinPrice < sellMinPrice ? buffMinPrice : sellMinPrice;
+        return price > _minSellPrice ? price : _minSellPrice;
       }
+      return sellMinPrice > _minSellPrice ? sellMinPrice : _minSellPrice;
+    }
+    if (buffMinPrice > 0) {
+      return buffMinPrice;
     }
     return 0;
   }
@@ -542,6 +556,17 @@ class _InventoryUpShopPageState extends State<InventoryUpShopPage> {
     final total = _totalPrice();
     final fee = _totalFee();
     return total - fee;
+  }
+
+  int _pointsFromAmount(double amount) {
+    if (!amount.isFinite || amount <= 0) {
+      return 0;
+    }
+    return amount.floor();
+  }
+
+  int _totalRewardPoints() {
+    return _pointsFromAmount(_totalPrice());
   }
 
   double _totalAppraise() {
@@ -684,6 +709,11 @@ class _InventoryUpShopPageState extends State<InventoryUpShopPage> {
               Text(
                 '${'app.inventory.upshop.expected_income'.tr}: '
                 '${currency.format(_totalIncome())}',
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '${'app.inventory.upshop.expected_reward'.tr}: '
+                '${_totalRewardPoints()} ${'app.user.integral.unit'.tr}',
               ),
               if (warningLines.isNotEmpty) ...[
                 const SizedBox(height: 12),
@@ -940,6 +970,20 @@ class _InventoryUpShopPageState extends State<InventoryUpShopPage> {
                           ),
                         ),
                       ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _buildSummaryStat(
+                          context: context,
+                          icon: Icons.stars_rounded,
+                          label: 'app.inventory.upshop.expected_reward'.tr,
+                          value: Text(
+                            '${_totalRewardPoints()} ${'app.user.integral.unit'.tr}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: amountStyle,
+                          ),
+                        ),
+                      ),
                     ],
                   );
                 }
@@ -1007,6 +1051,24 @@ class _InventoryUpShopPageState extends State<InventoryUpShopPage> {
                                 overflow: TextOverflow.ellipsis,
                                 style: amountStyle,
                               ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildSummaryStat(
+                            context: context,
+                            icon: Icons.stars_rounded,
+                            label: 'app.inventory.upshop.expected_reward'.tr,
+                            value: Text(
+                              '${_totalRewardPoints()} ${'app.user.integral.unit'.tr}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: amountStyle,
                             ),
                           ),
                         ),
@@ -1188,7 +1250,9 @@ class _InventoryUpShopPageState extends State<InventoryUpShopPage> {
     final itemAppraise = _groupAppraise(group);
     final itemFee = _groupFee(group);
     final itemIncome = _groupIncome(group);
+    final rewardPoints = _groupRewardPoints(group);
     final showWarning = _groupHasWarning(group);
+    final detailsExpanded = _isDetailExpanded(group.key);
     final colorScheme = Theme.of(context).colorScheme;
 
     return Card(
@@ -1407,89 +1471,185 @@ class _InventoryUpShopPageState extends State<InventoryUpShopPage> {
               onEditingComplete: () =>
                   _normalizeInputOnBlurForIds(ids, sourceId: leadId),
             ),
-            const SizedBox(height: 10),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                const spacing = 8.0;
-                final itemWidth = (constraints.maxWidth - spacing) / 2;
-                return Wrap(
-                  spacing: spacing,
-                  runSpacing: spacing,
-                  children: [
-                    SizedBox(
-                      width: itemWidth,
-                      child: _buildItemStatCell(
-                        context: context,
-                        icon: Icons.inventory_2_outlined,
-                        label: 'app.inventory.upshop.nums'.tr,
-                        value: '$itemCount',
-                      ),
+            const SizedBox(height: 8),
+            Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(10),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(10),
+                onTap: () => _toggleDetailExpanded(group.key),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surfaceContainerHighest.withValues(
+                      alpha: 0.38,
                     ),
-                    SizedBox(
-                      width: itemWidth,
-                      child: _buildItemStatCell(
-                        context: context,
-                        icon: Icons.insights_outlined,
-                        label: 'app.inventory.price_appraise'.tr,
-                        value: currency.format(itemAppraise),
-                      ),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: colorScheme.outlineVariant.withValues(alpha: 0.4),
                     ),
-                    SizedBox(
-                      width: itemWidth,
-                      child: _buildItemStatCell(
-                        context: context,
-                        icon: Icons.receipt_long_outlined,
-                        label: 'app.inventory.upshop.handling_charge'.tr,
-                        value: _loadingParams ? '--' : currency.format(itemFee),
-                      ),
-                    ),
-                    SizedBox(
-                      width: itemWidth,
-                      child: _buildItemStatCell(
-                        context: context,
-                        icon: Icons.payments_outlined,
-                        label: 'app.inventory.upshop.expected_income'.tr,
-                        value: _loadingParams
-                            ? '--'
-                            : currency.format(itemIncome),
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-            if (showWarning) ...[
-              const SizedBox(height: 10),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: colorScheme.errorContainer.withValues(alpha: 0.6),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.warning_amber_rounded,
-                      size: 16,
-                      color: colorScheme.error,
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        'app.inventory.pricing_abnormal'.tr,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: colorScheme.error,
-                          fontWeight: FontWeight.w600,
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          detailsExpanded
+                              ? 'app.inventory.upshop.listing_details_collapse'
+                                    .tr
+                              : 'app.inventory.upshop.listing_details_expand'
+                                    .tr,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.labelMedium
+                              ?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                                fontWeight: FontWeight.w600,
+                              ),
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 8),
+                      AnimatedRotation(
+                        duration: const Duration(milliseconds: 220),
+                        curve: Curves.easeOutCubic,
+                        turns: detailsExpanded ? 0.5 : 0,
+                        child: Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          size: 18,
+                          color: colorScheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ],
+            ),
+            AnimatedSize(
+              duration: const Duration(milliseconds: 320),
+              curve: Curves.easeOutCubic,
+              alignment: Alignment.topCenter,
+              child: ClipRect(
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  heightFactor: detailsExpanded ? 1 : 0,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            const spacing = 8.0;
+                            final itemWidth =
+                                (constraints.maxWidth - spacing) / 2;
+                            return Wrap(
+                              spacing: spacing,
+                              runSpacing: spacing,
+                              children: [
+                                SizedBox(
+                                  width: itemWidth,
+                                  child: _buildItemStatCell(
+                                    context: context,
+                                    icon: Icons.inventory_2_outlined,
+                                    label: 'app.inventory.upshop.nums'.tr,
+                                    value: '$itemCount',
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: itemWidth,
+                                  child: _buildItemStatCell(
+                                    context: context,
+                                    icon: Icons.insights_outlined,
+                                    label: 'app.inventory.price_appraise'.tr,
+                                    value: currency.format(itemAppraise),
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: itemWidth,
+                                  child: _buildItemStatCell(
+                                    context: context,
+                                    icon: Icons.receipt_long_outlined,
+                                    label:
+                                        'app.inventory.upshop.handling_charge'
+                                            .tr,
+                                    value: _loadingParams
+                                        ? '--'
+                                        : currency.format(itemFee),
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: itemWidth,
+                                  child: _buildItemStatCell(
+                                    context: context,
+                                    icon: Icons.payments_outlined,
+                                    label:
+                                        'app.inventory.upshop.expected_income'
+                                            .tr,
+                                    value: _loadingParams
+                                        ? '--'
+                                        : currency.format(itemIncome),
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: itemWidth,
+                                  child: _buildItemStatCell(
+                                    context: context,
+                                    icon: Icons.stars_rounded,
+                                    label:
+                                        'app.inventory.upshop.expected_reward'
+                                            .tr,
+                                    value:
+                                        '$rewardPoints ${'app.user.integral.unit'.tr}',
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+                        if (showWarning) ...[
+                          const SizedBox(height: 10),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: colorScheme.errorContainer.withValues(
+                                alpha: 0.6,
+                              ),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.warning_amber_rounded,
+                                  size: 16,
+                                  color: colorScheme.error,
+                                ),
+                                const SizedBox(width: 6),
+                                Expanded(
+                                  child: Text(
+                                    'app.inventory.pricing_abnormal'.tr,
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(
+                                          color: colorScheme.error,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),

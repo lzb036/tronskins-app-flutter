@@ -1,6 +1,7 @@
 import 'package:get/get.dart';
 import 'package:tronskins_app/api/shop.dart';
 import 'package:tronskins_app/api/model/entity/user/user_shop_entity.dart';
+import 'package:tronskins_app/common/http/model/base_response.dart';
 import 'package:tronskins_app/common/events/app_events.dart';
 import 'package:tronskins_app/controllers/user/user_controller.dart';
 
@@ -52,14 +53,20 @@ class ShopController extends GetxController {
     }
   }
 
-  Future<void> toggleShopStatus() async {
-    await _api.changeShopStatus();
-    await loadShop();
+  Future<BaseHttpResponse<dynamic>> toggleShopStatus() async {
+    final res = await _api.changeShopStatus();
+    if (res.success) {
+      await loadShop();
+    }
+    return res;
   }
 
-  Future<void> toggleAutoOffline(bool enabled) async {
-    await _api.changeAutoOffline(openAutoClose: enabled);
-    await loadShop();
+  Future<BaseHttpResponse<dynamic>> toggleAutoOffline(bool enabled) async {
+    final res = await _api.changeAutoOffline(openAutoClose: enabled);
+    if (res.success) {
+      await loadShop();
+    }
+    return res;
   }
 
   Future<void> changeShopName(String name) async {

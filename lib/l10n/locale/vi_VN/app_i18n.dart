@@ -198,6 +198,27 @@ final Map<String, String> vi_VN = {
       "Chức năng sạc lại tạm thời bị vô hiệu hóa, vui lòng thử lại sau này!",
   "app.user.recharge.secretKey_placeholder": "Vui lòng nhập khóa sạc của bạn.",
   "app.user.recharge.payment_collection_address": "Địa chỉ nhận:",
+  "app.user.shop.message.confirm_online_on": "Confirm putting the shop online?",
+  "app.user.shop.message.confirm_online_off":
+      "Confirm taking the shop offline?",
+  "app.user.shop.message.confirm_auto_offline_on":
+      "Confirm enabling automatic offline?",
+  "app.user.shop.message.confirm_auto_offline_off":
+      "Confirm disabling automatic offline?",
+  "app.user.shop.message.online_on_success":
+      "Shop has been put online successfully.",
+  "app.user.shop.message.online_off_success":
+      "Shop has been taken offline successfully.",
+  "app.user.shop.message.auto_offline_on_success":
+      "Automatic offline has been enabled successfully.",
+  "app.user.shop.message.auto_offline_off_success":
+      "Automatic offline has been disabled successfully.",
+  "app.user.shop.message.online_on_failed": "Failed to put the shop online.",
+  "app.user.shop.message.online_off_failed": "Failed to take the shop offline.",
+  "app.user.shop.message.auto_offline_on_failed":
+      "Failed to enable automatic offline.",
+  "app.user.shop.message.auto_offline_off_failed":
+      "Failed to disable automatic offline.",
   "app.user.recharge.message.success": "Sạc lại thành công!",
   "app.user.recharge.remain_time": "Bạn vẫn còn {0} phút để thanh toán.",
   "app.user.recharge.tips": "Xin lưu ý rằng ví USDT này nằm trên mạng TRC-20.",
@@ -449,7 +470,10 @@ final Map<String, String> vi_VN = {
   "app.inventory.upshop.confirm_title": "Xác nhận kệ",
   "app.inventory.upshop.nums": "Số kệ",
   "app.inventory.upshop.handling_charge": "Phí xử lý",
-  "app.inventory.upshop.expected_reward": "Phần thưởng ước tính",
+  
+  "app.inventory.upshop.expected_reward": "Điểm thưởng",
+  "app.inventory.upshop.listing_details_expand": "Mo chi tiet dang ban",
+  "app.inventory.upshop.listing_details_collapse": "Thu gon chi tiet dang ban",  
   "app.inventory.upshop.expected_income": "Doanh thu ước tính",
   "app.inventory.upshop.combining": "Sáp nhập các mục",
   "app.inventory.delist": "Delist",
@@ -683,3 +707,8 @@ final Map<String, String> vi_VN = {
   "app.system.version.latest_discover": "Khám phá phiên bản mới nhất",
   "app.system.version.download_failed": "Không thể tải xuống gói cập nhật",
 };
+
+
+
+
+

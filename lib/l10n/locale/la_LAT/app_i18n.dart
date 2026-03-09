@@ -213,6 +213,27 @@ final Map<String, String> la_LAT = {
   "app.user.recharge.secretKey_placeholder":
       "Por favor introduzca su llave de recarga.",
   "app.user.recharge.payment_collection_address": "Dirección de recepción:",
+  "app.user.shop.message.confirm_online_on": "Confirm putting the shop online?",
+  "app.user.shop.message.confirm_online_off":
+      "Confirm taking the shop offline?",
+  "app.user.shop.message.confirm_auto_offline_on":
+      "Confirm enabling automatic offline?",
+  "app.user.shop.message.confirm_auto_offline_off":
+      "Confirm disabling automatic offline?",
+  "app.user.shop.message.online_on_success":
+      "Shop has been put online successfully.",
+  "app.user.shop.message.online_off_success":
+      "Shop has been taken offline successfully.",
+  "app.user.shop.message.auto_offline_on_success":
+      "Automatic offline has been enabled successfully.",
+  "app.user.shop.message.auto_offline_off_success":
+      "Automatic offline has been disabled successfully.",
+  "app.user.shop.message.online_on_failed": "Failed to put the shop online.",
+  "app.user.shop.message.online_off_failed": "Failed to take the shop offline.",
+  "app.user.shop.message.auto_offline_on_failed":
+      "Failed to enable automatic offline.",
+  "app.user.shop.message.auto_offline_off_failed":
+      "Failed to disable automatic offline.",
   "app.user.recharge.message.success": " ¡Recarga exitosa!",
   "app.user.recharge.remain_time":
       "Aún tienes {0} minutos para realizar el pago.",
@@ -477,7 +498,10 @@ final Map<String, String> la_LAT = {
   "app.inventory.upshop.confirm_title": "Confirmación de estante",
   "app.inventory.upshop.nums": "Número de estantes",
   "app.inventory.upshop.handling_charge": "Tarifa de manejo",
-  "app.inventory.upshop.expected_reward": "Recompensa estimada",
+  
+  "app.inventory.upshop.expected_reward": "Puntos de recompensa",
+  "app.inventory.upshop.listing_details_expand": "Mostrar detalles de listado",
+  "app.inventory.upshop.listing_details_collapse": "Ocultar detalles de listado",  
   "app.inventory.upshop.expected_income": "Ingresos estimados",
   "app.inventory.upshop.combining": "Fusionar elementos",
   "app.inventory.delist": "Deslista",
@@ -714,3 +738,8 @@ final Map<String, String> la_LAT = {
   "app.system.version.download_failed":
       "No se pudo descargar el paquete de actualización",
 };
+
+
+
+
+
