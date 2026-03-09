@@ -1250,13 +1250,7 @@ class _InventoryUpShopPageState extends State<InventoryUpShopPage> {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: BorderSide(
-          color: Theme.of(context).dividerColor.withValues(alpha: 0.35),
-        ),
-      ),
+      margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
       child: Padding(
         padding: const EdgeInsets.all(12),

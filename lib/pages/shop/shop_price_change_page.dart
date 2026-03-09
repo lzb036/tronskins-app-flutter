@@ -1003,13 +1003,7 @@ class _ShopPriceChangePageState extends State<ShopPriceChangePage> {
     final detailsExpanded = _isDetailExpanded(id);
 
     return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side: BorderSide(
-          color: Theme.of(context).dividerColor.withValues(alpha: 0.35),
-        ),
-      ),
+      margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
       child: Padding(
         padding: const EdgeInsets.all(12),
