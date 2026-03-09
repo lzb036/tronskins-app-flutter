@@ -115,8 +115,8 @@ class _HomePageState extends State<HomePage>
     }
     await activeController.animateTo(
       0,
-      duration: const Duration(milliseconds: 360),
-      curve: Curves.easeOutCubic,
+      duration: const Duration(milliseconds: 560),
+      curve: Curves.easeInOutCubic,
     );
   }
 
