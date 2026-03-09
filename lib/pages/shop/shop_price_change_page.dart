@@ -658,7 +658,7 @@ class _ShopPriceChangePageState extends State<ShopPriceChangePage> {
         items: payload,
       );
       if (res.success) {
-        Get.back();
+        Get.back(result: true);
         AppSnackbar.success('app.system.message.success'.tr);
       } else {
         AppSnackbar.error(

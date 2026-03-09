@@ -485,6 +485,7 @@ class _ShopPageState extends State<ShopPage>
   }
 
   Widget _buildPendingBuyerInfo(ShopOrderItem order) {
+    final colorScheme = Theme.of(context).colorScheme;
     final user = order.user;
     if (user == null) {
       return const SizedBox.shrink();
@@ -496,9 +497,10 @@ class _ShopPageState extends State<ShopPage>
       _pendingOrderKey(order),
     );
     return Container(
+      height: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFFF3F5FB),
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(5),
       ),
       child: Row(
@@ -508,10 +510,10 @@ class _ShopPageState extends State<ShopPage>
             'assets/images/login/steam-icon.png',
             width: 16,
             height: 16,
-            errorBuilder: (_, __, ___) => const Icon(
+            errorBuilder: (_, __, ___) => Icon(
               Icons.sports_esports,
               size: 16,
-              color: Color(0xFF888888),
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(width: 4),
@@ -521,7 +523,7 @@ class _ShopPageState extends State<ShopPage>
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: const Color(0xFF4A4A4A),
+                color: colorScheme.onSurface,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -533,7 +535,9 @@ class _ShopPageState extends State<ShopPage>
               height: 20,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                border: Border.all(color: const Color(0xFF9B9B9B)),
+                border: Border.all(
+                  color: colorScheme.outline.withValues(alpha: 0.7),
+                ),
                 borderRadius: BorderRadius.circular(99),
               ),
               child: FittedBox(
@@ -541,7 +545,7 @@ class _ShopPageState extends State<ShopPage>
                 child: Text(
                   '$level',
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                    color: const Color(0xFF4A4A4A),
+                    color: colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -575,11 +579,7 @@ class _ShopPageState extends State<ShopPage>
                         height: 12,
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
-                    : const Icon(
-                        Icons.refresh,
-                        size: 14,
-                        color: Color(0xFF888888),
-                      ),
+                    : Icon(Icons.refresh, size: 14, color: colorScheme.primary),
               ),
             ),
           ),
@@ -589,14 +589,15 @@ class _ShopPageState extends State<ShopPage>
   }
 
   Widget _buildPendingStatusAction(ShopOrderItem order) {
+    final colorScheme = Theme.of(context).colorScheme;
     final status = order.status;
     if (status == 2) {
       return FilledButton(
         style: FilledButton.styleFrom(
           minimumSize: const Size(92, 34),
           padding: const EdgeInsets.symmetric(horizontal: 14),
-          backgroundColor: const Color(0xFF4973C7),
-          foregroundColor: Colors.white,
+          backgroundColor: colorScheme.primary,
+          foregroundColor: colorScheme.onPrimary,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           textStyle: Theme.of(
             context,
@@ -610,7 +611,7 @@ class _ShopPageState extends State<ShopPage>
       return Text(
         'app.steam.message.confirm_quote'.tr,
         style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: const Color(0xFF008B00),
+          color: colorScheme.tertiary,
           fontWeight: FontWeight.w600,
         ),
       );
@@ -618,7 +619,9 @@ class _ShopPageState extends State<ShopPage>
     final statusText = (order.statusName ?? '').trim().isEmpty
         ? '-'
         : (order.statusName ?? '').trim();
-    final statusColor = status == -1 ? Colors.grey : const Color(0xFFC22121);
+    final statusColor = status == -1
+        ? colorScheme.onSurfaceVariant
+        : colorScheme.error;
     return Text(
       statusText,
       style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -1215,15 +1218,15 @@ class _ShopPageState extends State<ShopPage>
             borderRadius: BorderRadius.circular(6),
             onTap: enabled ? _toggleSelectAll : null,
             child: Container(
-              width: 22,
-              height: 22,
+              width: 24,
+              height: 24,
               decoration: BoxDecoration(
                 color: colors.surface,
-                borderRadius: BorderRadius.circular(5),
+                borderRadius: BorderRadius.circular(6),
                 border: Border.all(color: borderColor),
               ),
               child: selected
-                  ? Icon(Icons.check_rounded, color: colors.primary, size: 14)
+                  ? Icon(Icons.check_rounded, color: colors.primary, size: 16)
                   : const SizedBox.shrink(),
             ),
           ),
@@ -1713,270 +1716,257 @@ class _ShopPageState extends State<ShopPage>
             final totalPrice = _sumOrderPrice(order);
             final showCountdown = _showPendingCountdown(order);
             final deadlineMs = _pendingDeadlineMs(order);
-            return Material(
-              color: Colors.transparent,
+            return Card(
+              margin: EdgeInsets.zero,
+              clipBehavior: Clip.antiAlias,
               child: InkWell(
-                borderRadius: BorderRadius.circular(14),
                 onTap: () => _openDeliverSheet(order),
-                child: Ink(
-                  decoration: BoxDecoration(
-                    color: colorScheme.surface,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: colorScheme.outlineVariant.withValues(alpha: 0.32),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.03),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 11, 12, 10),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (hasMultipleDetails)
-                          Container(
-                            padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-                            margin: const EdgeInsets.only(bottom: 10),
-                            decoration: BoxDecoration(
-                              color: colorScheme.primary.withValues(
-                                alpha: 0.08,
-                              ),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    currency.format(totalPrice),
-                                    style: textTheme.titleMedium?.copyWith(
-                                      color: colorScheme.primary,
-                                      fontWeight: FontWeight.w700,
-                                    ),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 11, 12, 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (hasMultipleDetails)
+                        Container(
+                          padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                          margin: const EdgeInsets.only(bottom: 10),
+                          decoration: BoxDecoration(
+                            color: colorScheme.primary.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  currency.format(totalPrice),
+                                  style: textTheme.titleMedium?.copyWith(
+                                    color: colorScheme.primary,
+                                    fontWeight: FontWeight.w700,
                                   ),
                                 ),
-                                if (showCountdown)
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFFFF3E0),
-                                      borderRadius: BorderRadius.circular(999),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.schedule,
-                                          size: 13,
-                                          color: Colors.orange.shade700,
+                              ),
+                              if (showCountdown)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFFF3E0),
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.schedule,
+                                        size: 13,
+                                        color: Colors.orange.shade700,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      _PendingShipmentCountdown(
+                                        endTimeMs: deadlineMs,
+                                        style: textTheme.labelMedium?.copyWith(
+                                          color: colorScheme.onSurfaceVariant,
+                                          fontWeight: FontWeight.w600,
                                         ),
-                                        const SizedBox(width: 4),
-                                        _PendingShipmentCountdown(
-                                          endTimeMs: deadlineMs,
-                                          style: textTheme.labelMedium
-                                              ?.copyWith(
-                                                color: colorScheme
-                                                    .onSurfaceVariant,
-                                                fontWeight: FontWeight.w600,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      if (details.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 8),
+                          child: Text('app.common.no_data'.tr),
+                        )
+                      else
+                        ...details.map((detail) {
+                          final schema = _lookupSchema(
+                            orderController.schemas,
+                            detail.marketHashName,
+                            detail.schemaId,
+                          );
+                          final appId = _resolveDetailAppId(detail, schema);
+                          final imageUrl =
+                              detail.imageUrl ?? schema?.imageUrl ?? '';
+                          final title =
+                              detail.marketName ??
+                              schema?.marketName ??
+                              detail.marketHashName ??
+                              '-';
+                          final count = detail.count ?? 1;
+                          final rarity = _schemaTag(schema, 'rarity');
+                          final quality = _schemaTag(schema, 'quality');
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 8),
+                            child: Container(
+                              padding: const EdgeInsets.fromLTRB(8, 7, 8, 7),
+                              decoration: BoxDecoration(
+                                color: colorScheme.surfaceContainerHighest
+                                    .withValues(alpha: 0.32),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Expanded(
+                                    child: Row(
+                                      children: [
+                                        SizedBox(
+                                          width: 72,
+                                          height: 43,
+                                          child: GameItemImage(
+                                            imageUrl: imageUrl,
+                                            appId: appId,
+                                            rarity: rarity,
+                                            quality: quality,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                title,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: textTheme.bodyMedium
+                                                    ?.copyWith(
+                                                      color: colorScheme
+                                                          .onSurfaceVariant,
+                                                    ),
                                               ),
+                                              if (!hasMultipleDetails &&
+                                                  count > 1)
+                                                Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                        top: 3,
+                                                      ),
+                                                  child: Text(
+                                                    'x$count',
+                                                    style: textTheme.bodySmall
+                                                        ?.copyWith(
+                                                          color: colorScheme
+                                                              .onSurfaceVariant,
+                                                        ),
+                                                  ),
+                                                ),
+                                            ],
+                                          ),
                                         ),
                                       ],
                                     ),
                                   ),
-                              ],
-                            ),
-                          ),
-                        if (details.isEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: Text('app.common.no_data'.tr),
-                          )
-                        else
-                          ...details.map((detail) {
-                            final schema = _lookupSchema(
-                              orderController.schemas,
-                              detail.marketHashName,
-                              detail.schemaId,
-                            );
-                            final appId = _resolveDetailAppId(detail, schema);
-                            final imageUrl =
-                                detail.imageUrl ?? schema?.imageUrl ?? '';
-                            final title =
-                                detail.marketName ??
-                                schema?.marketName ??
-                                detail.marketHashName ??
-                                '-';
-                            final count = detail.count ?? 1;
-                            final rarity = _schemaTag(schema, 'rarity');
-                            final quality = _schemaTag(schema, 'quality');
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: Container(
-                                padding: const EdgeInsets.fromLTRB(8, 7, 8, 7),
-                                decoration: BoxDecoration(
-                                  color: colorScheme.surfaceContainerHighest
-                                      .withValues(alpha: 0.32),
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.center,
-                                  children: [
-                                    Expanded(
-                                      child: Row(
-                                        children: [
-                                          SizedBox(
-                                            width: 72,
-                                            height: 43,
-                                            child: GameItemImage(
-                                              imageUrl: imageUrl,
-                                              appId: appId,
-                                              rarity: rarity,
-                                              quality: quality,
+                                  if (hasMultipleDetails)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 7,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: colorScheme.primary.withValues(
+                                          alpha: 0.12,
+                                        ),
+                                        borderRadius: BorderRadius.circular(
+                                          999,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        'x$count',
+                                        style: textTheme.labelSmall?.copyWith(
+                                          color: colorScheme.primary,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    )
+                                  else
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.end,
+                                      children: [
+                                        if (showCountdown)
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 7,
+                                              vertical: 3,
                                             ),
-                                          ),
-                                          const SizedBox(width: 10),
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFFFF3E0),
+                                              borderRadius:
+                                                  BorderRadius.circular(999),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
                                               children: [
-                                                Text(
-                                                  title,
-                                                  maxLines: 1,
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                  style: textTheme.bodyMedium
+                                                Icon(
+                                                  Icons.schedule,
+                                                  size: 11,
+                                                  color: Colors.orange.shade700,
+                                                ),
+                                                const SizedBox(width: 3),
+                                                _PendingShipmentCountdown(
+                                                  endTimeMs: deadlineMs,
+                                                  style: textTheme.labelSmall
                                                       ?.copyWith(
                                                         color: colorScheme
                                                             .onSurfaceVariant,
+                                                        fontWeight:
+                                                            FontWeight.w600,
                                                       ),
                                                 ),
-                                                if (!hasMultipleDetails &&
-                                                    count > 1)
-                                                  Padding(
-                                                    padding:
-                                                        const EdgeInsets.only(
-                                                          top: 3,
-                                                        ),
-                                                    child: Text(
-                                                      'x$count',
-                                                      style: textTheme.bodySmall
-                                                          ?.copyWith(
-                                                            color: colorScheme
-                                                                .onSurfaceVariant,
-                                                          ),
-                                                    ),
-                                                  ),
                                               ],
                                             ),
                                           ),
-                                        ],
-                                      ),
-                                    ),
-                                    if (hasMultipleDetails)
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 7,
-                                          vertical: 2,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: colorScheme.primary.withValues(
-                                            alpha: 0.12,
-                                          ),
-                                          borderRadius: BorderRadius.circular(
-                                            999,
-                                          ),
-                                        ),
-                                        child: Text(
-                                          'x$count',
-                                          style: textTheme.labelSmall?.copyWith(
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          currency.format(totalPrice),
+                                          style: textTheme.titleSmall?.copyWith(
                                             color: colorScheme.primary,
                                             fontWeight: FontWeight.w700,
                                           ),
                                         ),
-                                      )
-                                    else
-                                      Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.end,
-                                        children: [
-                                          if (showCountdown)
-                                            Container(
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 7,
-                                                    vertical: 3,
-                                                  ),
-                                              decoration: BoxDecoration(
-                                                color: const Color(0xFFFFF3E0),
-                                                borderRadius:
-                                                    BorderRadius.circular(999),
-                                              ),
-                                              child: Row(
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Icon(
-                                                    Icons.schedule,
-                                                    size: 11,
-                                                    color:
-                                                        Colors.orange.shade700,
-                                                  ),
-                                                  const SizedBox(width: 3),
-                                                  _PendingShipmentCountdown(
-                                                    endTimeMs: deadlineMs,
-                                                    style: textTheme.labelSmall
-                                                        ?.copyWith(
-                                                          color: colorScheme
-                                                              .onSurfaceVariant,
-                                                          fontWeight:
-                                                              FontWeight.w600,
-                                                        ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            currency.format(totalPrice),
-                                            style: textTheme.titleSmall
-                                                ?.copyWith(
-                                                  color: colorScheme.primary,
-                                                  fontWeight: FontWeight.w700,
-                                                ),
-                                          ),
-                                        ],
-                                      ),
-                                  ],
-                                ),
+                                      ],
+                                    ),
+                                ],
                               ),
-                            );
-                          }),
-                        const SizedBox(height: 2),
-                        Divider(
-                          height: 10,
-                          thickness: 1,
-                          color: colorScheme.outlineVariant.withValues(
-                            alpha: 0.25,
+                            ),
+                          );
+                        }),
+                      const SizedBox(height: 2),
+                      Divider(
+                        height: 10,
+                        thickness: 1,
+                        color: colorScheme.outlineVariant.withValues(
+                          alpha: 0.25,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: SizedBox(
+                              height: 34,
+                              child: _buildPendingBuyerInfo(order),
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 2),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Expanded(child: _buildPendingBuyerInfo(order)),
-                            const SizedBox(width: 12),
-                            _buildPendingStatusAction(order),
-                          ],
-                        ),
-                      ],
-                    ),
+                          const SizedBox(width: 12),
+                          SizedBox(
+                            height: 34,
+                            child: Align(
+                              alignment: Alignment.centerRight,
+                              child: _buildPendingStatusAction(order),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -2306,99 +2296,53 @@ class _ShopPageState extends State<ShopPage>
               selected: allSelected,
               enabled: selectableTotal > 0,
             ),
-            const SizedBox(width: 4),
-            SizedBox(
-              width: 64,
-              child: Text(
-                '${_selectedIds.length}/$selectableTotal',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(fontSize: 12.5),
-              ),
+            const SizedBox(width: 8),
+            Text(
+              '${_selectedIds.length}/$selectableTotal',
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
-            const SizedBox(width: 4),
-            Expanded(
-              child: SizedBox(
-                height: 42,
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    alignment: Alignment.centerRight,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        OutlinedButton(
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 10,
-                            ),
-                          ),
-                          onPressed: () {
-                            setState(() => _selectedIds.clear());
-                          },
-                          child: Text('app.common.cancel'.tr),
-                        ),
-                        const SizedBox(width: 4),
-                        OutlinedButton(
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 10,
-                            ),
-                          ),
-                          onPressed: _selectedIds.isEmpty
-                              ? null
-                              : () async {
-                                  final selectedItems = salesController
-                                      .onSaleItems
-                                      .where(
-                                        (item) => _selectedIds.contains(
-                                          item.id ?? -1,
-                                        ),
-                                      )
-                                      .toList();
-                                  if (selectedItems.isEmpty) {
-                                    return;
-                                  }
-                                  await Get.toNamed(
-                                    Routers.SHOP_PRICE_CHANGE,
-                                    arguments: {
-                                      'items': selectedItems,
-                                      'schemas': salesController.schemas,
-                                      'appId': GameStorage.getGameType(),
-                                    },
-                                  );
-                                  await salesController.refreshOnSale();
-                                  setState(_selectedIds.clear);
-                                },
-                          child: Text('app.inventory.price_change'.tr),
-                        ),
-                        const SizedBox(width: 4),
-                        FilledButton(
-                          style: FilledButton.styleFrom(
-                            backgroundColor: Theme.of(
-                              context,
-                            ).colorScheme.error,
-                            foregroundColor: Theme.of(
-                              context,
-                            ).colorScheme.onError,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 10,
-                            ),
-                          ),
-                          onPressed: _confirmDelist,
-                          child: Text('app.inventory.delist'.tr),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+            const Spacer(),
+            OutlinedButton(
+              onPressed: () {
+                setState(() => _selectedIds.clear());
+              },
+              child: Text('app.common.cancel'.tr),
+            ),
+            const SizedBox(width: 8),
+            FilledButton(
+              onPressed: _selectedIds.isEmpty
+                  ? null
+                  : () async {
+                      final selectedItems = salesController.onSaleItems
+                          .where((item) => _selectedIds.contains(item.id ?? -1))
+                          .toList();
+                      if (selectedItems.isEmpty) {
+                        return;
+                      }
+                      final changed = await Get.toNamed(
+                        Routers.SHOP_PRICE_CHANGE,
+                        arguments: {
+                          'items': selectedItems,
+                          'schemas': salesController.schemas,
+                          'appId': GameStorage.getGameType(),
+                        },
+                      );
+                      if (changed == true) {
+                        await salesController.refreshOnSale();
+                      }
+                      setState(_selectedIds.clear);
+                    },
+              child: Text('app.inventory.price_change'.tr),
+            ),
+            const SizedBox(width: 8),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.error,
+                foregroundColor: Theme.of(context).colorScheme.onError,
               ),
+              onPressed: _confirmDelist,
+              child: Text('app.inventory.delist'.tr),
             ),
           ],
         ),
