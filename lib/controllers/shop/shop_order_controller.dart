@@ -30,6 +30,8 @@ class ShopOrderController extends GetxController {
   final RxBool waitingSortAsc = false.obs;
   final Rx<DateTime?> waitingStartDate = Rx<DateTime?>(null);
   final Rx<DateTime?> waitingEndDate = Rx<DateTime?>(null);
+  final RxnString waitingItemName = RxnString();
+  final RxMap<String, dynamic> waitingTags = <String, dynamic>{}.obs;
 
   final RxString buyRecordKeywords = ''.obs;
   final RxString buyRecordSortField = 'time'.obs;
@@ -37,6 +39,8 @@ class ShopOrderController extends GetxController {
   final Rx<DateTime?> buyRecordStartDate = Rx<DateTime?>(null);
   final Rx<DateTime?> buyRecordEndDate = Rx<DateTime?>(null);
   final RxList<int> buyRecordStatusList = <int>[].obs;
+  final RxnString buyRecordItemName = RxnString();
+  final RxMap<String, dynamic> buyRecordTags = <String, dynamic>{}.obs;
 
   int _pendingPage = 1;
   int _waitingPage = 1;
@@ -161,6 +165,8 @@ class ShopOrderController extends GetxController {
     try {
       final startTime = _toUnix(waitingStartDate.value);
       final endTime = _toUnix(waitingEndDate.value);
+      final tags = Map<String, dynamic>.from(waitingTags)
+        ..removeWhere((key, value) => value == null || value == '');
       final res = await _api.shopBuyReceiving(
         params: {
           'appId': appId,
@@ -171,6 +177,8 @@ class ShopOrderController extends GetxController {
           'keywords': waitingKeywords.value.isEmpty
               ? null
               : waitingKeywords.value,
+          'itemName': waitingItemName.value,
+          'tags': tags.isEmpty ? null : tags,
           'startTime': startTime,
           'endTime': endTime,
         },
@@ -215,6 +223,8 @@ class ShopOrderController extends GetxController {
           : buyRecordStatusList.toList();
       final startTime = _toUnix(buyRecordStartDate.value);
       final endTime = _toUnix(buyRecordEndDate.value);
+      final tags = Map<String, dynamic>.from(buyRecordTags)
+        ..removeWhere((key, value) => value == null || value == '');
       final res = await _api.shopBuyRecord(
         params: {
           'appId': appId,
@@ -226,6 +236,8 @@ class ShopOrderController extends GetxController {
               ? null
               : buyRecordKeywords.value,
           'statusList': statusList,
+          'itemName': buyRecordItemName.value,
+          'tags': tags.isEmpty ? null : tags,
           'startTime': startTime,
           'endTime': endTime,
         },
@@ -301,9 +313,17 @@ class ShopOrderController extends GetxController {
   Future<void> applyWaitingFilter({
     DateTime? startDate,
     DateTime? endDate,
+    Map<String, dynamic>? tags,
+    String? itemName,
   }) async {
     waitingStartDate.value = startDate;
     waitingEndDate.value = endDate;
+    if (tags != null) {
+      waitingTags.value = Map<String, dynamic>.from(tags);
+    }
+    if (itemName != null) {
+      waitingItemName.value = itemName.isEmpty ? null : itemName;
+    }
     await refreshWaitingReceipts();
   }
 
@@ -321,10 +341,18 @@ class ShopOrderController extends GetxController {
     List<int>? statusList,
     DateTime? startDate,
     DateTime? endDate,
+    Map<String, dynamic>? tags,
+    String? itemName,
   }) async {
     buyRecordStatusList.assignAll(statusList ?? <int>[]);
     buyRecordStartDate.value = startDate;
     buyRecordEndDate.value = endDate;
+    if (tags != null) {
+      buyRecordTags.value = Map<String, dynamic>.from(tags);
+    }
+    if (itemName != null) {
+      buyRecordItemName.value = itemName.isEmpty ? null : itemName;
+    }
     await refreshBuyRecords();
   }
 

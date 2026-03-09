@@ -202,14 +202,9 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
     });
   }
 
-  String _attributeSummary() {
-    if ((_attributeItemName ?? '').isNotEmpty) {
-      return _attributeItemName!;
-    }
-    if (_attributeTags.isNotEmpty) {
-      return '${'app.market.filter.text'.tr} (${_attributeTags.length})';
-    }
-    return 'app.market.filter.all'.tr;
+  void _resetAndApply() {
+    _reset();
+    _apply();
   }
 
   Future<void> _loadAttributeGroups() async {
@@ -230,52 +225,6 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
     } finally {
       _attributeGroupsLoading = false;
     }
-  }
-
-  Future<void> _openAttributeFilter({String? initialGroupKey}) async {
-    final appId = widget.appId;
-    if (appId == null) {
-      return;
-    }
-    final result = await MarketFilterSheet.showFromRight(
-      context: context,
-      appId: appId,
-      sortOptions: widget.attributeSortOptions,
-      showSort: widget.attributeShowSort,
-      showPriceRange: widget.attributeShowPriceRange,
-      initialGroupKey: initialGroupKey,
-      initial: MarketFilterResult(
-        sortField: _attributeSortField,
-        sortAsc: _attributeSortAsc,
-        tags: _attributeTags,
-        itemName: _attributeItemName,
-      ),
-    );
-    if (result == null) {
-      return;
-    }
-    if (!mounted) {
-      return;
-    }
-    setState(() {
-      _attributeSortField = result.sortField;
-      _attributeSortAsc = result.sortAsc;
-      _attributeTags = Map<String, dynamic>.from(result.tags ?? const {});
-      _attributeItemName = (result.itemName == null || result.itemName!.isEmpty)
-          ? null
-          : result.itemName;
-    });
-  }
-
-  String _attributeGroupSummary(MarketFilterGroupMeta group) {
-    if (group.key == 'type' && (_attributeItemName ?? '').isNotEmpty) {
-      return group.labelForValue(_attributeItemName) ?? _attributeItemName!;
-    }
-    final selected = _attributeTags[group.key];
-    if (selected == null || selected.toString().isEmpty) {
-      return 'app.market.filter.all'.tr;
-    }
-    return group.labelForValue(selected) ?? selected.toString();
   }
 
   bool _hasAttributeValue(String key) {
@@ -372,22 +321,24 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
   }
 
   Widget _buildAttributeSection() {
+    if (_attributeGroupsLoading) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionTitle('app.market.filter.text'.tr),
+          const SizedBox(height: 16),
+          const Center(child: CircularProgressIndicator()),
+        ],
+      );
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSectionTitle('app.market.filter.text'.tr),
         const SizedBox(height: 8),
-        ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: const Icon(Icons.tune_outlined),
-          title: Text('app.market.filter.text'.tr),
-          subtitle: Text(
-            _attributeSummary(),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () => _openAttributeFilter(),
+        Text(
+          'app.common.no_data'.tr,
+          style: Theme.of(context).textTheme.bodySmall,
         ),
       ],
     );
@@ -408,22 +359,58 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
     if (group == null) {
       return _buildAttributeSection();
     }
-    final groupValue = group!;
-    final summary = _attributeGroupSummary(groupValue);
+    final groupValue = group;
+    final selectedValue = groupValue.key == 'type'
+        ? (_attributeItemName ?? '')
+        : (_attributeTags[groupValue.key]?.toString() ?? '');
     final hasValue = _hasAttributeValue(groupValue.key);
+    final optionEntries = groupValue.optionLabels.entries
+        .where((entry) => entry.key.isNotEmpty && entry.value.isNotEmpty)
+        .toList(growable: false);
+
+    void selectValue(String? value) {
+      setState(() {
+        if (groupValue.key == 'type') {
+          _attributeItemName = (value == null || value.isEmpty) ? null : value;
+        } else if (value == null || value.isEmpty) {
+          _attributeTags.remove(groupValue.key);
+        } else {
+          _attributeTags[groupValue.key] = value;
+        }
+      });
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSectionTitle(groupValue.labelKey.tr),
         const SizedBox(height: 8),
-        ListTile(
-          contentPadding: EdgeInsets.zero,
-          leading: const Icon(Icons.tune_outlined),
-          title: Text(groupValue.labelKey.tr),
-          subtitle: Text(summary, maxLines: 1, overflow: TextOverflow.ellipsis),
-          trailing: const Icon(Icons.chevron_right),
-          onTap: () => _openAttributeFilter(initialGroupKey: groupValue.key),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            ChoiceChip(
+              label: Text('app.market.filter.all'.tr),
+              selected: selectedValue.isEmpty,
+              onSelected: (_) => selectValue(null),
+            ),
+            ...optionEntries.map((entry) {
+              return ChoiceChip(
+                label: Text(entry.value),
+                selected: selectedValue == entry.key,
+                onSelected: (_) => selectValue(entry.key),
+              );
+            }),
+          ],
         ),
+        if (optionEntries.isEmpty)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(
+              'app.common.no_data'.tr,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
         if (hasValue)
           Align(
             alignment: Alignment.centerLeft,
@@ -476,7 +463,7 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: colors.surfaceVariant.withValues(alpha: 0.4),
+          color: colors.surfaceContainerHighest.withValues(alpha: 0.4),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(color: colors.outline.withValues(alpha: 0.2)),
         ),
@@ -602,7 +589,7 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
               decoration: BoxDecoration(
                 color: selected
                     ? colors.primary.withValues(alpha: 0.16)
-                    : colors.surfaceVariant.withValues(alpha: 0.65),
+                    : colors.surfaceContainerHighest.withValues(alpha: 0.65),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
                   color: selected
@@ -669,7 +656,8 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
                               duration: const Duration(milliseconds: 180),
                               child: SingleChildScrollView(
                                 key: ValueKey(
-                                  sections[_currentSectionIndex].type.name,
+                                  '${sections[_currentSectionIndex].type.name}:'
+                                  '${sections[_currentSectionIndex].groupKey ?? ''}',
                                 ),
                                 child: _buildSectionContent(
                                   sections[_currentSectionIndex],
@@ -699,14 +687,24 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: _reset,
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(40),
+                    ),
+                    child: Text('app.common.cancel'.tr),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _resetAndApply,
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(40),
                     ),
                     child: Text('app.market.filter.reset'.tr),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
                   child: FilledButton(
                     onPressed: _apply,
