@@ -29,8 +29,6 @@ class _HomePageState extends State<HomePage>
   final ScrollController _latestScroll = ScrollController();
   final ScrollController _hotScroll = ScrollController();
   final TextEditingController _searchController = TextEditingController();
-  static const double _backToTopThreshold = 100;
-  final ValueNotifier<bool> _showBackToTopNotifier = ValueNotifier<bool>(false);
   String _sortField = 'price';
   bool _sortAsc = false;
   double? _priceMin;
@@ -42,7 +40,6 @@ class _HomePageState extends State<HomePage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _tabController.addListener(_handleTabChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       MarketFilterSheet.preload(appId: controller.appId.value);
     });
@@ -52,31 +49,13 @@ class _HomePageState extends State<HomePage>
 
   @override
   void dispose() {
-    _tabController.removeListener(_handleTabChanged);
     _latestScroll.removeListener(_handleLatestScroll);
     _hotScroll.removeListener(_handleHotScroll);
     _tabController.dispose();
     _latestScroll.dispose();
     _hotScroll.dispose();
     _searchController.dispose();
-    _showBackToTopNotifier.dispose();
     super.dispose();
-  }
-
-  int _activeTabIndex() {
-    final animationValue = _tabController.animation?.value;
-    if (animationValue == null) {
-      return _tabController.index;
-    }
-    return animationValue.round().clamp(0, _tabController.length - 1);
-  }
-
-  ScrollController _activeScrollController() {
-    return _activeTabIndex() == 0 ? _latestScroll : _hotScroll;
-  }
-
-  void _handleTabChanged() {
-    _updateBackToTopVisibility();
   }
 
   void _handleLatestScroll() {
@@ -85,7 +64,6 @@ class _HomePageState extends State<HomePage>
             _latestScroll.position.maxScrollExtent - 200) {
       controller.fetchLatest();
     }
-    _updateBackToTopVisibility();
   }
 
   void _handleHotScroll() {
@@ -94,101 +72,6 @@ class _HomePageState extends State<HomePage>
             _hotScroll.position.maxScrollExtent - 200) {
       controller.fetchHot();
     }
-    _updateBackToTopVisibility();
-  }
-
-  void _updateBackToTopVisibility() {
-    final activeController = _activeScrollController();
-    final show =
-        activeController.hasClients &&
-        activeController.position.pixels > _backToTopThreshold;
-    if (show == _showBackToTopNotifier.value) {
-      return;
-    }
-    _showBackToTopNotifier.value = show;
-  }
-
-  Future<void> _scrollToTop() async {
-    final activeController = _activeScrollController();
-    if (!activeController.hasClients) {
-      return;
-    }
-    await activeController.animateTo(
-      0,
-      duration: const Duration(milliseconds: 560),
-      curve: Curves.easeInOutCubic,
-    );
-  }
-
-  Widget _buildBackToTopButton(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = Theme.of(context).colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
-    final backgroundColor = isDark
-        ? colorScheme.surface.withValues(alpha: 0.76)
-        : Colors.white.withValues(alpha: 0.88);
-    final borderColor = colorScheme.outline.withValues(
-      alpha: isDark ? 0.34 : 0.18,
-    );
-    final iconColor = colorScheme.onSurface.withValues(alpha: 0.82);
-    return ValueListenableBuilder<bool>(
-      valueListenable: _showBackToTopNotifier,
-      builder: (context, showBackToTop, child) {
-        return SafeArea(
-          minimum: const EdgeInsets.fromLTRB(0, 0, 0, 12),
-          child: Align(
-            alignment: Alignment.bottomCenter,
-            child: IgnorePointer(
-              ignoring: !showBackToTop,
-              child: AnimatedSlide(
-                duration: const Duration(milliseconds: 220),
-                curve: Curves.easeOutCubic,
-                offset: showBackToTop ? Offset.zero : const Offset(0, 0.35),
-                child: AnimatedOpacity(
-                  duration: const Duration(milliseconds: 180),
-                  curve: Curves.easeOut,
-                  opacity: showBackToTop ? 1 : 0,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: backgroundColor,
-                      borderRadius: BorderRadius.circular(999),
-                      border: Border.all(color: borderColor),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(
-                            alpha: isDark ? 0.18 : 0.10,
-                          ),
-                          blurRadius: 14,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
-                    ),
-                    child: Material(
-                      type: MaterialType.transparency,
-                      child: InkWell(
-                        onTap: _scrollToTop,
-                        borderRadius: BorderRadius.circular(999),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 8,
-                          ),
-                          child: Icon(
-                            Icons.keyboard_double_arrow_up_rounded,
-                            size: 20,
-                            color: iconColor,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
   }
 
   Future<void> _openFilterSheet() async {
@@ -283,270 +166,253 @@ class _HomePageState extends State<HomePage>
     final isDark = theme.brightness == Brightness.dark;
     return Scaffold(
       body: SafeArea(
-        child: Stack(
+        child: Column(
           children: [
-            Column(
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    color: isDark ? colors.surface : Colors.white,
-                    border: Border(
-                      bottom: BorderSide(
-                        color: colors.outline.withValues(alpha: 0.08),
-                      ),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.05),
-                        offset: const Offset(0, 3),
-                        blurRadius: 6,
-                      ),
-                    ],
+            Container(
+              decoration: BoxDecoration(
+                color: isDark ? colors.surface : Colors.white,
+                border: Border(
+                  bottom: BorderSide(
+                    color: colors.outline.withValues(alpha: 0.08),
                   ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 4,
-                          vertical: 4,
-                        ),
-                        child: LayoutBuilder(
-                          builder: (context, constraints) {
-                            final maxWidth = constraints.maxWidth;
-                            final scale = (maxWidth / 375)
-                                .clamp(0.85, 1.0)
-                                .toDouble();
-                            final gameIconSize = 34 * scale;
-                            final sidePadding = 10 * scale;
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.05),
+                    offset: const Offset(0, 3),
+                    blurRadius: 6,
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 4,
+                    ),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final maxWidth = constraints.maxWidth;
+                        final scale = (maxWidth / 375)
+                            .clamp(0.85, 1.0)
+                            .toDouble();
+                        final gameIconSize = 34 * scale;
+                        final sidePadding = 10 * scale;
 
-                            return Row(
-                              children: [
-                                SizedBox(width: sidePadding),
-                                Expanded(
-                                  child: Align(
-                                    alignment: Alignment.centerLeft,
-                                    child: LayoutBuilder(
-                                      builder: (context, tabConstraints) {
-                                        final dragWidth =
-                                            tabConstraints.maxWidth;
-                                        final maxIndex =
-                                            (_tabController.length - 1)
-                                                .toDouble();
+                        return Row(
+                          children: [
+                            SizedBox(width: sidePadding),
+                            Expanded(
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: LayoutBuilder(
+                                  builder: (context, tabConstraints) {
+                                    final dragWidth = tabConstraints.maxWidth;
+                                    final maxIndex = (_tabController.length - 1)
+                                        .toDouble();
 
-                                        void settleToClosestTab() {
-                                          if (_tabController.indexIsChanging) {
-                                            return;
-                                          }
-                                          final value =
-                                              _tabController.animation?.value ??
-                                              _tabController.index.toDouble();
-                                          final targetIndex = value
-                                              .round()
-                                              .clamp(
-                                                0,
-                                                _tabController.length - 1,
-                                              );
-                                          if (targetIndex ==
-                                              _tabController.index) {
-                                            _tabController.offset = 0;
-                                            return;
-                                          }
-                                          _tabController.animateTo(
-                                            targetIndex,
-                                            duration: const Duration(
-                                              milliseconds: 180,
-                                            ),
-                                            curve: Curves.easeOutCubic,
-                                          );
+                                    void settleToClosestTab() {
+                                      if (_tabController.indexIsChanging) {
+                                        return;
+                                      }
+                                      final value =
+                                          _tabController.animation?.value ??
+                                          _tabController.index.toDouble();
+                                      final targetIndex = value.round().clamp(
+                                        0,
+                                        _tabController.length - 1,
+                                      );
+                                      if (targetIndex == _tabController.index) {
+                                        _tabController.offset = 0;
+                                        return;
+                                      }
+                                      _tabController.animateTo(
+                                        targetIndex,
+                                        duration: const Duration(
+                                          milliseconds: 180,
+                                        ),
+                                        curve: Curves.easeOutCubic,
+                                      );
+                                    }
+
+                                    return GestureDetector(
+                                      behavior: HitTestBehavior.opaque,
+                                      onHorizontalDragUpdate: (details) {
+                                        if (_tabController.indexIsChanging ||
+                                            dragWidth <= 0) {
+                                          return;
                                         }
-
-                                        return GestureDetector(
-                                          behavior: HitTestBehavior.opaque,
-                                          onHorizontalDragUpdate: (details) {
-                                            if (_tabController
-                                                    .indexIsChanging ||
-                                                dragWidth <= 0) {
-                                              return;
-                                            }
-                                            final currentValue =
-                                                _tabController
-                                                    .animation
-                                                    ?.value ??
-                                                _tabController.index.toDouble();
-                                            final nextValue =
-                                                (currentValue -
-                                                        (details.delta.dx /
-                                                            dragWidth))
-                                                    .clamp(0.0, maxIndex)
-                                                    .toDouble();
-                                            final nextOffset =
-                                                (nextValue -
-                                                        _tabController.index)
-                                                    .clamp(-1.0, 1.0)
-                                                    .toDouble();
-                                            if (nextOffset >= 0.98 &&
-                                                _tabController.index <
-                                                    _tabController.length - 1) {
-                                              _tabController.index =
-                                                  _tabController.index + 1;
-                                              _tabController.offset = 0;
-                                              return;
-                                            }
-                                            if (nextOffset <= -0.98 &&
-                                                _tabController.index > 0) {
-                                              _tabController.index =
-                                                  _tabController.index - 1;
-                                              _tabController.offset = 0;
-                                              return;
-                                            }
-                                            _tabController.offset = nextOffset;
-                                          },
-                                          onHorizontalDragEnd: (_) =>
-                                              settleToClosestTab(),
-                                          onHorizontalDragCancel:
-                                              settleToClosestTab,
-                                          child: Padding(
-                                            padding: const EdgeInsets.only(
-                                              top: 3,
+                                        final currentValue =
+                                            _tabController.animation?.value ??
+                                            _tabController.index.toDouble();
+                                        final nextValue =
+                                            (currentValue -
+                                                    (details.delta.dx /
+                                                        dragWidth))
+                                                .clamp(0.0, maxIndex)
+                                                .toDouble();
+                                        final nextOffset =
+                                            (nextValue - _tabController.index)
+                                                .clamp(-1.0, 1.0)
+                                                .toDouble();
+                                        if (nextOffset >= 0.98 &&
+                                            _tabController.index <
+                                                _tabController.length - 1) {
+                                          _tabController.index =
+                                              _tabController.index + 1;
+                                          _tabController.offset = 0;
+                                          return;
+                                        }
+                                        if (nextOffset <= -0.98 &&
+                                            _tabController.index > 0) {
+                                          _tabController.index =
+                                              _tabController.index - 1;
+                                          _tabController.offset = 0;
+                                          return;
+                                        }
+                                        _tabController.offset = nextOffset;
+                                      },
+                                      onHorizontalDragEnd: (_) =>
+                                          settleToClosestTab(),
+                                      onHorizontalDragCancel:
+                                          settleToClosestTab,
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(top: 3),
+                                        child: TabBar(
+                                          controller: _tabController,
+                                          isScrollable: false,
+                                          padding: EdgeInsets.zero,
+                                          indicatorSize:
+                                              TabBarIndicatorSize.tab,
+                                          indicator: BoxDecoration(
+                                            color: colors.primary.withValues(
+                                              alpha: 0.12,
                                             ),
-                                            child: TabBar(
-                                              controller: _tabController,
-                                              isScrollable: false,
-                                              padding: EdgeInsets.zero,
-                                              indicatorSize:
-                                                  TabBarIndicatorSize.tab,
-                                              indicator: BoxDecoration(
-                                                color: colors.primary
-                                                    .withValues(alpha: 0.12),
-                                                borderRadius:
-                                                    BorderRadius.circular(16),
-                                              ),
-                                              labelColor: colors.primary,
-                                              unselectedLabelColor: colors
-                                                  .onSurface
-                                                  .withValues(alpha: 0.6),
-                                              labelStyle: theme
-                                                  .textTheme
-                                                  .labelMedium
-                                                  ?.copyWith(
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.w600,
-                                                    height: 1,
-                                                  ),
-                                              unselectedLabelStyle: theme
-                                                  .textTheme
-                                                  .labelMedium
-                                                  ?.copyWith(
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.w500,
-                                                    height: 1,
-                                                  ),
-                                              labelPadding: EdgeInsets.zero,
-                                              dividerColor: Colors.transparent,
-                                              splashBorderRadius:
-                                                  BorderRadius.circular(16),
-                                              tabs: [
-                                                Tab(
-                                                  height: 30,
-                                                  text: 'app.market.latest'.tr,
-                                                ),
-                                                Tab(
-                                                  height: 30,
-                                                  text: 'app.market.popular'.tr,
-                                                ),
-                                              ],
+                                            borderRadius: BorderRadius.circular(
+                                              16,
                                             ),
                                           ),
+                                          labelColor: colors.primary,
+                                          unselectedLabelColor: colors.onSurface
+                                              .withValues(alpha: 0.6),
+                                          labelStyle: theme
+                                              .textTheme
+                                              .labelMedium
+                                              ?.copyWith(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w600,
+                                                height: 1,
+                                              ),
+                                          unselectedLabelStyle: theme
+                                              .textTheme
+                                              .labelMedium
+                                              ?.copyWith(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w500,
+                                                height: 1,
+                                              ),
+                                          labelPadding: EdgeInsets.zero,
+                                          dividerColor: Colors.transparent,
+                                          splashBorderRadius:
+                                              BorderRadius.circular(16),
+                                          tabs: [
+                                            Tab(
+                                              height: 30,
+                                              text: 'app.market.latest'.tr,
+                                            ),
+                                            Tab(
+                                              height: 30,
+                                              text: 'app.market.popular'.tr,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                            Obx(() {
+                              final appId = controller.appId.value;
+                              return Builder(
+                                builder: (iconContext) {
+                                  return Padding(
+                                    padding: EdgeInsets.only(
+                                      right: 12 * scale,
+                                      left: 6 * scale,
+                                    ),
+                                    child: GameIconButton(
+                                      appId: appId,
+                                      size: gameIconSize,
+                                      onTap: () async {
+                                        final selected =
+                                            await showGameSwitchMenu(
+                                              iconContext: iconContext,
+                                              currentAppId:
+                                                  controller.appId.value,
+                                            );
+                                        if (selected == null) {
+                                          return;
+                                        }
+                                        await controller.changeGame(selected);
+                                        MarketFilterSheet.preload(
+                                          appId: selected,
                                         );
+                                        if (!mounted) {
+                                          return;
+                                        }
+                                        setState(() {
+                                          _sortField = 'price';
+                                          _sortAsc = false;
+                                          _priceMin = null;
+                                          _priceMax = null;
+                                          _tags = null;
+                                          _itemName = null;
+                                        });
                                       },
                                     ),
-                                  ),
-                                ),
-                                Obx(() {
-                                  final appId = controller.appId.value;
-                                  return Builder(
-                                    builder: (iconContext) {
-                                      return Padding(
-                                        padding: EdgeInsets.only(
-                                          right: 12 * scale,
-                                          left: 6 * scale,
-                                        ),
-                                        child: GameIconButton(
-                                          appId: appId,
-                                          size: gameIconSize,
-                                          onTap: () async {
-                                            final selected =
-                                                await showGameSwitchMenu(
-                                                  iconContext: iconContext,
-                                                  currentAppId:
-                                                      controller.appId.value,
-                                                );
-                                            if (selected == null) {
-                                              return;
-                                            }
-                                            await controller.changeGame(
-                                              selected,
-                                            );
-                                            MarketFilterSheet.preload(
-                                              appId: selected,
-                                            );
-                                            if (!mounted) {
-                                              return;
-                                            }
-                                            setState(() {
-                                              _sortField = 'price';
-                                              _sortAsc = false;
-                                              _priceMin = null;
-                                              _priceMax = null;
-                                              _tags = null;
-                                              _itemName = null;
-                                            });
-                                          },
-                                        ),
-                                      );
-                                    },
                                   );
-                                }),
-                              ],
-                            );
-                          },
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      _buildSearchBar(),
-                      const SizedBox(height: 6),
-                    ],
+                                },
+                              );
+                            }),
+                          ],
+                        );
+                      },
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      Obx(
-                        () => _buildGrid(
-                          controller.latestItems,
-                          controller.isLoadingLatest.value,
-                          controller.latestHasMore,
-                          _latestScroll,
-                          onRefresh: () => controller.fetchLatest(reset: true),
-                        ),
-                      ),
-                      Obx(
-                        () => _buildGrid(
-                          controller.hotItems,
-                          controller.isLoadingHot.value,
-                          controller.hotHasMore,
-                          _hotScroll,
-                          onRefresh: () => controller.fetchHot(reset: true),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+                  const SizedBox(height: 6),
+                  _buildSearchBar(),
+                  const SizedBox(height: 6),
+                ],
+              ),
             ),
-            _buildBackToTopButton(context),
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  Obx(
+                    () => _buildGrid(
+                      controller.latestItems,
+                      controller.isLoadingLatest.value,
+                      controller.latestHasMore,
+                      _latestScroll,
+                      onRefresh: () => controller.fetchLatest(reset: true),
+                    ),
+                  ),
+                  Obx(
+                    () => _buildGrid(
+                      controller.hotItems,
+                      controller.isLoadingHot.value,
+                      controller.hotHasMore,
+                      _hotScroll,
+                      onRefresh: () => controller.fetchHot(reset: true),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),

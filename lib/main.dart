@@ -12,6 +12,7 @@ import 'package:tronskins_app/common/hooks/locale/use_locale.dart';
 import 'package:tronskins_app/common/hooks/theme/use_theme.dart';
 import 'package:tronskins_app/common/theme/dark_theme.dart';
 import 'package:tronskins_app/common/theme/light_theme.dart';
+import 'package:tronskins_app/common/widgets/back_to_top_overlay.dart';
 import 'package:tronskins_app/common/widgets/restart_widget.dart';
 import 'package:tronskins_app/l10n/app_translations.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
@@ -78,7 +79,7 @@ class MyApp extends StatelessWidget {
         final media = MediaQuery.of(context);
         return MediaQuery(
           data: media.copyWith(textScaler: TextScaler.noScaling),
-          child: child ?? const SizedBox.shrink(),
+          child: BackToTopOverlay(child: child ?? const SizedBox.shrink()),
         );
       },
       debugShowCheckedModeBanner: false,
