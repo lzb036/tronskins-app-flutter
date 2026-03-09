@@ -20,6 +20,7 @@ import 'package:tronskins_app/components/market/price_trend_chart.dart';
 import 'package:tronskins_app/controllers/market/market_detail_controller.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
 import 'package:tronskins_app/common/utils/app_snackbar.dart';
+import 'package:tronskins_app/common/widgets/back_to_top_overlay.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
 
 class MarketDetailPage extends StatefulWidget {
@@ -567,306 +568,318 @@ class _MarketDetailPageState extends State<MarketDetailPage>
       backgroundColor: isDark
           ? const Color(0xFF1B1C20)
           : const Color(0xFFF5F5F5),
-      body: Stack(
-        children: [
-          NestedScrollView(
-            headerSliverBuilder: (context, innerBoxIsScrolled) {
-              final tabBar = TabBar(
-                controller: _tabController,
-                labelColor: isDark ? Colors.white : Colors.black,
-                unselectedLabelColor: Colors.grey,
-                indicatorColor: Theme.of(context).colorScheme.primary,
-                indicatorSize: TabBarIndicatorSize.label,
-                dividerColor: Colors.transparent,
-                tabs: [
-                  Tab(text: 'app.trade.onSale.text'.tr),
-                  Tab(text: 'app.trade.purchase.text'.tr),
-                  Tab(text: 'app.market.detail.price_trend.title'.tr),
-                  Tab(text: 'app.market.detail.trade_record'.tr),
-                ],
-              );
-              return [
-                SliverAppBar(
-                  expandedHeight: 320,
-                  pinned: true,
-                  backgroundColor: isDark
-                      ? const Color(0xFF1B1C20)
-                      : Colors.white,
-                  elevation: 0,
-                  titleSpacing: 0,
-                  title: ShaderMask(
-                    shaderCallback: (bounds) => LinearGradient(
-                      colors: [
-                        Theme.of(context).colorScheme.primary,
-                        Theme.of(context).colorScheme.secondary,
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ).createShader(bounds),
-                    child: const Text(
-                      'Tronskins',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w900,
-                        fontStyle: FontStyle.italic,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                  leading: IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    onPressed: () => Get.back(),
-                  ),
-                  actions: [
-                    IconButton(
-                      icon: const Icon(Icons.share, color: Colors.white),
-                      onPressed: () {},
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.more_horiz, color: Colors.white),
-                      onPressed: () {},
-                    ),
+      body: BackToTopScope(
+        enabled: false,
+        child: Stack(
+          children: [
+            NestedScrollView(
+              headerSliverBuilder: (context, innerBoxIsScrolled) {
+                final tabBar = TabBar(
+                  controller: _tabController,
+                  labelColor: isDark ? Colors.white : Colors.black,
+                  unselectedLabelColor: Colors.grey,
+                  indicatorColor: Theme.of(context).colorScheme.primary,
+                  indicatorSize: TabBarIndicatorSize.label,
+                  dividerColor: Colors.transparent,
+                  tabs: [
+                    Tab(text: 'app.trade.onSale.text'.tr),
+                    Tab(text: 'app.trade.purchase.text'.tr),
+                    Tab(text: 'app.market.detail.price_trend.title'.tr),
+                    Tab(text: 'app.market.detail.trade_record'.tr),
                   ],
-                  flexibleSpace: FlexibleSpaceBar(
-                    background: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        // Background based on rarity
-                        Image.asset(
-                          _rarityBgAsset(displayTags?.rarity?.color),
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, _, __) => Image.asset(
-                            'assets/images/game/item/b0c3d9.png',
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                        // Main Image
-                        Center(
-                          child: Hero(
-                            tag: 'market_item_${item.id}',
-                            child: CachedNetworkImage(
-                              imageUrl: displayImage,
-                              height: 200,
-                              fit: BoxFit.contain,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                SliverToBoxAdapter(
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    color: isDark ? const Color(0xFF1B1C20) : Colors.white,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          displayName,
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: isDark ? Colors.white : Colors.black87,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        ..._buildAttributeRows(item),
-                        if (_wearOptions.isNotEmpty) ...[
-                          const SizedBox(height: 12),
-                          _buildWearList(currency),
-                        ],
-                        _buildMarketCountSummary(
-                          context: context,
-                          sellNum: sellNum,
-                          buyNum: buyNum,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                SliverPersistentHeader(
-                  delegate: _SliverTabBarDelegate(
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        final dragWidth = constraints.maxWidth;
-                        final maxIndex = (_tabController.length - 1).toDouble();
-
-                        void settleToClosestTab() {
-                          if (_tabController.indexIsChanging) {
-                            return;
-                          }
-                          final value =
-                              _tabController.animation?.value ??
-                              _tabController.index.toDouble();
-                          final targetIndex = value.round().clamp(
-                            0,
-                            _tabController.length - 1,
-                          );
-                          if (targetIndex == _tabController.index) {
-                            // Avoid getting stuck in an in-between offset state.
-                            _tabController.offset = 0;
-                            return;
-                          }
-                          _tabController.animateTo(
-                            targetIndex,
-                            duration: const Duration(milliseconds: 180),
-                            curve: Curves.easeOutCubic,
-                          );
-                        }
-
-                        return GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onHorizontalDragUpdate: (details) {
-                            if (_tabController.indexIsChanging ||
-                                dragWidth <= 0) {
-                              return;
-                            }
-                            final currentValue =
-                                _tabController.animation?.value ??
-                                _tabController.index.toDouble();
-                            final nextValue =
-                                (currentValue - (details.delta.dx / dragWidth))
-                                    .clamp(0.0, maxIndex)
-                                    .toDouble();
-                            final nextOffset =
-                                (nextValue - _tabController.index)
-                                    .clamp(-1.0, 1.0)
-                                    .toDouble();
-                            if (nextOffset >= 0.98 &&
-                                _tabController.index <
-                                    _tabController.length - 1) {
-                              _tabController.index = _tabController.index + 1;
-                              _tabController.offset = 0;
-                              return;
-                            }
-                            if (nextOffset <= -0.98 &&
-                                _tabController.index > 0) {
-                              _tabController.index = _tabController.index - 1;
-                              _tabController.offset = 0;
-                              return;
-                            }
-                            _tabController.offset = nextOffset;
-                          },
-                          onHorizontalDragEnd: (_) => settleToClosestTab(),
-                          onHorizontalDragCancel: settleToClosestTab,
-                          child: tabBar,
-                        );
-                      },
-                    ),
-                    height: tabBar.preferredSize.height,
+                );
+                return [
+                  SliverAppBar(
+                    expandedHeight: 320,
+                    pinned: true,
                     backgroundColor: isDark
                         ? const Color(0xFF1B1C20)
                         : Colors.white,
-                  ),
-                  pinned: true,
-                ),
-                if (_topActionToolbarHeight > 0 || _showTopActionToolbar)
-                  SliverPersistentHeader(
-                    delegate: _FixedHeightHeaderDelegate(
-                      height: _topActionToolbarHeight,
-                      backgroundColor: isDark
-                          ? const Color(0xFF1B1C20)
-                          : const Color(0xFFF5F5F5),
-                      child: _buildTopActionToolbar(),
-                    ),
-                    pinned: true,
-                  ),
-              ];
-            },
-            body: Container(
-              color: isDark ? const Color(0xFF1B1C20) : const Color(0xFFF5F5F5),
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  Obx(() => _buildOnSaleTab(currency)),
-                  Obx(() => _buildBuyRequestTab(currency)),
-                  Obx(() => _buildPriceTrendTab()),
-                  Obx(() => _buildTransactionTab(currency)),
-                ],
-              ),
-            ),
-          ),
-          // Bottom Action Bar
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF26272B) : Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
-                    blurRadius: 10,
-                    offset: const Offset(0, -2),
-                  ),
-                ],
-              ),
-              child: SafeArea(
-                child: Row(
-                  children: [
-                    _buildBottomSteamPrice(
-                      context: context,
-                      currency: currency,
-                      referencePrice: referencePrice,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: SizedBox(
-                        height: 44,
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: OutlinedButton(
-                                onPressed: _openBuying,
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: colorScheme.primary,
-                                  side: BorderSide(color: colorScheme.primary),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  textStyle: theme.textTheme.labelLarge
-                                      ?.copyWith(fontWeight: FontWeight.w600),
-                                ),
-                                child: Text(
-                                  'app.market.detail.release_purchase'.tr,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: FilledButton(
-                                onPressed: _openBulkBuying,
-                                style: FilledButton.styleFrom(
-                                  backgroundColor: colorScheme.primary,
-                                  foregroundColor: colorScheme.onPrimary,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  textStyle: theme.textTheme.labelLarge
-                                      ?.copyWith(fontWeight: FontWeight.w600),
-                                ),
-                                child: Text(
-                                  'app.market.detail.bulk_buying.title'.tr,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ),
-                          ],
+                    elevation: 0,
+                    titleSpacing: 0,
+                    title: ShaderMask(
+                      shaderCallback: (bounds) => LinearGradient(
+                        colors: [
+                          Theme.of(context).colorScheme.primary,
+                          Theme.of(context).colorScheme.secondary,
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ).createShader(bounds),
+                      child: const Text(
+                        'Tronskins',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w900,
+                          fontStyle: FontStyle.italic,
+                          color: Colors.white,
                         ),
                       ),
                     ),
+                    leading: IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      onPressed: () => Get.back(),
+                    ),
+                    actions: [
+                      IconButton(
+                        icon: const Icon(Icons.share, color: Colors.white),
+                        onPressed: () {},
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.more_horiz, color: Colors.white),
+                        onPressed: () {},
+                      ),
+                    ],
+                    flexibleSpace: FlexibleSpaceBar(
+                      background: Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          // Background based on rarity
+                          Image.asset(
+                            _rarityBgAsset(displayTags?.rarity?.color),
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, _, __) => Image.asset(
+                              'assets/images/game/item/b0c3d9.png',
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          // Main Image
+                          Center(
+                            child: Hero(
+                              tag: 'market_item_${item.id}',
+                              child: CachedNetworkImage(
+                                imageUrl: displayImage,
+                                height: 200,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      color: isDark ? const Color(0xFF1B1C20) : Colors.white,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            displayName,
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: isDark ? Colors.white : Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          ..._buildAttributeRows(item),
+                          if (_wearOptions.isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            _buildWearList(currency),
+                          ],
+                          _buildMarketCountSummary(
+                            context: context,
+                            sellNum: sellNum,
+                            buyNum: buyNum,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  SliverPersistentHeader(
+                    delegate: _SliverTabBarDelegate(
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final dragWidth = constraints.maxWidth;
+                          final maxIndex = (_tabController.length - 1)
+                              .toDouble();
+
+                          void settleToClosestTab() {
+                            if (_tabController.indexIsChanging) {
+                              return;
+                            }
+                            final value =
+                                _tabController.animation?.value ??
+                                _tabController.index.toDouble();
+                            final targetIndex = value.round().clamp(
+                              0,
+                              _tabController.length - 1,
+                            );
+                            if (targetIndex == _tabController.index) {
+                              // Avoid getting stuck in an in-between offset state.
+                              _tabController.offset = 0;
+                              return;
+                            }
+                            _tabController.animateTo(
+                              targetIndex,
+                              duration: const Duration(milliseconds: 180),
+                              curve: Curves.easeOutCubic,
+                            );
+                          }
+
+                          return GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onHorizontalDragUpdate: (details) {
+                              if (_tabController.indexIsChanging ||
+                                  dragWidth <= 0) {
+                                return;
+                              }
+                              final currentValue =
+                                  _tabController.animation?.value ??
+                                  _tabController.index.toDouble();
+                              final nextValue =
+                                  (currentValue -
+                                          (details.delta.dx / dragWidth))
+                                      .clamp(0.0, maxIndex)
+                                      .toDouble();
+                              final nextOffset =
+                                  (nextValue - _tabController.index)
+                                      .clamp(-1.0, 1.0)
+                                      .toDouble();
+                              if (nextOffset >= 0.98 &&
+                                  _tabController.index <
+                                      _tabController.length - 1) {
+                                _tabController.index = _tabController.index + 1;
+                                _tabController.offset = 0;
+                                return;
+                              }
+                              if (nextOffset <= -0.98 &&
+                                  _tabController.index > 0) {
+                                _tabController.index = _tabController.index - 1;
+                                _tabController.offset = 0;
+                                return;
+                              }
+                              _tabController.offset = nextOffset;
+                            },
+                            onHorizontalDragEnd: (_) => settleToClosestTab(),
+                            onHorizontalDragCancel: settleToClosestTab,
+                            child: tabBar,
+                          );
+                        },
+                      ),
+                      height: tabBar.preferredSize.height,
+                      backgroundColor: isDark
+                          ? const Color(0xFF1B1C20)
+                          : Colors.white,
+                    ),
+                    pinned: true,
+                  ),
+                  if (_topActionToolbarHeight > 0 || _showTopActionToolbar)
+                    SliverPersistentHeader(
+                      delegate: _FixedHeightHeaderDelegate(
+                        height: _topActionToolbarHeight,
+                        backgroundColor: isDark
+                            ? const Color(0xFF1B1C20)
+                            : const Color(0xFFF5F5F5),
+                        child: _buildTopActionToolbar(),
+                      ),
+                      pinned: true,
+                    ),
+                ];
+              },
+              body: Container(
+                color: isDark
+                    ? const Color(0xFF1B1C20)
+                    : const Color(0xFFF5F5F5),
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    Obx(() => _buildOnSaleTab(currency)),
+                    Obx(() => _buildBuyRequestTab(currency)),
+                    Obx(() => _buildPriceTrendTab()),
+                    Obx(() => _buildTransactionTab(currency)),
                   ],
                 ),
               ),
             ),
-          ),
-        ],
+            // Bottom Action Bar
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF26272B) : Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.2),
+                      blurRadius: 10,
+                      offset: const Offset(0, -2),
+                    ),
+                  ],
+                ),
+                child: SafeArea(
+                  child: Row(
+                    children: [
+                      _buildBottomSteamPrice(
+                        context: context,
+                        currency: currency,
+                        referencePrice: referencePrice,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: SizedBox(
+                          height: 44,
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton(
+                                  onPressed: _openBuying,
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: colorScheme.primary,
+                                    side: BorderSide(
+                                      color: colorScheme.primary,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    textStyle: theme.textTheme.labelLarge
+                                        ?.copyWith(fontWeight: FontWeight.w600),
+                                  ),
+                                  child: Text(
+                                    'app.market.detail.release_purchase'.tr,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: FilledButton(
+                                  onPressed: _openBulkBuying,
+                                  style: FilledButton.styleFrom(
+                                    backgroundColor: colorScheme.primary,
+                                    foregroundColor: colorScheme.onPrimary,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    textStyle: theme.textTheme.labelLarge
+                                        ?.copyWith(fontWeight: FontWeight.w600),
+                                  ),
+                                  child: Text(
+                                    'app.market.detail.bulk_buying.title'.tr,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1521,7 +1534,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
   }
 
   Widget _buildOnSaleTab(CurrencyController currency) {
-    return _buildOnSaleListBody(currency);
+    return BackToTopScope(enabled: true, child: _buildOnSaleListBody(currency));
   }
 
   Widget _buildOnSaleListBody(CurrencyController currency) {
@@ -2533,32 +2546,35 @@ class _MarketDetailPageState extends State<MarketDetailPage>
   }
 
   Widget _buildPriceTrendTab() {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-      children: [
-        Wrap(
-          spacing: 8,
-          children: [
-            _buildDayChip(7, 'app.market.detail.price_trend.seven_days'.tr),
-            _buildDayChip(
-              30,
-              'app.market.detail.price_trend.last_one_month'.tr,
-            ),
-            _buildDayChip(
-              180,
-              'app.market.detail.price_trend.last_half_year'.tr,
-            ),
-            _buildDayChip(365, 'app.market.detail.price_trend.last_year'.tr),
-          ],
-        ),
-        const SizedBox(height: 16),
-        SizedBox(
-          height: 240,
-          child: controller.isLoadingTrend.value
-              ? const Center(child: CircularProgressIndicator())
-              : PriceTrendChart(points: controller.pricePoints),
-        ),
-      ],
+    return BackToTopScope(
+      enabled: true,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+        children: [
+          Wrap(
+            spacing: 8,
+            children: [
+              _buildDayChip(7, 'app.market.detail.price_trend.seven_days'.tr),
+              _buildDayChip(
+                30,
+                'app.market.detail.price_trend.last_one_month'.tr,
+              ),
+              _buildDayChip(
+                180,
+                'app.market.detail.price_trend.last_half_year'.tr,
+              ),
+              _buildDayChip(365, 'app.market.detail.price_trend.last_year'.tr),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 240,
+            child: controller.isLoadingTrend.value
+                ? const Center(child: CircularProgressIndicator())
+                : PriceTrendChart(points: controller.pricePoints),
+          ),
+        ],
+      ),
     );
   }
 
@@ -2850,30 +2866,32 @@ class _MarketDetailPageState extends State<MarketDetailPage>
         !controller.isLoadingTransactions.value &&
         !controller.transactionHasMore;
     final showFooter = showLoadingFooter || showNoMoreFooter;
-    return ListView.builder(
-      controller: _transactionScroll,
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-      itemCount: controller.transactionItems.length + (showFooter ? 1 : 0),
-      itemBuilder: (context, index) {
-        if (index >= controller.transactionItems.length) {
-          return _buildLoadMoreFooter(
-            showLoading: showLoadingFooter,
-            showNoMore: showNoMoreFooter,
-          );
-        }
-        final item = controller.transactionItems[index];
-        final user = controller.users[item.userId?.toString() ?? ''];
-        final schema = _lookupMarketSchema(item);
-        final imageUrl = schema?.imageUrl ?? '';
-        final appId = item.appId ?? controller.appId;
-        final count =
-            _asInt(item.raw['count'] ?? item.raw['nums'] ?? item.raw['num']) ??
-            1;
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        return Card(
-          color: isDark ? const Color(0xFF26272B) : Colors.white,
-          child: InkWell(
-            onTap: () => _openItemDetail(item, schema, user),
+    return BackToTopScope(
+      enabled: true,
+      child: ListView.builder(
+        controller: _transactionScroll,
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+        itemCount: controller.transactionItems.length + (showFooter ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (index >= controller.transactionItems.length) {
+            return _buildLoadMoreFooter(
+              showLoading: showLoadingFooter,
+              showNoMore: showNoMoreFooter,
+            );
+          }
+          final item = controller.transactionItems[index];
+          final user = controller.users[item.userId?.toString() ?? ''];
+          final schema = _lookupMarketSchema(item);
+          final imageUrl = schema?.imageUrl ?? '';
+          final appId = item.appId ?? controller.appId;
+          final count =
+              _asInt(
+                item.raw['count'] ?? item.raw['nums'] ?? item.raw['num'],
+              ) ??
+              1;
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+          return Card(
+            color: isDark ? const Color(0xFF26272B) : Colors.white,
             child: Padding(
               padding: const EdgeInsets.all(12),
               child: Row(
@@ -2955,9 +2973,9 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                 ],
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 

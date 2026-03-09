@@ -7,6 +7,7 @@ import 'package:tronskins_app/api/shop_product.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
 import 'package:tronskins_app/common/storage/user_storage.dart';
 import 'package:tronskins_app/common/utils/app_snackbar.dart';
+import 'package:tronskins_app/common/widgets/back_to_top_overlay.dart';
 import 'package:tronskins_app/components/game_item/game_item_models.dart';
 import 'package:tronskins_app/components/game_item/game_item_utils.dart';
 import 'package:tronskins_app/components/game_item/gem_row.dart';
@@ -793,197 +794,200 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
     }
     final isOwnOnSale = _isOwnOnSaleItem();
 
-    return Scaffold(
-      appBar: AppBar(
-        titleSpacing: 0,
-        title: ShaderMask(
-          shaderCallback: (bounds) => LinearGradient(
-            colors: [
-              Theme.of(context).colorScheme.primary,
-              Theme.of(context).colorScheme.secondary,
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ).createShader(bounds),
-          child: const Text(
-            'Tronskins',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w900,
-              fontStyle: FontStyle.italic,
-              color: Colors.white,
+    return BackToTopScope(
+      enabled: false,
+      child: Scaffold(
+        appBar: AppBar(
+          titleSpacing: 0,
+          title: ShaderMask(
+            shaderCallback: (bounds) => LinearGradient(
+              colors: [
+                Theme.of(context).colorScheme.primary,
+                Theme.of(context).colorScheme.secondary,
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ).createShader(bounds),
+            child: const Text(
+              'Tronskins',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.w900,
+                fontStyle: FontStyle.italic,
+                color: Colors.white,
+              ),
             ),
           ),
         ),
-      ),
-      body: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          _buildTopHeroImage(imageUrl: imageUrl, rarity: rarity),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (appId == 570 && hero?.label?.isNotEmpty == true) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    '${'app.market.dota2.hero_use'.tr}: ${hero?.label ?? ''}',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
-                if (appId == 730) ...[
-                  if (paintSeed != null || percentage != null) ...[
+        body: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            _buildTopHeroImage(imageUrl: imageUrl, rarity: rarity),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (appId == 570 && hero?.label?.isNotEmpty == true) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      '${'app.market.dota2.hero_use'.tr}: ${hero?.label ?? ''}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                  if (appId == 730) ...[
+                    if (paintSeed != null || percentage != null) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        '${'app.market.csgo.paint_index'.tr}: '
+                        '${paintSeed ?? ''}'
+                        '${percentage != null ? ' (${percentage.endsWith('%') ? percentage : '$percentage%'})' : ''}',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                    if (paintIndex != null ||
+                        phase != null ||
+                        tier != null ||
+                        fireIce != null) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        '${'app.market.detail.skin_number'.tr}: '
+                        '${paintIndex ?? ''}'
+                        '${phase != null ? ' ($phase)' : ''}'
+                        '${tier != null ? ' ($tier)' : ''}'
+                        '${fireIce != null ? ' ($fireIce)' : ''}',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                    if (paintWearValue != null && paintWearText != null) ...[
+                      const SizedBox(height: 10),
+                      Text(
+                        '${'app.market.csgo.abradability'.tr}: $paintWearText',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      const SizedBox(height: 6),
+                      WearProgressBar(paintWear: paintWearValue),
+                    ],
+                  ],
+                  if (gems.isNotEmpty && (appId == 570 || appId == 440)) ...[
                     const SizedBox(height: 12),
                     Text(
-                      '${'app.market.csgo.paint_index'.tr}: '
-                      '${paintSeed ?? ''}'
-                      '${percentage != null ? ' (${percentage.endsWith('%') ? percentage : '$percentage%'})' : ''}',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
-                  if (paintIndex != null ||
-                      phase != null ||
-                      tier != null ||
-                      fireIce != null) ...[
-                    const SizedBox(height: 6),
-                    Text(
-                      '${'app.market.detail.skin_number'.tr}: '
-                      '${paintIndex ?? ''}'
-                      '${phase != null ? ' ($phase)' : ''}'
-                      '${tier != null ? ' ($tier)' : ''}'
-                      '${fireIce != null ? ' ($fireIce)' : ''}',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
-                  if (paintWearValue != null && paintWearText != null) ...[
-                    const SizedBox(height: 10),
-                    Text(
-                      '${'app.market.csgo.abradability'.tr}: $paintWearText',
+                      'app.market.filter.dota2.gemstones_contains'.tr,
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                     const SizedBox(height: 6),
-                    WearProgressBar(paintWear: paintWearValue),
+                    GemRow(gems: gems, size: 24),
                   ],
-                ],
-                if (gems.isNotEmpty && (appId == 570 || appId == 440)) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    'app.market.filter.dota2.gemstones_contains'.tr,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  const SizedBox(height: 6),
-                  GemRow(gems: gems, size: 24),
-                ],
-                if (stickers.isNotEmpty) ...[
-                  const SizedBox(height: 12),
-                  StickerRow(stickers: stickers, size: 24),
-                ],
-                if (keychains.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  StickerRow(stickers: keychains, size: 24),
-                ],
-                if (tags != null) ...[
-                  const SizedBox(height: 16),
-                  Text(
-                    'app.market.detail.attribute'.tr,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                  const SizedBox(height: 6),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 6,
-                    children: tagChips
-                        .map(_buildTagChip)
-                        .toList(growable: false),
-                  ),
-                  if (exterior?.label?.isNotEmpty == true) ...[
+                  if (stickers.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    StickerRow(stickers: stickers, size: 24),
+                  ],
+                  if (keychains.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    StickerRow(stickers: keychains, size: 24),
+                  ],
+                  if (tags != null) ...[
+                    const SizedBox(height: 16),
+                    Text(
+                      'app.market.detail.attribute'.tr,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
                     const SizedBox(height: 6),
-                    Text(
-                      '${'app.market.filter.appearance'.tr}: ${exterior?.label ?? ''}',
-                      style: Theme.of(context).textTheme.bodySmall,
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 6,
+                      children: tagChips
+                          .map(_buildTagChip)
+                          .toList(growable: false),
                     ),
+                    if (exterior?.label?.isNotEmpty == true) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        '${'app.market.filter.appearance'.tr}: ${exterior?.label ?? ''}',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                    if (itemSet?.label?.isNotEmpty == true) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        itemSet?.label ?? '',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
                   ],
-                  if (itemSet?.label?.isNotEmpty == true) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      itemSet?.label ?? '',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
+                  if (_loadingShopInfo || (_shopInfo?.isNotEmpty ?? false)) ...[
+                    const SizedBox(height: 16),
+                    _buildShopInfoCard(),
                   ],
+                  const SizedBox(height: 100),
                 ],
-                if (_loadingShopInfo || (_shopInfo?.isNotEmpty ?? false)) ...[
-                  const SizedBox(height: 16),
-                  _buildShopInfoCard(),
-                ],
-                const SizedBox(height: 100),
-              ],
-            ),
-          ),
-        ],
-      ),
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 8,
-              offset: const Offset(0, -2),
+              ),
             ),
           ],
         ),
-        child: SafeArea(
-          child: Row(
-            children: [
-              Expanded(
-                child: Obx(
-                  () => Text(
-                    currency.format(_item.price ?? 0),
-                    style: TextStyle(
-                      color: colorScheme.primary,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+        bottomNavigationBar: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.08),
+                blurRadius: 8,
+                offset: const Offset(0, -2),
+              ),
+            ],
+          ),
+          child: SafeArea(
+            child: Row(
+              children: [
+                Expanded(
+                  child: Obx(
+                    () => Text(
+                      currency.format(_item.price ?? 0),
+                      style: TextStyle(
+                        color: colorScheme.primary,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
-              ),
-              SizedBox(
-                height: 42,
-                child: isOwnOnSale
-                    ? const SizedBox.shrink()
-                    : FilledButton(
-                        onPressed:
-                            _item.id != null &&
-                                _item.price != null &&
-                                !_isPurchasing
-                            ? _purchase
-                            : null,
-                        style: FilledButton.styleFrom(
-                          backgroundColor: colorScheme.primary,
-                          foregroundColor: colorScheme.onPrimary,
-                          minimumSize: const Size(96, 42),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                SizedBox(
+                  height: 42,
+                  child: isOwnOnSale
+                      ? const SizedBox.shrink()
+                      : FilledButton(
+                          onPressed:
+                              _item.id != null &&
+                                  _item.price != null &&
+                                  !_isPurchasing
+                              ? _purchase
+                              : null,
+                          style: FilledButton.styleFrom(
+                            backgroundColor: colorScheme.primary,
+                            foregroundColor: colorScheme.onPrimary,
+                            minimumSize: const Size(96, 42),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            textStyle: theme.textTheme.labelLarge?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
-                          textStyle: theme.textTheme.labelLarge?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
+                          child: _isPurchasing
+                              ? SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: colorScheme.onPrimary,
+                                  ),
+                                )
+                              : Text('app.trade.buy.text'.tr),
                         ),
-                        child: _isPurchasing
-                            ? SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: colorScheme.onPrimary,
-                                ),
-                              )
-                            : Text('app.trade.buy.text'.tr),
-                      ),
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
