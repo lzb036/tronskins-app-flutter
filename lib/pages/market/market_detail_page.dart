@@ -1645,18 +1645,17 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                   final colors = theme.colorScheme;
                   final isDark = theme.brightness == Brightness.dark;
                   final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-                  final panelColor = isDark ? colors.surface : Colors.white;
-                  final panelTint =
-                      Color.lerp(
-                        panelColor,
-                        colors.surfaceContainerHighest,
-                        isDark ? 0.22 : 0.55,
-                      ) ??
-                      panelColor;
-                  final borderColor = isDark
-                      ? colors.outline.withValues(alpha: 0.32)
-                      : colors.outline.withValues(alpha: 0.18);
-                  const actionBarHeight = 56.0;
+                  final sectionTitleStyle = theme.textTheme.bodyMedium
+                      ?.copyWith(fontWeight: FontWeight.w600);
+                  final inputFillColor = isDark
+                      ? Colors.white.withValues(alpha: 0.06)
+                      : colors.surface;
+                  final inputBorder = OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: colors.outline.withValues(alpha: 0.12),
+                    ),
+                  );
 
                   void resetAndClose() {
                     Navigator.of(context).pop(const _OnSaleFilterValue());
@@ -1681,60 +1680,47 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                     );
                   }
 
-                  return SafeArea(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [panelColor, panelTint],
-                        ),
-                        borderRadius: BorderRadius.zero,
-                        border: Border.all(color: borderColor),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(
-                              alpha: isDark ? 0.35 : 0.12,
-                            ),
-                            blurRadius: 20,
-                            offset: const Offset(0, -8),
-                          ),
-                        ],
+                  InputDecoration buildInputDecoration({
+                    String? labelText,
+                    String? hintText,
+                  }) {
+                    return InputDecoration(
+                      filled: true,
+                      fillColor: inputFillColor,
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
                       ),
-                      child: Stack(
+                      labelText: labelText,
+                      hintText: hintText,
+                      border: inputBorder,
+                      enabledBorder: inputBorder,
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: colors.primary.withValues(alpha: 0.6),
+                        ),
+                      ),
+                    );
+                  }
+
+                  return SafeArea(
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                        left: 12,
+                        right: 12,
+                        top: 12,
+                        bottom: bottomInset + 12,
+                      ),
+                      child: Column(
                         children: [
-                          Padding(
-                            padding: EdgeInsets.only(
-                              left: 16,
-                              right: 16,
-                              top: 12,
-                              bottom: actionBarHeight + 24 + bottomInset,
-                            ),
+                          Expanded(
                             child: SingleChildScrollView(
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Center(
-                                    child: Container(
-                                      width: 44,
-                                      height: 5,
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          colors: [
-                                            Colors.black12,
-                                            colors.primary.withValues(
-                                              alpha: 0.18,
-                                            ),
-                                          ],
-                                        ),
-                                        borderRadius: BorderRadius.circular(
-                                          999,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
                                   Align(
                                     alignment: Alignment.center,
                                     child: Text(
@@ -1742,15 +1728,14 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                                       textAlign: TextAlign.center,
                                       style: theme.textTheme.titleMedium
                                           ?.copyWith(
-                                            fontWeight: FontWeight.w700,
-                                            color: Colors.black,
+                                            fontWeight: FontWeight.w600,
                                           ),
                                     ),
                                   ),
                                   const SizedBox(height: 16),
                                   Text(
                                     'app.market.filter.sort'.tr,
-                                    style: theme.textTheme.bodyMedium,
+                                    style: sectionTitleStyle,
                                   ),
                                   const SizedBox(height: 8),
                                   Wrap(
@@ -1779,16 +1764,16 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                                         .toList(growable: false),
                                   ),
                                   if (showCsgoFilter) ...[
-                                    const SizedBox(height: 8),
+                                    const SizedBox(height: 16),
                                     Text(
                                       'app.market.csgo.paint_index'.tr,
-                                      style: theme.textTheme.bodyMedium,
+                                      style: sectionTitleStyle,
                                     ),
                                     const SizedBox(height: 8),
                                     TextField(
                                       controller: paintSeedController,
                                       keyboardType: TextInputType.number,
-                                      decoration: InputDecoration(
+                                      decoration: buildInputDecoration(
                                         hintText:
                                             'app.market.csgo.paint_index_placeholder'
                                                 .tr,
@@ -1798,7 +1783,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                                       const SizedBox(height: 16),
                                       Text(
                                         'app.market.filter.selection_phase'.tr,
-                                        style: theme.textTheme.bodyMedium,
+                                        style: sectionTitleStyle,
                                       ),
                                       const SizedBox(height: 8),
                                       Wrap(
@@ -1841,7 +1826,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                                       Text(
                                         'app.market.filter.csgo.wear_interval'
                                             .tr,
-                                        style: theme.textTheme.bodyMedium,
+                                        style: sectionTitleStyle,
                                       ),
                                       const SizedBox(height: 8),
                                       Row(
@@ -1853,7 +1838,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                                                   const TextInputType.numberWithOptions(
                                                     decimal: true,
                                                   ),
-                                              decoration: const InputDecoration(
+                                              decoration: buildInputDecoration(
                                                 hintText: '0.00',
                                               ),
                                             ),
@@ -1871,7 +1856,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                                                   const TextInputType.numberWithOptions(
                                                     decimal: true,
                                                   ),
-                                              decoration: const InputDecoration(
+                                              decoration: buildInputDecoration(
                                                 hintText: '1.00',
                                               ),
                                             ),
@@ -1915,7 +1900,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                                   const SizedBox(height: 16),
                                   Text(
                                     'app.market.filter.price_range'.tr,
-                                    style: theme.textTheme.bodyMedium,
+                                    style: sectionTitleStyle,
                                   ),
                                   const SizedBox(height: 8),
                                   Row(
@@ -1927,7 +1912,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                                               const TextInputType.numberWithOptions(
                                                 decimal: true,
                                               ),
-                                          decoration: InputDecoration(
+                                          decoration: buildInputDecoration(
                                             labelText:
                                                 'app.market.filter.price_lowest'
                                                     .tr,
@@ -1947,7 +1932,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                                               const TextInputType.numberWithOptions(
                                                 decimal: true,
                                               ),
-                                          decoration: InputDecoration(
+                                          decoration: buildInputDecoration(
                                             labelText:
                                                 'app.market.filter.price_highest'
                                                     .tr,
@@ -1961,86 +1946,39 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                               ),
                             ),
                           ),
-                          Positioned(
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                            child: Container(
-                              padding: EdgeInsets.fromLTRB(
-                                16,
-                                8,
-                                16,
-                                8 + bottomInset,
-                              ),
-                              decoration: BoxDecoration(
-                                color: colors.surface,
-                                border: Border(
-                                  top: BorderSide(
-                                    color: colors.outline.withValues(
-                                      alpha: 0.08,
-                                    ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: OutlinedButton(
+                                  onPressed: () => Navigator.of(context).pop(),
+                                  style: OutlinedButton.styleFrom(
+                                    minimumSize: const Size.fromHeight(40),
                                   ),
+                                  child: Text('app.common.cancel'.tr),
                                 ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.08),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, -4),
-                                  ),
-                                ],
                               ),
-                              child: Row(
-                                children: [
-                                  Expanded(
-                                    child: OutlinedButton(
-                                      style: OutlinedButton.styleFrom(
-                                        minimumSize: const Size.fromHeight(40),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            10,
-                                          ),
-                                        ),
-                                      ),
-                                      onPressed: resetAndClose,
-                                      child: Text('app.market.filter.reset'.tr),
-                                    ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: OutlinedButton(
+                                  onPressed: resetAndClose,
+                                  style: OutlinedButton.styleFrom(
+                                    minimumSize: const Size.fromHeight(40),
                                   ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: OutlinedButton(
-                                      style: OutlinedButton.styleFrom(
-                                        minimumSize: const Size.fromHeight(40),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            10,
-                                          ),
-                                        ),
-                                      ),
-                                      onPressed: () =>
-                                          Navigator.of(context).pop(),
-                                      child: Text('app.common.cancel'.tr),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: FilledButton(
-                                      style: FilledButton.styleFrom(
-                                        minimumSize: const Size.fromHeight(40),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(
-                                            10,
-                                          ),
-                                        ),
-                                      ),
-                                      onPressed: applyAndClose,
-                                      child: Text(
-                                        'app.market.filter.finish'.tr,
-                                      ),
-                                    ),
-                                  ),
-                                ],
+                                  child: Text('app.market.filter.reset'.tr),
+                                ),
                               ),
-                            ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: FilledButton(
+                                  onPressed: applyAndClose,
+                                  style: FilledButton.styleFrom(
+                                    minimumSize: const Size.fromHeight(40),
+                                  ),
+                                  child: Text('app.market.filter.finish'.tr),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -2161,28 +2099,9 @@ class _MarketDetailPageState extends State<MarketDetailPage>
     required bool selected,
     required ValueChanged<bool> onSelected,
   }) {
-    final colors = Theme.of(context).colorScheme;
     return ChoiceChip(
       label: Text(label),
-      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      visualDensity: VisualDensity.compact,
       selected: selected,
-      selectedColor: colors.primary.withValues(alpha: 0.16),
-      backgroundColor: colors.surfaceContainerHighest,
-      showCheckmark: false,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      labelPadding: const EdgeInsets.symmetric(horizontal: 2),
-      shape: StadiumBorder(
-        side: BorderSide(
-          color: selected
-              ? colors.primary.withValues(alpha: 0.5)
-              : colors.outline.withValues(alpha: 0.2),
-        ),
-      ),
-      labelStyle: TextStyle(
-        color: selected ? colors.primary : colors.onSurfaceVariant,
-        fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-      ),
       onSelected: onSelected,
     );
   }

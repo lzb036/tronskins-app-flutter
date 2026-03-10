@@ -626,118 +626,39 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
-    final panelColor = isDark ? colors.surface : Colors.white;
-    final panelTint = Color.lerp(
-      panelColor,
-      colors.surfaceVariant,
-      isDark ? 0.16 : 0.08,
-    )!;
-    final borderColor = colors.outline.withOpacity(isDark ? 0.18 : 0.08);
-    final softSurface = isDark
-        ? colors.surfaceVariant.withOpacity(0.18)
-        : colors.surfaceVariant.withOpacity(0.6);
-    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final colors = Theme.of(context).colorScheme;
     final disableAnimations =
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     final animationDuration = disableAnimations
         ? Duration.zero
-        : const Duration(milliseconds: 240);
-    const actionBarHeight = 56.0;
-    final entryOffset = widget.isSideSheet ? Offset.zero : const Offset(0, 0.1);
-    final sheet = SafeArea(
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          return AnimatedSlide(
-            offset: _entered ? Offset.zero : entryOffset,
-            duration: animationDuration,
-            curve: Curves.easeOutCubic,
-            child: AnimatedOpacity(
-              opacity: _entered ? 1 : 0,
-              duration: animationDuration,
-              curve: Curves.easeOutCubic,
-              child: SizedBox(
-                height: constraints.maxHeight,
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [panelColor, panelTint],
-                    ),
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(20),
-                    ),
-                    border: Border.all(color: borderColor),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(isDark ? 0.35 : 0.12),
-                        blurRadius: 20,
-                        offset: const Offset(0, -8),
-                      ),
-                    ],
-                  ),
-                  child: Stack(
-                    children: [
-                      Padding(
-                        padding: EdgeInsets.only(
-                          left: 16,
-                          right: 16,
-                          top: 12,
-                          bottom: actionBarHeight + 24 + bottomInset,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildHandle(),
-                            const SizedBox(height: 8),
-                            Center(
-                              child: Text(
-                                widget.titleKey.tr,
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            AnimatedOpacity(
-                              opacity: _isLoading ? 1 : 0,
-                              duration: const Duration(milliseconds: 180),
-                              child: _isLoading
-                                  ? LinearProgressIndicator(
-                                      minHeight: 2,
-                                      color: colors.primary.withOpacity(0.7),
-                                      backgroundColor: colors.outline
-                                          .withOpacity(0.08),
-                                    )
-                                  : const SizedBox(height: 2),
-                            ),
-                            const SizedBox(height: 8),
-                            Expanded(
-                              child: _buildTabbedBody(
-                                surface: softSurface,
-                                borderColor: borderColor,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Positioned(
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        child: _buildActionBar(context, bottomInset),
-                      ),
-                    ],
-                  ),
-                ),
+        : const Duration(milliseconds: 200);
+    final body = SafeArea(
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 12,
+          right: 12,
+          top: 12,
+          bottom: MediaQuery.of(context).viewInsets.bottom + 12,
+        ),
+        child: Column(
+          children: [
+            Expanded(
+              child: _buildTabbedBody(
+                surface: colors.surface,
+                borderColor: colors.outline.withValues(alpha: 0.15),
               ),
             ),
-          );
-        },
+            const SizedBox(height: 12),
+            _buildActionBar(context),
+          ],
+        ),
       ),
+    );
+    final sheet = AnimatedOpacity(
+      opacity: _entered ? 1 : 0,
+      duration: animationDuration,
+      curve: Curves.easeOutCubic,
+      child: body,
     );
     if (!widget.isSideSheet) {
       return sheet;
@@ -752,141 +673,64 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
           Navigator.of(context).pop();
         }
       },
-      child: sheet,
-    );
-  }
-
-  Widget _buildHandle() {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
-    return Center(
-      child: Container(
-        width: 44,
-        height: 5,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              (isDark ? Colors.white24 : Colors.black12),
-              colors.primary.withOpacity(isDark ? 0.32 : 0.18),
-            ],
-          ),
-          borderRadius: BorderRadius.circular(999),
-        ),
-      ),
+      child: Container(color: colors.surface, child: sheet),
     );
   }
 
   Widget _buildSectionTitle(String text) {
-    final colors = Theme.of(context).colorScheme;
     return Text(
       text,
-      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-        fontWeight: FontWeight.w600,
-        letterSpacing: 0.2,
-        color: colors.onSurface,
-      ),
+      style: Theme.of(
+        context,
+      ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
     );
   }
 
   Widget _buildChip(
     String label, {
     required bool selected,
-    IconData? icon,
     required ValueChanged<bool> onSelected,
   }) {
-    final colors = Theme.of(context).colorScheme;
     return ChoiceChip(
       label: Text(label),
-      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      visualDensity: VisualDensity.compact,
-      avatar: icon == null
-          ? null
-          : Icon(
-              icon,
-              size: 16,
-              color: selected ? colors.primary : colors.onSurfaceVariant,
-            ),
       selected: selected,
-      selectedColor: colors.primary.withOpacity(0.16),
-      backgroundColor: colors.surfaceVariant,
-      showCheckmark: false,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      labelPadding: const EdgeInsets.symmetric(horizontal: 2),
-      shape: StadiumBorder(
-        side: BorderSide(
-          color: selected
-              ? colors.primary.withOpacity(0.5)
-              : colors.outline.withOpacity(0.2),
-        ),
-      ),
-      labelStyle: TextStyle(
-        color: selected ? colors.primary : colors.onSurfaceVariant,
-        fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-      ),
       onSelected: onSelected,
     );
   }
 
-  Widget _buildActionBar(BuildContext context, double bottomInset) {
-    final colors = Theme.of(context).colorScheme;
-    return Container(
-      padding: EdgeInsets.fromLTRB(16, 8, 16, 8 + bottomInset),
-      decoration: BoxDecoration(
-        color: colors.surface,
-        border: Border(
-          top: BorderSide(color: colors.outline.withOpacity(0.08)),
+  Widget _buildActionBar(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: OutlinedButton(
+            onPressed: () => Navigator.of(context).pop(),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size.fromHeight(40),
+            ),
+            child: Text('app.common.cancel'.tr),
+          ),
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 12,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: OutlinedButton(
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size.fromHeight(40),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              onPressed: _reset,
-              child: Text('app.market.filter.reset'.tr),
+        const SizedBox(width: 10),
+        Expanded(
+          child: OutlinedButton(
+            onPressed: _reset,
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size.fromHeight(40),
             ),
+            child: Text('app.market.filter.reset'.tr),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: OutlinedButton(
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size.fromHeight(40),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('app.common.cancel'.tr),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: FilledButton(
+            onPressed: _apply,
+            style: FilledButton.styleFrom(
+              minimumSize: const Size.fromHeight(40),
             ),
+            child: Text('app.market.filter.finish'.tr),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: FilledButton(
-              style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(40),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              onPressed: _apply,
-              child: Text('app.market.filter.finish'.tr),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -913,7 +757,7 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: surface,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: borderColor),
             ),
             child: _showAttributes
@@ -921,13 +765,13 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
                 : const SizedBox.shrink(),
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 10),
         Container(
-          width: 92,
-          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 6),
+          width: 96,
+          padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
             color: surface,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: borderColor),
           ),
           child: _buildSectionTabs(),
@@ -937,26 +781,16 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
   }
 
   Widget _buildSectionTabs() {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-    final isDark = theme.brightness == Brightness.dark;
+    final colors = Theme.of(context).colorScheme;
     return ListView.builder(
       itemCount: _sections.length,
       itemBuilder: (context, index) {
         final section = _sections[index];
         final selected = index == _currentSectionIndex;
-        final selectedGradient = LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            colors.primary.withOpacity(isDark ? 0.35 : 0.18),
-            colors.primary.withOpacity(isDark ? 0.18 : 0.08),
-          ],
-        );
         return Padding(
           padding: const EdgeInsets.only(bottom: 6),
           child: InkWell(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
             onTap: () {
               if (index == _currentSectionIndex) {
                 return;
@@ -968,32 +802,24 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
             },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
-              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
               decoration: BoxDecoration(
-                gradient: selected ? selectedGradient : null,
-                color: selected ? null : colors.surfaceVariant,
-                borderRadius: BorderRadius.circular(12),
+                color: selected
+                    ? colors.primary.withValues(alpha: 0.16)
+                    : colors.surfaceContainerHighest.withValues(alpha: 0.65),
+                borderRadius: BorderRadius.circular(10),
                 border: Border.all(
                   color: selected
-                      ? colors.primary.withOpacity(0.4)
-                      : colors.outline.withOpacity(0.12),
+                      ? colors.primary.withValues(alpha: 0.45)
+                      : colors.outline.withValues(alpha: 0.15),
                 ),
-                boxShadow: selected
-                    ? [
-                        BoxShadow(
-                          color: colors.primary.withOpacity(0.16),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        ),
-                      ]
-                    : [],
               ),
               child: Text(
                 section.labelKey.tr,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
-                style: theme.textTheme.bodySmall?.copyWith(
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: selected ? colors.primary : colors.onSurfaceVariant,
                   fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
                 ),
@@ -1072,116 +898,42 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
   }
 
   List<Widget> _buildSortSection() {
-    final colors = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final panel = isDark
-        ? colors.surfaceVariant.withOpacity(0.18)
-        : colors.surfaceVariant.withOpacity(0.6);
-    final border = colors.outline.withOpacity(0.08);
     return [
       _buildSectionTitle('app.market.filter.sort'.tr),
       const SizedBox(height: 8),
-      Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(
-          color: panel,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: border),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: widget.sortOptions.map((option) {
-                final selected = _sortField == option.field;
-                return _buildChip(
-                  option.labelKey.tr,
-                  selected: selected,
-                  onSelected: (_) => setState(() => _sortField = option.field),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 10),
-            _buildSortDirectionToggle(),
-          ],
-        ),
+      Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: widget.sortOptions.map((option) {
+          final selected = _sortField == option.field;
+          return _buildChip(
+            option.labelKey.tr,
+            selected: selected,
+            onSelected: (_) => setState(() => _sortField = option.field),
+          );
+        }).toList(),
       ),
+      const SizedBox(height: 10),
+      _buildSortDirectionToggle(),
     ];
   }
 
   Widget _buildSortDirectionToggle() {
-    final colors = Theme.of(context).colorScheme;
-    final base = colors.surfaceVariant;
-    return Container(
-      padding: const EdgeInsets.all(2),
-      decoration: BoxDecoration(
-        color: base,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: colors.outline.withOpacity(0.1)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: _buildDirectionItem(
-              icon: Icons.arrow_upward,
-              label: '↑',
-              selected: _sortAsc,
-              onTap: () => setState(() => _sortAsc = true),
-            ),
-          ),
-          Expanded(
-            child: _buildDirectionItem(
-              icon: Icons.arrow_downward,
-              label: '↓',
-              selected: !_sortAsc,
-              onTap: () => setState(() => _sortAsc = false),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDirectionItem({
-    required IconData icon,
-    required String label,
-    required bool selected,
-    required VoidCallback onTap,
-  }) {
-    final colors = Theme.of(context).colorScheme;
-    return InkWell(
-      borderRadius: BorderRadius.circular(10),
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        decoration: BoxDecoration(
-          color: selected
-              ? colors.primary.withOpacity(0.14)
-              : Colors.transparent,
-          borderRadius: BorderRadius.circular(10),
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        _buildChip(
+          '↑',
+          selected: _sortAsc,
+          onSelected: (_) => setState(() => _sortAsc = true),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 16,
-              color: selected ? colors.primary : colors.onSurfaceVariant,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: selected ? colors.primary : colors.onSurfaceVariant,
-                fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-              ),
-            ),
-          ],
+        _buildChip(
+          '↓',
+          selected: !_sortAsc,
+          onSelected: (_) => setState(() => _sortAsc = false),
         ),
-      ),
+      ],
     );
   }
 
@@ -1284,8 +1036,8 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
         children: List.generate(widget.statusOptions.length, (index) {
           final option = widget.statusOptions[index];
           final selected = _selectedStatusIndex == index;
-          return _buildChip(
-            option.labelKey.tr,
+          return FilterChip(
+            label: Text(option.labelKey.tr),
             selected: selected,
             onSelected: (value) {
               setState(() {
@@ -1345,9 +1097,9 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: colors.surfaceVariant.withOpacity(0.4),
+          color: colors.surfaceContainerHighest.withValues(alpha: 0.4),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: colors.outline.withOpacity(0.2)),
+          border: Border.all(color: colors.outline.withValues(alpha: 0.2)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1643,35 +1395,9 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
               runSpacing: 8,
               children: group.options
                   .map(
-                    (option) => ChoiceChip(
-                      label: Text(option.label.tr),
-                      selectedColor: Theme.of(
-                        context,
-                      ).colorScheme.primary.withOpacity(0.16),
-                      backgroundColor: Theme.of(
-                        context,
-                      ).colorScheme.surfaceVariant,
+                    (option) => _buildChip(
+                      option.label.tr,
                       selected: _isGroupSelected(group.key, option),
-                      showCheckmark: false,
-                      shape: StadiumBorder(
-                        side: BorderSide(
-                          color: _isGroupSelected(group.key, option)
-                              ? Theme.of(
-                                  context,
-                                ).colorScheme.primary.withOpacity(0.5)
-                              : Theme.of(
-                                  context,
-                                ).colorScheme.outline.withOpacity(0.2),
-                        ),
-                      ),
-                      labelStyle: TextStyle(
-                        color: _isGroupSelected(group.key, option)
-                            ? Theme.of(context).colorScheme.primary
-                            : Theme.of(context).textTheme.bodySmall?.color,
-                        fontWeight: _isGroupSelected(group.key, option)
-                            ? FontWeight.w600
-                            : FontWeight.w500,
-                      ),
                       onSelected: (_) => _selectOption(group.key, option),
                     ),
                   )
@@ -1692,29 +1418,9 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
           spacing: 8,
           runSpacing: 8,
           children: [
-            ChoiceChip(
-              label: Text(unlimitedLabel.tr),
-              selectedColor: Theme.of(
-                context,
-              ).colorScheme.primary.withOpacity(0.16),
-              backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
+            _buildChip(
+              unlimitedLabel,
               selected: selected == null,
-              showCheckmark: false,
-              shape: StadiumBorder(
-                side: BorderSide(
-                  color: selected == null
-                      ? Theme.of(context).colorScheme.primary.withOpacity(0.5)
-                      : Theme.of(context).colorScheme.outline.withOpacity(0.2),
-                ),
-              ),
-              labelStyle: TextStyle(
-                color: selected == null
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).textTheme.bodySmall?.color,
-                fontWeight: selected == null
-                    ? FontWeight.w600
-                    : FontWeight.w500,
-              ),
               onSelected: (_) => _selectSubOption(
                 group,
                 _AttributeOption(
@@ -1733,33 +1439,9 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
               spacing: 8,
               runSpacing: 8,
               children: [
-                ChoiceChip(
-                  label: Text(option.label.tr),
+                _buildChip(
+                  option.label.tr,
                   selected: selected == option.name,
-                  selectedColor: Theme.of(
-                    context,
-                  ).colorScheme.primary.withOpacity(0.16),
-                  backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
-                  showCheckmark: false,
-                  shape: StadiumBorder(
-                    side: BorderSide(
-                      color: selected == option.name
-                          ? Theme.of(
-                              context,
-                            ).colorScheme.primary.withOpacity(0.5)
-                          : Theme.of(
-                              context,
-                            ).colorScheme.outline.withOpacity(0.2),
-                    ),
-                  ),
-                  labelStyle: TextStyle(
-                    color: selected == option.name
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).textTheme.bodySmall?.color,
-                    fontWeight: selected == option.name
-                        ? FontWeight.w600
-                        : FontWeight.w500,
-                  ),
                   onSelected: (_) => _selectSubOption(group, option),
                 ),
               ],
@@ -1778,35 +1460,9 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
                 runSpacing: 8,
                 children: option.subOptions
                     .map(
-                      (sub) => ChoiceChip(
-                        label: Text(sub.label.tr),
+                      (sub) => _buildChip(
+                        sub.label.tr,
                         selected: selected == sub.name,
-                        selectedColor: Theme.of(
-                          context,
-                        ).colorScheme.primary.withOpacity(0.16),
-                        backgroundColor: Theme.of(
-                          context,
-                        ).colorScheme.surfaceVariant,
-                        showCheckmark: false,
-                        shape: StadiumBorder(
-                          side: BorderSide(
-                            color: selected == sub.name
-                                ? Theme.of(
-                                    context,
-                                  ).colorScheme.primary.withOpacity(0.5)
-                                : Theme.of(
-                                    context,
-                                  ).colorScheme.outline.withOpacity(0.2),
-                          ),
-                        ),
-                        labelStyle: TextStyle(
-                          color: selected == sub.name
-                              ? Theme.of(context).colorScheme.primary
-                              : Theme.of(context).textTheme.bodySmall?.color,
-                          fontWeight: selected == sub.name
-                              ? FontWeight.w600
-                              : FontWeight.w500,
-                        ),
                         onSelected: (_) => _selectSubOption(group, sub),
                       ),
                     )
