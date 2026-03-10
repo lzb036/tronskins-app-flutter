@@ -334,6 +334,7 @@ final Map<String, String> vi_VN = {
   "app.user.setting.theme_system": "Theo hệ thống",
   "app.user.setting.server": "Chuyển đổi máy chủ",
   "app.user.setting.server_add": "Máy chủ mới được thêm",
+  "app.user.setting.server_add_success": "Máy chủ mới được thêm",
   "app.user.setting.server_ip_placeholder": "Vui lòng nhập địa chỉ IP.",
   "app.user.setting.server_switching_confirm":
       "Chuyển máy chủ sẽ khởi động lại ứng dụng. Xác nhận chuyển sang",

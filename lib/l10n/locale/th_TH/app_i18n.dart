@@ -327,6 +327,7 @@ final Map<String, String> th_TH = {
   "app.user.setting.theme_system": "ตามระบบ",
   "app.user.setting.server": "การเปลี่ยนเซิร์ฟเวอร์",
   "app.user.setting.server_add": "เพิ่มเซิร์ฟเวอร์ใหม่",
+  "app.user.setting.server_add_success": "เพิ่มเซิร์ฟเวอร์ใหม่",
   "app.user.setting.server_ip_placeholder": "กรุณาป้อนที่อยู่ IP",
   "app.user.setting.server_switching_confirm":
       "การสลับเซิร์ฟเวอร์จะรีสตาร์ทแอป ยืนยันการสลับไปยัง",

@@ -342,6 +342,7 @@ final Map<String, String> po_PL = {
   "app.user.setting.theme_system": "Zgodnie z systemem",
   "app.user.setting.server": "Zmiana serwera",
   "app.user.setting.server_add": "Dodany nowy serwer",
+  "app.user.setting.server_add_success": "Dodany nowy serwer",
   "app.user.setting.server_ip_placeholder": "Proszę wpisać adres IP.",
   "app.user.setting.server_switching_confirm":
       "Zmiana serwera spowoduje ponowne uruchomienie aplikacji. Potwierdź zmianę na",

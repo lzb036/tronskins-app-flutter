@@ -347,6 +347,7 @@ final Map<String, String> ru_RU = {
   "app.user.setting.theme_system": "Следовать системе",
   "app.user.setting.server": "Переключение сервера",
   "app.user.setting.server_add": "Добавлен новый сервер",
+  "app.user.setting.server_add_success": "Добавлен новый сервер",
   "app.user.setting.server_ip_placeholder": "Пожалуйста, введите IP-адрес.",
   "app.user.setting.server_switching_confirm":
       "Смена сервера приведёт к перезапуску приложения. Подтвердить смену на",

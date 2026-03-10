@@ -335,6 +335,7 @@ final Map<String, String> tu_TR = {
   "app.user.setting.theme_system": "Sistemi takip et",
   "app.user.setting.server": "Sunucu değiştirme",
   "app.user.setting.server_add": "Yeni Sunucu Eklendi",
+  "app.user.setting.server_add_success": "Yeni Sunucu Eklendi",
   "app.user.setting.server_ip_placeholder": "Lütfen IP adresini girin.",
   "app.user.setting.server_switching_confirm":
       "Sunucu değişikliği uygulamayı yeniden başlatır. Şuna geçişi onayla",

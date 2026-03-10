@@ -343,6 +343,7 @@ final Map<String, String> in_ID = {
   "app.user.setting.theme_system": "Ikuti sistem",
   "app.user.setting.server": "Penggantian server",
   "app.user.setting.server_add": "Server Baru Ditambahkan",
+  "app.user.setting.server_add_success": "Server Baru Ditambahkan",
   "app.user.setting.server_ip_placeholder": "Silakan masukkan alamat IP.",
   "app.user.setting.server_switching_confirm":
       "Mengganti server akan memulai ulang aplikasi. Konfirmasi beralih ke",

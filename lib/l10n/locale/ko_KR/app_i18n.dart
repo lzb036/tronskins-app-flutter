@@ -300,6 +300,7 @@ final Map<String, String> ko_KR = {
   "app.user.setting.theme_system": "시스템 설정 따르기",
   "app.user.setting.server": "서버 전환",
   "app.user.setting.server_add": "새로운 서버 추가",
+  "app.user.setting.server_add_success": "새로운 서버 추가",
   "app.user.setting.server_ip_placeholder": "IP 주소를 입력하십시오.",
   "app.user.setting.server_switching_confirm": "서버를 전환하면 앱이 재시작됩니다. 전환할 서버:",
   "app.user.setting.server_switching_restart_highlight": "앱이 재시작",

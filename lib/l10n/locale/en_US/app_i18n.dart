@@ -340,6 +340,7 @@ final Map<String, String> en_US = {
   "app.user.setting.theme_system": "Follow System",
   "app.user.setting.server": "Server Switch",
   "app.user.setting.server_add": "New Server Added",
+  "app.user.setting.server_add_success": "New Server Added",
   "app.user.setting.server_ip_placeholder": "Please enter the IP address.",
   "app.user.setting.server_switching_confirm":
       "Switching servers will restart the app. Confirm switch to",

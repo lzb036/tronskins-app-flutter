@@ -293,6 +293,7 @@ final Map<String, String> ja_JP = {
   "app.user.setting.theme_system": "システムに従う",
   "app.user.setting.server": "サーバー切り替え",
   "app.user.setting.server_add": "新しいサーバー追加",
+  "app.user.setting.server_add_success": "新しいサーバー追加",
   "app.user.setting.server_ip_placeholder": "IPアドレスを入力してください。",
   "app.user.setting.server_switching_confirm": "サーバー切り替え後にアプリが再起動します。切り替え先：",
   "app.user.setting.server_switching_restart_highlight": "アプリが再起動",

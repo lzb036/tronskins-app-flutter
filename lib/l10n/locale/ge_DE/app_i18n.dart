@@ -350,6 +350,7 @@ final Map<String, String> ge_DE = {
   "app.user.setting.theme_system": "System folgen",
   "app.user.setting.server": "Serverwechsel",
   "app.user.setting.server_add": "Neuer Server hinzugefügt",
+  "app.user.setting.server_add_success": "Neuer Server hinzugefügt",
   "app.user.setting.server_ip_placeholder":
       "Bitte geben Sie die IP-Adresse ein.",
   "app.user.setting.server_switching_confirm":

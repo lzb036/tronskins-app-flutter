@@ -356,6 +356,7 @@ final Map<String, String> la_LAT = {
   "app.user.setting.theme_system": "Seguir sistema",
   "app.user.setting.server": "Cambio de servidor",
   "app.user.setting.server_add": "Añadido nuevo servidor",
+  "app.user.setting.server_add_success": "Añadido nuevo servidor",
   "app.user.setting.server_ip_placeholder":
       "Por favor introduzca la dirección IP.",
   "app.user.setting.server_switching_confirm":

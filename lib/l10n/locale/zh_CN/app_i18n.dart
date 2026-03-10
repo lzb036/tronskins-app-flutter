@@ -276,6 +276,7 @@ final Map<String, String> zh_CN = {
   "app.user.setting.theme_system": "跟随系统",
   "app.user.setting.server": "服务器切换",
   "app.user.setting.server_add": "新增服务器",
+  "app.user.setting.server_add_success": "服务器新增成功",
   "app.user.setting.server_ip_placeholder": "请输入IP地址",
   "app.user.setting.server_switching_confirm": "切换服务器将自动重启应用，确认切换至",
   "app.user.setting.server_switching_restart_highlight": "自动重启",

@@ -8,6 +8,7 @@ import 'package:get/get.dart';
 import 'package:tronskins_app/common/http/http_helper.dart';
 import 'package:tronskins_app/common/storage/game_storage.dart';
 import 'package:tronskins_app/common/storage/server_storage.dart';
+import 'package:tronskins_app/common/utils/app_snackbar.dart';
 import 'package:restart_app/restart_app.dart';
 
 class ServerListPage extends StatefulWidget {
@@ -50,8 +51,7 @@ class _ServerListPageState extends State<ServerListPage> {
               onPressed: () {
                 final value = input.text.trim();
                 if (!_isValidServer(value)) {
-                  Get.snackbar(
-                    'app.system.tips.title'.tr,
+                  AppSnackbar.error(
                     'app.user.server.message.address_invalid'.tr,
                   );
                   return;
@@ -69,17 +69,14 @@ class _ServerListPageState extends State<ServerListPage> {
     }
     final normalized = _normalize(result);
     if (servers.contains(normalized)) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.user.setting.server_exists'.tr,
-      );
+      AppSnackbar.error('app.user.setting.server_exists'.tr);
       return;
     }
     setState(() {
       servers.add(normalized);
     });
     ServerStorage.setServerList(servers);
-    Get.snackbar('app.system.tips.title'.tr, 'app.user.setting.server_add'.tr);
+    AppSnackbar.success('app.user.setting.server_add_success'.tr);
   }
 
   Future<void> _deleteServer(String server) async {
@@ -136,22 +133,10 @@ class _ServerListPageState extends State<ServerListPage> {
         return;
       }
       if (!reachable) {
-        Get.snackbar(
-          'app.system.tips.title'.tr,
-          'app.user.setting.server_connectivity_failed'.tr,
-          backgroundColor: Colors.red,
-          colorText: Colors.white,
-          snackPosition: SnackPosition.TOP,
-        );
+        AppSnackbar.error('app.user.setting.server_connectivity_failed'.tr);
         return;
       }
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.user.setting.server_connectivity_success'.tr,
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.TOP,
-      );
+      AppSnackbar.success('app.user.setting.server_connectivity_success'.tr);
       setState(() => current = server);
       ServerStorage.setServer(server);
       HttpHelper.setBaseUrl(server);
@@ -206,11 +191,7 @@ class _ServerListPageState extends State<ServerListPage> {
       final appId = GameStorage.getGameType();
       final response = await dio.post(
         'api/public/mall/sell/$appId/news',
-        data: {
-          'appId': appId,
-          'page': 1,
-          'pageSize': 1,
-        },
+        data: {'appId': appId, 'page': 1, 'pageSize': 1},
       );
       return response.statusCode == 200;
     } catch (_) {
@@ -257,20 +238,23 @@ class _ServerListPageState extends State<ServerListPage> {
                 final isCurrent = server == current;
                 final cardColor = isCurrent
                     ? (Color.lerp(
-                          colorScheme.primaryContainer,
-                          colorScheme.primary.withOpacity(0.08),
-                          0.4,
-                        ) ??
-                        colorScheme.primaryContainer)
+                            colorScheme.primaryContainer,
+                            colorScheme.primary.withOpacity(0.08),
+                            0.4,
+                          ) ??
+                          colorScheme.primaryContainer)
                     : colorScheme.surface;
                 final borderColor = isCurrent
                     ? colorScheme.primary.withOpacity(isDark ? 0.45 : 0.35)
-                    : colorScheme.outlineVariant.withOpacity(isDark ? 0.5 : 0.7);
+                    : colorScheme.outlineVariant.withOpacity(
+                        isDark ? 0.5 : 0.7,
+                      );
                 final leadingBg = isCurrent
                     ? colorScheme.primary.withOpacity(isDark ? 0.2 : 0.12)
                     : colorScheme.surfaceVariant;
-                final leadingFg =
-                    isCurrent ? colorScheme.primary : colorScheme.onSurfaceVariant;
+                final leadingFg = isCurrent
+                    ? colorScheme.primary
+                    : colorScheme.onSurfaceVariant;
 
                 return Material(
                   color: cardColor,
@@ -304,13 +288,17 @@ class _ServerListPageState extends State<ServerListPage> {
                         size: 20,
                       ),
                     ),
-                    title: Text(
-                      server,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontWeight:
-                            isCurrent ? FontWeight.w600 : FontWeight.w500,
+                    title: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Text(
+                        server,
+                        maxLines: 1,
+                        softWrap: false,
+                        style: TextStyle(
+                          fontWeight: isCurrent
+                              ? FontWeight.w600
+                              : FontWeight.w500,
+                        ),
                       ),
                     ),
                     trailing: Row(
@@ -320,8 +308,9 @@ class _ServerListPageState extends State<ServerListPage> {
                           IconButton(
                             icon: const Icon(Icons.delete_outline),
                             onPressed: () => _deleteServer(server),
-                            tooltip: MaterialLocalizations.of(context)
-                                .deleteButtonTooltip,
+                            tooltip: MaterialLocalizations.of(
+                              context,
+                            ).deleteButtonTooltip,
                             splashRadius: 20,
                             visualDensity: VisualDensity.compact,
                           ),

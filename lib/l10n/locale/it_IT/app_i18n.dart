@@ -348,6 +348,7 @@ final Map<String, String> it_IT = {
   "app.user.setting.theme_system": "Segui sistema",
   "app.user.setting.server": "Cambio server",
   "app.user.setting.server_add": "Nuovo server aggiunto",
+  "app.user.setting.server_add_success": "Nuovo server aggiunto",
   "app.user.setting.server_ip_placeholder": "Inserisci l'indirizzo IP.",
   "app.user.setting.server_switching_confirm":
       "Il cambio server riavvierà l'app. Conferma cambio a",

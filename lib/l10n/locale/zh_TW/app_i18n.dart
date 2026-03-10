@@ -277,6 +277,7 @@ final Map<String, String> zh_TW = {
   "app.user.setting.theme_system": "跟隨系統",
   "app.user.setting.server": "伺服器切換",
   "app.user.setting.server_add": "已添加新服務器",
+  "app.user.setting.server_add_success": "已添加新服務器",
   "app.user.setting.server_ip_placeholder": "請輸入IP地址。",
   "app.user.setting.server_switching_confirm": "切換伺服器將自動重新啟動應用，確認切換至",
   "app.user.setting.server_switching_restart_highlight": "自動重新啟動",
