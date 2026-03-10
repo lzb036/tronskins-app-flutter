@@ -114,6 +114,30 @@ class MarketFilterSheet extends StatefulWidget {
     required int appId,
   }) async {
     final groups = await _loadGroups(appId);
+    return _buildGroupMetas(groups);
+  }
+
+  static List<MarketFilterGroupMeta> cachedGroupMetas({required int appId}) {
+    final localeKey = _localeKeyStatic();
+    final memoryGroups = _memoryCache[appId]?[localeKey];
+    if (memoryGroups != null) {
+      return _buildGroupMetas(memoryGroups);
+    }
+
+    final payload = _readCachePayload(appId, localeKey);
+    if (payload == null) {
+      return const <MarketFilterGroupMeta>[];
+    }
+
+    final groups = _buildGroupsStatic(appId, payload.raw);
+    _memoryCache.putIfAbsent(appId, () => {})[localeKey] = groups;
+    _memoryTs.putIfAbsent(appId, () => {})[localeKey] = payload.ts;
+    return _buildGroupMetas(groups);
+  }
+
+  static List<MarketFilterGroupMeta> _buildGroupMetas(
+    List<_AttributeGroup> groups,
+  ) {
     return groups
         .map(
           (group) => MarketFilterGroupMeta(

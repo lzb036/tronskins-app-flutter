@@ -116,6 +116,8 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
   String? _attributeItemName;
   List<MarketFilterGroupMeta> _attributeGroups = const [];
   bool _attributeGroupsLoading = false;
+  bool _hasScheduledAttributeLoad = false;
+  bool _isFetchingAttributeGroups = false;
 
   @override
   void initState() {
@@ -132,7 +134,13 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
     _attributeTags = Map<String, dynamic>.from(widget.initial.tags ?? const {});
     _attributeItemName = widget.initial.itemName;
     if (widget.enableAttributeFilter && widget.appId != null) {
-      _loadAttributeGroups();
+      _primeAttributeGroups();
+      if (_attributeGroups.isEmpty) {
+        _attributeGroupsLoading = true;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scheduleAttributeGroupLoad();
+        });
+      }
     }
     if (widget.initial.statusList != null) {
       final index = widget.statusOptions.indexWhere(
@@ -207,12 +215,37 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
     _apply();
   }
 
-  Future<void> _loadAttributeGroups() async {
+  void _primeAttributeGroups() {
     final appId = widget.appId;
-    if (appId == null || _attributeGroupsLoading) {
+    if (appId == null) {
       return;
     }
-    _attributeGroupsLoading = true;
+    _attributeGroups = MarketFilterSheet.cachedGroupMetas(appId: appId);
+  }
+
+  Future<void> _scheduleAttributeGroupLoad() async {
+    if (_hasScheduledAttributeLoad || _attributeGroups.isNotEmpty) {
+      return;
+    }
+    _hasScheduledAttributeLoad = true;
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+    if (!mounted) {
+      return;
+    }
+    await _loadAttributeGroups();
+  }
+
+  Future<void> _loadAttributeGroups() async {
+    final appId = widget.appId;
+    if (appId == null || _isFetchingAttributeGroups) {
+      return;
+    }
+    _isFetchingAttributeGroups = true;
+    if (mounted) {
+      setState(() => _attributeGroupsLoading = true);
+    } else {
+      _attributeGroupsLoading = true;
+    }
     try {
       final groups = await MarketFilterSheet.loadGroupMetas(appId: appId);
       if (!mounted) {
@@ -223,7 +256,12 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
         _attributeGroups = groups;
       });
     } finally {
-      _attributeGroupsLoading = false;
+      _isFetchingAttributeGroups = false;
+      if (mounted) {
+        setState(() => _attributeGroupsLoading = false);
+      } else {
+        _attributeGroupsLoading = false;
+      }
     }
   }
 

@@ -8,6 +8,7 @@ import 'package:tronskins_app/api/steam.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
 import 'package:tronskins_app/common/storage/game_storage.dart';
 import 'package:tronskins_app/components/filter/filter_models.dart';
+import 'package:tronskins_app/components/filter/market_filter_sheet.dart';
 import 'package:tronskins_app/components/filter/order_filter_sheet.dart';
 import 'package:tronskins_app/components/game/game_switch_menu.dart';
 import 'package:tronskins_app/components/game_item/game_item_image.dart';
@@ -33,6 +34,7 @@ class _MyPurchasePageState extends State<MyPurchasePage>
 
   late final TabController _tabController;
   late int _currentAppId;
+  int _currentTabIndex = 0;
   final ScrollController _receiptScroll = ScrollController();
   final ScrollController _recordScroll = ScrollController();
   final TextEditingController _receiptSearchController =
@@ -75,7 +77,10 @@ class _MyPurchasePageState extends State<MyPurchasePage>
       vsync: this,
       initialIndex: initialTab,
     );
+    _currentTabIndex = initialTab;
     _currentAppId = GameStorage.getGameType();
+    unawaited(MarketFilterSheet.preload(appId: _currentAppId));
+    _tabController.addListener(_handleTabChange);
     _receiptScroll.addListener(_handleReceiptScroll);
     _recordScroll.addListener(_handleRecordScroll);
     _receiptSearchController.addListener(_handleSearchTextChange);
@@ -86,6 +91,7 @@ class _MyPurchasePageState extends State<MyPurchasePage>
 
   @override
   void dispose() {
+    _tabController.removeListener(_handleTabChange);
     _tabController.dispose();
     _receiptScroll
       ..removeListener(_handleReceiptScroll)
@@ -98,6 +104,14 @@ class _MyPurchasePageState extends State<MyPurchasePage>
     _receiptSearchController.dispose();
     _recordSearchController.dispose();
     super.dispose();
+  }
+
+  void _handleTabChange() {
+    final nextIndex = _tabController.index;
+    if (!mounted || _currentTabIndex == nextIndex) {
+      return;
+    }
+    setState(() => _currentTabIndex = nextIndex);
   }
 
   void _handleReceiptScroll() {
@@ -157,10 +171,12 @@ class _MyPurchasePageState extends State<MyPurchasePage>
     final result = await OrderFilterSheet.showFromRight(
       context: context,
       initial: OrderFilterResult(
+        sortAsc: controller.waitingSortAsc.value,
         itemName: controller.waitingItemName.value,
         tags: Map<String, dynamic>.from(controller.waitingTags),
       ),
       statusOptions: _statusOptions,
+      showSort: true,
       showStatus: false,
       showDateRange: false,
       enableAttributeFilter: true,
@@ -170,6 +186,7 @@ class _MyPurchasePageState extends State<MyPurchasePage>
       await controller.applyWaitingFilter(
         startDate: result.startDate,
         endDate: result.endDate,
+        sortAsc: result.sortAsc,
         tags: result.tags,
         itemName: result.itemName,
       );
@@ -183,10 +200,12 @@ class _MyPurchasePageState extends State<MyPurchasePage>
         statusList: controller.buyRecordStatusList.toList(),
         startDate: controller.buyRecordStartDate.value,
         endDate: controller.buyRecordEndDate.value,
+        sortAsc: controller.buyRecordSortAsc.value,
         itemName: controller.buyRecordItemName.value,
         tags: Map<String, dynamic>.from(controller.buyRecordTags),
       ),
       statusOptions: _statusOptions,
+      showSort: true,
       showStatus: true,
       showDateRange: true,
       enableAttributeFilter: true,
@@ -197,6 +216,7 @@ class _MyPurchasePageState extends State<MyPurchasePage>
         statusList: result.statusList,
         startDate: result.startDate,
         endDate: result.endDate,
+        sortAsc: result.sortAsc,
         tags: result.tags,
         itemName: result.itemName,
       );
@@ -211,6 +231,7 @@ class _MyPurchasePageState extends State<MyPurchasePage>
     if (mounted) {
       setState(() => _currentAppId = appId);
     }
+    unawaited(MarketFilterSheet.preload(appId: appId));
     controller.refreshWaitingReceipts();
     controller.refreshBuyRecords();
   }
@@ -390,10 +411,56 @@ class _MyPurchasePageState extends State<MyPurchasePage>
   }
 
   bool _hasWaitingFilter() {
+    if (controller.waitingSortAsc.value) {
+      return true;
+    }
     if (controller.waitingItemName.value?.isNotEmpty == true) {
       return true;
     }
     return controller.waitingTags.isNotEmpty;
+  }
+
+  bool get _isWaitingTab => _currentTabIndex == 0;
+
+  TextEditingController get _activeSearchController =>
+      _isWaitingTab ? _receiptSearchController : _recordSearchController;
+
+  ValueChanged<String> get _activeSearchSubmit =>
+      _isWaitingTab ? controller.searchWaiting : controller.searchBuyRecords;
+
+  Future<void> _submitActiveSearch() {
+    if (_isWaitingTab) {
+      return controller.searchWaiting(_receiptSearchController.text);
+    }
+    return controller.searchBuyRecords(_recordSearchController.text);
+  }
+
+  Future<void> _openActiveFilterSheet() {
+    if (_isWaitingTab) {
+      return _openReceiptFilterSheet();
+    }
+    return _openBuyRecordFilterSheet();
+  }
+
+  bool _hasActiveFilter() {
+    if (_isWaitingTab) {
+      return _hasWaitingFilter();
+    }
+    return _hasBuyRecordFilter();
+  }
+
+  bool _activeSortAsc() {
+    if (_isWaitingTab) {
+      return controller.waitingSortAsc.value;
+    }
+    return controller.buyRecordSortAsc.value;
+  }
+
+  Future<void> _toggleActiveSort() {
+    if (_isWaitingTab) {
+      return controller.toggleWaitingSort();
+    }
+    return controller.toggleBuyRecordSort();
   }
 
   bool _hasBuyRecordFilter() {
@@ -402,6 +469,9 @@ class _MyPurchasePageState extends State<MyPurchasePage>
     }
     if (controller.buyRecordStartDate.value != null ||
         controller.buyRecordEndDate.value != null) {
+      return true;
+    }
+    if (controller.buyRecordSortAsc.value) {
       return true;
     }
     if (controller.buyRecordItemName.value?.isNotEmpty == true) {
@@ -451,7 +521,9 @@ class _MyPurchasePageState extends State<MyPurchasePage>
     required bool sortAsc,
     required VoidCallback onToggleSort,
     required VoidCallback onFilter,
+    bool showSortButton = true,
     bool filterActive = false,
+    EdgeInsetsGeometry padding = const EdgeInsets.fromLTRB(12, 10, 12, 8),
   }) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
@@ -463,7 +535,7 @@ class _MyPurchasePageState extends State<MyPurchasePage>
     final hasKeyword = controller.text.trim().isNotEmpty;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+      padding: padding,
       child: Row(
         children: [
           Expanded(
@@ -515,12 +587,14 @@ class _MyPurchasePageState extends State<MyPurchasePage>
             icon: Icons.send,
             onTap: onSearch,
           ),
-          const SizedBox(width: 6),
-          _buildSearchActionButton(
-            tooltip: 'app.market.filter.time'.tr,
-            icon: sortAsc ? Icons.arrow_upward : Icons.arrow_downward,
-            onTap: onToggleSort,
-          ),
+          if (showSortButton) ...[
+            const SizedBox(width: 6),
+            _buildSearchActionButton(
+              tooltip: 'app.market.filter.time'.tr,
+              icon: sortAsc ? Icons.arrow_upward : Icons.arrow_downward,
+              onTap: onToggleSort,
+            ),
+          ],
           const SizedBox(width: 6),
           _buildSearchActionButton(
             tooltip: 'app.market.filter.text'.tr,
@@ -549,11 +623,145 @@ class _MyPurchasePageState extends State<MyPurchasePage>
     );
   }
 
+  Widget _buildSharedTopSection() {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? colors.surface : Colors.white,
+        border: Border(
+          bottom: BorderSide(color: colors.outline.withValues(alpha: 0.08)),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            offset: const Offset(0, 3),
+            blurRadius: 6,
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 6, 12, 4),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final dragWidth = constraints.maxWidth;
+                final maxIndex = (_tabController.length - 1).toDouble();
+
+                void settleToClosestTab() {
+                  if (_tabController.indexIsChanging) {
+                    return;
+                  }
+                  final value =
+                      _tabController.animation?.value ??
+                      _tabController.index.toDouble();
+                  final targetIndex = value.round().clamp(
+                    0,
+                    _tabController.length - 1,
+                  );
+                  if (targetIndex == _tabController.index) {
+                    _tabController.offset = 0;
+                    return;
+                  }
+                  _tabController.animateTo(
+                    targetIndex,
+                    duration: const Duration(milliseconds: 180),
+                    curve: Curves.easeOutCubic,
+                  );
+                }
+
+                return GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onHorizontalDragUpdate: (details) {
+                    if (_tabController.indexIsChanging || dragWidth <= 0) {
+                      return;
+                    }
+                    final currentValue =
+                        _tabController.animation?.value ??
+                        _tabController.index.toDouble();
+                    final nextValue =
+                        (currentValue - (details.delta.dx / dragWidth))
+                            .clamp(0.0, maxIndex)
+                            .toDouble();
+                    final nextOffset = (nextValue - _tabController.index)
+                        .clamp(-1.0, 1.0)
+                        .toDouble();
+                    if (nextOffset >= 0.98 &&
+                        _tabController.index < _tabController.length - 1) {
+                      _tabController.index = _tabController.index + 1;
+                      _tabController.offset = 0;
+                      return;
+                    }
+                    if (nextOffset <= -0.98 && _tabController.index > 0) {
+                      _tabController.index = _tabController.index - 1;
+                      _tabController.offset = 0;
+                      return;
+                    }
+                    _tabController.offset = nextOffset;
+                  },
+                  onHorizontalDragEnd: (_) => settleToClosestTab(),
+                  onHorizontalDragCancel: settleToClosestTab,
+                  child: TabBar(
+                    controller: _tabController,
+                    isScrollable: false,
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    indicator: BoxDecoration(
+                      color: colors.primary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    dividerColor: Colors.transparent,
+                    labelColor: colors.primary,
+                    unselectedLabelColor: colors.onSurface.withValues(
+                      alpha: 0.6,
+                    ),
+                    labelStyle: theme.textTheme.labelMedium?.copyWith(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      height: 1,
+                    ),
+                    unselectedLabelStyle: theme.textTheme.labelMedium?.copyWith(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      height: 1,
+                    ),
+                    splashBorderRadius: BorderRadius.circular(16),
+                    tabs: [
+                      Tab(
+                        height: 30,
+                        text: 'app.market.product.wait_for_receipt'.tr,
+                      ),
+                      Tab(height: 30, text: 'app.user.menu.buy'.tr),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+          Obx(
+            () => _buildSearchBar(
+              controller: _activeSearchController,
+              onSubmitted: _activeSearchSubmit,
+              onSearch: _submitActiveSearch,
+              sortAsc: _activeSortAsc(),
+              onToggleSort: _toggleActiveSort,
+              onFilter: _openActiveFilterSheet,
+              showSortButton: false,
+              filterActive: _hasActiveFilter(),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+            ),
+          ),
+          const SizedBox(height: 6),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final currency = Get.find<CurrencyController>();
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
     return Scaffold(
       appBar: AppBar(
         title: Text('app.user.menu.buy'.tr),
@@ -583,129 +791,133 @@ class _MyPurchasePageState extends State<MyPurchasePage>
             },
           ),
         ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(44),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-            child: TabBar(
+      ),
+      body: Column(
+        children: [
+          _buildSharedTopSection(),
+          Expanded(
+            child: TabBarView(
               controller: _tabController,
-              isScrollable: false,
-              indicatorSize: TabBarIndicatorSize.tab,
-              indicator: BoxDecoration(
-                color: colors.primary.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              dividerColor: Colors.transparent,
-              labelColor: colors.primary,
-              unselectedLabelColor: colors.onSurface.withValues(alpha: 0.6),
-              labelStyle: theme.textTheme.labelMedium?.copyWith(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                height: 1,
-              ),
-              unselectedLabelStyle: theme.textTheme.labelMedium?.copyWith(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                height: 1,
-              ),
-              tabs: [
-                Tab(height: 30, text: 'app.market.product.wait_for_receipt'.tr),
-                Tab(height: 30, text: 'app.user.menu.buy'.tr),
+              children: [
+                _buildWaitingReceipts(currency),
+                _buildBuyRecords(currency),
               ],
             ),
           ),
-        ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [_buildWaitingReceipts(currency), _buildBuyRecords(currency)],
+        ],
       ),
     );
   }
 
   Widget _buildWaitingReceipts(CurrencyController currency) {
-    return Column(
-      children: [
-        Obx(
-          () => _buildSearchBar(
-            controller: _receiptSearchController,
-            onSubmitted: controller.searchWaiting,
-            onSearch: () =>
-                controller.searchWaiting(_receiptSearchController.text),
-            sortAsc: controller.waitingSortAsc.value,
-            onToggleSort: controller.toggleWaitingSort,
-            onFilter: _openReceiptFilterSheet,
-            filterActive: _hasWaitingFilter(),
-          ),
-        ),
-        Expanded(
-          child: Obx(() {
-            if (controller.waitingReceipts.isEmpty &&
-                controller.isLoadingWaiting.value) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (controller.waitingReceipts.isEmpty) {
-              return _buildPullToRefreshEmpty(
-                onRefresh: controller.refreshWaitingReceipts,
+    return Obx(() {
+      if (controller.waitingReceipts.isEmpty &&
+          controller.isLoadingWaiting.value) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      if (controller.waitingReceipts.isEmpty) {
+        return _buildPullToRefreshEmpty(
+          onRefresh: controller.refreshWaitingReceipts,
+        );
+      }
+      final showLoadingFooter =
+          controller.isLoadingWaiting.value &&
+          controller.waitingReceipts.isNotEmpty;
+      final showNoMoreFooter =
+          controller.waitingReceipts.isNotEmpty &&
+          !controller.isLoadingWaiting.value &&
+          !controller.waitingHasMore;
+      final showFooter = showLoadingFooter || showNoMoreFooter;
+      return RefreshIndicator(
+        onRefresh: controller.refreshWaitingReceipts,
+        child: ListView.separated(
+          controller: _receiptScroll,
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+          itemCount: controller.waitingReceipts.length + (showFooter ? 1 : 0),
+          separatorBuilder: (_, __) => const SizedBox(height: 10),
+          itemBuilder: (context, index) {
+            if (index >= controller.waitingReceipts.length) {
+              return _buildLoadMoreFooter(
+                showLoading: showLoadingFooter,
+                showNoMore: showNoMoreFooter,
               );
             }
-            final showLoadingFooter =
-                controller.isLoadingWaiting.value &&
-                controller.waitingReceipts.isNotEmpty;
-            final showNoMoreFooter =
-                controller.waitingReceipts.isNotEmpty &&
-                !controller.isLoadingWaiting.value &&
-                !controller.waitingHasMore;
-            final showFooter = showLoadingFooter || showNoMoreFooter;
-            return RefreshIndicator(
-              onRefresh: controller.refreshWaitingReceipts,
-              child: ListView.separated(
-                controller: _receiptScroll,
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(12, 4, 12, 16),
-                itemCount:
-                    controller.waitingReceipts.length + (showFooter ? 1 : 0),
-                separatorBuilder: (_, __) => const SizedBox(height: 10),
-                itemBuilder: (context, index) {
-                  if (index >= controller.waitingReceipts.length) {
-                    return _buildLoadMoreFooter(
-                      showLoading: showLoadingFooter,
-                      showNoMore: showNoMoreFooter,
-                    );
-                  }
-                  final order = controller.waitingReceipts[index];
-                  final detail = order.details.isNotEmpty
-                      ? order.details.first
-                      : null;
-                  final schema = _lookupSchema(controller.schemas, detail);
-                  final imageUrl = detail?.imageUrl ?? schema?.imageUrl;
-                  final title = detail?.marketName ?? schema?.marketName ?? '-';
-                  final appId = _resolveDetailAppId(detail, schema);
-                  final rarity = _schemaTag(schema, 'rarity');
-                  final quality = _schemaTag(schema, 'quality');
-                  final exterior = _schemaTag(schema, 'exterior');
-                  final count = detail?.count ?? order.nums ?? 1;
-                  final price = _sumOrderPrice(order);
-                  final wear = detail?.paintWear;
-                  final showCountdown = _showWaitingCountdown(order);
-                  final deadlineMs = _waitingDeadlineMs(order);
-                  return Card(
-                    margin: EdgeInsets.zero,
-                    clipBehavior: Clip.antiAlias,
-                    child: InkWell(
-                      onTap: () => _openOrderDetail(order),
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
+            final order = controller.waitingReceipts[index];
+            final detail = order.details.isNotEmpty
+                ? order.details.first
+                : null;
+            final schema = _lookupSchema(controller.schemas, detail);
+            final imageUrl = detail?.imageUrl ?? schema?.imageUrl;
+            final title = detail?.marketName ?? schema?.marketName ?? '-';
+            final appId = _resolveDetailAppId(detail, schema);
+            final rarity = _schemaTag(schema, 'rarity');
+            final quality = _schemaTag(schema, 'quality');
+            final exterior = _schemaTag(schema, 'exterior');
+            final count = detail?.count ?? order.nums ?? 1;
+            final price = _sumOrderPrice(order);
+            final wear = detail?.paintWear;
+            final showCountdown = _showWaitingCountdown(order);
+            final deadlineMs = _waitingDeadlineMs(order);
+            return Card(
+              margin: EdgeInsets.zero,
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: () => _openOrderDetail(order),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              _formatTime(order.changeTime ?? order.createTime),
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
+                            ),
+                          ),
+                          _buildStatusBadge(order),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SizedBox(
+                            width: 98,
+                            height: 58,
+                            child: GameItemImage(
+                              imageUrl: imageUrl,
+                              appId: appId,
+                              rarity: rarity,
+                              quality: quality,
+                              exterior: exterior,
+                              count: count > 1 ? count : null,
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Expanded(
-                                  child: Text(
-                                    _formatTime(
-                                      order.changeTime ?? order.createTime,
-                                    ),
+                                Text(
+                                  title,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context).textTheme.bodyMedium
+                                      ?.copyWith(fontWeight: FontWeight.w600),
+                                ),
+                                if (wear != null) ...[
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    '${'app.market.csgo.abradability'.tr}: '
+                                    '${wear.toStringAsFixed(6)}',
                                     style: Theme.of(context).textTheme.bodySmall
                                         ?.copyWith(
                                           color: Theme.of(
@@ -713,380 +925,295 @@ class _MyPurchasePageState extends State<MyPurchasePage>
                                           ).colorScheme.onSurfaceVariant,
                                         ),
                                   ),
-                                ),
-                                _buildStatusBadge(order),
+                                  const SizedBox(height: 4),
+                                  WearProgressBar(paintWear: wear),
+                                ],
                               ],
                             ),
-                            const SizedBox(height: 10),
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                SizedBox(
-                                  width: 98,
-                                  height: 58,
-                                  child: GameItemImage(
-                                    imageUrl: imageUrl,
-                                    appId: appId,
-                                    rarity: rarity,
-                                    quality: quality,
-                                    exterior: exterior,
-                                    count: count > 1 ? count : null,
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        title,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .bodyMedium
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.w600,
-                                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Obx(
+                                () => Text(
+                                  currency.format(price),
+                                  style: Theme.of(context).textTheme.titleSmall
+                                      ?.copyWith(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.primary,
+                                        fontWeight: FontWeight.w700,
                                       ),
-                                      if (wear != null) ...[
-                                        const SizedBox(height: 6),
-                                        Text(
-                                          '${'app.market.csgo.abradability'.tr}: '
-                                          '${wear.toStringAsFixed(6)}',
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .bodySmall
-                                              ?.copyWith(
-                                                color: Theme.of(
-                                                  context,
-                                                ).colorScheme.onSurfaceVariant,
-                                              ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        WearProgressBar(paintWear: wear),
-                                      ],
-                                    ],
-                                  ),
                                 ),
-                                const SizedBox(width: 8),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Obx(
-                                      () => Text(
-                                        currency.format(price),
+                              ),
+                              if (showCountdown) ...[
+                                const SizedBox(height: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 3,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFFF3E0),
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.schedule,
+                                        size: 12,
+                                        color: Colors.orange.shade700,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      _InlineCountdownText(
+                                        endTimeMs: deadlineMs,
                                         style: Theme.of(context)
                                             .textTheme
-                                            .titleSmall
+                                            .labelSmall
                                             ?.copyWith(
                                               color: Theme.of(
                                                 context,
-                                              ).colorScheme.primary,
-                                              fontWeight: FontWeight.w700,
+                                              ).colorScheme.onSurfaceVariant,
+                                              fontWeight: FontWeight.w600,
                                             ),
-                                      ),
-                                    ),
-                                    if (showCountdown) ...[
-                                      const SizedBox(height: 6),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 8,
-                                          vertical: 3,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFFFFF3E0),
-                                          borderRadius: BorderRadius.circular(
-                                            999,
-                                          ),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Icon(
-                                              Icons.schedule,
-                                              size: 12,
-                                              color: Colors.orange.shade700,
-                                            ),
-                                            const SizedBox(width: 4),
-                                            _InlineCountdownText(
-                                              endTimeMs: deadlineMs,
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .labelSmall
-                                                  ?.copyWith(
-                                                    color: Theme.of(context)
-                                                        .colorScheme
-                                                        .onSurfaceVariant,
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
-                                            ),
-                                          ],
-                                        ),
                                       ),
                                     ],
-                                  ],
+                                  ),
                                 ),
                               ],
-                            ),
-                            const SizedBox(height: 10),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: SizedBox(
-                                height: 34,
-                                child: FilledButton(
-                                  style: FilledButton.styleFrom(
-                                    minimumSize: const Size(92, 34),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    textStyle: Theme.of(context)
-                                        .textTheme
-                                        .labelMedium
-                                        ?.copyWith(fontWeight: FontWeight.w600),
-                                  ),
-                                  onPressed: () => _receiveOrder(order),
-                                  child: Text('app.market.product.receive'.tr),
-                                ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: SizedBox(
+                          height: 34,
+                          child: FilledButton(
+                            style: FilledButton.styleFrom(
+                              minimumSize: const Size(92, 34),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
                               ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              textStyle: Theme.of(context).textTheme.labelMedium
+                                  ?.copyWith(fontWeight: FontWeight.w600),
                             ),
-                          ],
+                            onPressed: () => _receiveOrder(order),
+                            child: Text('app.market.product.receive'.tr),
+                          ),
                         ),
                       ),
-                    ),
-                  );
-                },
+                    ],
+                  ),
+                ),
               ),
             );
-          }),
+          },
         ),
-      ],
-    );
+      );
+    });
   }
 
   Widget _buildBuyRecords(CurrencyController currency) {
-    return Column(
-      children: [
-        Obx(
-          () => _buildSearchBar(
-            controller: _recordSearchController,
-            onSubmitted: controller.searchBuyRecords,
-            onSearch: () =>
-                controller.searchBuyRecords(_recordSearchController.text),
-            sortAsc: controller.buyRecordSortAsc.value,
-            onToggleSort: controller.toggleBuyRecordSort,
-            onFilter: _openBuyRecordFilterSheet,
-            filterActive: _hasBuyRecordFilter(),
-          ),
-        ),
-        Expanded(
-          child: Obx(() {
-            if (controller.buyRecords.isEmpty &&
-                controller.isLoadingRecords.value) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (controller.buyRecords.isEmpty) {
-              return _buildPullToRefreshEmpty(
-                onRefresh: controller.refreshBuyRecords,
+    return Obx(() {
+      if (controller.buyRecords.isEmpty && controller.isLoadingRecords.value) {
+        return const Center(child: CircularProgressIndicator());
+      }
+      if (controller.buyRecords.isEmpty) {
+        return _buildPullToRefreshEmpty(
+          onRefresh: controller.refreshBuyRecords,
+        );
+      }
+      final showLoadingFooter =
+          controller.isLoadingRecords.value && controller.buyRecords.isNotEmpty;
+      final showNoMoreFooter =
+          controller.buyRecords.isNotEmpty &&
+          !controller.isLoadingRecords.value &&
+          !controller.recordHasMore;
+      final showFooter = showLoadingFooter || showNoMoreFooter;
+      return RefreshIndicator(
+        onRefresh: controller.refreshBuyRecords,
+        child: ListView.separated(
+          controller: _recordScroll,
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+          itemCount: controller.buyRecords.length + (showFooter ? 1 : 0),
+          separatorBuilder: (_, __) => const SizedBox(height: 10),
+          itemBuilder: (context, index) {
+            if (index >= controller.buyRecords.length) {
+              return _buildLoadMoreFooter(
+                showLoading: showLoadingFooter,
+                showNoMore: showNoMoreFooter,
               );
             }
-            final showLoadingFooter =
-                controller.isLoadingRecords.value &&
-                controller.buyRecords.isNotEmpty;
-            final showNoMoreFooter =
-                controller.buyRecords.isNotEmpty &&
-                !controller.isLoadingRecords.value &&
-                !controller.recordHasMore;
-            final showFooter = showLoadingFooter || showNoMoreFooter;
-            return RefreshIndicator(
-              onRefresh: controller.refreshBuyRecords,
-              child: ListView.separated(
-                controller: _recordScroll,
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(12, 4, 12, 16),
-                itemCount: controller.buyRecords.length + (showFooter ? 1 : 0),
-                separatorBuilder: (_, __) => const SizedBox(height: 10),
-                itemBuilder: (context, index) {
-                  if (index >= controller.buyRecords.length) {
-                    return _buildLoadMoreFooter(
-                      showLoading: showLoadingFooter,
-                      showNoMore: showNoMoreFooter,
-                    );
-                  }
-                  final order = controller.buyRecords[index];
-                  final details = order.details;
-                  final hasMultiple = details.length > 1;
-                  final detail = details.isNotEmpty ? details.first : null;
-                  final schema = _lookupSchema(controller.schemas, detail);
-                  final imageUrl = detail?.imageUrl ?? schema?.imageUrl;
-                  final title = detail?.marketName ?? schema?.marketName ?? '-';
-                  final appId = _resolveDetailAppId(detail, schema);
-                  final rarity = _schemaTag(schema, 'rarity');
-                  final quality = _schemaTag(schema, 'quality');
-                  final exterior = _schemaTag(schema, 'exterior');
-                  final price = _sumOrderPrice(order);
-                  final protectionTime = order.protectionTime;
-                  final showProtectionCountdown =
-                      protectionTime != null &&
-                      protectionTime > 0 &&
-                      order.status == 5;
-                  return Card(
-                    margin: EdgeInsets.zero,
-                    clipBehavior: Clip.antiAlias,
-                    child: InkWell(
-                      onTap: () => _openOrderDetail(order),
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                        child: Column(
+            final order = controller.buyRecords[index];
+            final details = order.details;
+            final hasMultiple = details.length > 1;
+            final detail = details.isNotEmpty ? details.first : null;
+            final schema = _lookupSchema(controller.schemas, detail);
+            final imageUrl = detail?.imageUrl ?? schema?.imageUrl;
+            final title = detail?.marketName ?? schema?.marketName ?? '-';
+            final appId = _resolveDetailAppId(detail, schema);
+            final rarity = _schemaTag(schema, 'rarity');
+            final quality = _schemaTag(schema, 'quality');
+            final price = _sumOrderPrice(order);
+            final wear = detail?.paintWear;
+            final protectionTime = order.protectionTime;
+            final showProtectionCountdown =
+                protectionTime != null &&
+                protectionTime > 0 &&
+                order.status == 5;
+            return Card(
+              margin: EdgeInsets.zero,
+              clipBehavior: Clip.antiAlias,
+              child: InkWell(
+                onTap: () => _openOrderDetail(order),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              _formatTime(order.createTime),
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
+                            ),
+                          ),
+                          _buildStatusBadge(order),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      if (!hasMultiple)
+                        Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    _formatTime(order.createTime),
-                                    style: Theme.of(context).textTheme.bodySmall
-                                        ?.copyWith(
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.onSurfaceVariant,
-                                        ),
-                                  ),
-                                ),
-                                _buildStatusBadge(order),
-                              ],
+                            SizedBox(
+                              width: 98,
+                              height: 58,
+                              child: GameItemImage(
+                                imageUrl: imageUrl,
+                                appId: appId,
+                                rarity: rarity,
+                                quality: quality,
+                                count: (detail?.count ?? 1) > 1
+                                    ? detail?.count
+                                    : null,
+                              ),
                             ),
-                            const SizedBox(height: 10),
-                            if (!hasMultiple)
-                              Row(
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  SizedBox(
-                                    width: 98,
-                                    height: 58,
-                                    child: GameItemImage(
-                                      imageUrl: imageUrl,
-                                      appId: appId,
-                                      rarity: rarity,
-                                      quality: quality,
-                                      exterior: exterior,
-                                      count: (detail?.count ?? 1) > 1
-                                          ? detail?.count
-                                          : null,
-                                    ),
+                                  Text(
+                                    title,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(fontWeight: FontWeight.w600),
                                   ),
-                                  const SizedBox(width: 10),
-                                  Expanded(
-                                    child: Text(
-                                      title,
-                                      maxLines: 2,
-                                      overflow: TextOverflow.ellipsis,
+                                  if (wear != null) ...[
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      '${'app.market.csgo.abradability'.tr}: '
+                                      '${wear.toStringAsFixed(6)}',
                                       style: Theme.of(context)
                                           .textTheme
-                                          .bodyMedium
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Obx(
-                                    () => Text(
-                                      currency.format(price),
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleSmall
+                                          .bodySmall
                                           ?.copyWith(
                                             color: Theme.of(
                                               context,
-                                            ).colorScheme.primary,
-                                            fontWeight: FontWeight.w700,
+                                            ).colorScheme.onSurfaceVariant,
                                           ),
                                     ),
-                                  ),
+                                    const SizedBox(height: 4),
+                                    WearProgressBar(paintWear: wear),
+                                  ],
                                 ],
-                              )
-                            else
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Expanded(
-                                    child: Wrap(
-                                      spacing: 8,
-                                      runSpacing: 8,
-                                      children: [
-                                        ...details.take(3).map((detailItem) {
-                                          final detailSchema = _lookupSchema(
-                                            controller.schemas,
-                                            detailItem,
-                                          );
-                                          return SizedBox(
-                                            width: 74,
-                                            height: 44,
-                                            child: GameItemImage(
-                                              imageUrl:
-                                                  detailItem.imageUrl ??
-                                                  detailSchema?.imageUrl,
-                                              appId: _resolveDetailAppId(
-                                                detailItem,
-                                                detailSchema,
-                                              ),
-                                              rarity: _schemaTag(
-                                                detailSchema,
-                                                'rarity',
-                                              ),
-                                              quality: _schemaTag(
-                                                detailSchema,
-                                                'quality',
-                                              ),
-                                              exterior: _schemaTag(
-                                                detailSchema,
-                                                'exterior',
-                                              ),
-                                              count: (detailItem.count ?? 1) > 1
-                                                  ? detailItem.count
-                                                  : null,
-                                            ),
-                                          );
-                                        }),
-                                        if (details.length > 3)
-                                          Container(
-                                            width: 74,
-                                            height: 44,
-                                            decoration: BoxDecoration(
-                                              color: Theme.of(context)
-                                                  .colorScheme
-                                                  .surfaceContainerHighest,
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                            alignment: Alignment.center,
-                                            child: Text(
-                                              '+${details.length - 3}',
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .labelMedium
-                                                  ?.copyWith(
-                                                    color: Theme.of(context)
-                                                        .colorScheme
-                                                        .onSurfaceVariant,
-                                                    fontWeight: FontWeight.w600,
-                                                  ),
-                                            ),
-                                          ),
-                                      ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Obx(
+                              () => Text(
+                                currency.format(price),
+                                style: Theme.of(context).textTheme.titleSmall
+                                    ?.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
+                                      fontWeight: FontWeight.w700,
                                     ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      Text(
-                                        'x${details.length}',
+                              ),
+                            ),
+                          ],
+                        )
+                      else
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: [
+                                  ...details.take(3).map((detailItem) {
+                                    final detailSchema = _lookupSchema(
+                                      controller.schemas,
+                                      detailItem,
+                                    );
+                                    return SizedBox(
+                                      width: 74,
+                                      height: 44,
+                                      child: GameItemImage(
+                                        imageUrl:
+                                            detailItem.imageUrl ??
+                                            detailSchema?.imageUrl,
+                                        appId: _resolveDetailAppId(
+                                          detailItem,
+                                          detailSchema,
+                                        ),
+                                        rarity: _schemaTag(
+                                          detailSchema,
+                                          'rarity',
+                                        ),
+                                        quality: _schemaTag(
+                                          detailSchema,
+                                          'quality',
+                                        ),
+                                        count: (detailItem.count ?? 1) > 1
+                                            ? detailItem.count
+                                            : null,
+                                      ),
+                                    );
+                                  }),
+                                  if (details.length > 3)
+                                    Container(
+                                      width: 74,
+                                      height: 44,
+                                      decoration: BoxDecoration(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.surfaceContainerHighest,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      alignment: Alignment.center,
+                                      child: Text(
+                                        '+${details.length - 3}',
                                         style: Theme.of(context)
                                             .textTheme
                                             .labelMedium
@@ -1097,64 +1224,77 @@ class _MyPurchasePageState extends State<MyPurchasePage>
                                               fontWeight: FontWeight.w600,
                                             ),
                                       ),
-                                      const SizedBox(height: 6),
-                                      Obx(
-                                        () => Text(
-                                          currency.format(price),
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .titleSmall
-                                              ?.copyWith(
-                                                color: Theme.of(
-                                                  context,
-                                                ).colorScheme.primary,
-                                                fontWeight: FontWeight.w700,
-                                              ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                                    ),
                                 ],
                               ),
-                            if (showProtectionCountdown) ...[
-                              const SizedBox(height: 10),
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.timer_outlined,
-                                    size: 14,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurfaceVariant,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  _RecordProtectionCountdownText(
-                                    endTimeSeconds: protectionTime,
+                            ),
+                            const SizedBox(width: 8),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  'x${details.length}',
+                                  style: Theme.of(context).textTheme.labelMedium
+                                      ?.copyWith(
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                ),
+                                const SizedBox(height: 6),
+                                Obx(
+                                  () => Text(
+                                    currency.format(price),
                                     style: Theme.of(context)
                                         .textTheme
-                                        .labelSmall
+                                        .titleSmall
                                         ?.copyWith(
                                           color: Theme.of(
                                             context,
-                                          ).colorScheme.onSurfaceVariant,
-                                          fontWeight: FontWeight.w600,
+                                          ).colorScheme.primary,
+                                          fontWeight: FontWeight.w700,
                                         ),
                                   ),
-                                ],
-                              ),
-                            ],
+                                ),
+                              ],
+                            ),
                           ],
                         ),
-                      ),
-                    ),
-                  );
-                },
+                      if (showProtectionCountdown) ...[
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.timer_outlined,
+                              size: 14,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
+                            ),
+                            const SizedBox(width: 6),
+                            _RecordProtectionCountdownText(
+                              endTimeSeconds: protectionTime,
+                              style: Theme.of(context).textTheme.labelSmall
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
               ),
             );
-          }),
+          },
         ),
-      ],
-    );
+      );
+    });
   }
 
   Widget _buildLoadMoreFooter({

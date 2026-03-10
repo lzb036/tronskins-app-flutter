@@ -313,11 +313,16 @@ class ShopOrderController extends GetxController {
   Future<void> applyWaitingFilter({
     DateTime? startDate,
     DateTime? endDate,
+    bool? sortAsc,
     Map<String, dynamic>? tags,
     String? itemName,
   }) async {
     waitingStartDate.value = startDate;
     waitingEndDate.value = endDate;
+    waitingSortField.value = 'time';
+    if (sortAsc != null) {
+      waitingSortAsc.value = sortAsc;
+    }
     if (tags != null) {
       waitingTags.value = Map<String, dynamic>.from(tags);
     }
@@ -341,12 +346,17 @@ class ShopOrderController extends GetxController {
     List<int>? statusList,
     DateTime? startDate,
     DateTime? endDate,
+    bool? sortAsc,
     Map<String, dynamic>? tags,
     String? itemName,
   }) async {
     buyRecordStatusList.assignAll(statusList ?? <int>[]);
     buyRecordStartDate.value = startDate;
     buyRecordEndDate.value = endDate;
+    buyRecordSortField.value = 'time';
+    if (sortAsc != null) {
+      buyRecordSortAsc.value = sortAsc;
+    }
     if (tags != null) {
       buyRecordTags.value = Map<String, dynamic>.from(tags);
     }
