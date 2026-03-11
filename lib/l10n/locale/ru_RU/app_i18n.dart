@@ -488,10 +488,10 @@ final Map<String, String> ru_RU = {
   "app.inventory.upshop.confirm_title": "Подтверждение полки",
   "app.inventory.upshop.nums": "Количество полок",
   "app.inventory.upshop.handling_charge": "сбор за обработку",
-  
+
   "app.inventory.upshop.expected_reward": "Наградные баллы",
   "app.inventory.upshop.listing_details_expand": "Показать детали листинга",
-  "app.inventory.upshop.listing_details_collapse": "Скрыть детали листинга",  
+  "app.inventory.upshop.listing_details_collapse": "Скрыть детали листинга",
   "app.inventory.upshop.expected_income": "Оценочные поступления",
   "app.inventory.upshop.combining": "Объединение элементов",
   "app.inventory.delist": "Делист",
@@ -501,6 +501,7 @@ final Map<String, String> ru_RU = {
   "app.inventory.message.privacy":
       "Перейдите в настройки конфиденциальности Steam и сделайте инвентарь публичным",
   "app.inventory.message.price_change_success": "Изменение цены было успешным!",
+  "app.inventory.message.upshop_success": "Успешно выставлено!",
   "app.inventory.message.price_and_num_error":
       "Пожалуйста, введите правильную цену и количество!",
   "app.trade.sale.text": "Для продажи",
@@ -515,6 +516,8 @@ final Map<String, String> ru_RU = {
   "app.trade.buy.pay_text_2": "По завершении сделки вы получите очки:",
   "app.trade.buy.pay_text_3": "Продавец завершит доставку в течение 18 часов",
   "app.trade.buy.message.success": "Купить успешно!",
+  "app.trade.purchase.message.success":
+      "Заявка на покупку успешно опубликована!",
   "app.trade.purchase.text": "Покупка",
   "app.trade.purchase.record": "Рекорд покупки",
   "app.trade.purchase.price": "Цена покупки",
@@ -724,8 +727,3 @@ final Map<String, String> ru_RU = {
   "app.system.version.latest_discover": "Открыть последнюю версию",
   "app.system.version.download_failed": "Не удалось загрузить пакет обновлений",
 };
-
-
-
-
-

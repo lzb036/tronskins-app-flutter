@@ -461,10 +461,10 @@ final Map<String, String> th_TH = {
   "app.inventory.upshop.confirm_title": "การยืนยันชั้นวาง",
   "app.inventory.upshop.nums": "จํานวนชั้นวาง",
   "app.inventory.upshop.handling_charge": "ค่าธรรมเนียมการจัดการ",
-  
+
   "app.inventory.upshop.expected_reward": "คะแนนรางวัล",
   "app.inventory.upshop.listing_details_expand": "แสดงรายละเอียดการลงขาย",
-  "app.inventory.upshop.listing_details_collapse": "ซ่อนรายละเอียดการลงขาย",  
+  "app.inventory.upshop.listing_details_collapse": "ซ่อนรายละเอียดการลงขาย",
   "app.inventory.upshop.expected_income": "รายได้ประมาณ",
   "app.inventory.upshop.combining": "รวมรายการ",
   "app.inventory.delist": "ดีลิสต์",
@@ -475,6 +475,8 @@ final Map<String, String> th_TH = {
       "โปรดไปที่การตั้งค่าความเป็นส่วนตัวของ Steam และตั้งค่าอินเวนทอรีเป็นสาธารณะ",
   "app.inventory.message.price_change_success":
       "การเปลี่ยนแปลงราคาประสบความสำเร็จ!",
+  "app.inventory.message.upshop_success": "ลงขายสำเร็จ!",
+
   "app.inventory.message.price_and_num_error":
       "กรุณาใส่ราคาและปริมาณที่ถูกต้อง!",
   "app.trade.sale.text": "สำหรับขาย",
@@ -489,6 +491,7 @@ final Map<String, String> th_TH = {
   "app.trade.buy.pay_text_2": "เมื่อทำธุรกรรมเสร็จสิ้น คุณจะได้รับคะแนน:",
   "app.trade.buy.pay_text_3": "ผู้ขายจะจัดส่งภายใน 18 ชั่วโมง",
   "app.trade.buy.message.success": "ซื้อประสบความสำเร็จ!",
+  "app.trade.purchase.message.success": "ลงประกาศรับซื้อสำเร็จ!",
   "app.trade.purchase.text": "การซื้อ",
   "app.trade.purchase.record": "บันทึกซื้อ",
   "app.trade.purchase.price": "ราคาซื้อ",
@@ -693,8 +696,3 @@ final Map<String, String> th_TH = {
   "app.system.version.download_failed":
       "ล้มเหลวในการดาวน์โหลดแพคเกจการปรับปรุง",
 };
-
-
-
-
-

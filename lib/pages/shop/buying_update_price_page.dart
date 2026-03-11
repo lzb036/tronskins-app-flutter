@@ -1,11 +1,11 @@
 import 'dart:math';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:tronskins_app/api/model/shop/shop_models.dart';
 import 'package:tronskins_app/api/shop_product.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
+import 'package:tronskins_app/components/game_item/game_item_image.dart';
 
 class BuyingUpdatePricePage extends StatefulWidget {
   const BuyingUpdatePricePage({super.key});
@@ -94,6 +94,17 @@ class _BuyingUpdatePricePageState extends State<BuyingUpdatePricePage> {
 
   double _truncateTo2(double value) {
     return (value * 100).floor() / 100;
+  }
+
+  int _resolveAppId() {
+    final value = _item.appId ?? _schemaRaw['app_id'] ?? _schemaRaw['appId'];
+    if (value is int) {
+      return value;
+    }
+    if (value is num) {
+      return value.toInt();
+    }
+    return int.tryParse(value?.toString() ?? '') ?? 730;
   }
 
   String _normalizeDisplayPrice(double value) {
@@ -221,6 +232,8 @@ class _BuyingUpdatePricePageState extends State<BuyingUpdatePricePage> {
     if (_isSubmitting) {
       return;
     }
+    var shouldClosePage = false;
+    FocusManager.instance.primaryFocus?.unfocus();
     final price = double.tryParse(_priceController.text) ?? 0;
     final nums = int.tryParse(_numController.text) ?? 0;
     if (price <= 0 || nums <= 0) {
@@ -275,13 +288,18 @@ class _BuyingUpdatePricePageState extends State<BuyingUpdatePricePage> {
         );
         return;
       }
+      shouldClosePage = true;
+      FocusManager.instance.primaryFocus?.unfocus();
       Get.back(result: true);
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.inventory.message.price_change_success'.tr,
-      );
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Get.snackbar(
+          'app.system.tips.title'.tr,
+          'app.inventory.message.price_change_success'.tr,
+        );
+      });
+      return;
     } finally {
-      if (mounted) {
+      if (mounted && !shouldClosePage) {
         setState(() => _isSubmitting = false);
       }
     }
@@ -289,12 +307,22 @@ class _BuyingUpdatePricePageState extends State<BuyingUpdatePricePage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     final currency = Get.find<CurrencyController>();
     final imageUrl = _schemaRaw['image_url']?.toString() ?? '';
     final title =
         _schemaRaw['market_name']?.toString() ??
         _schemaRaw['market_hash_name']?.toString() ??
         '-';
+    final appId = _resolveAppId();
+    final languageCode = Localizations.localeOf(
+      context,
+    ).languageCode.toLowerCase();
+    final noticeSpacing = switch (languageCode) {
+      'zh' || 'ja' || 'ko' => '',
+      _ => ' ',
+    };
     final wearMin =
         _rawText(const ['paint_wear_min', 'paintWearMin']) ??
         _item.paintWearMin?.toString();
@@ -319,22 +347,14 @@ class _BuyingUpdatePricePageState extends State<BuyingUpdatePricePage> {
               padding: const EdgeInsets.all(12),
               child: Row(
                 children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: CachedNetworkImage(
+                  SizedBox(
+                    width: 112,
+                    height: 68,
+                    child: GameItemImage(
                       imageUrl: imageUrl,
-                      width: 72,
-                      height: 72,
-                      fit: BoxFit.cover,
-                      placeholder: (context, _) => const SizedBox(
-                        width: 72,
-                        height: 72,
-                        child: Center(
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      ),
-                      errorWidget: (context, _, __) =>
-                          const Icon(Icons.image_not_supported_outlined),
+                      appId: appId,
+                      count: _item.count,
+                      alwaysShowCount: true,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -375,14 +395,18 @@ class _BuyingUpdatePricePageState extends State<BuyingUpdatePricePage> {
                         Obx(
                           () => Text(
                             currency.format(_sellMin()),
-                            style: Theme.of(context).textTheme.titleSmall
-                                ?.copyWith(fontWeight: FontWeight.w600),
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              color: colors.primary,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'app.market.detail.sale_lowest'.tr,
-                          style: Theme.of(context).textTheme.bodySmall,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colors.onSurfaceVariant,
+                          ),
                         ),
                       ],
                     ),
@@ -393,14 +417,18 @@ class _BuyingUpdatePricePageState extends State<BuyingUpdatePricePage> {
                         Obx(
                           () => Text(
                             currency.format(_buyMax()),
-                            style: Theme.of(context).textTheme.titleSmall
-                                ?.copyWith(fontWeight: FontWeight.w600),
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              color: colors.tertiary,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'app.market.detail.purchase_highest'.tr,
-                          style: Theme.of(context).textTheme.bodySmall,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: colors.onSurfaceVariant,
+                          ),
                         ),
                       ],
                     ),
@@ -431,16 +459,47 @@ class _BuyingUpdatePricePageState extends State<BuyingUpdatePricePage> {
             onChanged: _sanitizeNum,
           ),
           const SizedBox(height: 12),
-          Text(
-            '1.${'app.trade.purchase.buyer_notice_1'.tr}'
-            '${'app.trade.purchase.buyer_notice_2'.tr}'
-            '${'app.trade.purchase.buyer_notice_3'.tr}',
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '2.${'app.trade.purchase.buyer_notice_4'.tr}',
-            style: Theme.of(context).textTheme.bodySmall,
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: colors.surfaceContainerHighest.withValues(alpha: 0.22),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                RichText(
+                  text: TextSpan(
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colors.onSurfaceVariant,
+                    ),
+                    children: [
+                      TextSpan(
+                        text: '1.${'app.trade.purchase.buyer_notice_1'.tr}',
+                      ),
+                      TextSpan(
+                        text:
+                            '$noticeSpacing'
+                            '${'app.trade.purchase.buyer_notice_2'.tr}'
+                            '$noticeSpacing',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: colors.error,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      TextSpan(text: 'app.trade.purchase.buyer_notice_3'.tr),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '2.${'app.trade.purchase.buyer_notice_4'.tr}',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colors.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 80),
         ],
@@ -461,10 +520,22 @@ class _BuyingUpdatePricePageState extends State<BuyingUpdatePricePage> {
           children: [
             Expanded(
               child: Obx(
-                () => Text(
-                  '${'app.trade.purchase.payable'.tr}: '
-                  '${currency.format(_totalAmount())}',
-                  style: Theme.of(context).textTheme.bodyMedium,
+                () => RichText(
+                  text: TextSpan(
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colors.onSurface,
+                    ),
+                    children: [
+                      TextSpan(text: '${'app.trade.purchase.payable'.tr}: '),
+                      TextSpan(
+                        text: currency.format(_totalAmount()),
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: colors.primary,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

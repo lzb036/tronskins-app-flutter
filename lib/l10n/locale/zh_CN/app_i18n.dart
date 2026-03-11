@@ -393,10 +393,10 @@ final Map<String, String> zh_CN = {
   "app.inventory.upshop.confirm_title": "上架确认",
   "app.inventory.upshop.nums": "上架数量",
   "app.inventory.upshop.handling_charge": "手续费",
-  
+
   "app.inventory.upshop.expected_reward": "积分奖励",
   "app.inventory.upshop.listing_details_expand": "展开上架详情",
-  "app.inventory.upshop.listing_details_collapse": "收起上架详情",  
+  "app.inventory.upshop.listing_details_collapse": "收起上架详情",
   "app.inventory.upshop.expected_income": "预计收入",
   "app.inventory.upshop.combining": "合并相同项",
   "app.inventory.delist": "下架",
@@ -404,6 +404,7 @@ final Map<String, String> zh_CN = {
   "app.inventory.message.non_tradable": "不可交易，无法选中",
   "app.inventory.message.privacy": "请前往Steam隐私设置，将库存设置为公开状态",
   "app.inventory.message.price_change_success": "改价成功！",
+  "app.inventory.message.upshop_success": "上架成功！",
   "app.inventory.message.price_and_num_error": "请输入正确的价格和数量！",
   "app.trade.sale.text": "出售",
   "app.trade.sale.success": "出售成功",
@@ -417,6 +418,7 @@ final Map<String, String> zh_CN = {
   "app.trade.buy.pay_text_2": "交易完成后，你将获得积分：",
   "app.trade.buy.pay_text_3": "卖家将在18小时内完成发货",
   "app.trade.buy.message.success": "购买成功！",
+  "app.trade.purchase.message.success": "求购成功！",
   "app.trade.purchase.text": "求购",
   "app.trade.purchase.record": "求购记录",
   "app.trade.purchase.price": "求购单价",
@@ -579,8 +581,3 @@ final Map<String, String> zh_CN = {
   "app.system.version.latest_discover": "发现最新版本",
   "app.system.version.download_failed": "更新包下载失败",
 };
-
-
-
-
-

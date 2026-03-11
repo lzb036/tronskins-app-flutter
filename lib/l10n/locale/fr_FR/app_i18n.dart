@@ -499,10 +499,12 @@ final Map<String, String> fr_FR = {
   "app.inventory.upshop.confirm_title": "Confirmation de l'étagère",
   "app.inventory.upshop.nums": "Nombre d'étagères",
   "app.inventory.upshop.handling_charge": "Frais de manutention",
-  
+
   "app.inventory.upshop.expected_reward": "Points de recompense",
-  "app.inventory.upshop.listing_details_expand": "Afficher details de mise en vente",
-  "app.inventory.upshop.listing_details_collapse": "Masquer details de mise en vente",  
+  "app.inventory.upshop.listing_details_expand":
+      "Afficher details de mise en vente",
+  "app.inventory.upshop.listing_details_collapse":
+      "Masquer details de mise en vente",
   "app.inventory.upshop.expected_income": "Recettes estimées",
   "app.inventory.upshop.combining": "Fusionner des éléments",
   "app.inventory.delist": "Délist",
@@ -513,6 +515,7 @@ final Map<String, String> fr_FR = {
       "Veuillez aller dans les paramètres de confidentialité Steam et définir l'inventaire comme public",
   "app.inventory.message.price_change_success":
       "Le changement de prix a réussi !",
+  "app.inventory.message.upshop_success": "Mise en vente réussie !",
   "app.inventory.message.price_and_num_error":
       "Veuillez saisir le prix et la quantité corrects!",
   "app.trade.sale.text": "À vendre",
@@ -529,6 +532,7 @@ final Map<String, String> fr_FR = {
   "app.trade.buy.pay_text_3":
       "Le vendeur effectuera la livraison dans les 18 heures",
   "app.trade.buy.message.success": "Acheter avec succès!",
+  "app.trade.purchase.message.success": "Demande d'achat publiée avec succès !",
   "app.trade.purchase.text": "Achat",
   "app.trade.purchase.record": "Enregistrement d'achat",
   "app.trade.purchase.price": "Prix d'achat",
@@ -739,8 +743,3 @@ final Map<String, String> fr_FR = {
   "app.system.version.download_failed":
       "Impossible de télécharger le paquet de mise à jour",
 };
-
-
-
-
-

@@ -20,6 +20,7 @@ class GameItemImage extends StatelessWidget {
     this.percentage,
     this.paintWearText,
     this.count,
+    this.alwaysShowCount = false,
     this.selected = false,
     this.showOnSaleBadge = false,
     this.disabledLabel,
@@ -40,6 +41,7 @@ class GameItemImage extends StatelessWidget {
   final String? percentage;
   final String? paintWearText;
   final int? count;
+  final bool alwaysShowCount;
   final bool selected;
   final bool showOnSaleBadge;
   final String? disabledLabel;
@@ -56,7 +58,8 @@ class GameItemImage extends StatelessWidget {
     final qualityBorder = qualityBorderColor(quality?.color);
     final exteriorColor = parseHexColor(exterior?.color) ?? Colors.black54;
     final badges = _buildBadges(context, exteriorColor);
-    final hasCountBadge = count != null && count! > 1;
+    final hasCountBadge =
+        count != null && count! > 0 && (count! > 1 || alwaysShowCount);
     final stickerBottom =
         (_isDota ? 3.0 : (hasCountBadge ? 20.0 : 2.0)) + stickerBottomOffset;
     final stickerLeft = _isDota ? 0.0 : 6.0;
@@ -148,7 +151,7 @@ class GameItemImage extends StatelessWidget {
             right: 0,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              color: Colors.black.withOpacity(0.6),
+              color: Colors.black.withValues(alpha: 0.6),
               child: Text(
                 '${'app.market.csgo.abradability'.tr}: $paintWearText',
                 style: const TextStyle(color: Colors.white, fontSize: 10),
@@ -186,7 +189,7 @@ class GameItemImage extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: Colors.black.withOpacity(0.6),
+                color: Colors.black.withValues(alpha: 0.6),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text(
@@ -251,11 +254,11 @@ class GameItemImage extends StatelessWidget {
   }
 
   Color _chipColor(BuildContext context) {
-    return Theme.of(context).colorScheme.primary.withOpacity(0.85);
+    return Theme.of(context).colorScheme.primary.withValues(alpha: 0.85);
   }
 
   Color _phaseColor(BuildContext context) {
-    return Theme.of(context).colorScheme.tertiary.withOpacity(0.85);
+    return Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.85);
   }
 }
 

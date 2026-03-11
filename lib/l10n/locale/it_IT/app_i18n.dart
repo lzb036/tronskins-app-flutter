@@ -487,10 +487,11 @@ final Map<String, String> it_IT = {
   "app.inventory.upshop.confirm_title": "Conferma dello scaffale",
   "app.inventory.upshop.nums": "Numero di scaffali",
   "app.inventory.upshop.handling_charge": "Tassa di gestione",
-  
+
   "app.inventory.upshop.expected_reward": "Punti premio",
   "app.inventory.upshop.listing_details_expand": "Mostra dettagli di vendita",
-  "app.inventory.upshop.listing_details_collapse": "Nascondi dettagli di vendita",  
+  "app.inventory.upshop.listing_details_collapse":
+      "Nascondi dettagli di vendita",
   "app.inventory.upshop.expected_income": "Reditto stimato",
   "app.inventory.upshop.combining": "Unisci elementi",
   "app.inventory.delist": "Delist",
@@ -501,6 +502,8 @@ final Map<String, String> it_IT = {
       "Vai alle impostazioni della privacy di Steam e imposta l'inventario come pubblico",
   "app.inventory.message.price_change_success":
       "Il cambio di prezzo è stato un successo!",
+  "app.inventory.message.upshop_success": "Messa in vendita con successo!",
+
   "app.inventory.message.price_and_num_error":
       "Inserisci il prezzo e la quantità corretti!",
   "app.trade.sale.text": "In vendita",
@@ -517,6 +520,8 @@ final Map<String, String> it_IT = {
   "app.trade.buy.pay_text_3":
       "Il venditore completerà la consegna entro 18 ore",
   "app.trade.buy.message.success": "Acquista con successo!",
+  "app.trade.purchase.message.success":
+      "Richiesta di acquisto pubblicata con successo!",
   "app.trade.purchase.text": "Acquisto",
   "app.trade.purchase.record": "Registro di acquisto",
   "app.trade.purchase.price": "Prezzo di acquisto",
@@ -725,8 +730,3 @@ final Map<String, String> it_IT = {
   "app.system.version.download_failed":
       "Impossibile scaricare il pacchetto di aggiornamento",
 };
-
-
-
-
-

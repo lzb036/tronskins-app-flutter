@@ -416,10 +416,10 @@ final Map<String, String> ja_JP = {
   "app.inventory.upshop.confirm_title": "棚の確認",
   "app.inventory.upshop.nums": "棚の数",
   "app.inventory.upshop.handling_charge": "取扱料金",
-  
+
   "app.inventory.upshop.expected_reward": "報酬ポイント",
   "app.inventory.upshop.listing_details_expand": "出品詳細を表示",
-  "app.inventory.upshop.listing_details_collapse": "出品詳細を非表示",  
+  "app.inventory.upshop.listing_details_collapse": "出品詳細を非表示",
   "app.inventory.upshop.expected_income": "推定収益",
   "app.inventory.upshop.combining": "アイテムを合わせる",
   "app.inventory.delist": "デリスト",
@@ -427,6 +427,7 @@ final Map<String, String> ja_JP = {
   "app.inventory.message.non_tradable": "取引できない,選択できない",
   "app.inventory.message.privacy": "Steam のプライバシー設定でインベントリを公開にしてください",
   "app.inventory.message.price_change_success": "価格変更は成功しました！",
+  "app.inventory.message.upshop_success": "出品に成功しました！",
   "app.inventory.message.price_and_num_error": "正しい価格と数量を入力してください！",
   "app.trade.sale.text": "販売中",
   "app.trade.sale.success": "成功した販売",
@@ -440,6 +441,7 @@ final Map<String, String> ja_JP = {
   "app.trade.buy.pay_text_2": "取引完了後、ポイントを獲得します。",
   "app.trade.buy.pay_text_3": "販売者は配達を18時間以内に完了します",
   "app.trade.buy.message.success": "購入成功！",
+  "app.trade.purchase.message.success": "購入リクエストの掲載に成功しました！",
   "app.trade.purchase.text": "購入",
   "app.trade.purchase.record": "購入記録",
   "app.trade.purchase.price": "購入価格",
@@ -620,8 +622,3 @@ final Map<String, String> ja_JP = {
   "app.system.version.latest_discover": "最新バージョンを発見する",
   "app.system.version.download_failed": "更新プログラムをダウンロードできなかった",
 };
-
-
-
-
-

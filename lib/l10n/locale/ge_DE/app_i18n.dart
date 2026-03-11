@@ -492,10 +492,10 @@ final Map<String, String> ge_DE = {
   "app.inventory.upshop.confirm_title": "Bestätigung des Regals",
   "app.inventory.upshop.nums": "Anzahl der Regale",
   "app.inventory.upshop.handling_charge": "Handhabungsgebühr",
-  
+
   "app.inventory.upshop.expected_reward": "Belohnungspunkte",
   "app.inventory.upshop.listing_details_expand": "Angebotsdetails anzeigen",
-  "app.inventory.upshop.listing_details_collapse": "Angebotsdetails ausblenden",  
+  "app.inventory.upshop.listing_details_collapse": "Angebotsdetails ausblenden",
   "app.inventory.upshop.expected_income": "Geschätzte Einnahmen",
   "app.inventory.upshop.combining": "Elemente zusammenfügen",
   "app.inventory.delist": "Delist",
@@ -506,6 +506,7 @@ final Map<String, String> ge_DE = {
       "Bitte gehen Sie zu den Steam-Datenschutzeinstellungen und stellen Sie das Inventar auf öffentlich",
   "app.inventory.message.price_change_success":
       "Die Preisänderung war erfolgreich!",
+  "app.inventory.message.upshop_success": "Erfolgreich eingestellt!",
   "app.inventory.message.price_and_num_error":
       "Bitte geben Sie den richtigen Preis und die richtige Menge ein!",
   "app.trade.sale.text": "Zum Verkauf",
@@ -522,6 +523,8 @@ final Map<String, String> ge_DE = {
   "app.trade.buy.pay_text_3":
       "Der Verkäufer wird die Lieferung innerhalb von 18 Stunden abschließen",
   "app.trade.buy.message.success": "Kaufen Sie erfolgreich!",
+  "app.trade.purchase.message.success":
+      "Kaufgesuch erfolgreich veröffentlicht!",
   "app.trade.purchase.text": "Einkauf",
   "app.trade.purchase.record": "Einkaufsaufzeichnung",
   "app.trade.purchase.price": "Kaufpreis",
@@ -734,8 +737,3 @@ final Map<String, String> ge_DE = {
   "app.system.version.download_failed":
       "Das Updatepaket wurde nicht heruntergeladen",
 };
-
-
-
-
-

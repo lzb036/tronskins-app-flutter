@@ -477,10 +477,10 @@ final Map<String, String> en_US = {
   "app.inventory.upshop.confirm_title": "Confirmation of Shelf",
   "app.inventory.upshop.nums": "Number of Shelves",
   "app.inventory.upshop.handling_charge": "Handling Fee",
-  
+
   "app.inventory.upshop.expected_reward": "Reward Points",
   "app.inventory.upshop.listing_details_expand": "Expand Listing Details",
-  "app.inventory.upshop.listing_details_collapse": "Collapse Listing Details",  
+  "app.inventory.upshop.listing_details_collapse": "Collapse Listing Details",
   "app.inventory.upshop.expected_income": "Estimated Revenue",
   "app.inventory.upshop.combining": "Merge items",
   "app.inventory.delist": "Delist",
@@ -491,6 +491,7 @@ final Map<String, String> en_US = {
       "Please go to Steam privacy settings and set your inventory to public",
   "app.inventory.message.price_change_success":
       "The price change was successful!",
+  "app.inventory.message.upshop_success": "Listed successfully!",
   "app.inventory.message.price_and_num_error":
       "Please enter the correct price and quantity!",
   "app.trade.sale.text": "For Sale",
@@ -507,6 +508,8 @@ final Map<String, String> en_US = {
   "app.trade.buy.pay_text_3":
       "The seller will complete the delivery within 18 hours",
   "app.trade.buy.message.success": "Buy successful!",
+  "app.trade.purchase.message.success":
+      "Purchase request submitted successfully!",
   "app.trade.purchase.text": "Purchase",
   "app.trade.purchase.record": "Purchase Record",
   "app.trade.purchase.price": "Purchase Price",
@@ -714,8 +717,3 @@ final Map<String, String> en_US = {
   "app.system.version.latest_discover": "Discover the latest version",
   "app.system.version.download_failed": "Failed to download the update package",
 };
-
-
-
-
-

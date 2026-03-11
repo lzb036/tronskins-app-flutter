@@ -471,10 +471,10 @@ final Map<String, String> vi_VN = {
   "app.inventory.upshop.confirm_title": "Xác nhận kệ",
   "app.inventory.upshop.nums": "Số kệ",
   "app.inventory.upshop.handling_charge": "Phí xử lý",
-  
+
   "app.inventory.upshop.expected_reward": "Điểm thưởng",
   "app.inventory.upshop.listing_details_expand": "Mo chi tiet dang ban",
-  "app.inventory.upshop.listing_details_collapse": "Thu gon chi tiet dang ban",  
+  "app.inventory.upshop.listing_details_collapse": "Thu gon chi tiet dang ban",
   "app.inventory.upshop.expected_income": "Doanh thu ước tính",
   "app.inventory.upshop.combining": "Sáp nhập các mục",
   "app.inventory.delist": "Delist",
@@ -484,6 +484,7 @@ final Map<String, String> vi_VN = {
   "app.inventory.message.privacy":
       "Vui lòng vào cài đặt quyền riêng tư của Steam và đặt kho đồ là công khai",
   "app.inventory.message.price_change_success": "Thay đổi giá thành công!",
+  "app.inventory.message.upshop_success": "Đăng bán thành công!",
   "app.inventory.message.price_and_num_error":
       "Vui lòng nhập giá và số lượng đúng!",
   "app.trade.sale.text": "Để bán",
@@ -500,6 +501,7 @@ final Map<String, String> vi_VN = {
   "app.trade.buy.pay_text_3":
       "Người bán sẽ hoàn thành giao hàng trong vòng 18 giờ",
   "app.trade.buy.message.success": "Mua thành công!",
+  "app.trade.purchase.message.success": "Đăng yêu cầu mua thành công!",
   "app.trade.purchase.text": "Mua hàng",
   "app.trade.purchase.record": "Hồ sơ mua hàng",
   "app.trade.purchase.price": "Giá mua",
@@ -708,8 +710,3 @@ final Map<String, String> vi_VN = {
   "app.system.version.latest_discover": "Khám phá phiên bản mới nhất",
   "app.system.version.download_failed": "Không thể tải xuống gói cập nhật",
 };
-
-
-
-
-

@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import 'package:tronskins_app/components/filter/filter_models.dart';
 import 'package:tronskins_app/components/filter/market_filter_sheet.dart';
 
+enum OrderFilterSectionCategory { attribute, status, date, sort }
+
 class OrderFilterSheet extends StatefulWidget {
   const OrderFilterSheet({
     super.key,
@@ -19,6 +21,7 @@ class OrderFilterSheet extends StatefulWidget {
     this.attributeShowSort = false,
     this.attributeShowPriceRange = false,
     this.isSideSheet = false,
+    this.sectionOrder,
   });
 
   final OrderFilterResult initial;
@@ -33,6 +36,7 @@ class OrderFilterSheet extends StatefulWidget {
   final bool attributeShowSort;
   final bool attributeShowPriceRange;
   final bool isSideSheet;
+  final List<OrderFilterSectionCategory>? sectionOrder;
 
   static Future<OrderFilterResult?> showFromRight({
     required BuildContext context,
@@ -47,6 +51,7 @@ class OrderFilterSheet extends StatefulWidget {
     List<SortOption> attributeSortOptions = const [],
     bool attributeShowSort = false,
     bool attributeShowPriceRange = false,
+    List<OrderFilterSectionCategory>? sectionOrder,
   }) {
     final barrierLabel = MaterialLocalizations.of(
       context,
@@ -78,6 +83,7 @@ class OrderFilterSheet extends StatefulWidget {
                 attributeShowSort: attributeShowSort,
                 attributeShowPriceRange: attributeShowPriceRange,
                 isSideSheet: true,
+                sectionOrder: sectionOrder,
               ),
             ),
           ),
@@ -302,15 +308,42 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
 
   List<_OrderFilterSection> get _sections {
     final sections = <_OrderFilterSection>[];
-    if (widget.enableAttributeFilter) {
-      if (_attributeGroups.isEmpty) {
-        sections.add(
-          const _OrderFilterSection(
-            type: _OrderFilterSectionType.attribute,
-            labelKey: 'app.market.filter.text',
-          ),
-        );
-      } else {
+    const defaultOrder = [
+      OrderFilterSectionCategory.attribute,
+      OrderFilterSectionCategory.status,
+      OrderFilterSectionCategory.date,
+      OrderFilterSectionCategory.sort,
+    ];
+    final orderedCategories = <OrderFilterSectionCategory>[
+      ...?widget.sectionOrder,
+      ...defaultOrder.where(
+        (category) => !(widget.sectionOrder?.contains(category) ?? false),
+      ),
+    ];
+    for (final category in orderedCategories) {
+      _appendSectionsByCategory(sections, category);
+    }
+    return sections;
+  }
+
+  void _appendSectionsByCategory(
+    List<_OrderFilterSection> sections,
+    OrderFilterSectionCategory category,
+  ) {
+    switch (category) {
+      case OrderFilterSectionCategory.attribute:
+        if (!widget.enableAttributeFilter) {
+          return;
+        }
+        if (_attributeGroups.isEmpty) {
+          sections.add(
+            const _OrderFilterSection(
+              type: _OrderFilterSectionType.attribute,
+              labelKey: 'app.market.filter.text',
+            ),
+          );
+          return;
+        }
         sections.addAll(
           _attributeGroups.map(
             (group) => _OrderFilterSection(
@@ -320,33 +353,41 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
             ),
           ),
         );
-      }
+        return;
+      case OrderFilterSectionCategory.status:
+        if (!widget.showStatus) {
+          return;
+        }
+        sections.add(
+          const _OrderFilterSection(
+            type: _OrderFilterSectionType.status,
+            labelKey: 'app.trade.order.status',
+          ),
+        );
+        return;
+      case OrderFilterSectionCategory.date:
+        if (!widget.showDateRange) {
+          return;
+        }
+        sections.add(
+          const _OrderFilterSection(
+            type: _OrderFilterSectionType.date,
+            labelKey: 'app.trade.order.date',
+          ),
+        );
+        return;
+      case OrderFilterSectionCategory.sort:
+        if (!widget.showSort) {
+          return;
+        }
+        sections.add(
+          const _OrderFilterSection(
+            type: _OrderFilterSectionType.sort,
+            labelKey: 'app.market.filter.sort',
+          ),
+        );
+        return;
     }
-    if (widget.showStatus) {
-      sections.add(
-        const _OrderFilterSection(
-          type: _OrderFilterSectionType.status,
-          labelKey: 'app.trade.order.status',
-        ),
-      );
-    }
-    if (widget.showDateRange) {
-      sections.add(
-        const _OrderFilterSection(
-          type: _OrderFilterSectionType.date,
-          labelKey: 'app.trade.order.date',
-        ),
-      );
-    }
-    if (widget.showSort) {
-      sections.add(
-        const _OrderFilterSection(
-          type: _OrderFilterSectionType.sort,
-          labelKey: 'app.market.filter.sort',
-        ),
-      );
-    }
-    return sections;
   }
 
   Widget _buildSectionTitle(String text) {

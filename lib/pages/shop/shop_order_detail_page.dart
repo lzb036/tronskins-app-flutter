@@ -7,6 +7,7 @@ import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
 import 'package:tronskins_app/common/storage/game_storage.dart';
 import 'package:tronskins_app/components/game_item/game_item_image.dart';
 import 'package:tronskins_app/components/game_item/game_item_models.dart';
+import 'package:tronskins_app/components/game_item/sticker_row.dart';
 import 'package:tronskins_app/components/game_item/wear_progress_bar.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
 
@@ -155,6 +156,7 @@ class ShopOrderDetailPage extends StatelessWidget {
                 ),
               ),
             ),
+          _buildTips(context),
         ],
       ),
     );
@@ -179,9 +181,6 @@ class ShopOrderDetailPage extends StatelessWidget {
     final title = detail.marketName ?? schema?.marketName ?? '-';
     final rarity = _schemaTag(schema, 'rarity');
     final quality = _schemaTag(schema, 'quality');
-    final exterior = _schemaTag(schema, 'exterior');
-    final phase = _detailText(detail, ['phase']);
-    final percentage = _detailText(detail, ['percentage']);
     final paintWearText = _detailText(detail, ['paint_wear', 'paintWear']);
     final paintWear =
         detail.paintWear ?? _detailDouble(detail, ['paint_wear', 'paintWear']);
@@ -222,11 +221,7 @@ class ShopOrderDetailPage extends StatelessWidget {
                     appId: appId,
                     rarity: rarity,
                     quality: quality,
-                    exterior: exterior,
-                    phase: phase,
-                    percentage: percentage,
                     count: count > 1 ? count : null,
-                    stickers: detailStickers,
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -281,6 +276,10 @@ class ShopOrderDetailPage extends StatelessWidget {
               const SizedBox(height: 6),
               WearProgressBar(paintWear: paintWear),
             ],
+            if (detailStickers.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              StickerRow(stickers: detailStickers, size: 24),
+            ],
             if (count > 1) ...[
               const SizedBox(height: 8),
               Text(
@@ -290,6 +289,35 @@ class ShopOrderDetailPage extends StatelessWidget {
                 ),
               ),
             ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTips(BuildContext context) {
+    final tips = [
+      'app.trade.order.buyer_tips_1'.tr,
+      'app.trade.order.buyer_tips_2'.tr,
+      'app.trade.order.buyer_tips_3'.tr,
+      'app.trade.order.buyer_tips_4'.tr,
+    ];
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'app.system.tips.warm'.tr,
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: 8),
+            for (int i = 0; i < tips.length; i++)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Text('${i + 1}. ${tips[i]}'),
+              ),
           ],
         ),
       ),

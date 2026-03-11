@@ -161,10 +161,13 @@ class _MarketDetailPageState extends State<MarketDetailPage>
     if (schemaId == null) {
       return;
     }
-    Get.toNamed(
+    final result = await Get.toNamed(
       Routers.PRODUCT_BUYING,
       arguments: {'appId': controller.appId, 'schemaId': schemaId},
     );
+    if (result == true) {
+      await controller.loadBuyRequests(reset: true);
+    }
   }
 
   Future<void> _openBulkBuying() async {
@@ -2531,6 +2534,16 @@ class _MarketDetailPageState extends State<MarketDetailPage>
         final user = _lookupBuyUser(item);
         final avatar = _resolveAvatar(user?.avatar);
         final imageUrl = schema?.imageUrl ?? '';
+        final schemaTags = schema?.raw['tags'];
+        final rarity = TagInfo.fromRaw(
+          schemaTags is Map ? schemaTags['rarity'] : null,
+        );
+        final quality = TagInfo.fromRaw(
+          schemaTags is Map ? schemaTags['quality'] : null,
+        );
+        final exterior = TagInfo.fromRaw(
+          schemaTags is Map ? schemaTags['exterior'] : null,
+        );
         final wearMinText =
             item.raw['paint_wear_min']?.toString() ??
             item.raw['paintWearMin']?.toString() ??
@@ -2543,6 +2556,8 @@ class _MarketDetailPageState extends State<MarketDetailPage>
         final isOwn = item.own == true;
         final canSupply = need > 0;
         final isDark = Theme.of(context).brightness == Brightness.dark;
+        const buyRequestImageWidth = 108.0;
+        const buyRequestImageHeight = 64.8;
 
         return Card(
           color: isDark ? const Color(0xFF26272B) : Colors.white,
@@ -2552,15 +2567,17 @@ class _MarketDetailPageState extends State<MarketDetailPage>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(
-                  width: 90,
-                  child: SizedBox(
-                    width: 90,
-                    height: 54,
-                    child: GameItemImage(
-                      imageUrl: imageUrl,
-                      appId: item.appId,
-                      count: need > 0 ? need : null,
-                    ),
+                  width: buyRequestImageWidth,
+                  height: buyRequestImageHeight,
+                  child: GameItemImage(
+                    imageUrl: imageUrl,
+                    appId: item.appId,
+                    rarity: rarity,
+                    quality: quality,
+                    exterior: exterior,
+                    phase: item.phase,
+                    count: need > 0 ? need : null,
+                    alwaysShowCount: true,
                   ),
                 ),
                 const SizedBox(width: 12),

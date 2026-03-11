@@ -490,10 +490,11 @@ final Map<String, String> po_PT = {
   "app.inventory.upshop.confirm_title": "Confirmação da prateleira",
   "app.inventory.upshop.nums": "Número de prateleiras",
   "app.inventory.upshop.handling_charge": "Taxa de manuseio",
-  
+
   "app.inventory.upshop.expected_reward": "Pontos de Recompensa",
   "app.inventory.upshop.listing_details_expand": "Mostrar detalhes do anuncio",
-  "app.inventory.upshop.listing_details_collapse": "Ocultar detalhes do anuncio",  
+  "app.inventory.upshop.listing_details_collapse":
+      "Ocultar detalhes do anuncio",
   "app.inventory.upshop.expected_income": "Receita estimada",
   "app.inventory.upshop.combining": "Mesclar itens",
   "app.inventory.delist": "Deslista",
@@ -504,6 +505,8 @@ final Map<String, String> po_PT = {
       "Vá para as configurações de privacidade da Steam e defina o inventário como público",
   "app.inventory.message.price_change_success":
       "A mudança de preço foi bem sucedida!",
+  "app.inventory.message.upshop_success": "Anunciado com sucesso!",
+
   "app.inventory.message.price_and_num_error":
       "Por favor, insira o preço e a quantidade corretos!",
   "app.trade.sale.text": "Para venda",
@@ -521,6 +524,8 @@ final Map<String, String> po_PT = {
   "app.trade.buy.pay_text_3":
       "O vendedor concluirá a entrega dentro de 18 horas",
   "app.trade.buy.message.success": "Compre com sucesso!",
+  "app.trade.purchase.message.success":
+      "Pedido de compra publicado com sucesso!",
   "app.trade.purchase.text": "Compra",
   "app.trade.purchase.record": "Registro de Compra",
   "app.trade.purchase.price": "Preço de compra",
@@ -730,8 +735,3 @@ final Map<String, String> po_PT = {
   "app.system.version.download_failed":
       "Não foi possível baixar o pacote de atualização",
 };
-
-
-
-
-

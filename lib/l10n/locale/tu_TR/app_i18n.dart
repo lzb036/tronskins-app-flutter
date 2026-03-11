@@ -471,10 +471,12 @@ final Map<String, String> tu_TR = {
   "app.inventory.upshop.confirm_title": "Rafın Onaylanması",
   "app.inventory.upshop.nums": "Rafların Sayısı",
   "app.inventory.upshop.handling_charge": "İşlem Ücreti",
-  
+
   "app.inventory.upshop.expected_reward": "Odul Puanlari",
-  "app.inventory.upshop.listing_details_expand": "Listeleme ayrintilarini goster",
-  "app.inventory.upshop.listing_details_collapse": "Listeleme ayrintilarini gizle",  
+  "app.inventory.upshop.listing_details_expand":
+      "Listeleme ayrintilarini goster",
+  "app.inventory.upshop.listing_details_collapse":
+      "Listeleme ayrintilarini gizle",
   "app.inventory.upshop.expected_income": "Tahmini gelir",
   "app.inventory.upshop.combining": "Öğeleri birleştir",
   "app.inventory.delist": "Delist'in",
@@ -485,6 +487,8 @@ final Map<String, String> tu_TR = {
       "Steam gizlilik ayarlarına gidin ve envanteri herkese açık yapın",
   "app.inventory.message.price_change_success":
       "Fiyat değişikliği başarılı oldu!",
+  "app.inventory.message.upshop_success": "Listeleme başarılı!",
+
   "app.inventory.message.price_and_num_error":
       "Lütfen doğru fiyat ve miktar girin!",
   "app.trade.sale.text": "Satılık",
@@ -500,6 +504,7 @@ final Map<String, String> tu_TR = {
       "İşlem tamamlandıktan sonra, puan kazanacaksınız:",
   "app.trade.buy.pay_text_3": "Satıcı teslimatı 18 saat içinde tamamlayacak",
   "app.trade.buy.message.success": "Başarılı satın alın!",
+  "app.trade.purchase.message.success": "Alım talebi başarıyla yayınlandı!",
   "app.trade.purchase.text": "Satın Alın",
   "app.trade.purchase.record": "Satın Alma Kaydı",
   "app.trade.purchase.price": "Satın Alma Fiyatı",
@@ -706,8 +711,3 @@ final Map<String, String> tu_TR = {
   "app.system.version.latest_discover": "En son sürümünü keşfedin",
   "app.system.version.download_failed": "Güncelleme paketini indiremedi",
 };
-
-
-
-
-

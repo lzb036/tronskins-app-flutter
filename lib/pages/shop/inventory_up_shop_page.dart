@@ -824,7 +824,7 @@ class _InventoryUpShopPageState extends State<InventoryUpShopPage> {
 
       if (submitCode == 0 || submitCode == 200) {
         Get.back();
-        AppSnackbar.success('app.system.message.success'.tr);
+        AppSnackbar.success('app.inventory.message.upshop_success'.tr);
         return;
       }
 

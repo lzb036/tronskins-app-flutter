@@ -181,6 +181,10 @@ class _MyPurchasePageState extends State<MyPurchasePage>
       showDateRange: false,
       enableAttributeFilter: true,
       appId: _currentAppId,
+      sectionOrder: const [
+        OrderFilterSectionCategory.sort,
+        OrderFilterSectionCategory.attribute,
+      ],
     );
     if (result != null) {
       await controller.applyWaitingFilter(
@@ -210,6 +214,12 @@ class _MyPurchasePageState extends State<MyPurchasePage>
       showDateRange: true,
       enableAttributeFilter: true,
       appId: _currentAppId,
+      sectionOrder: const [
+        OrderFilterSectionCategory.sort,
+        OrderFilterSectionCategory.date,
+        OrderFilterSectionCategory.status,
+        OrderFilterSectionCategory.attribute,
+      ],
     );
     if (result != null) {
       await controller.applyBuyRecordFilter(
@@ -1069,13 +1079,15 @@ class _MyPurchasePageState extends State<MyPurchasePage>
                 protectionTime != null &&
                 protectionTime > 0 &&
                 order.status == 5;
+            final colorScheme = Theme.of(context).colorScheme;
+            final textTheme = Theme.of(context).textTheme;
             return Card(
               margin: EdgeInsets.zero,
               clipBehavior: Clip.antiAlias,
               child: InkWell(
                 onTap: () => _openOrderDetail(order),
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                  padding: const EdgeInsets.all(12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -1084,25 +1096,22 @@ class _MyPurchasePageState extends State<MyPurchasePage>
                           Expanded(
                             child: Text(
                               _formatTime(order.createTime),
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurfaceVariant,
-                                  ),
+                              style: textTheme.bodySmall?.copyWith(
+                                color: colorScheme.onSurfaceVariant,
+                              ),
                             ),
                           ),
                           _buildStatusBadge(order),
                         ],
                       ),
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 8),
                       if (!hasMultiple)
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             SizedBox(
-                              width: 98,
-                              height: 58,
+                              width: 72,
+                              height: 43,
                               child: GameItemImage(
                                 imageUrl: imageUrl,
                                 appId: appId,
@@ -1113,116 +1122,118 @@ class _MyPurchasePageState extends State<MyPurchasePage>
                                     : null,
                               ),
                             ),
-                            const SizedBox(width: 10),
+                            const SizedBox(width: 12),
                             Expanded(
-                              child: Column(
+                              child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    title,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.copyWith(fontWeight: FontWeight.w600),
-                                  ),
-                                  if (wear != null) ...[
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      '${'app.market.csgo.abradability'.tr}: '
-                                      '${wear.toStringAsFixed(6)}',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(
-                                            color: Theme.of(
-                                              context,
-                                            ).colorScheme.onSurfaceVariant,
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          title,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: textTheme.titleSmall?.copyWith(
+                                            fontWeight: FontWeight.w600,
                                           ),
+                                        ),
+                                        if (wear != null) ...[
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            '${'app.market.csgo.abradability'.tr}: '
+                                            '${wear.toStringAsFixed(6)}',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: textTheme.bodySmall
+                                                ?.copyWith(
+                                                  color: colorScheme
+                                                      .onSurfaceVariant,
+                                                ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          WearProgressBar(paintWear: wear),
+                                        ],
+                                      ],
                                     ),
-                                    const SizedBox(height: 4),
-                                    WearProgressBar(paintWear: wear),
-                                  ],
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      if (showProtectionCountdown) ...[
+                                        _RecordProtectionCountdownText(
+                                          endTimeSeconds: protectionTime,
+                                          style: textTheme.bodySmall?.copyWith(
+                                            color: Colors.orange.shade600,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                      ],
+                                      Obx(
+                                        () => Text(
+                                          currency.format(price),
+                                          style: textTheme.titleSmall?.copyWith(
+                                            color: colorScheme.primary,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ],
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Obx(
-                              () => Text(
-                                currency.format(price),
-                                style: Theme.of(context).textTheme.titleSmall
-                                    ?.copyWith(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.primary,
-                                      fontWeight: FontWeight.w700,
-                                    ),
                               ),
                             ),
                           ],
                         )
                       else
                         Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
                             Expanded(
-                              child: Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
+                              child: Row(
                                 children: [
                                   ...details.take(3).map((detailItem) {
                                     final detailSchema = _lookupSchema(
                                       controller.schemas,
                                       detailItem,
                                     );
-                                    return SizedBox(
-                                      width: 74,
-                                      height: 44,
-                                      child: GameItemImage(
-                                        imageUrl:
-                                            detailItem.imageUrl ??
-                                            detailSchema?.imageUrl,
-                                        appId: _resolveDetailAppId(
-                                          detailItem,
-                                          detailSchema,
+                                    return Padding(
+                                      padding: const EdgeInsets.only(right: 8),
+                                      child: SizedBox(
+                                        width: 72,
+                                        height: 43,
+                                        child: GameItemImage(
+                                          imageUrl:
+                                              detailItem.imageUrl ??
+                                              detailSchema?.imageUrl,
+                                          appId: _resolveDetailAppId(
+                                            detailItem,
+                                            detailSchema,
+                                          ),
+                                          rarity: _schemaTag(
+                                            detailSchema,
+                                            'rarity',
+                                          ),
+                                          quality: _schemaTag(
+                                            detailSchema,
+                                            'quality',
+                                          ),
+                                          count: (detailItem.count ?? 1) > 1
+                                              ? detailItem.count
+                                              : null,
                                         ),
-                                        rarity: _schemaTag(
-                                          detailSchema,
-                                          'rarity',
-                                        ),
-                                        quality: _schemaTag(
-                                          detailSchema,
-                                          'quality',
-                                        ),
-                                        count: (detailItem.count ?? 1) > 1
-                                            ? detailItem.count
-                                            : null,
                                       ),
                                     );
                                   }),
                                   if (details.length > 3)
-                                    Container(
-                                      width: 74,
-                                      height: 44,
-                                      decoration: BoxDecoration(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.surfaceContainerHighest,
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      alignment: Alignment.center,
-                                      child: Text(
-                                        '+${details.length - 3}',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .labelMedium
-                                            ?.copyWith(
-                                              color: Theme.of(
-                                                context,
-                                              ).colorScheme.onSurfaceVariant,
-                                              fontWeight: FontWeight.w600,
-                                            ),
+                                    Text(
+                                      '+${details.length - 3}',
+                                      style: textTheme.bodySmall?.copyWith(
+                                        color: colorScheme.onSurfaceVariant,
                                       ),
                                     ),
                                 ],
@@ -1231,61 +1242,31 @@ class _MyPurchasePageState extends State<MyPurchasePage>
                             const SizedBox(width: 8),
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.end,
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                Text(
-                                  'x${details.length}',
-                                  style: Theme.of(context).textTheme.labelMedium
-                                      ?.copyWith(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.onSurfaceVariant,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                ),
-                                const SizedBox(height: 6),
+                                if (showProtectionCountdown) ...[
+                                  _RecordProtectionCountdownText(
+                                    endTimeSeconds: protectionTime,
+                                    style: textTheme.bodySmall?.copyWith(
+                                      color: Colors.orange.shade600,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                ],
                                 Obx(
                                   () => Text(
                                     currency.format(price),
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleSmall
-                                        ?.copyWith(
-                                          color: Theme.of(
-                                            context,
-                                          ).colorScheme.primary,
-                                          fontWeight: FontWeight.w700,
-                                        ),
+                                    style: textTheme.titleSmall?.copyWith(
+                                      color: colorScheme.primary,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
                           ],
                         ),
-                      if (showProtectionCountdown) ...[
-                        const SizedBox(height: 10),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.timer_outlined,
-                              size: 14,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurfaceVariant,
-                            ),
-                            const SizedBox(width: 6),
-                            _RecordProtectionCountdownText(
-                              endTimeSeconds: protectionTime,
-                              style: Theme.of(context).textTheme.labelSmall
-                                  ?.copyWith(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurfaceVariant,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                            ),
-                          ],
-                        ),
-                      ],
                     ],
                   ),
                 ),

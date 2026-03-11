@@ -208,156 +208,146 @@ class _ProductBuyingPageState extends State<ProductBuyingPage> {
       text: _wearMax != null ? _formatWearValue(_wearMax!) : '',
     );
 
-    try {
-      final result = await showModalBottomSheet<_ProductFilterResult>(
-        context: context,
-        isScrollControlled: true,
-        builder: (context) {
-          return StatefulBuilder(
-            builder: (context, setModalState) {
-              bool isQuickSelected(_ProductWearQuickOption option) {
-                final min = double.tryParse(wearMinController.text.trim());
-                final max = double.tryParse(wearMaxController.text.trim());
-                if (min == null || max == null) {
-                  return false;
-                }
-                return (min - option.min).abs() < 0.000001 &&
-                    (max - option.max).abs() < 0.000001;
+    final result = await showModalBottomSheet<_ProductFilterResult>(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            bool isQuickSelected(_ProductWearQuickOption option) {
+              final min = double.tryParse(wearMinController.text.trim());
+              final max = double.tryParse(wearMaxController.text.trim());
+              if (min == null || max == null) {
+                return false;
               }
+              return (min - option.min).abs() < 0.000001 &&
+                  (max - option.max).abs() < 0.000001;
+            }
 
-              return Padding(
-                padding: EdgeInsets.only(
-                  left: 16,
-                  right: 16,
-                  bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-                  top: 16,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'app.market.filter.text'.tr,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      'app.market.filter.csgo.wear_interval'.tr,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextField(
-                            controller: wearMinController,
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
-                            onChanged: (_) => setModalState(() {}),
-                            decoration: InputDecoration(
-                              labelText: 'app.market.filter.price_lowest'.tr,
-                              hintText: minWearHint,
-                            ),
+            Future<void> closeSheet(_ProductFilterResult result) async {
+              FocusManager.instance.primaryFocus?.unfocus();
+              await Future<void>.delayed(const Duration(milliseconds: 10));
+              if (!context.mounted) {
+                return;
+              }
+              Navigator.of(context).pop(result);
+            }
+
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+                top: 16,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'app.market.filter.csgo.wear_interval'.tr,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: wearMinController,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
                           ),
+                          onChanged: (_) => setModalState(() {}),
+                          decoration: InputDecoration(hintText: minWearHint),
                         ),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 8),
-                          child: Text('~'),
-                        ),
-                        Expanded(
-                          child: TextField(
-                            controller: wearMaxController,
-                            keyboardType: const TextInputType.numberWithOptions(
-                              decimal: true,
-                            ),
-                            onChanged: (_) => setModalState(() {}),
-                            decoration: InputDecoration(
-                              labelText: 'app.market.filter.price_highest'.tr,
-                              hintText: maxWearHint,
-                            ),
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 8),
+                        child: Text('~'),
+                      ),
+                      Expanded(
+                        child: TextField(
+                          controller: wearMaxController,
+                          keyboardType: const TextInputType.numberWithOptions(
+                            decimal: true,
                           ),
+                          onChanged: (_) => setModalState(() {}),
+                          decoration: InputDecoration(hintText: maxWearHint),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      'app.market.filter.selection_quick'.tr,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: wearQuickOptions
-                          .map(
-                            (option) => _buildFilterChip(
-                              context,
-                              label: option.label,
-                              selected: isQuickSelected(option),
-                              onSelected: () {
-                                setModalState(() {
-                                  wearMinController.text = option.minText;
-                                  wearMaxController.text = option.maxText;
-                                });
-                              },
-                            ),
-                          )
-                          .toList(growable: false),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () {
-                              Navigator.of(context).pop(
-                                const _ProductFilterResult(),
-                              );
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'app.market.filter.selection_quick'.tr,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: wearQuickOptions
+                        .map(
+                          (option) => _buildFilterChip(
+                            context,
+                            label: option.label,
+                            selected: isQuickSelected(option),
+                            onSelected: () {
+                              setModalState(() {
+                                wearMinController.text = option.minText;
+                                wearMaxController.text = option.maxText;
+                              });
                             },
-                            child: Text('app.market.filter.reset'.tr),
                           ),
+                        )
+                        .toList(growable: false),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () =>
+                              closeSheet(const _ProductFilterResult()),
+                          child: Text('app.market.filter.reset'.tr),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: FilledButton(
-                            onPressed: () {
-                              final normalized = _normalizeWearRange(
-                                minInput: wearMinController.text,
-                                maxInput: wearMaxController.text,
-                                exteriorKey: exteriorKey,
-                              );
-                              Navigator.of(context).pop(
-                                _ProductFilterResult(
-                                  wearMin: normalized.min,
-                                  wearMax: normalized.max,
-                                ),
-                              );
-                            },
-                            child: Text('app.market.filter.finish'.tr),
-                          ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: FilledButton(
+                          onPressed: () {
+                            final normalized = _normalizeWearRange(
+                              minInput: wearMinController.text,
+                              maxInput: wearMaxController.text,
+                              exteriorKey: exteriorKey,
+                            );
+                            closeSheet(
+                              _ProductFilterResult(
+                                wearMin: normalized.min,
+                                wearMax: normalized.max,
+                              ),
+                            );
+                          },
+                          child: Text('app.market.filter.finish'.tr),
                         ),
-                      ],
-                    ),
-                  ],
-                ),
-              );
-            },
-          );
-        },
-      );
-      if (result == null) {
-        return;
-      }
-      setState(() {
-        _wearMin = result.wearMin;
-        _wearMax = result.wearMax;
-        _filterLabel = _buildFilterLabel();
-      });
-    } finally {
-      wearMinController.dispose();
-      wearMaxController.dispose();
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+    if (result == null || !mounted) {
+      return;
     }
+    setState(() {
+      _wearMin = result.wearMin;
+      _wearMax = result.wearMax;
+      _filterLabel = _buildFilterLabel();
+    });
   }
 
   String _buildFilterLabel() {
@@ -517,11 +507,13 @@ class _ProductBuyingPageState extends State<ProductBuyingPage> {
     if (_isSubmitting) {
       return;
     }
+    var shouldClosePage = false;
     final user = UserStorage.getUserInfo();
     if (user == null) {
       Get.snackbar('app.system.tips.title'.tr, 'app.system.message.nologin'.tr);
       return;
     }
+    FocusManager.instance.primaryFocus?.unfocus();
     if (!await _checkPurchaseOnline()) {
       Get.snackbar(
         'app.system.tips.title'.tr,
@@ -649,12 +641,17 @@ class _ProductBuyingPageState extends State<ProductBuyingPage> {
       }
 
       if (res.success) {
-        Get.back(result: true);
-        AppSnackbar.success('app.system.message.success'.tr);
-        final controller = Get.isRegistered<BuyRequestController>()
+        shouldClosePage = true;
+        final buyRequestController = Get.isRegistered<BuyRequestController>()
             ? Get.find<BuyRequestController>()
             : null;
-        controller?.refreshMyBuying();
+        FocusManager.instance.primaryFocus?.unfocus();
+        Get.back(result: true);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          AppSnackbar.success('app.trade.purchase.message.success'.tr);
+          buyRequestController?.refreshMyBuying();
+        });
+        return;
       } else {
         Get.snackbar(
           'app.system.tips.title'.tr,
@@ -662,7 +659,7 @@ class _ProductBuyingPageState extends State<ProductBuyingPage> {
         );
       }
     } finally {
-      if (mounted) {
+      if (mounted && !shouldClosePage) {
         setState(() => _isSubmitting = false);
       }
     }
@@ -1120,8 +1117,5 @@ class _ProductFilterResult {
   final double? wearMin;
   final double? wearMax;
 
-  const _ProductFilterResult({
-    this.wearMin,
-    this.wearMax,
-  });
+  const _ProductFilterResult({this.wearMin, this.wearMax});
 }

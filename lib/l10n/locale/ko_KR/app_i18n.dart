@@ -424,10 +424,10 @@ final Map<String, String> ko_KR = {
   "app.inventory.upshop.confirm_title": "선반 확인",
   "app.inventory.upshop.nums": "선반 수",
   "app.inventory.upshop.handling_charge": "처리 요금",
-  
+
   "app.inventory.upshop.expected_reward": "보상 포인트",
   "app.inventory.upshop.listing_details_expand": "등록 상세 펼치기",
-  "app.inventory.upshop.listing_details_collapse": "등록 상세 접기",  
+  "app.inventory.upshop.listing_details_collapse": "등록 상세 접기",
   "app.inventory.upshop.expected_income": "예상 수익",
   "app.inventory.upshop.combining": "항목 합병",
   "app.inventory.delist": "Delist는",
@@ -435,6 +435,7 @@ final Map<String, String> ko_KR = {
   "app.inventory.message.non_tradable": "거래할 수 없음, 선택할 수 없음",
   "app.inventory.message.privacy": "Steam 개인정보 설정에서 인벤토리를 공개로 설정하세요",
   "app.inventory.message.price_change_success": "가격 변경은 성공했습니다!",
+  "app.inventory.message.upshop_success": "등록에 성공했습니다!",
   "app.inventory.message.price_and_num_error": "올바른 가격과 양을 입력하십시오!",
   "app.trade.sale.text": "판매용",
   "app.trade.sale.success": "성공적인 판매",
@@ -448,6 +449,7 @@ final Map<String, String> ko_KR = {
   "app.trade.buy.pay_text_2": "거래가 완료되면 포인트를 얻을 수 있습니다.",
   "app.trade.buy.pay_text_3": "판매자는 18 시간 이내에 배달을 완료합니다.",
   "app.trade.buy.message.success": "성공적인 구매!",
+  "app.trade.purchase.message.success": "구매 요청이 성공적으로 등록되었습니다!",
   "app.trade.purchase.text": "구매",
   "app.trade.purchase.record": "구매 기록",
   "app.trade.purchase.price": "구매가격",
@@ -634,8 +636,3 @@ final Map<String, String> ko_KR = {
   "app.system.version.latest_discover": "최신 버전을 발견",
   "app.system.version.download_failed": "업데이트 패키지 다운로드 실패",
 };
-
-
-
-
-

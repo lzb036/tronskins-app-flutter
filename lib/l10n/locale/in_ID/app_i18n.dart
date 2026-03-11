@@ -482,10 +482,10 @@ final Map<String, String> in_ID = {
   "app.inventory.upshop.confirm_title": "Konfirmasi Rak",
   "app.inventory.upshop.nums": "Jumlah Rak",
   "app.inventory.upshop.handling_charge": "Biaya penanganan",
-  
+
   "app.inventory.upshop.expected_reward": "Poin Hadiah",
   "app.inventory.upshop.listing_details_expand": "Tampilkan Detail Listing",
-  "app.inventory.upshop.listing_details_collapse": "Sembunyikan Detail Listing",  
+  "app.inventory.upshop.listing_details_collapse": "Sembunyikan Detail Listing",
   "app.inventory.upshop.expected_income": "Perkiraan Pendapatan",
   "app.inventory.upshop.combining": "Menggabungkan item",
   "app.inventory.delist": "Delist",
@@ -496,6 +496,7 @@ final Map<String, String> in_ID = {
   "app.inventory.message.privacy":
       "Silakan buka pengaturan privasi Steam dan atur inventaris menjadi publik",
   "app.inventory.message.price_change_success": "Perubahan harga berhasil!",
+  "app.inventory.message.upshop_success": "Berhasil dipublikasikan!",
   "app.inventory.message.price_and_num_error":
       "Silakan masukkan harga dan kuantitas yang benar!",
   "app.trade.sale.text": "Untuk dijual",
@@ -512,6 +513,8 @@ final Map<String, String> in_ID = {
   "app.trade.buy.pay_text_3":
       "Penjual akan menyelesaikan pengiriman dalam waktu 18 jam",
   "app.trade.buy.message.success": "Beli sukses!",
+  "app.trade.purchase.message.success":
+      "Permintaan beli berhasil dipublikasikan!",
   "app.trade.purchase.text": "Pembelian",
   "app.trade.purchase.record": "Rekam Pembelian",
   "app.trade.purchase.price": "Harga Pembelian",
@@ -717,8 +720,3 @@ final Map<String, String> in_ID = {
   "app.system.version.latest_discover": "Temukan versi terbaru",
   "app.system.version.download_failed": "Gagal mengunduh paket pembaruan",
 };
-
-
-
-
-
