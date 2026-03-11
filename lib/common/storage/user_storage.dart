@@ -35,9 +35,7 @@ class UserStorage {
     _box.write(_userInfoKey, data);
   }
 
-  static Map<String, dynamic> _normalizeUserInfoMap(
-    Map<String, dynamic> data,
-  ) {
+  static Map<String, dynamic> _normalizeUserInfoMap(Map<String, dynamic> data) {
     data['shop'] = _coerceMap(data['shop']);
     data['fund'] = _coerceMap(data['fund']);
     data['config'] = _coerceMap(data['config']);

@@ -70,11 +70,7 @@ class ApiShopServer {
   }) async {
     final response = await http.post(
       'api/app/shop/sell/$appId/list',
-      data: {
-        'appId': appId,
-        'page': page,
-        'pageSize': pageSize,
-      },
+      data: {'appId': appId, 'page': page, 'pageSize': pageSize},
     );
     return BaseHttpResponse.fromJson(
       response.data as Map<String, dynamic>,
@@ -86,16 +82,11 @@ class ApiShopServer {
     );
   }
 
-  Future<BaseHttpResponse<ShopListResponse<ShopItemAsset>>> shopTransactionList({
-    int page = 1,
-    int pageSize = 20,
-  }) async {
+  Future<BaseHttpResponse<ShopListResponse<ShopItemAsset>>>
+  shopTransactionList({int page = 1, int pageSize = 20}) async {
     final response = await http.post(
       'api/public/shop/sell/list',
-      data: {
-        'page': page,
-        'pageSize': pageSize,
-      },
+      data: {'page': page, 'pageSize': pageSize},
     );
     return BaseHttpResponse.fromJson(
       response.data as Map<String, dynamic>,

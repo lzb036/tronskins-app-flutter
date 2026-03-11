@@ -8,8 +8,7 @@ class ApiShopProductServer {
   Future<BaseHttpResponse<ShopListResponse<ShopItemAsset>>> shopOnSaleList({
     required Map<String, dynamic> params,
   }) async {
-    final response =
-        await http.post('api/app/order/mysell/list', data: params);
+    final response = await http.post('api/app/order/mysell/list', data: params);
     return BaseHttpResponse.fromJson(
       response.data as Map<String, dynamic>,
       (json) => ShopListResponse.fromJson(
@@ -62,9 +61,8 @@ class ApiShopProductServer {
     );
   }
 
-  Future<BaseHttpResponse<ShopListResponse<ShopOrderItem>>> pendingShipmentList({
-    required Map<String, dynamic> params,
-  }) async {
+  Future<BaseHttpResponse<ShopListResponse<ShopOrderItem>>>
+  pendingShipmentList({required Map<String, dynamic> params}) async {
     final response = await http.post('api/app/mysend/list', data: params);
     return BaseHttpResponse.fromJson(
       response.data as Map<String, dynamic>,
@@ -76,9 +74,7 @@ class ApiShopProductServer {
     );
   }
 
-  Future<BaseHttpResponse<dynamic>> cancelOrder({
-    required String id,
-  }) async {
+  Future<BaseHttpResponse<dynamic>> cancelOrder({required String id}) async {
     final response = await http.post('api/app/shop/sell/$id/cancel');
     return BaseHttpResponse.fromJson(
       response.data as Map<String, dynamic>,
@@ -210,8 +206,7 @@ class ApiShopProductServer {
   Future<BaseHttpResponse<dynamic>> orderItemBuying({
     required Map<String, dynamic> params,
   }) async {
-    final response =
-        await http.post('api/app/order/buy/up', data: params);
+    final response = await http.post('api/app/order/buy/up', data: params);
     return BaseHttpResponse.fromJson(
       response.data as Map<String, dynamic>,
       (json) => json,
@@ -221,8 +216,10 @@ class ApiShopProductServer {
   Future<BaseHttpResponse<dynamic>> orderItemBatchBuy({
     required Map<String, dynamic> params,
   }) async {
-    final response =
-        await http.post('api/app/order/sell/batch/buy', data: params);
+    final response = await http.post(
+      'api/app/order/sell/batch/buy',
+      data: params,
+    );
     return BaseHttpResponse.fromJson(
       response.data as Map<String, dynamic>,
       (json) => json,
@@ -245,15 +242,14 @@ class ApiShopProductServer {
       'api/app/order/buy/min_price/get',
       data: {'appId': appId, 'schemaId': schemaId},
     );
-    return BaseHttpResponse.fromJson(
-      response.data as Map<String, dynamic>,
-      (json) {
-        if (json is num) {
-          return json.toDouble();
-        }
-        return double.tryParse(json?.toString() ?? '') ?? 0.0;
-      },
-    );
+    return BaseHttpResponse.fromJson(response.data as Map<String, dynamic>, (
+      json,
+    ) {
+      if (json is num) {
+        return json.toDouble();
+      }
+      return double.tryParse(json?.toString() ?? '') ?? 0.0;
+    });
   }
 
   Future<BaseHttpResponse<dynamic>> submitBuyStatus() async {

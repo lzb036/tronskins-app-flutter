@@ -115,15 +115,15 @@ class _EditPasswordPageState extends State<EditPasswordPage> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
-    final cardBorder = colorScheme.outlineVariant.withOpacity(isDark ? 0.5 : 0.7);
+    final cardBorder = colorScheme.outlineVariant.withOpacity(
+      isDark ? 0.5 : 0.7,
+    );
     final inputFill = isDark
         ? colorScheme.surfaceVariant.withOpacity(0.35)
         : colorScheme.surfaceVariant.withOpacity(0.6);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('app.user.setting.password_change'.tr),
-      ),
+      appBar: AppBar(title: Text('app.user.setting.password_change'.tr)),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         children: [
@@ -217,7 +217,9 @@ class _EditPasswordPageState extends State<EditPasswordPage> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
-              color: colorScheme.surfaceVariant.withOpacity(isDark ? 0.35 : 0.6),
+              color: colorScheme.surfaceVariant.withOpacity(
+                isDark ? 0.35 : 0.6,
+              ),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -266,7 +268,10 @@ class _EditPasswordPageState extends State<EditPasswordPage> {
         labelText: label,
         filled: true,
         fillColor: fillColor,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
         prefixIcon: const Icon(Icons.lock_outline),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),

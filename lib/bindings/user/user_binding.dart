@@ -4,7 +4,7 @@ import 'package:tronskins_app/controllers/user/user_controller.dart';
 
 class UserBinding extends Bindings {
   final logger = Logger();
-  
+
   @override
   void dependencies() {
     logger.d("UserBinding dependencies() 执行了！");

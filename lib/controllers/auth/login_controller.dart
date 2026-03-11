@@ -14,7 +14,8 @@ class LoginController extends GetxController {
   Timer? _countdownTimer;
 
   // 实时判断按钮是否可点击
-  bool get isLoginButtonEnabled => GetUtils.isEmail(username.value) && password.value.length >= 6;
+  bool get isLoginButtonEnabled =>
+      GetUtils.isEmail(username.value) && password.value.length >= 6;
   bool get isVerificationRequired =>
       isEmailVerification.value || isTwoFactorAuth.value;
   bool get isCountdownActive => countdown.value > 0;
@@ -32,7 +33,10 @@ class LoginController extends GetxController {
     resetVerification();
   }
 
-  void setEmailVerification({required String authToken, required int verifyType}) {
+  void setEmailVerification({
+    required String authToken,
+    required int verifyType,
+  }) {
     isEmailVerification.value = true;
     isTwoFactorAuth.value = false;
     this.authToken.value = authToken;
@@ -40,7 +44,10 @@ class LoginController extends GetxController {
     code.value = '';
   }
 
-  void setTwoFactorVerification({required String authToken, required int verifyType}) {
+  void setTwoFactorVerification({
+    required String authToken,
+    required int verifyType,
+  }) {
     isTwoFactorAuth.value = true;
     isEmailVerification.value = false;
     this.authToken.value = authToken;

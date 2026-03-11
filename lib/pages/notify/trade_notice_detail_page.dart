@@ -18,8 +18,8 @@ class TradeNoticeDetailPage extends StatefulWidget {
 class _TradeNoticeDetailPageState extends State<TradeNoticeDetailPage> {
   final NotifyController _notifyController =
       Get.isRegistered<NotifyController>()
-          ? Get.find<NotifyController>()
-          : Get.put(NotifyController());
+      ? Get.find<NotifyController>()
+      : Get.put(NotifyController());
 
   TradeNotifyItem? _item;
 
@@ -62,8 +62,9 @@ class _TradeNoticeDetailPageState extends State<TradeNoticeDetailPage> {
   String _formatTime(int? value) {
     if (value == null) return '--';
     final ts = value < 1000000000000 ? value * 1000 : value;
-    return DateFormat('yyyy-MM-dd HH:mm:ss')
-        .format(DateTime.fromMillisecondsSinceEpoch(ts));
+    return DateFormat(
+      'yyyy-MM-dd HH:mm:ss',
+    ).format(DateTime.fromMillisecondsSinceEpoch(ts));
   }
 
   Future<void> _handleTradeAction(TradeNotifyItem item) async {
@@ -141,10 +142,7 @@ class _TradeNoticeDetailPageState extends State<TradeNoticeDetailPage> {
           fontWeight: textStyle?.fontWeight,
           lineHeight: LineHeight.number(1.4),
         ),
-        'body': Style(
-          margin: Margins.zero,
-          padding: HtmlPaddings.zero,
-        ),
+        'body': Style(margin: Margins.zero, padding: HtmlPaddings.zero),
       },
     );
   }

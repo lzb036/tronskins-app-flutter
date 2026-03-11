@@ -22,10 +22,7 @@ class FeedbackListResponse<T> {
   final List<T> list;
   final FeedbackPager? pager;
 
-  const FeedbackListResponse({
-    required this.list,
-    this.pager,
-  });
+  const FeedbackListResponse({required this.list, this.pager});
 
   factory FeedbackListResponse.fromJson(
     Map<String, dynamic> json,
@@ -63,8 +60,8 @@ class FeedbackTicket {
       id: json['id']?.toString(),
       title: json['title']?.toString(),
       status: _asInt(json['status']),
-      statusName: json['statusName']?.toString() ??
-          json['status_name']?.toString(),
+      statusName:
+          json['statusName']?.toString() ?? json['status_name']?.toString(),
       createTime: _asInt(json['createTime'] ?? json['create_time']),
     );
   }
@@ -93,8 +90,8 @@ class FeedbackDetail {
       title: json['title']?.toString(),
       context: json['context']?.toString(),
       status: _asInt(json['status']),
-      statusName: json['statusName']?.toString() ??
-          json['status_name']?.toString(),
+      statusName:
+          json['statusName']?.toString() ?? json['status_name']?.toString(),
       createTime: _asInt(json['createTime'] ?? json['create_time']),
     );
   }

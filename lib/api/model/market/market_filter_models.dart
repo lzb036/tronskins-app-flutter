@@ -3,11 +3,7 @@ class MarketNameSuggestion {
   final String? marketName;
   final String? marketHashName;
 
-  const MarketNameSuggestion({
-    this.id,
-    this.marketName,
-    this.marketHashName,
-  });
+  const MarketNameSuggestion({this.id, this.marketName, this.marketHashName});
 
   factory MarketNameSuggestion.fromJson(Map<String, dynamic> json) {
     return MarketNameSuggestion(

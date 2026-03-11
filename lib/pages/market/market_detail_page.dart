@@ -39,9 +39,6 @@ class _MarketDetailPageState extends State<MarketDetailPage>
   final ApiShopProductServer _shopProductApi = ApiShopProductServer();
   late final TabController _tabController;
   int _currentTabIndex = 0;
-  final ScrollController _onSaleScroll = ScrollController();
-  final ScrollController _transactionScroll = ScrollController();
-  final ScrollController _buyRequestScroll = ScrollController();
   int _selectedDays = 30;
   MarketTemplateDetail? _templateDetail;
   bool _loadingTemplate = false;
@@ -80,18 +77,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
   @override
   void dispose() {
     _tabController.dispose();
-    _onSaleScroll.dispose();
-    _buyRequestScroll.dispose();
-    _transactionScroll.dispose();
     super.dispose();
-  }
-
-  ShopSchemaInfo? _lookupBuySchema(BuyRequestItem item) {
-    final key = item.schemaId?.toString();
-    if (key != null && controller.buySchemas.containsKey(key)) {
-      return controller.buySchemas[key];
-    }
-    return null;
   }
 
   String? _onSalePurchaseKey(MarketListItem item) {
@@ -102,14 +88,6 @@ class _MarketDetailPageState extends State<MarketDetailPage>
     final rawId = item.raw['id']?.toString();
     if (rawId != null && rawId.isNotEmpty) {
       return rawId;
-    }
-    return null;
-  }
-
-  ShopUserInfo? _lookupBuyUser(BuyRequestItem item) {
-    final key = item.userId?.toString();
-    if (key != null && controller.buyUsers.containsKey(key)) {
-      return controller.buyUsers[key];
     }
     return null;
   }
@@ -555,8 +533,6 @@ class _MarketDetailPageState extends State<MarketDetailPage>
   Widget build(BuildContext context) {
     final item = controller.item;
     final currency = Get.find<CurrencyController>();
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final templateSchema = _templateDetail?.schema;
     final displayTags = templateSchema?.tags ?? item.tags;
@@ -571,313 +547,345 @@ class _MarketDetailPageState extends State<MarketDetailPage>
       backgroundColor: isDark
           ? const Color(0xFF1B1C20)
           : const Color(0xFFF5F5F5),
+      bottomNavigationBar: _buildBottomActionBar(
+        currency: currency,
+        referencePrice: referencePrice,
+        isDark: isDark,
+      ),
       body: BackToTopScope(
         enabled: false,
-        child: Stack(
-          children: [
-            NestedScrollView(
-              headerSliverBuilder: (context, innerBoxIsScrolled) {
-                final tabBar = TabBar(
-                  controller: _tabController,
-                  labelColor: isDark ? Colors.white : Colors.black,
-                  unselectedLabelColor: Colors.grey,
-                  indicatorColor: Theme.of(context).colorScheme.primary,
-                  indicatorSize: TabBarIndicatorSize.label,
-                  dividerColor: Colors.transparent,
-                  tabs: [
-                    Tab(text: 'app.trade.onSale.text'.tr),
-                    Tab(text: 'app.trade.purchase.text'.tr),
-                    Tab(text: 'app.market.detail.price_trend.title'.tr),
-                    Tab(text: 'app.market.detail.trade_record'.tr),
-                  ],
-                );
-                return [
-                  SliverAppBar(
-                    expandedHeight: 320,
-                    pinned: true,
-                    backgroundColor: isDark
-                        ? const Color(0xFF1B1C20)
-                        : Colors.white,
-                    elevation: 0,
-                    titleSpacing: 0,
-                    title: ShaderMask(
-                      shaderCallback: (bounds) => LinearGradient(
-                        colors: [
-                          Theme.of(context).colorScheme.primary,
-                          Theme.of(context).colorScheme.secondary,
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ).createShader(bounds),
-                      child: const Text(
-                        'Tronskins',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w900,
-                          fontStyle: FontStyle.italic,
-                          color: Colors.white,
+        child: NestedScrollView(
+          headerSliverBuilder: (context, innerBoxIsScrolled) {
+            final tabBar = TabBar(
+              controller: _tabController,
+              labelColor: isDark ? Colors.white : Colors.black,
+              unselectedLabelColor: Colors.grey,
+              indicatorColor: Theme.of(context).colorScheme.primary,
+              indicatorSize: TabBarIndicatorSize.label,
+              dividerColor: Colors.transparent,
+              tabs: [
+                Tab(text: 'app.trade.onSale.text'.tr),
+                Tab(text: 'app.trade.purchase.text'.tr),
+                Tab(text: 'app.market.detail.price_trend.title'.tr),
+                Tab(text: 'app.market.detail.trade_record'.tr),
+              ],
+            );
+            return [
+              SliverAppBar(
+                expandedHeight: 320,
+                pinned: true,
+                backgroundColor: isDark
+                    ? const Color(0xFF1B1C20)
+                    : Colors.white,
+                elevation: 0,
+                titleSpacing: 0,
+                title: ShaderMask(
+                  shaderCallback: (bounds) => LinearGradient(
+                    colors: [
+                      Theme.of(context).colorScheme.primary,
+                      Theme.of(context).colorScheme.secondary,
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ).createShader(bounds),
+                  child: const Text(
+                    'Tronskins',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                      fontStyle: FontStyle.italic,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                leading: IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  onPressed: () => Get.back(),
+                ),
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.share, color: Colors.white),
+                    onPressed: () {},
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.more_horiz, color: Colors.white),
+                    onPressed: () {},
+                  ),
+                ],
+                flexibleSpace: FlexibleSpaceBar(
+                  background: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      // Background based on rarity
+                      Image.asset(
+                        _rarityBgAsset(displayTags?.rarity?.color),
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, _, __) => Image.asset(
+                          'assets/images/game/item/b0c3d9.png',
+                          fit: BoxFit.cover,
                         ),
                       ),
-                    ),
-                    leading: IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () => Get.back(),
-                    ),
-                    actions: [
-                      IconButton(
-                        icon: const Icon(Icons.share, color: Colors.white),
-                        onPressed: () {},
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.more_horiz, color: Colors.white),
-                        onPressed: () {},
+                      // Main Image
+                      Center(
+                        child: Hero(
+                          tag: 'market_item_${item.id}',
+                          child: CachedNetworkImage(
+                            imageUrl: displayImage,
+                            height: 200,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
                       ),
                     ],
-                    flexibleSpace: FlexibleSpaceBar(
-                      background: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          // Background based on rarity
-                          Image.asset(
-                            _rarityBgAsset(displayTags?.rarity?.color),
-                            fit: BoxFit.cover,
-                            errorBuilder: (context, _, __) => Image.asset(
-                              'assets/images/game/item/b0c3d9.png',
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                          // Main Image
-                          Center(
-                            child: Hero(
-                              tag: 'market_item_${item.id}',
-                              child: CachedNetworkImage(
-                                imageUrl: displayImage,
-                                height: 200,
-                                fit: BoxFit.contain,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
                   ),
-                  SliverToBoxAdapter(
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      color: isDark ? const Color(0xFF1B1C20) : Colors.white,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            displayName,
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: isDark ? Colors.white : Colors.black87,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          ..._buildAttributeRows(item),
-                          if (_wearOptions.isNotEmpty) ...[
-                            const SizedBox(height: 12),
-                            _buildWearList(currency),
-                          ],
-                          _buildMarketCountSummary(
-                            context: context,
-                            sellNum: sellNum,
-                            buyNum: buyNum,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  SliverPersistentHeader(
-                    delegate: _SliverTabBarDelegate(
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          final dragWidth = constraints.maxWidth;
-                          final maxIndex = (_tabController.length - 1)
-                              .toDouble();
-
-                          void settleToClosestTab() {
-                            if (_tabController.indexIsChanging) {
-                              return;
-                            }
-                            final value =
-                                _tabController.animation?.value ??
-                                _tabController.index.toDouble();
-                            final targetIndex = value.round().clamp(
-                              0,
-                              _tabController.length - 1,
-                            );
-                            if (targetIndex == _tabController.index) {
-                              // Avoid getting stuck in an in-between offset state.
-                              _tabController.offset = 0;
-                              return;
-                            }
-                            _tabController.animateTo(
-                              targetIndex,
-                              duration: const Duration(milliseconds: 180),
-                              curve: Curves.easeOutCubic,
-                            );
-                          }
-
-                          return GestureDetector(
-                            behavior: HitTestBehavior.opaque,
-                            onHorizontalDragUpdate: (details) {
-                              if (_tabController.indexIsChanging ||
-                                  dragWidth <= 0) {
-                                return;
-                              }
-                              final currentValue =
-                                  _tabController.animation?.value ??
-                                  _tabController.index.toDouble();
-                              final nextValue =
-                                  (currentValue -
-                                          (details.delta.dx / dragWidth))
-                                      .clamp(0.0, maxIndex)
-                                      .toDouble();
-                              final nextOffset =
-                                  (nextValue - _tabController.index)
-                                      .clamp(-1.0, 1.0)
-                                      .toDouble();
-                              if (nextOffset >= 0.98 &&
-                                  _tabController.index <
-                                      _tabController.length - 1) {
-                                _tabController.index = _tabController.index + 1;
-                                _tabController.offset = 0;
-                                return;
-                              }
-                              if (nextOffset <= -0.98 &&
-                                  _tabController.index > 0) {
-                                _tabController.index = _tabController.index - 1;
-                                _tabController.offset = 0;
-                                return;
-                              }
-                              _tabController.offset = nextOffset;
-                            },
-                            onHorizontalDragEnd: (_) => settleToClosestTab(),
-                            onHorizontalDragCancel: settleToClosestTab,
-                            child: tabBar,
-                          );
-                        },
-                      ),
-                      height: tabBar.preferredSize.height,
-                      backgroundColor: isDark
-                          ? const Color(0xFF1B1C20)
-                          : Colors.white,
-                    ),
-                    pinned: true,
-                  ),
-                  if (_topActionToolbarHeight > 0 || _showTopActionToolbar)
-                    SliverPersistentHeader(
-                      delegate: _FixedHeightHeaderDelegate(
-                        height: _topActionToolbarHeight,
-                        backgroundColor: isDark
-                            ? const Color(0xFF1B1C20)
-                            : const Color(0xFFF5F5F5),
-                        child: _buildTopActionToolbar(),
-                      ),
-                      pinned: true,
-                    ),
-                ];
-              },
-              body: Container(
-                color: isDark
-                    ? const Color(0xFF1B1C20)
-                    : const Color(0xFFF5F5F5),
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    Obx(() => _buildOnSaleTab(currency)),
-                    Obx(() => _buildBuyRequestTab(currency)),
-                    Obx(() => _buildPriceTrendTab()),
-                    Obx(() => _buildTransactionTab(currency)),
-                  ],
                 ),
               ),
-            ),
-            // Bottom Action Bar
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF26272B) : Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.2),
-                      blurRadius: 10,
-                      offset: const Offset(0, -2),
-                    ),
-                  ],
-                ),
-                child: SafeArea(
-                  child: Row(
+              SliverToBoxAdapter(
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  color: isDark ? const Color(0xFF1B1C20) : Colors.white,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildBottomSteamPrice(
-                        context: context,
-                        currency: currency,
-                        referencePrice: referencePrice,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: SizedBox(
-                          height: 44,
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: OutlinedButton(
-                                  onPressed: _openBuying,
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: colorScheme.primary,
-                                    side: BorderSide(
-                                      color: colorScheme.primary,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    textStyle: theme.textTheme.labelLarge
-                                        ?.copyWith(fontWeight: FontWeight.w600),
-                                  ),
-                                  child: Text(
-                                    'app.market.detail.release_purchase'.tr,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: FilledButton(
-                                  onPressed: _openBulkBuying,
-                                  style: FilledButton.styleFrom(
-                                    backgroundColor: colorScheme.primary,
-                                    foregroundColor: colorScheme.onPrimary,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    textStyle: theme.textTheme.labelLarge
-                                        ?.copyWith(fontWeight: FontWeight.w600),
-                                  ),
-                                  child: Text(
-                                    'app.market.detail.bulk_buying.title'.tr,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
+                      Text(
+                        displayName,
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : Colors.black87,
                         ),
+                      ),
+                      const SizedBox(height: 16),
+                      ..._buildAttributeRows(item),
+                      if (_wearOptions.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        _buildWearList(currency),
+                      ],
+                      _buildMarketCountSummary(
+                        context: context,
+                        sellNum: sellNum,
+                        buyNum: buyNum,
                       ),
                     ],
                   ),
+                ),
+              ),
+              SliverPersistentHeader(
+                delegate: _SliverTabBarDelegate(
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final dragWidth = constraints.maxWidth;
+                      final maxIndex = (_tabController.length - 1).toDouble();
+
+                      void settleToClosestTab() {
+                        if (_tabController.indexIsChanging) {
+                          return;
+                        }
+                        final value =
+                            _tabController.animation?.value ??
+                            _tabController.index.toDouble();
+                        final targetIndex = value.round().clamp(
+                          0,
+                          _tabController.length - 1,
+                        );
+                        if (targetIndex == _tabController.index) {
+                          // Avoid getting stuck in an in-between offset state.
+                          _tabController.offset = 0;
+                          return;
+                        }
+                        _tabController.animateTo(
+                          targetIndex,
+                          duration: const Duration(milliseconds: 180),
+                          curve: Curves.easeOutCubic,
+                        );
+                      }
+
+                      return GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onHorizontalDragUpdate: (details) {
+                          if (_tabController.indexIsChanging ||
+                              dragWidth <= 0) {
+                            return;
+                          }
+                          final currentValue =
+                              _tabController.animation?.value ??
+                              _tabController.index.toDouble();
+                          final nextValue =
+                              (currentValue - (details.delta.dx / dragWidth))
+                                  .clamp(0.0, maxIndex)
+                                  .toDouble();
+                          final nextOffset = (nextValue - _tabController.index)
+                              .clamp(-1.0, 1.0)
+                              .toDouble();
+                          if (nextOffset >= 0.98 &&
+                              _tabController.index <
+                                  _tabController.length - 1) {
+                            _tabController.index = _tabController.index + 1;
+                            _tabController.offset = 0;
+                            return;
+                          }
+                          if (nextOffset <= -0.98 && _tabController.index > 0) {
+                            _tabController.index = _tabController.index - 1;
+                            _tabController.offset = 0;
+                            return;
+                          }
+                          _tabController.offset = nextOffset;
+                        },
+                        onHorizontalDragEnd: (_) => settleToClosestTab(),
+                        onHorizontalDragCancel: settleToClosestTab,
+                        child: tabBar,
+                      );
+                    },
+                  ),
+                  height: tabBar.preferredSize.height,
+                  backgroundColor: isDark
+                      ? const Color(0xFF1B1C20)
+                      : Colors.white,
+                ),
+                pinned: true,
+              ),
+              if (_topActionToolbarHeight > 0 || _showTopActionToolbar)
+                SliverPersistentHeader(
+                  delegate: _FixedHeightHeaderDelegate(
+                    height: _topActionToolbarHeight,
+                    backgroundColor: isDark
+                        ? const Color(0xFF1B1C20)
+                        : const Color(0xFFF5F5F5),
+                    child: _buildTopActionToolbar(),
+                  ),
+                  pinned: true,
+                ),
+            ];
+          },
+          body: Container(
+            color: isDark ? const Color(0xFF1B1C20) : const Color(0xFFF5F5F5),
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildOnSaleTab(currency),
+                _buildBuyRequestTab(currency),
+                _buildPriceTrendTab(),
+                _buildTransactionTab(currency),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInnerScrollView({
+    required BuildContext context,
+    required String storageKey,
+    required List<Widget> children,
+    EdgeInsets padding = EdgeInsets.zero,
+  }) {
+    return CustomScrollView(
+      key: PageStorageKey<String>(storageKey),
+      physics: const ClampingScrollPhysics(),
+      slivers: [
+        if (children.isEmpty)
+          const SliverToBoxAdapter(child: SizedBox.shrink())
+        else
+          SliverPadding(
+            padding: padding,
+            sliver: SliverList(delegate: SliverChildListDelegate(children)),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildInnerFillRemaining({
+    required BuildContext context,
+    required String storageKey,
+    required Widget child,
+  }) {
+    return CustomScrollView(
+      key: PageStorageKey<String>(storageKey),
+      physics: const ClampingScrollPhysics(),
+      slivers: [
+        SliverFillRemaining(hasScrollBody: false, child: Center(child: child)),
+      ],
+    );
+  }
+
+  Widget _buildBottomActionBar({
+    required CurrencyController currency,
+    required double referencePrice,
+    required bool isDark,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF26272B) : Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.2),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          children: [
+            _buildBottomSteamPrice(
+              context: context,
+              currency: currency,
+              referencePrice: referencePrice,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: SizedBox(
+                height: 44,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: _openBuying,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: colorScheme.primary,
+                          side: BorderSide(color: colorScheme.primary),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          textStyle: theme.textTheme.labelLarge?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        child: Text(
+                          'app.market.detail.release_purchase'.tr,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: _openBulkBuying,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: colorScheme.primary,
+                          foregroundColor: colorScheme.onPrimary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          textStyle: theme.textTheme.labelLarge?.copyWith(
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        child: Text(
+                          'app.market.detail.bulk_buying.title'.tr,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -1537,39 +1545,65 @@ class _MarketDetailPageState extends State<MarketDetailPage>
   }
 
   Widget _buildOnSaleTab(CurrencyController currency) {
-    return BackToTopScope(enabled: true, child: _buildOnSaleListBody(currency));
-  }
+    return BackToTopScope(
+      enabled: true,
+      child: Obx(() {
+        final isLoading = controller.isLoadingOnSale.value;
+        final items = controller.onSaleItems.toList(growable: false);
+        final users = Map<String, MarketUserInfo>.from(controller.users);
+        final showLoadingFooter = isLoading && items.isNotEmpty;
+        final showNoMoreFooter =
+            items.isNotEmpty && !isLoading && !controller.onSaleHasMore;
+        final showFooter = showLoadingFooter || showNoMoreFooter;
 
-  Widget _buildOnSaleListBody(CurrencyController currency) {
-    if (controller.isLoadingOnSale.value && controller.onSaleItems.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (controller.onSaleItems.isEmpty) {
-      return Center(child: Text('app.common.no_data'.tr));
-    }
-    final showLoadingFooter =
-        controller.isLoadingOnSale.value && controller.onSaleItems.isNotEmpty;
-    final showNoMoreFooter =
-        controller.onSaleItems.isNotEmpty &&
-        !controller.isLoadingOnSale.value &&
-        !controller.onSaleHasMore;
-    final showFooter = showLoadingFooter || showNoMoreFooter;
-    return ListView.separated(
-      controller: _onSaleScroll,
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
-      itemCount: controller.onSaleItems.length + (showFooter ? 1 : 0),
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        if (index >= controller.onSaleItems.length) {
-          return _buildLoadMoreFooter(
-            showLoading: showLoadingFooter,
-            showNoMore: showNoMoreFooter,
-          );
-        }
-        final item = controller.onSaleItems[index];
-        final user = controller.users[item.userId?.toString() ?? ''];
-        return _buildItemCard(item, user, currency);
-      },
+        return Builder(
+          builder: (context) {
+            if (isLoading && items.isEmpty) {
+              return _buildInnerFillRemaining(
+                context: context,
+                storageKey: 'market_detail_on_sale_loading',
+                child: const CircularProgressIndicator(),
+              );
+            }
+            if (items.isEmpty) {
+              return _buildInnerFillRemaining(
+                context: context,
+                storageKey: 'market_detail_on_sale_empty',
+                child: Text('app.common.no_data'.tr),
+              );
+            }
+
+            final children = <Widget>[];
+            for (var index = 0; index < items.length; index++) {
+              if (index > 0) {
+                children.add(const SizedBox(height: 12));
+              }
+              final item = items[index];
+              final user = users[item.userId?.toString() ?? ''];
+              children.add(_buildItemCard(item, user, currency));
+            }
+
+            if (showFooter) {
+              if (children.isNotEmpty) {
+                children.add(const SizedBox(height: 12));
+              }
+              children.add(
+                _buildLoadMoreFooter(
+                  showLoading: showLoadingFooter,
+                  showNoMore: showNoMoreFooter,
+                ),
+              );
+            }
+
+            return _buildInnerScrollView(
+              context: context,
+              storageKey: 'market_detail_on_sale',
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+              children: children,
+            );
+          },
+        );
+      }),
     );
   }
 
@@ -2470,450 +2504,563 @@ class _MarketDetailPageState extends State<MarketDetailPage>
   Widget _buildPriceTrendTab() {
     return BackToTopScope(
       enabled: true,
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-        children: [
-          Wrap(
-            spacing: 8,
+      child: Obx(() {
+        final isLoading = controller.isLoadingTrend.value;
+        final points = controller.pricePoints.toList(growable: false);
+
+        return Builder(
+          builder: (context) => _buildInnerScrollView(
+            context: context,
+            storageKey: 'market_detail_price_trend',
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
             children: [
-              _buildDayChip(7, 'app.market.detail.price_trend.seven_days'.tr),
-              _buildDayChip(
-                30,
-                'app.market.detail.price_trend.last_one_month'.tr,
+              Wrap(
+                spacing: 8,
+                children: [
+                  _buildDayChip(
+                    7,
+                    'app.market.detail.price_trend.seven_days'.tr,
+                  ),
+                  _buildDayChip(
+                    30,
+                    'app.market.detail.price_trend.last_one_month'.tr,
+                  ),
+                  _buildDayChip(
+                    180,
+                    'app.market.detail.price_trend.last_half_year'.tr,
+                  ),
+                  _buildDayChip(
+                    365,
+                    'app.market.detail.price_trend.last_year'.tr,
+                  ),
+                ],
               ),
-              _buildDayChip(
-                180,
-                'app.market.detail.price_trend.last_half_year'.tr,
+              const SizedBox(height: 16),
+              SizedBox(
+                height: 240,
+                child: isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : PriceTrendChart(points: points),
               ),
-              _buildDayChip(365, 'app.market.detail.price_trend.last_year'.tr),
             ],
           ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 240,
-            child: controller.isLoadingTrend.value
-                ? const Center(child: CircularProgressIndicator())
-                : PriceTrendChart(points: controller.pricePoints),
-          ),
-        ],
-      ),
+        );
+      }),
     );
   }
 
   Widget _buildBuyRequestTab(CurrencyController currency) {
     final colorScheme = Theme.of(context).colorScheme;
-    if (controller.isLoadingBuyRequests.value &&
-        controller.buyRequests.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (controller.buyRequests.isEmpty) {
-      return Center(child: Text('app.common.no_data'.tr));
-    }
-    final showLoadingFooter =
-        controller.isLoadingBuyRequests.value &&
-        controller.buyRequests.isNotEmpty;
-    final showNoMoreFooter =
-        controller.buyRequests.isNotEmpty &&
-        !controller.isLoadingBuyRequests.value &&
-        !controller.buyRequestHasMore;
-    final showFooter = showLoadingFooter || showNoMoreFooter;
-    return ListView.separated(
-      controller: _buyRequestScroll,
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-      itemCount: controller.buyRequests.length + (showFooter ? 1 : 0),
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        if (index >= controller.buyRequests.length) {
-          return _buildLoadMoreFooter(
-            showLoading: showLoadingFooter,
-            showNoMore: showNoMoreFooter,
-          );
-        }
-        final item = controller.buyRequests[index];
-        final schema = _lookupBuySchema(item);
-        final user = _lookupBuyUser(item);
-        final avatar = _resolveAvatar(user?.avatar);
-        final imageUrl = schema?.imageUrl ?? '';
-        final schemaTags = schema?.raw['tags'];
-        final rarity = TagInfo.fromRaw(
-          schemaTags is Map ? schemaTags['rarity'] : null,
-        );
-        final quality = TagInfo.fromRaw(
-          schemaTags is Map ? schemaTags['quality'] : null,
-        );
-        final exterior = TagInfo.fromRaw(
-          schemaTags is Map ? schemaTags['exterior'] : null,
-        );
-        final wearMinText =
-            item.raw['paint_wear_min']?.toString() ??
-            item.raw['paintWearMin']?.toString() ??
-            item.paintWearMin?.toString();
-        final wearMaxText =
-            item.raw['paint_wear_max']?.toString() ??
-            item.raw['paintWearMax']?.toString() ??
-            item.paintWearMax?.toString();
-        final need = item.need ?? item.nums ?? 0;
-        final isOwn = item.own == true;
-        final canSupply = need > 0;
-        final isDark = Theme.of(context).brightness == Brightness.dark;
-        const buyRequestImageWidth = 108.0;
-        const buyRequestImageHeight = 64.8;
+    return BackToTopScope(
+      enabled: true,
+      child: Obx(() {
+        final isLoading = controller.isLoadingBuyRequests.value;
+        final items = controller.buyRequests.toList(growable: false);
+        final users = Map<String, ShopUserInfo>.from(controller.buyUsers);
+        final schemas = Map<String, ShopSchemaInfo>.from(controller.buySchemas);
+        final showLoadingFooter = isLoading && items.isNotEmpty;
+        final showNoMoreFooter =
+            items.isNotEmpty && !isLoading && !controller.buyRequestHasMore;
+        final showFooter = showLoadingFooter || showNoMoreFooter;
 
-        return Card(
-          color: isDark ? const Color(0xFF26272B) : Colors.white,
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(
-                  width: buyRequestImageWidth,
-                  height: buyRequestImageHeight,
-                  child: GameItemImage(
-                    imageUrl: imageUrl,
-                    appId: item.appId,
-                    rarity: rarity,
-                    quality: quality,
-                    exterior: exterior,
-                    phase: item.phase,
-                    count: need > 0 ? need : null,
-                    alwaysShowCount: true,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Obx(
-                        () => Text(
-                          currency.format(item.price ?? 0),
-                          style: TextStyle(
-                            color: colorScheme.primary,
-                            fontWeight: FontWeight.w600,
+        return Builder(
+          builder: (context) {
+            if (isLoading && items.isEmpty) {
+              return _buildInnerFillRemaining(
+                context: context,
+                storageKey: 'market_detail_buy_request_loading',
+                child: const CircularProgressIndicator(),
+              );
+            }
+            if (items.isEmpty) {
+              return _buildInnerFillRemaining(
+                context: context,
+                storageKey: 'market_detail_buy_request_empty',
+                child: Text('app.common.no_data'.tr),
+              );
+            }
+
+            final children = <Widget>[];
+
+            for (var index = 0; index < items.length; index++) {
+              if (index > 0) {
+                children.add(const SizedBox(height: 12));
+              }
+              final item = items[index];
+              final schemaKey = item.schemaId?.toString();
+              final schema = schemaKey == null ? null : schemas[schemaKey];
+              final userKey = item.userId?.toString();
+              final user = userKey == null ? null : users[userKey];
+              final avatar = _resolveAvatar(user?.avatar);
+              final imageUrl = schema?.imageUrl ?? '';
+              final schemaTags = schema?.raw['tags'];
+              final rarity = TagInfo.fromRaw(
+                schemaTags is Map ? schemaTags['rarity'] : null,
+              );
+              final quality = TagInfo.fromRaw(
+                schemaTags is Map ? schemaTags['quality'] : null,
+              );
+              final exterior = TagInfo.fromRaw(
+                schemaTags is Map ? schemaTags['exterior'] : null,
+              );
+              final wearMinText =
+                  item.raw['paint_wear_min']?.toString() ??
+                  item.raw['paintWearMin']?.toString() ??
+                  item.paintWearMin?.toString();
+              final wearMaxText =
+                  item.raw['paint_wear_max']?.toString() ??
+                  item.raw['paintWearMax']?.toString() ??
+                  item.paintWearMax?.toString();
+              final need = item.need ?? item.nums ?? 0;
+              final isOwn = item.own == true;
+              final canSupply = need > 0;
+              final isDark = Theme.of(context).brightness == Brightness.dark;
+              const buyRequestImageWidth = 108.0;
+              const buyRequestImageHeight = 64.8;
+
+              children.add(
+                Card(
+                  color: isDark ? const Color(0xFF26272B) : Colors.white,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: buyRequestImageWidth,
+                          height: buyRequestImageHeight,
+                          child: GameItemImage(
+                            imageUrl: imageUrl,
+                            appId: item.appId,
+                            rarity: rarity,
+                            quality: quality,
+                            exterior: exterior,
+                            phase: item.phase,
+                            count: need > 0 ? need : null,
+                            alwaysShowCount: true,
                           ),
                         ),
-                      ),
-                      if (wearMinText != null && wearMaxText != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(
-                            '${'app.market.csgo.wear'.tr}: '
-                            '$wearMinText - $wearMaxText',
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                        ),
-                      if ((user?.nickname ?? '').isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 6),
-                          child: Row(
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              CircleAvatar(
-                                radius: 10,
-                                backgroundImage: avatar.isNotEmpty
-                                    ? CachedNetworkImageProvider(avatar)
-                                    : null,
-                                child: avatar.isEmpty
-                                    ? const Icon(Icons.person, size: 12)
-                                    : null,
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Text(
-                                  user?.nickname ?? '',
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                  overflow: TextOverflow.ellipsis,
+                              Obx(
+                                () => Text(
+                                  currency.format(item.price ?? 0),
+                                  style: TextStyle(
+                                    color: colorScheme.primary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
+                              if (wearMinText != null && wearMaxText != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Text(
+                                    '${'app.market.csgo.wear'.tr}: '
+                                    '$wearMinText - $wearMaxText',
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodySmall,
+                                  ),
+                                ),
+                              if ((user?.nickname ?? '').isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 6),
+                                  child: Row(
+                                    children: [
+                                      CircleAvatar(
+                                        radius: 10,
+                                        backgroundImage: avatar.isNotEmpty
+                                            ? CachedNetworkImageProvider(avatar)
+                                            : null,
+                                        child: avatar.isEmpty
+                                            ? const Icon(Icons.person, size: 12)
+                                            : null,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          user?.nickname ?? '',
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.bodySmall,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                             ],
                           ),
                         ),
-                    ],
+                        const SizedBox(width: 8),
+                        Column(
+                          children: [
+                            if (!isOwn)
+                              FilledButton(
+                                onPressed: canSupply
+                                    ? () async {
+                                        final user = UserStorage.getUserInfo();
+                                        if (user == null) {
+                                          Get.snackbar(
+                                            'app.system.tips.title'.tr,
+                                            'app.system.message.nologin'.tr,
+                                          );
+                                          return;
+                                        }
+                                        final result = await Get.toNamed(
+                                          Routers.BUYING_SUPPLY,
+                                          arguments: {
+                                            'item': item,
+                                            'schema': schema,
+                                          },
+                                        );
+                                        if (result == true) {
+                                          await controller.loadBuyRequests(
+                                            reset: true,
+                                          );
+                                          await Get.dialog<void>(
+                                            AlertDialog(
+                                              title: Text(
+                                                'app.system.tips.title'.tr,
+                                              ),
+                                              content: Text(
+                                                'app.trade.supply.message.confirm'
+                                                    .tr,
+                                              ),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () => Get.back(),
+                                                  child: Text(
+                                                    'app.common.confirm'.tr,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        }
+                                      }
+                                    : null,
+                                child: Text('app.trade.supply.text'.tr),
+                              ),
+                            if (isOwn) ...[
+                              SizedBox(
+                                height: 32,
+                                child: OutlinedButton(
+                                  onPressed: () async {
+                                    final result = await Get.toNamed(
+                                      Routers.BUYING_UPDATE_PRICE,
+                                      arguments: {
+                                        'item': item,
+                                        'schema': schema,
+                                      },
+                                    );
+                                    if (result == true) {
+                                      await controller.loadBuyRequests(
+                                        reset: true,
+                                      );
+                                    }
+                                  },
+                                  style: OutlinedButton.styleFrom(
+                                    minimumSize: const Size(74, 32),
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 0,
+                                    ),
+                                    side: BorderSide(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'app.inventory.price_change'.tr,
+                                    style: const TextStyle(fontSize: 11),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              SizedBox(
+                                height: 32,
+                                child: OutlinedButton(
+                                  onPressed: () async {
+                                    final id = item.id?.toString();
+                                    if (id == null) {
+                                      return;
+                                    }
+                                    final confirm = await Get.dialog<bool>(
+                                      AlertDialog(
+                                        title: Text('app.system.tips.title'.tr),
+                                        content: Text(
+                                          'app.trade.purchase.message.confirm_terminate'
+                                              .tr,
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () =>
+                                                Get.back(result: false),
+                                            child: Text('app.common.cancel'.tr),
+                                          ),
+                                          TextButton(
+                                            onPressed: () =>
+                                                Get.back(result: true),
+                                            child: Text(
+                                              'app.common.confirm'.tr,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                    if (confirm != true) {
+                                      return;
+                                    }
+                                    try {
+                                      final res = await _shopProductApi
+                                          .orderItemCancelBuy(id: id);
+                                      if (res.success) {
+                                        Get.snackbar(
+                                          'app.system.tips.title'.tr,
+                                          'app.system.message.success'.tr,
+                                        );
+                                      } else {
+                                        Get.snackbar(
+                                          'app.system.tips.title'.tr,
+                                          res.message.isNotEmpty
+                                              ? res.message
+                                              : 'app.trade.filter.failed'.tr,
+                                        );
+                                      }
+                                    } catch (_) {
+                                      Get.snackbar(
+                                        'app.system.tips.title'.tr,
+                                        'app.trade.filter.failed'.tr,
+                                      );
+                                    }
+                                    await controller.loadBuyRequests(
+                                      reset: true,
+                                    );
+                                  },
+                                  style: OutlinedButton.styleFrom(
+                                    minimumSize: const Size(74, 32),
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 0,
+                                    ),
+                                    foregroundColor: Theme.of(
+                                      context,
+                                    ).colorScheme.error,
+                                    side: BorderSide(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.error,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'app.common.delete'.tr,
+                                    style: const TextStyle(fontSize: 11),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                const SizedBox(width: 8),
-                Column(
-                  children: [
-                    if (!isOwn)
-                      FilledButton(
-                        onPressed: canSupply
-                            ? () async {
-                                final user = UserStorage.getUserInfo();
-                                if (user == null) {
-                                  Get.snackbar(
-                                    'app.system.tips.title'.tr,
-                                    'app.system.message.nologin'.tr,
-                                  );
-                                  return;
-                                }
-                                final result = await Get.toNamed(
-                                  Routers.BUYING_SUPPLY,
-                                  arguments: {'item': item, 'schema': schema},
-                                );
-                                if (result == true) {
-                                  await controller.loadBuyRequests(reset: true);
-                                  await Get.dialog<void>(
-                                    AlertDialog(
-                                      title: Text('app.system.tips.title'.tr),
-                                      content: Text(
-                                        'app.trade.supply.message.confirm'.tr,
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () => Get.back(),
-                                          child: Text('app.common.confirm'.tr),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                }
-                              }
-                            : null,
-                        child: Text('app.trade.supply.text'.tr),
-                      ),
-                    if (isOwn) ...[
-                      SizedBox(
-                        height: 32,
-                        child: OutlinedButton(
-                          onPressed: () async {
-                            final result = await Get.toNamed(
-                              Routers.BUYING_UPDATE_PRICE,
-                              arguments: {'item': item, 'schema': schema},
-                            );
-                            if (result == true) {
-                              await controller.loadBuyRequests(reset: true);
-                            }
-                          },
-                          style: OutlinedButton.styleFrom(
-                            minimumSize: const Size(74, 32),
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 0,
-                            ),
-                            side: BorderSide(
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                          ),
-                          child: Text(
-                            'app.inventory.price_change'.tr,
-                            style: const TextStyle(fontSize: 11),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      SizedBox(
-                        height: 32,
-                        child: OutlinedButton(
-                          onPressed: () async {
-                            final id = item.id?.toString();
-                            if (id == null) {
-                              return;
-                            }
-                            final confirm = await Get.dialog<bool>(
-                              AlertDialog(
-                                title: Text('app.system.tips.title'.tr),
-                                content: Text(
-                                  'app.trade.purchase.message.confirm_terminate'
-                                      .tr,
-                                ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Get.back(result: false),
-                                    child: Text('app.common.cancel'.tr),
-                                  ),
-                                  TextButton(
-                                    onPressed: () => Get.back(result: true),
-                                    child: Text('app.common.confirm'.tr),
-                                  ),
-                                ],
-                              ),
-                            );
-                            if (confirm != true) {
-                              return;
-                            }
-                            try {
-                              final res = await _shopProductApi
-                                  .orderItemCancelBuy(id: id);
-                              if (res.success) {
-                                Get.snackbar(
-                                  'app.system.tips.title'.tr,
-                                  'app.system.message.success'.tr,
-                                );
-                              } else {
-                                Get.snackbar(
-                                  'app.system.tips.title'.tr,
-                                  res.message.isNotEmpty
-                                      ? res.message
-                                      : 'app.trade.filter.failed'.tr,
-                                );
-                              }
-                            } catch (_) {
-                              Get.snackbar(
-                                'app.system.tips.title'.tr,
-                                'app.trade.filter.failed'.tr,
-                              );
-                            }
-                            await controller.loadBuyRequests(reset: true);
-                          },
-                          style: OutlinedButton.styleFrom(
-                            minimumSize: const Size(74, 32),
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 0,
-                            ),
-                            foregroundColor: Theme.of(
-                              context,
-                            ).colorScheme.error,
-                            side: BorderSide(
-                              color: Theme.of(context).colorScheme.error,
-                            ),
-                          ),
-                          child: Text(
-                            'app.common.delete'.tr,
-                            style: const TextStyle(fontSize: 11),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
+              );
+            }
+
+            if (showFooter) {
+              if (children.isNotEmpty) {
+                children.add(const SizedBox(height: 12));
+              }
+              children.add(
+                _buildLoadMoreFooter(
+                  showLoading: showLoadingFooter,
+                  showNoMore: showNoMoreFooter,
                 ),
-              ],
-            ),
-          ),
+              );
+            }
+
+            return _buildInnerScrollView(
+              context: context,
+              storageKey: 'market_detail_buy_request',
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+              children: children,
+            );
+          },
         );
-      },
+      }),
     );
   }
 
   Widget _buildTransactionTab(CurrencyController currency) {
     final colorScheme = Theme.of(context).colorScheme;
-    if (controller.isLoadingTransactions.value &&
-        controller.transactionItems.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
-    }
-    if (controller.transactionItems.isEmpty) {
-      return Center(child: Text('app.common.no_data'.tr));
-    }
-    final showLoadingFooter =
-        controller.isLoadingTransactions.value &&
-        controller.transactionItems.isNotEmpty;
-    final showNoMoreFooter =
-        controller.transactionItems.isNotEmpty &&
-        !controller.isLoadingTransactions.value &&
-        !controller.transactionHasMore;
-    final showFooter = showLoadingFooter || showNoMoreFooter;
     return BackToTopScope(
       enabled: true,
-      child: ListView.builder(
-        controller: _transactionScroll,
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-        itemCount: controller.transactionItems.length + (showFooter ? 1 : 0),
-        itemBuilder: (context, index) {
-          if (index >= controller.transactionItems.length) {
-            return _buildLoadMoreFooter(
-              showLoading: showLoadingFooter,
-              showNoMore: showNoMoreFooter,
-            );
-          }
-          final item = controller.transactionItems[index];
-          final user = controller.users[item.userId?.toString() ?? ''];
-          final schema = _lookupMarketSchema(item);
-          final imageUrl = schema?.imageUrl ?? '';
-          final appId = item.appId ?? controller.appId;
-          final count =
-              _asInt(
-                item.raw['count'] ?? item.raw['nums'] ?? item.raw['num'],
-              ) ??
-              1;
-          final isDark = Theme.of(context).brightness == Brightness.dark;
-          return Card(
-            color: isDark ? const Color(0xFF26272B) : Colors.white,
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(
-                    width: 90,
-                    child: SizedBox(
-                      width: 90,
-                      height: 54,
-                      child: GameItemImage(
-                        imageUrl: imageUrl,
-                        appId: appId,
-                        count: count > 1 ? count : null,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
+      child: Obx(() {
+        final isLoading = controller.isLoadingTransactions.value;
+        final items = controller.transactionItems.toList(growable: false);
+        final users = Map<String, MarketUserInfo>.from(controller.users);
+        final schemas = Map<String, MarketSchemaInfo>.from(controller.schemas);
+        final showLoadingFooter = isLoading && items.isNotEmpty;
+        final showNoMoreFooter =
+            items.isNotEmpty && !isLoading && !controller.transactionHasMore;
+        final showFooter = showLoadingFooter || showNoMoreFooter;
+
+        return Builder(
+          builder: (context) {
+            if (isLoading && items.isEmpty) {
+              return _buildInnerFillRemaining(
+                context: context,
+                storageKey: 'market_detail_transaction_loading',
+                child: const CircularProgressIndicator(),
+              );
+            }
+            if (items.isEmpty) {
+              return _buildInnerFillRemaining(
+                context: context,
+                storageKey: 'market_detail_transaction_empty',
+                child: Text('app.common.no_data'.tr),
+              );
+            }
+
+            final children = <Widget>[];
+            for (var index = 0; index < items.length; index++) {
+              if (index > 0) {
+                children.add(const SizedBox(height: 12));
+              }
+              final item = items[index];
+              final user = users[item.userId?.toString() ?? ''];
+              final schemaKey = item.schemaId?.toString();
+              final hash = item.marketHashName;
+              final schema = schemaKey != null
+                  ? schemas[schemaKey]
+                  : (hash != null ? schemas[hash] : null);
+              final imageUrl = schema?.imageUrl ?? '';
+              final appId = item.appId ?? controller.appId;
+              final count =
+                  _asInt(
+                    item.raw['count'] ?? item.raw['nums'] ?? item.raw['num'],
+                  ) ??
+                  1;
+              final isDark = Theme.of(context).brightness == Brightness.dark;
+              children.add(
+                Card(
+                  color: isDark ? const Color(0xFF26272B) : Colors.white,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Obx(
-                          () => Text(
-                            currency.format(item.price ?? 0),
-                            style: TextStyle(
-                              color: colorScheme.primary,
-                              fontWeight: FontWeight.bold,
+                        SizedBox(
+                          width: 90,
+                          child: SizedBox(
+                            width: 90,
+                            height: 54,
+                            child: GameItemImage(
+                              imageUrl: imageUrl,
+                              appId: appId,
+                              count: count > 1 ? count : null,
                             ),
                           ),
                         ),
-                        if ((user?.nickname ?? '').isNotEmpty)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 6),
-                            child: Row(
-                              children: [
-                                CircleAvatar(
-                                  radius: 10,
-                                  backgroundImage: user?.avatar != null
-                                      ? CachedNetworkImageProvider(
-                                          _resolveAvatar(user!.avatar),
-                                        )
-                                      : null,
-                                  child: user?.avatar == null
-                                      ? const Icon(Icons.person, size: 12)
-                                      : null,
-                                ),
-                                const SizedBox(width: 6),
-                                Expanded(
-                                  child: Text(
-                                    user?.nickname ?? '',
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodySmall,
-                                    overflow: TextOverflow.ellipsis,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Obx(
+                                () => Text(
+                                  currency.format(item.price ?? 0),
+                                  style: TextStyle(
+                                    color: colorScheme.primary,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                              ],
-                            ),
+                              ),
+                              if ((user?.nickname ?? '').isNotEmpty)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 6),
+                                  child: Row(
+                                    children: [
+                                      CircleAvatar(
+                                        radius: 10,
+                                        backgroundImage: user?.avatar != null
+                                            ? CachedNetworkImageProvider(
+                                                _resolveAvatar(user!.avatar),
+                                              )
+                                            : null,
+                                        child: user?.avatar == null
+                                            ? const Icon(Icons.person, size: 12)
+                                            : null,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          user?.nickname ?? '',
+                                          style: Theme.of(
+                                            context,
+                                          ).textTheme.bodySmall,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                            ],
                           ),
+                        ),
+                        const SizedBox(width: 12),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              item.typeName ?? '',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              _formatTime(item.createTime),
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        item.typeName ?? '',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        _formatTime(item.createTime),
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
+                ),
+              );
+            }
+
+            if (showFooter) {
+              if (children.isNotEmpty) {
+                children.add(const SizedBox(height: 12));
+              }
+              children.add(
+                _buildLoadMoreFooter(
+                  showLoading: showLoadingFooter,
+                  showNoMore: showNoMoreFooter,
+                ),
+              );
+            }
+
+            return _buildInnerScrollView(
+              context: context,
+              storageKey: 'market_detail_transaction',
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+              children: children,
+            );
+          },
+        );
+      }),
     );
   }
 

@@ -45,8 +45,7 @@ class ApiInventoryServer {
   Future<BaseHttpResponse<dynamic>> inventoryRefresh({
     required int appId,
   }) async {
-    final response =
-        await http.post('api/app/inventory/$appId/fresh');
+    final response = await http.post('api/app/inventory/$appId/fresh');
     return BaseHttpResponse.fromJson(
       response.data as Map<String, dynamic>,
       (json) => json,

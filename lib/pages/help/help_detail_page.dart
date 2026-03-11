@@ -10,8 +10,9 @@ class HelpDetailPage extends StatelessWidget {
   String _formatTime(int? value) {
     if (value == null) return '--';
     final ts = value < 1000000000000 ? value * 1000 : value;
-    return DateFormat('yyyy-MM-dd HH:mm:ss')
-        .format(DateTime.fromMillisecondsSinceEpoch(ts));
+    return DateFormat(
+      'yyyy-MM-dd HH:mm:ss',
+    ).format(DateTime.fromMillisecondsSinceEpoch(ts));
   }
 
   @override
@@ -43,9 +44,8 @@ class HelpDetailPage extends StatelessWidget {
                       children: [
                         Text(
                           item.title ?? '',
-                          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.w700),
                         ),
                         const SizedBox(height: 12),
                         Wrap(
@@ -76,10 +76,9 @@ class HelpDetailPage extends StatelessWidget {
                     color: Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .outlineVariant
-                          .withOpacity(0.4),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.outlineVariant.withOpacity(0.4),
                     ),
                   ),
                   padding: const EdgeInsets.all(16),
@@ -96,9 +95,7 @@ class HelpDetailPage extends StatelessWidget {
                       'h2': Style(fontSize: FontSize(20)),
                       'h3': Style(fontSize: FontSize(18)),
                       'p': Style(margin: Margins.only(bottom: 10)),
-                      'a': Style(
-                        color: Theme.of(context).colorScheme.primary,
-                      ),
+                      'a': Style(color: Theme.of(context).colorScheme.primary),
                     },
                   ),
                 ),
@@ -109,10 +106,7 @@ class HelpDetailPage extends StatelessWidget {
 }
 
 class _MetaChip extends StatelessWidget {
-  const _MetaChip({
-    required this.icon,
-    required this.label,
-  });
+  const _MetaChip({required this.icon, required this.label});
 
   final IconData icon;
   final String label;

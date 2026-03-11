@@ -53,9 +53,7 @@ class _ShopRenamePageState extends State<ShopRenamePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('app.user.shop.name.change'.tr),
-      ),
+      appBar: AppBar(title: Text('app.user.shop.name.change'.tr)),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(

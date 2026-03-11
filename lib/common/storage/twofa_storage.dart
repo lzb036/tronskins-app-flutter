@@ -114,9 +114,7 @@ class TwoFactorStorage {
     required String userId,
   }) async {
     final list = await getList();
-    list.removeWhere(
-      (item) => item.appUse == appUse && item.userId == userId,
-    );
+    list.removeWhere((item) => item.appUse == appUse && item.userId == userId);
     await setList(list);
   }
 

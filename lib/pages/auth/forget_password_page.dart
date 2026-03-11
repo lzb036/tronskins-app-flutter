@@ -218,14 +218,20 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     // 高级感配色方案
-    final backgroundColor = isDark ? const Color(0xFF0F1115) : const Color(0xFFF5F7FA);
+    final backgroundColor = isDark
+        ? const Color(0xFF0F1115)
+        : const Color(0xFFF5F7FA);
     final surfaceColor = isDark ? const Color(0xFF1C1E24) : Colors.white;
     final primaryColor = const Color(0xFF007AFF);
     final textColor = isDark ? Colors.white : const Color(0xFF1D1D1F);
-    final subTextColor = isDark ? const Color(0xFF86868B) : const Color(0xFF8E8E93);
-    final inputFillColor = isDark ? const Color(0xFF2C2E34) : const Color(0xFFF2F2F7);
+    final subTextColor = isDark
+        ? const Color(0xFF86868B)
+        : const Color(0xFF8E8E93);
+    final inputFillColor = isDark
+        ? const Color(0xFF2C2E34)
+        : const Color(0xFFF2F2F7);
 
     final resendLabel = _countdown > 0
         ? '${'app.user.login.reacquire'.tr}(${_countdown}s)'
@@ -242,12 +248,16 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
               const SizedBox(height: 16),
               // 自定义返回按钮
               IconButton(
-                icon: Icon(Icons.arrow_back_ios_new, color: textColor, size: 20),
+                icon: Icon(
+                  Icons.arrow_back_ios_new,
+                  color: textColor,
+                  size: 20,
+                ),
                 onPressed: () => Get.back(),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
               ),
-              
+
               const SizedBox(height: 40),
 
               Text(
@@ -276,13 +286,15 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                 decoration: BoxDecoration(
                   color: surfaceColor,
                   borderRadius: BorderRadius.circular(24),
-                  boxShadow: isDark ? null : [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 24,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
+                  boxShadow: isDark
+                      ? null
+                      : [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.04),
+                            blurRadius: 24,
+                            offset: const Offset(0, 8),
+                          ),
+                        ],
                 ),
                 padding: const EdgeInsets.all(28),
                 child: Column(
@@ -314,7 +326,9 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                       suffix: Padding(
                         padding: const EdgeInsets.only(right: 8.0),
                         child: TextButton(
-                          onPressed: _countdown > 0 || _sending ? null : _sendCode,
+                          onPressed: _countdown > 0 || _sending
+                              ? null
+                              : _sendCode,
                           style: TextButton.styleFrom(
                             foregroundColor: (_countdown > 0 || _sending)
                                 ? const Color(0xFFC7C7CC)
@@ -324,7 +338,13 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
                             minimumSize: const Size(0, 0),
                             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           ),
-                          child: Text(resendLabel, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
+                          child: Text(
+                            resendLabel,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -431,7 +451,10 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: Color(0xFF007AFF), width: 1.5),
+              borderSide: const BorderSide(
+                color: Color(0xFF007AFF),
+                width: 1.5,
+              ),
             ),
           ),
         ),
@@ -440,13 +463,20 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
             padding: const EdgeInsets.only(left: 12, top: 8),
             child: Row(
               children: [
-                const Icon(Icons.error_outline, size: 14, color: Colors.redAccent),
+                const Icon(
+                  Icons.error_outline,
+                  size: 14,
+                  color: Colors.redAccent,
+                ),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
                     error,
                     softWrap: true,
-                    style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+                    style: const TextStyle(
+                      color: Colors.redAccent,
+                      fontSize: 12,
+                    ),
                   ),
                 ),
               ],

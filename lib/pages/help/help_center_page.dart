@@ -107,10 +107,8 @@ class _HelpCenterPageState extends State<HelpCenterPage> {
                     context,
                     title: title,
                     icon: _icons[index % _icons.length],
-                    onTap: () => Get.toNamed(
-                      Routers.HELP_CATEGORY,
-                      arguments: item,
-                    ),
+                    onTap: () =>
+                        Get.toNamed(Routers.HELP_CATEGORY, arguments: item),
                   );
                 },
               ),
@@ -158,7 +156,10 @@ class _HelpCenterPageState extends State<HelpCenterPage> {
                   color: Colors.white.withOpacity(isDark ? 0.15 : 0.25),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Icon(Icons.chat_bubble_outline, color: Colors.white),
+                child: const Icon(
+                  Icons.chat_bubble_outline,
+                  color: Colors.white,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -182,7 +183,11 @@ class _HelpCenterPageState extends State<HelpCenterPage> {
                   ],
                 ),
               ),
-              const Icon(Icons.arrow_forward_ios, color: Colors.white70, size: 16),
+              const Icon(
+                Icons.arrow_forward_ios,
+                color: Colors.white70,
+                size: 16,
+              ),
             ],
           ),
         ),

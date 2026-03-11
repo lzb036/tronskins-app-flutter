@@ -11,10 +11,7 @@ class ApiNotifyServer {
   }) async {
     final response = await http.post(
       'api/app/mytrade/log/list',
-      data: {
-        'page': page,
-        'pageSize': pageSize,
-      },
+      data: {'page': page, 'pageSize': pageSize},
     );
     return BaseHttpResponse.fromJson(
       response.data as Map<String, dynamic>,
@@ -31,10 +28,7 @@ class ApiNotifyServer {
   }) async {
     final response = await http.post(
       'api/app/notice/message/list',
-      data: {
-        'page': page,
-        'pageSize': pageSize,
-      },
+      data: {'page': page, 'pageSize': pageSize},
     );
     return BaseHttpResponse.fromJson(
       response.data as Map<String, dynamic>,
@@ -59,9 +53,7 @@ class ApiNotifyServer {
     );
   }
 
-  Future<BaseHttpResponse<dynamic>> readTrade({
-    required String id,
-  }) async {
+  Future<BaseHttpResponse<dynamic>> readTrade({required String id}) async {
     final response = await http.post('api/app/mytrade/log/$id/read');
     return BaseHttpResponse.fromJson(
       response.data as Map<String, dynamic>,
@@ -69,9 +61,7 @@ class ApiNotifyServer {
     );
   }
 
-  Future<BaseHttpResponse<dynamic>> deleteTrade({
-    required String id,
-  }) async {
+  Future<BaseHttpResponse<dynamic>> deleteTrade({required String id}) async {
     final response = await http.post('api/app/mytrade/log/$id/delete');
     return BaseHttpResponse.fromJson(
       response.data as Map<String, dynamic>,
@@ -95,13 +85,8 @@ class ApiNotifyServer {
     );
   }
 
-  Future<BaseHttpResponse<dynamic>> readNotice({
-    required String id,
-  }) async {
-    final response = await http.post(
-      'api/app/notice/read',
-      data: {'id': id},
-    );
+  Future<BaseHttpResponse<dynamic>> readNotice({required String id}) async {
+    final response = await http.post('api/app/notice/read', data: {'id': id});
     return BaseHttpResponse.fromJson(
       response.data as Map<String, dynamic>,
       (json) => json,

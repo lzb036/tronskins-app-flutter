@@ -4,7 +4,7 @@ import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
 
 class CurrencyBinding extends Bindings {
   final logger = Logger();
-  
+
   @override
   void dependencies() {
     logger.d("CurrencyBinding dependencies() 执行了！");

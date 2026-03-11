@@ -5,15 +5,25 @@ import 'package:get_storage/get_storage.dart';
 class UseLocale extends GetxController {
   static final _storage = GetStorage('language');
   final Rx<Locale> _currentLocale = Locale('en', 'US').obs;
-  
+
   Locale get currentLocale => _currentLocale.value;
   Rx<Locale> get localeRx => _currentLocale;
-  
+
   // 支持的语言列表
   final List<Map<String, String>> supportedLanguages = [
     {'code': 'en', 'country': 'US', 'name': 'English', 'icon': 'en_US'},
-    {'code': 'zh', 'country': 'CN', 'name': 'Chinese (Simplified)', 'icon': 'zh_CN'},
-    {'code': 'zh', 'country': 'HK', 'name': 'Chinese (Traditional)', 'icon': 'zh_HK'},
+    {
+      'code': 'zh',
+      'country': 'CN',
+      'name': 'Chinese (Simplified)',
+      'icon': 'zh_CN',
+    },
+    {
+      'code': 'zh',
+      'country': 'HK',
+      'name': 'Chinese (Traditional)',
+      'icon': 'zh_HK',
+    },
     {'code': 'fr', 'country': 'FR', 'name': 'French', 'icon': 'fr_FR'},
     {'code': 'ge', 'country': 'DE', 'name': 'German', 'icon': 'ge_DE'},
     {'code': 'de', 'country': 'DE', 'name': 'German (Alt)', 'icon': 'ge_DE'},
@@ -37,7 +47,7 @@ class UseLocale extends GetxController {
     // 从存储加载语言设置
     final savedLanguageCode = _storage.read<String>('languageCode');
     final savedCountryCode = _storage.read<String>('countryCode');
-    
+
     if (savedLanguageCode != null && savedCountryCode != null) {
       _currentLocale.value = Locale(savedLanguageCode, savedCountryCode);
     } else {
@@ -49,20 +59,20 @@ class UseLocale extends GetxController {
   void changeLanguage(String languageCode, String countryCode) {
     final locale = Locale(languageCode, countryCode);
     _currentLocale.value = locale;
-    
+
     // 更新应用语言
     Get.updateLocale(locale);
-    
+
     // 保存设置
     _storage.write('languageCode', languageCode);
     _storage.write('countryCode', countryCode);
-    
+
     update();
   }
-  
+
   void toggleLanguage() {
     final current = _currentLocale.value;
-    
+
     // 在支持的语言之间切换
     if (current.languageCode == 'en') {
       changeLanguage('zh', 'CN');
@@ -73,7 +83,7 @@ class UseLocale extends GetxController {
       changeLanguage('en', 'US');
     }
   }
-  
+
   String getLanguageName(Locale locale) {
     // 使用翻译键获取语言自己的文字
     final localeKey = '${locale.languageCode}_${locale.countryCode}';

@@ -31,18 +31,15 @@ class ApiSteamServer {
   Future<BaseHttpResponse<String>> steamUnbindCheck() async {
     final response = await http.get('api/app/user/steam/unbind/check');
     final raw = response.data as Map<String, dynamic>;
-    final code = raw['code'] as int? ??
+    final code =
+        raw['code'] as int? ??
         raw['statusCode'] as int? ??
         raw['status'] as int? ??
         200;
     final message = (raw['message'] ?? raw['msg'] ?? raw['datas'] ?? '')
         .toString();
     final datas = raw['datas']?.toString();
-    return BaseHttpResponse<String>(
-      code: code,
-      message: message,
-      datas: datas,
-    );
+    return BaseHttpResponse<String>(code: code, message: message, datas: datas);
   }
 
   Future<BaseHttpResponse<dynamic>> setTradeUrl({
@@ -50,9 +47,7 @@ class ApiSteamServer {
   }) async {
     final response = await http.post(
       'api/app/user/set/url',
-      data: {
-        'tradeUrl': tradeUrl,
-      },
+      data: {'tradeUrl': tradeUrl},
     );
     return BaseHttpResponse.fromJson(
       response.data as Map<String, dynamic>,
@@ -65,9 +60,7 @@ class ApiSteamServer {
   }) async {
     final response = await http.post(
       'api/app/user/set/key',
-      data: {
-        'accessKey': accessKey,
-      },
+      data: {'accessKey': accessKey},
     );
     return BaseHttpResponse.fromJson(
       response.data as Map<String, dynamic>,
@@ -103,10 +96,7 @@ class ApiSteamServer {
   }) async {
     final response = await http.post(
       'api/app/steam/auth/token/fresh',
-      data: {
-        'steamId': steamId,
-        'freshToken': freshToken,
-      },
+      data: {'steamId': steamId, 'freshToken': freshToken},
     );
     return BaseHttpResponse.fromJson(
       response.data as Map<String, dynamic>,

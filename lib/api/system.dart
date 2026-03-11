@@ -6,8 +6,7 @@ class ApiSystemServer {
   final HttpHelper http = HttpHelper.getInstance();
 
   Future<BaseHttpResponse<List<CurrencyInfoEntity>>> getCurrencyList() async {
-    final response =
-        await http.get('api/public/currency/exchange/rate/list');
+    final response = await http.get('api/public/currency/exchange/rate/list');
 
     return BaseHttpResponse.fromJson(response.data, (json) {
       if (json is List) {

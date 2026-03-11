@@ -5,7 +5,7 @@ import 'package:tronskins_app/common/http/model/base_response.dart';
 
 class FeedbackController extends GetxController {
   FeedbackController({ApiFeedbackServer? api})
-      : _api = api ?? ApiFeedbackServer();
+    : _api = api ?? ApiFeedbackServer();
 
   final ApiFeedbackServer _api;
 
@@ -108,8 +108,9 @@ class FeedbackController extends GetxController {
         if (data.list.isNotEmpty) {
           _replyPage += 1;
         }
-        replies.sort((a, b) =>
-            (a.createTime ?? 0).compareTo(b.createTime ?? 0));
+        replies.sort(
+          (a, b) => (a.createTime ?? 0).compareTo(b.createTime ?? 0),
+        );
       }
     } finally {
       replyLoading.value = false;
@@ -152,10 +153,7 @@ class FeedbackController extends GetxController {
     required String filePath,
     bool isReply = false,
   }) async {
-    final res = await _api.uploadImage(
-      filePath: filePath,
-      isReply: isReply,
-    );
+    final res = await _api.uploadImage(filePath: filePath, isReply: isReply);
     if (res.success) {
       final id = res.datas?.toString();
       return (id != null && id.isNotEmpty) ? id : null;

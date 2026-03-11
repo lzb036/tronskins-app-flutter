@@ -3,25 +3,23 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 
 class SteamAuthClient {
-  SteamAuthClient({
-    Dio? dio,
-  }) : _dio = dio ??
-            Dio(
-              BaseOptions(
-                baseUrl: 'https://api.steampowered.com/',
-                connectTimeout: const Duration(seconds: 15),
-                receiveTimeout: const Duration(seconds: 15),
-              ),
-            );
+  SteamAuthClient({Dio? dio})
+    : _dio =
+          dio ??
+          Dio(
+            BaseOptions(
+              baseUrl: 'https://api.steampowered.com/',
+              connectTimeout: const Duration(seconds: 15),
+              receiveTimeout: const Duration(seconds: 15),
+            ),
+          );
 
   final Dio _dio;
 
   Future<Map<String, dynamic>> getPasswordKey(String accountName) async {
     final response = await _dio.get(
       'IAuthenticationService/GetPasswordRSAPublicKey/v1/',
-      queryParameters: {
-        'account_name': accountName,
-      },
+      queryParameters: {'account_name': accountName},
     );
     return _asMap(response.data);
   }
@@ -56,15 +54,8 @@ class SteamAuthClient {
     return _asMap(response.data);
   }
 
-  Future<Response<dynamic>> _postForm(
-    String path,
-    Map<String, dynamic> data,
-  ) {
-    return _dio.post(
-      path,
-      data: _toFormBody(data),
-      options: _formOptions(),
-    );
+  Future<Response<dynamic>> _postForm(String path, Map<String, dynamic> data) {
+    return _dio.post(path, data: _toFormBody(data), options: _formOptions());
   }
 
   String _toFormBody(Map<String, dynamic> data) {

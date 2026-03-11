@@ -2,10 +2,7 @@ class GuardStatus {
   final String? email;
   final bool? twoFa;
 
-  const GuardStatus({
-    this.email,
-    this.twoFa,
-  });
+  const GuardStatus({this.email, this.twoFa});
 
   factory GuardStatus.fromJson(Map<String, dynamic> json) {
     return GuardStatus(
@@ -35,9 +32,10 @@ class GuardInfo {
       userId: json['userId']?.toString() ?? json['user_id']?.toString(),
       appUse: json['appUse']?.toString() ?? json['app_use']?.toString(),
       secret: json['secret']?.toString(),
-      showEmail: json['showEmail']?.toString() ??
-          json['show_email']?.toString(),
-      loggerShowName: json['loggerShowName']?.toString() ??
+      showEmail:
+          json['showEmail']?.toString() ?? json['show_email']?.toString(),
+      loggerShowName:
+          json['loggerShowName']?.toString() ??
           json['logger_show_name']?.toString(),
     );
   }

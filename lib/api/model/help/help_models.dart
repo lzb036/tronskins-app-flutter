@@ -3,19 +3,17 @@ class HelpCategory {
   final String? label;
   final String? category;
 
-  const HelpCategory({
-    this.categoryCode,
-    this.label,
-    this.category,
-  });
+  const HelpCategory({this.categoryCode, this.label, this.category});
 
   factory HelpCategory.fromJson(Map<String, dynamic> json) {
     return HelpCategory(
-      categoryCode: json['categoryCode']?.toString() ??
+      categoryCode:
+          json['categoryCode']?.toString() ??
           json['category_code']?.toString() ??
           json['category']?.toString() ??
           json['code']?.toString(),
-      label: json['label']?.toString() ??
+      label:
+          json['label']?.toString() ??
           json['name']?.toString() ??
           json['title']?.toString(),
       category: json['category']?.toString(),
@@ -45,12 +43,13 @@ class HelpItem {
       id: json['id']?.toString(),
       title: json['title']?.toString(),
       content: json['context']?.toString() ?? json['content']?.toString(),
-      author: json['author']?.toString() ??
+      author:
+          json['author']?.toString() ??
           json['createName']?.toString() ??
           json['create_name']?.toString(),
       time: _asInt(json['time'] ?? json['createTime'] ?? json['create_time']),
-      categoryCode: json['categoryCode']?.toString() ??
-          json['category_code']?.toString(),
+      categoryCode:
+          json['categoryCode']?.toString() ?? json['category_code']?.toString(),
     );
   }
 }

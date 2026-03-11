@@ -162,9 +162,7 @@ class SteamSessionController extends GetxController {
     }
     final code = codeController.text.trim().toUpperCase();
     if (!RegExp(r'^[A-Z0-9]{5}$').hasMatch(code)) {
-      _logEvent('submitCode.invalidInput', {
-        'codeLen': code.length,
-      });
+      _logEvent('submitCode.invalidInput', {'codeLen': code.length});
       errorMessage.value = 'app.user.login.message.error';
       return false;
     }
@@ -201,9 +199,7 @@ class SteamSessionController extends GetxController {
       });
 
       if (_isSteamResultError(result)) {
-        _logEvent('submitCode.updateAuthSession.reject', {
-          'eresult': result,
-        });
+        _logEvent('submitCode.updateAuthSession.reject', {'eresult': result});
         errorMessage.value = 'app.user.login.message.error';
         return false;
       }
@@ -228,9 +224,7 @@ class SteamSessionController extends GetxController {
       });
       final polling = _pollingFuture;
       if (polling == null) {
-        _logEvent('submitCode.pollMissing', {
-          'reason': 'polling_not_started',
-        });
+        _logEvent('submitCode.pollMissing', {'reason': 'polling_not_started'});
         errorMessage.value = 'app.user.login.message.error';
         return false;
       }
@@ -320,17 +314,12 @@ class SteamSessionController extends GetxController {
         }
 
         if (_isSteamResultError(result)) {
-          _logEvent('poll.reject', {
-            'attempt': attempt + 1,
-            'eresult': result,
-          });
+          _logEvent('poll.reject', {'attempt': attempt + 1, 'eresult': result});
           errorMessage.value = 'app.user.login.message.error';
           return false;
         }
       } catch (_) {
-        _logEvent('poll.error', {
-          'attempt': attempt + 1,
-        });
+        _logEvent('poll.error', {'attempt': attempt + 1});
         errorMessage.value = 'app.user.login.message.error';
         return false;
       }
@@ -341,9 +330,7 @@ class SteamSessionController extends GetxController {
       await Future.delayed(const Duration(seconds: 5));
     }
 
-    _logEvent('poll.timeout', {
-      'attempts': maxAttempts,
-    });
+    _logEvent('poll.timeout', {'attempts': maxAttempts});
     errorMessage.value = 'app.user.login.message.error';
     return false;
   }
@@ -351,9 +338,7 @@ class SteamSessionController extends GetxController {
   Future<bool> _applyRefreshToken(String refreshToken) async {
     final steamId = _steamId;
     if (steamId == null || steamId.isEmpty) {
-      _logEvent('tokenFresh.invalidSteamId', {
-        'steamId': _maskId(steamId),
-      });
+      _logEvent('tokenFresh.invalidSteamId', {'steamId': _maskId(steamId)});
       errorMessage.value = 'app.user.login.message.error';
       return false;
     }
@@ -424,9 +409,11 @@ class SteamSessionController extends GetxController {
     if (!kDebugMode) {
       return;
     }
-    final text = payload.entries.map((entry) {
-      return '${entry.key}=${entry.value}';
-    }).join(', ');
+    final text = payload.entries
+        .map((entry) {
+          return '${entry.key}=${entry.value}';
+        })
+        .join(', ');
     debugPrint('[SteamSession][$stage] $text');
   }
 

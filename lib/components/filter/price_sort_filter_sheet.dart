@@ -149,8 +149,9 @@ class _PriceSortFilterSheetState extends State<PriceSortFilterSheet> {
                     Expanded(
                       child: TextField(
                         controller: _minController,
-                        keyboardType:
-                            const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                         decoration: InputDecoration(
                           labelText: 'app.market.filter.price_lowest'.tr,
                         ),
@@ -160,8 +161,9 @@ class _PriceSortFilterSheetState extends State<PriceSortFilterSheet> {
                     Expanded(
                       child: TextField(
                         controller: _maxController,
-                        keyboardType:
-                            const TextInputType.numberWithOptions(decimal: true),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
                         decoration: InputDecoration(
                           labelText: 'app.market.filter.price_highest'.tr,
                         ),

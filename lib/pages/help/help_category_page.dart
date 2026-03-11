@@ -40,9 +40,7 @@ class _HelpCategoryPageState extends State<HelpCategoryPage> {
   Widget build(BuildContext context) {
     final title = _category?.label ?? 'app.user.server.help'.tr;
     return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-      ),
+      appBar: AppBar(title: Text(title)),
       body: Obx(() {
         final loading = controller.listLoading.value;
         final list = controller.helpItems;
@@ -67,7 +65,9 @@ class _HelpCategoryPageState extends State<HelpCategoryPage> {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary.withOpacity(0.12),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withOpacity(0.12),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
@@ -82,9 +82,8 @@ class _HelpCategoryPageState extends State<HelpCategoryPage> {
                       children: [
                         Text(
                           title,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w600),
                         ),
                         const SizedBox(height: 4),
                         Text(
@@ -113,10 +112,8 @@ class _HelpCategoryPageState extends State<HelpCategoryPage> {
                       title: Text(item.title ?? ''),
                       subtitle: Text(_formatTime(item.time)),
                       trailing: const Icon(Icons.chevron_right),
-                      onTap: () => Get.toNamed(
-                        Routers.HELP_DETAIL,
-                        arguments: item,
-                      ),
+                      onTap: () =>
+                          Get.toNamed(Routers.HELP_DETAIL, arguments: item),
                     ),
                   );
                 },
@@ -131,8 +128,8 @@ class _HelpCategoryPageState extends State<HelpCategoryPage> {
   String _formatTime(int? value) {
     if (value == null) return '--';
     final ts = value < 1000000000000 ? value * 1000 : value;
-    return DateFormat('yyyy-MM-dd').format(
-      DateTime.fromMillisecondsSinceEpoch(ts),
-    );
+    return DateFormat(
+      'yyyy-MM-dd',
+    ).format(DateTime.fromMillisecondsSinceEpoch(ts));
   }
 }

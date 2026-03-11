@@ -7,29 +7,29 @@ class AppTextSizes {
   const AppTextSizes._();
 
   // Display（超大标题，几乎不用）
-  static const double displayLarge  = 57.0;
+  static const double displayLarge = 57.0;
   static const double displayMedium = 45.0;
-  static const double displaySmall  = 36.0;
+  static const double displaySmall = 36.0;
 
   // Headline（页面主标题）
-  static const double headlineLarge   = 32.0;
-  static const double headlineMedium  = 28.0;
-  static const double headlineSmall   = 24.0;
+  static const double headlineLarge = 32.0;
+  static const double headlineMedium = 28.0;
+  static const double headlineSmall = 24.0;
 
   // Title（组件标题、卡片标题）
-  static const double titleLarge   = 22.0;
-  static const double titleMedium  = 18.0;   // 常用
-  static const double titleSmall   = 16.0;
+  static const double titleLarge = 22.0;
+  static const double titleMedium = 18.0; // 常用
+  static const double titleSmall = 16.0;
 
   // Body（正文）
-  static const double bodyLarge   = 16.0;    // 主要正文
-  static const double bodyMedium  = 14.0;    // 辅助说明
-  static const double bodySmall   = 12.0;    // 极小提示
+  static const double bodyLarge = 16.0; // 主要正文
+  static const double bodyMedium = 14.0; // 辅助说明
+  static const double bodySmall = 12.0; // 极小提示
 
   // Label（按钮、标签、表单标签）
-  static const double labelLarge   = 14.0;   // 按钮文字
-  static const double labelMedium  = 12.0;   // Tab、Chip
-  static const double labelSmall   = 11.0;   // 极小标签
+  static const double labelLarge = 14.0; // 按钮文字
+  static const double labelMedium = 12.0; // Tab、Chip
+  static const double labelSmall = 11.0; // 极小标签
 }
 
 /// 可扩展的字体配置（支持动态文本缩放 + 深浅色自动适配）
@@ -75,25 +75,102 @@ class AppTextTheme extends ThemeExtension<AppTextTheme> {
   // 浅色模式文本主题
   static AppTextTheme light([String fontFamily = 'Roboto']) {
     return AppTextTheme(
-      displayLarge:  TextStyle(fontSize: AppTextSizes.displayLarge,  fontWeight: FontWeight.w400, height: 1.2, letterSpacing: -0.5, fontFamily: fontFamily),
-      displayMedium: TextStyle(fontSize: AppTextSizes.displayMedium, fontWeight: FontWeight.w400, height: 1.2, letterSpacing: -0.25, fontFamily: fontFamily),
-      displaySmall:  TextStyle(fontSize: AppTextSizes.displaySmall,  fontWeight: FontWeight.w400, height: 1.3, fontFamily: fontFamily),
+      displayLarge: TextStyle(
+        fontSize: AppTextSizes.displayLarge,
+        fontWeight: FontWeight.w400,
+        height: 1.2,
+        letterSpacing: -0.5,
+        fontFamily: fontFamily,
+      ),
+      displayMedium: TextStyle(
+        fontSize: AppTextSizes.displayMedium,
+        fontWeight: FontWeight.w400,
+        height: 1.2,
+        letterSpacing: -0.25,
+        fontFamily: fontFamily,
+      ),
+      displaySmall: TextStyle(
+        fontSize: AppTextSizes.displaySmall,
+        fontWeight: FontWeight.w400,
+        height: 1.3,
+        fontFamily: fontFamily,
+      ),
 
-      headlineLarge:   TextStyle(fontSize: AppTextSizes.headlineLarge,   fontWeight: FontWeight.w600, height: 1.3, fontFamily: fontFamily),
-      headlineMedium:  TextStyle(fontSize: AppTextSizes.headlineMedium,  fontWeight: FontWeight.w600, height: 1.3, fontFamily: fontFamily),
-      headlineSmall:   TextStyle(fontSize: AppTextSizes.headlineSmall,   fontWeight: FontWeight.w600, height: 1.35, fontFamily: fontFamily),
+      headlineLarge: TextStyle(
+        fontSize: AppTextSizes.headlineLarge,
+        fontWeight: FontWeight.w600,
+        height: 1.3,
+        fontFamily: fontFamily,
+      ),
+      headlineMedium: TextStyle(
+        fontSize: AppTextSizes.headlineMedium,
+        fontWeight: FontWeight.w600,
+        height: 1.3,
+        fontFamily: fontFamily,
+      ),
+      headlineSmall: TextStyle(
+        fontSize: AppTextSizes.headlineSmall,
+        fontWeight: FontWeight.w600,
+        height: 1.35,
+        fontFamily: fontFamily,
+      ),
 
-      titleLarge:    TextStyle(fontSize: AppTextSizes.titleLarge,    fontWeight: FontWeight.w600, height: 1.4, fontFamily: fontFamily),
-      titleMedium:   TextStyle(fontSize: AppTextSizes.titleMedium,   fontWeight: FontWeight.w600, height: 1.4, fontFamily: fontFamily),
-      titleSmall:    TextStyle(fontSize: AppTextSizes.titleSmall,    fontWeight: FontWeight.w500, height: 1.4, fontFamily: fontFamily),
+      titleLarge: TextStyle(
+        fontSize: AppTextSizes.titleLarge,
+        fontWeight: FontWeight.w600,
+        height: 1.4,
+        fontFamily: fontFamily,
+      ),
+      titleMedium: TextStyle(
+        fontSize: AppTextSizes.titleMedium,
+        fontWeight: FontWeight.w600,
+        height: 1.4,
+        fontFamily: fontFamily,
+      ),
+      titleSmall: TextStyle(
+        fontSize: AppTextSizes.titleSmall,
+        fontWeight: FontWeight.w500,
+        height: 1.4,
+        fontFamily: fontFamily,
+      ),
 
-      bodyLarge:     TextStyle(fontSize: AppTextSizes.bodyLarge,     fontWeight: FontWeight.w400, height: 1.6, fontFamily: fontFamily),
-      bodyMedium:    TextStyle(fontSize: AppTextSizes.bodyMedium,    fontWeight: FontWeight.w400, height: 1.5, fontFamily: fontFamily),
-      bodySmall:     TextStyle(fontSize: AppTextSizes.bodySmall,     fontWeight: FontWeight.w400, height: 1.5, fontFamily: fontFamily),
+      bodyLarge: TextStyle(
+        fontSize: AppTextSizes.bodyLarge,
+        fontWeight: FontWeight.w400,
+        height: 1.6,
+        fontFamily: fontFamily,
+      ),
+      bodyMedium: TextStyle(
+        fontSize: AppTextSizes.bodyMedium,
+        fontWeight: FontWeight.w400,
+        height: 1.5,
+        fontFamily: fontFamily,
+      ),
+      bodySmall: TextStyle(
+        fontSize: AppTextSizes.bodySmall,
+        fontWeight: FontWeight.w400,
+        height: 1.5,
+        fontFamily: fontFamily,
+      ),
 
-      labelLarge:    TextStyle(fontSize: AppTextSizes.labelLarge,    fontWeight: FontWeight.w600, height: 1.4, fontFamily: fontFamily),
-      labelMedium:   TextStyle(fontSize: AppTextSizes.labelMedium,   fontWeight: FontWeight.w500, height: 1.4, fontFamily: fontFamily),
-      labelSmall:    TextStyle(fontSize: AppTextSizes.labelSmall,    fontWeight: FontWeight.w500, height: 1.4, fontFamily: fontFamily),
+      labelLarge: TextStyle(
+        fontSize: AppTextSizes.labelLarge,
+        fontWeight: FontWeight.w600,
+        height: 1.4,
+        fontFamily: fontFamily,
+      ),
+      labelMedium: TextStyle(
+        fontSize: AppTextSizes.labelMedium,
+        fontWeight: FontWeight.w500,
+        height: 1.4,
+        fontFamily: fontFamily,
+      ),
+      labelSmall: TextStyle(
+        fontSize: AppTextSizes.labelSmall,
+        fontWeight: FontWeight.w500,
+        height: 1.4,
+        fontFamily: fontFamily,
+      ),
     );
   }
 
@@ -141,21 +218,21 @@ class AppTextTheme extends ThemeExtension<AppTextTheme> {
   AppTextTheme lerp(ThemeExtension<AppTextTheme>? other, double t) {
     if (other is! AppTextTheme) return this;
     return AppTextTheme(
-      displayLarge:  TextStyle.lerp(displayLarge, other.displayLarge, t)!,
+      displayLarge: TextStyle.lerp(displayLarge, other.displayLarge, t)!,
       displayMedium: TextStyle.lerp(displayMedium, other.displayMedium, t)!,
-      displaySmall:  TextStyle.lerp(displaySmall, other.displaySmall, t)!,
-      headlineLarge:   TextStyle.lerp(headlineLarge, other.headlineLarge, t)!,
-      headlineMedium:  TextStyle.lerp(headlineMedium, other.headlineMedium, t)!,
-      headlineSmall:   TextStyle.lerp(headlineSmall, other.headlineSmall, t)!,
-      titleLarge:    TextStyle.lerp(titleLarge, other.titleLarge, t)!,
-      titleMedium:   TextStyle.lerp(titleMedium, other.titleMedium, t)!,
-      titleSmall:    TextStyle.lerp(titleSmall, other.titleSmall, t)!,
-      bodyLarge:     TextStyle.lerp(bodyLarge, other.bodyLarge, t)!,
-      bodyMedium:    TextStyle.lerp(bodyMedium, other.bodyMedium, t)!,
-      bodySmall:     TextStyle.lerp(bodySmall, other.bodySmall, t)!,
-      labelLarge:    TextStyle.lerp(labelLarge, other.labelLarge, t)!,
-      labelMedium:   TextStyle.lerp(labelMedium, other.labelMedium, t)!,
-      labelSmall:    TextStyle.lerp(labelSmall, other.labelSmall, t)!,
+      displaySmall: TextStyle.lerp(displaySmall, other.displaySmall, t)!,
+      headlineLarge: TextStyle.lerp(headlineLarge, other.headlineLarge, t)!,
+      headlineMedium: TextStyle.lerp(headlineMedium, other.headlineMedium, t)!,
+      headlineSmall: TextStyle.lerp(headlineSmall, other.headlineSmall, t)!,
+      titleLarge: TextStyle.lerp(titleLarge, other.titleLarge, t)!,
+      titleMedium: TextStyle.lerp(titleMedium, other.titleMedium, t)!,
+      titleSmall: TextStyle.lerp(titleSmall, other.titleSmall, t)!,
+      bodyLarge: TextStyle.lerp(bodyLarge, other.bodyLarge, t)!,
+      bodyMedium: TextStyle.lerp(bodyMedium, other.bodyMedium, t)!,
+      bodySmall: TextStyle.lerp(bodySmall, other.bodySmall, t)!,
+      labelLarge: TextStyle.lerp(labelLarge, other.labelLarge, t)!,
+      labelMedium: TextStyle.lerp(labelMedium, other.labelMedium, t)!,
+      labelSmall: TextStyle.lerp(labelSmall, other.labelSmall, t)!,
     );
   }
 }

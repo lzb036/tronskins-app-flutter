@@ -4,11 +4,7 @@ class BaseHttpResponse<T> {
   final String message;
   final T? datas;
 
-  BaseHttpResponse({
-    required this.code,
-    required this.message,
-    this.datas,
-  });
+  BaseHttpResponse({required this.code, required this.message, this.datas});
 
   factory BaseHttpResponse.fromJson(
     Map<String, dynamic> json,

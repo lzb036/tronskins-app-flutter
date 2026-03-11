@@ -81,15 +81,15 @@ class _EditNicknamePageState extends State<EditNicknamePage> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
-    final cardBorder = colorScheme.outlineVariant.withOpacity(isDark ? 0.5 : 0.7);
+    final cardBorder = colorScheme.outlineVariant.withOpacity(
+      isDark ? 0.5 : 0.7,
+    );
     final inputFill = isDark
         ? colorScheme.surfaceVariant.withOpacity(0.35)
         : colorScheme.surfaceVariant.withOpacity(0.6);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('app.user.setting.nickname_change'.tr),
-      ),
+      appBar: AppBar(title: Text('app.user.setting.nickname_change'.tr)),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         children: [
@@ -128,7 +128,10 @@ class _EditNicknamePageState extends State<EditNicknamePage> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: colorScheme.primary, width: 1.4),
+                  borderSide: BorderSide(
+                    color: colorScheme.primary,
+                    width: 1.4,
+                  ),
                 ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -173,7 +176,9 @@ class _EditNicknamePageState extends State<EditNicknamePage> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
-              color: colorScheme.surfaceVariant.withOpacity(isDark ? 0.35 : 0.6),
+              color: colorScheme.surfaceVariant.withOpacity(
+                isDark ? 0.35 : 0.6,
+              ),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
@@ -206,9 +211,9 @@ class _EditNicknamePageState extends State<EditNicknamePage> {
           child: Text(
             text,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  height: 1.4,
-                ),
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              height: 1.4,
+            ),
           ),
         ),
       ],

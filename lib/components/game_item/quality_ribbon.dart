@@ -3,10 +3,7 @@ import 'package:tronskins_app/components/game_item/game_item_models.dart';
 import 'package:tronskins_app/components/game_item/game_item_utils.dart';
 
 class QualityRibbon extends StatelessWidget {
-  const QualityRibbon({
-    super.key,
-    required this.quality,
-  });
+  const QualityRibbon({super.key, required this.quality});
 
   final TagInfo quality;
 

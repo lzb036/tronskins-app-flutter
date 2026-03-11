@@ -11,9 +11,7 @@ class PurchaseSettingPage extends StatelessWidget {
         ? Get.find<BuyRequestController>()
         : Get.put(BuyRequestController());
     return Scaffold(
-      appBar: AppBar(
-        title: Text('app.trade.purchase.setting'.tr),
-      ),
+      appBar: AppBar(title: Text('app.trade.purchase.setting'.tr)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

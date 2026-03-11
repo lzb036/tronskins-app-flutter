@@ -7,10 +7,9 @@ import 'package:tronskins_app/common/hooks/theme/use_theme.dart';
 
 // ignore: use_key_in_widget_constructors
 class UserSetting extends StatelessWidget {
-  final Rx<Locale> currentLocale = Locale('en', 'US').obs;  
+  final Rx<Locale> currentLocale = Locale('en', 'US').obs;
   final useTheme = Get.find<UseTheme>();
   final useLocale = Get.find<UseLocale>();
-
 
   void changeLanguage(String languageCode, String countryCode) {
     final locale = Locale(languageCode, countryCode);
@@ -37,14 +36,16 @@ class UserSetting extends StatelessWidget {
               onPressed: () => useLocale.toggleLanguage(),
             ),
             SizedBox(height: 20),
-            Obx(() => Text('当前主题: ${useTheme.themeMode == ThemeMode.dark ? "暗色" : "亮色"}')),
+            Obx(
+              () => Text(
+                '当前主题: ${useTheme.themeMode == ThemeMode.dark ? "暗色" : "亮色"}',
+              ),
+            ),
             SizedBox(height: 20),
             ElevatedButton.icon(
               icon: Icon(Icons.brightness_6),
               label: Text('切换主题'.tr),
-              onPressed: () => {
-                useTheme.toggleTheme()
-              },
+              onPressed: () => {useTheme.toggleTheme()},
             ),
           ],
         ),

@@ -45,8 +45,9 @@ class _NoticeDetailPageState extends State<NoticeDetailPage> {
   String _formatTime(int? value) {
     if (value == null) return '--';
     final ts = value < 1000000000000 ? value * 1000 : value;
-    return DateFormat('yyyy-MM-dd HH:mm:ss')
-        .format(DateTime.fromMillisecondsSinceEpoch(ts));
+    return DateFormat(
+      'yyyy-MM-dd HH:mm:ss',
+    ).format(DateTime.fromMillisecondsSinceEpoch(ts));
   }
 
   String _stripHtml(String? value) {
@@ -62,55 +63,54 @@ class _NoticeDetailPageState extends State<NoticeDetailPage> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _detail == null
-              ? Center(child: Text('app.common.no_data'.tr))
-              : ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+          ? Center(child: Text('app.common.no_data'.tr))
+          : ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
                           children: [
-                            Row(
-                              children: [
-                                Text(
-                                  '${'app.system.notice.author'.tr}: ',
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
-                                Expanded(
-                                  child: Text(
-                                    _detail?.createName ?? '--',
-                                    style:
-                                        Theme.of(context).textTheme.bodySmall,
-                                  ),
-                                ),
-                              ],
+                            Text(
+                              '${'app.system.notice.author'.tr}: ',
+                              style: Theme.of(context).textTheme.bodySmall,
                             ),
-                            const SizedBox(height: 6),
-                            Row(
-                              children: [
-                                Text(
-                                  '${'app.system.notice.publish_time'.tr}: ',
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
-                                Text(
-                                  _formatTime(_detail?.createTime),
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
-                              ],
+                            Expanded(
+                              child: Text(
+                                _detail?.createName ?? '--',
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
                             ),
                           ],
                         ),
-                      ),
+                        const SizedBox(height: 6),
+                        Row(
+                          children: [
+                            Text(
+                              '${'app.system.notice.publish_time'.tr}: ',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                            Text(
+                              _formatTime(_detail?.createTime),
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      _stripHtml(_detail?.content),
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  ],
+                  ),
                 ),
+                const SizedBox(height: 12),
+                Text(
+                  _stripHtml(_detail?.content),
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+            ),
     );
   }
 }

@@ -1,4 +1,4 @@
-﻿// lib/controllers/user_controller.dart
+// lib/controllers/user_controller.dart
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -154,6 +154,7 @@ class UserController extends GetxController {
     await Future.delayed(const Duration(milliseconds: 500));
     Get.offAllNamed(Routers.USER);
   }
+
   // ==================== 绉佹湁鏂规硶 ====================
   void clearSession() {
     user.value = null;
@@ -174,5 +175,3 @@ class UserController extends GetxController {
     return '$_imageBaseUrl$avatar';
   }
 }
-
-

@@ -16,21 +16,15 @@ class ApiGuardServer {
   Future<BaseHttpResponse<GuardInfo>> guardInfo({
     required String emailCode,
   }) async {
-    final response = await http.post(
-      'api/app/auth-token/$emailCode/bindapp',
-    );
+    final response = await http.post('api/app/auth-token/$emailCode/bindapp');
     return BaseHttpResponse.fromJson(
       response.data as Map<String, dynamic>,
       (json) => GuardInfo.fromJson(json as Map<String, dynamic>),
     );
   }
 
-  Future<BaseHttpResponse<dynamic>> bindGuard({
-    required String code,
-  }) async {
-    final response = await http.post(
-      'api/app/auth-token/$code/bind',
-    );
+  Future<BaseHttpResponse<dynamic>> bindGuard({required String code}) async {
+    final response = await http.post('api/app/auth-token/$code/bind');
     return BaseHttpResponse.fromJson(
       response.data as Map<String, dynamic>,
       (json) => json,
@@ -60,7 +54,8 @@ class ApiGuardServer {
       return first;
     }
 
-    final needFallback = first.code == -1 &&
+    final needFallback =
+        first.code == -1 &&
         firstDataString.isNotEmpty &&
         firstDataString.toLowerCase() == 'error';
     if (!needFallback) {

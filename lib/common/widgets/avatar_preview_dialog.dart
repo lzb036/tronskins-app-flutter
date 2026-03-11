@@ -34,11 +34,12 @@ Future<void> showAvatarPreviewDialog(
                       child: Image(
                         image: imageProvider,
                         fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) => const Icon(
-                          Icons.image_not_supported_outlined,
-                          color: Colors.white70,
-                          size: 40,
-                        ),
+                        errorBuilder: (context, error, stackTrace) =>
+                            const Icon(
+                              Icons.image_not_supported_outlined,
+                              color: Colors.white70,
+                              size: 40,
+                            ),
                       ),
                     ),
                   ),

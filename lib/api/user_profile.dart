@@ -24,11 +24,7 @@ class ApiUserProfileServer {
   }) async {
     final response = await http.post(
       'api/app/user/set/password',
-      data: {
-        'id': id,
-        'password': password,
-        'newPassword': newPassword,
-      },
+      data: {'id': id, 'password': password, 'newPassword': newPassword},
     );
     return BaseHttpResponse.fromJson(
       response.data as Map<String, dynamic>,

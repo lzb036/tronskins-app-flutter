@@ -7,11 +7,9 @@ import 'package:tronskins_app/common/storage/user_storage.dart';
 import 'package:tronskins_app/controllers/user/user_controller.dart';
 
 class IntegralController extends GetxController {
-  IntegralController({
-    ApiWalletServer? api,
-    ApiLoginServer? userApi,
-  })  : _api = api ?? ApiWalletServer(),
-        _userApi = userApi ?? ApiLoginServer();
+  IntegralController({ApiWalletServer? api, ApiLoginServer? userApi})
+    : _api = api ?? ApiWalletServer(),
+      _userApi = userApi ?? ApiLoginServer();
 
   final ApiWalletServer _api;
   final ApiLoginServer _userApi;

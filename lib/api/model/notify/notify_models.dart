@@ -22,10 +22,7 @@ class NotifyListResponse<T> {
   final List<T> list;
   final NotifyPager? pager;
 
-  const NotifyListResponse({
-    required this.list,
-    this.pager,
-  });
+  const NotifyListResponse({required this.list, this.pager});
 
   factory NotifyListResponse.fromJson(
     Map<String, dynamic> json,
@@ -73,9 +70,10 @@ class TradeNotifyItem {
       type: _asInt(json['type']),
       status: _asInt(json['status']),
       cancelReason: _asInt(json['cancelReason'] ?? json['cancel_reason']),
-      cancelDesc: json['cancelDesc']?.toString() ??
-          json['cancel_desc']?.toString(),
-      buyerId: json['buyer']?.toString() ??
+      cancelDesc:
+          json['cancelDesc']?.toString() ?? json['cancel_desc']?.toString(),
+      buyerId:
+          json['buyer']?.toString() ??
           json['buyer_id']?.toString() ??
           json['buyerId']?.toString(),
       createTime: _asInt(json['createTime'] ?? json['create_time']),
@@ -127,8 +125,8 @@ class NoticeDetail {
       id: json['id']?.toString(),
       title: json['title']?.toString(),
       content: json['content']?.toString(),
-      createName: json['createName']?.toString() ??
-          json['create_name']?.toString(),
+      createName:
+          json['createName']?.toString() ?? json['create_name']?.toString(),
       createTime: _asInt(json['createTime'] ?? json['create_time']),
     );
   }

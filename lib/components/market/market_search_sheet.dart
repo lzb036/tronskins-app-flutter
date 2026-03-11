@@ -242,10 +242,7 @@ class _MarketSearchSheetState extends State<MarketSearchSheet> {
         itemBuilder: (context, index) {
           final item = _suggestions[index];
           final name = item.displayName;
-          return ListTile(
-            title: Text(name),
-            onTap: () => _submit(name),
-          );
+          return ListTile(title: Text(name), onTap: () => _submit(name));
         },
       ),
     );

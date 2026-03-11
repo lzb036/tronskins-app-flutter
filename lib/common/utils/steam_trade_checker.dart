@@ -4,7 +4,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 
 /// Steam Trade Offer Checker
 /// Similar to config/SteamCheckOffer.js in the uni-app version
-/// 
+///
 /// Usage:
 /// ```dart
 /// final checker = SteamTradeChecker(
@@ -26,7 +26,10 @@ class SteamTradeChecker {
 
   /// Check trade offer status
   /// Returns true if confirmation is needed, false otherwise
-  Future<bool> checkOffer(WebViewController controller, String tradeOfferUrl) async {
+  Future<bool> checkOffer(
+    WebViewController controller,
+    String tradeOfferUrl,
+  ) async {
     try {
       // Check if URL is a trade offer page
       if (!tradeOfferUrl.contains('/tradeoffer/')) {
@@ -136,7 +139,7 @@ class SteamTradeChecker {
 /// JavaScript channel handler for trade checking
 class SteamTradeCheckChannel {
   static const String channelName = 'TradeCheckChannel';
-  
+
   final Function(String) onMessage;
 
   SteamTradeCheckChannel({required this.onMessage});

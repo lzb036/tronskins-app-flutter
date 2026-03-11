@@ -121,18 +121,18 @@ class SteamController extends GetxController {
     if (steamId == null || steamId.isEmpty) {
       return false;
     }
-    
+
     try {
       final cookieInfo = await SteamCookieHelper.getSteamInfo(steamId);
       if (cookieInfo?.status == true) {
         return true;
       }
-      
+
       // If account inconsistent, show warning
       if (cookieInfo?.isLoginSteam == true) {
         return false;
       }
-      
+
       return false;
     } catch (_) {
       return false;

@@ -81,12 +81,14 @@ class LoggingInterceptor extends Interceptor {
         }
         if (data.files.isNotEmpty) {
           map['__files'] = data.files
-              .map((file) => {
-                    'field': file.key,
-                    'filename': file.value.filename,
-                    'contentType': file.value.contentType?.toString(),
-                    'length': file.value.length,
-                  })
+              .map(
+                (file) => {
+                  'field': file.key,
+                  'filename': file.value.filename,
+                  'contentType': file.value.contentType?.toString(),
+                  'length': file.value.length,
+                },
+              )
               .toList();
         }
         return const JsonEncoder.withIndent('  ').convert(map);

@@ -6,10 +6,7 @@ import 'package:tronskins_app/api/model/market/market_models.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
 
 class PriceTrendChart extends StatelessWidget {
-  const PriceTrendChart({
-    super.key,
-    required this.points,
-  });
+  const PriceTrendChart({super.key, required this.points});
 
   final List<MarketPricePoint> points;
 
@@ -31,16 +28,17 @@ class PriceTrendChart extends StatelessWidget {
     final maxY = sorted.map((e) => e.price).reduce((a, b) => a > b ? a : b);
     final minY = sorted.map((e) => e.price).reduce((a, b) => a < b ? a : b);
     final range = (maxY - minY).abs();
-    final double padding =
-        range == 0 ? (maxY == 0 ? 1.0 : maxY * 0.1) : range * 0.15;
-    final double displayMin =
-        (minY - padding) < 0 ? 0.0 : (minY - padding);
+    final double padding = range == 0
+        ? (maxY == 0 ? 1.0 : maxY * 0.1)
+        : range * 0.15;
+    final double displayMin = (minY - padding) < 0 ? 0.0 : (minY - padding);
     final double displayMax = maxY + padding;
     final primary = Theme.of(context).colorScheme.primary;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final labelIndices = _buildLabelIndices(times.length);
-    final double bottomInterval =
-        times.length <= 1 ? 1.0 : (times.length - 1) / 6;
+    final double bottomInterval = times.length <= 1
+        ? 1.0
+        : (times.length - 1) / 6;
     final axisDateFormat = _resolveAxisDateFormat(times);
     final leftInterval = _calcInterval(displayMin, displayMax);
 
@@ -88,27 +86,28 @@ class PriceTrendChart extends StatelessWidget {
             leftTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
-                  reservedSize: 64,
-                  interval: leftInterval,
-                  getTitlesWidget: (value, meta) => Padding(
-                    padding: const EdgeInsets.only(right: 6),
-                    child: Text(
-                      _formatAxisPrice(value, currency),
-                      style: TextStyle(
-                        fontSize: 11,
-                        color:
-                          isDark ? const Color(0xFFB9BDC7) : const Color(0xFF8A8F9B),
-                      ),
+                reservedSize: 64,
+                interval: leftInterval,
+                getTitlesWidget: (value, meta) => Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: Text(
+                    _formatAxisPrice(value, currency),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: isDark
+                          ? const Color(0xFFB9BDC7)
+                          : const Color(0xFF8A8F9B),
+                    ),
                   ),
                 ),
               ),
             ),
-              bottomTitles: AxisTitles(
-                sideTitles: SideTitles(
-                  showTitles: true,
-                  reservedSize: 24,
-                  interval: bottomInterval,
-                  getTitlesWidget: (value, meta) {
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                reservedSize: 24,
+                interval: bottomInterval,
+                getTitlesWidget: (value, meta) {
                   final index = value.round();
                   if (index < 0 ||
                       index >= times.length ||
@@ -154,10 +153,7 @@ class PriceTrendChart extends StatelessWidget {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [
-                    primary.withOpacity(0.25),
-                    primary.withOpacity(0.0),
-                  ],
+                  colors: [primary.withOpacity(0.25), primary.withOpacity(0.0)],
                 ),
               ),
             ),
@@ -166,10 +162,11 @@ class PriceTrendChart extends StatelessWidget {
             handleBuiltInTouches: true,
             touchTooltipData: LineTouchTooltipData(
               tooltipRoundedRadius: 8,
-              tooltipPadding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              tooltipBgColor:
-                  isDark ? const Color(0xFF1F2024) : Colors.white,
+              tooltipPadding: const EdgeInsets.symmetric(
+                horizontal: 10,
+                vertical: 8,
+              ),
+              tooltipBgColor: isDark ? const Color(0xFF1F2024) : Colors.white,
               getTooltipItems: (items) => items.map((item) {
                 final index = item.spotIndex;
                 final date = index >= 0 && index < times.length
@@ -188,18 +185,15 @@ class PriceTrendChart extends StatelessWidget {
               return spotIndexes
                   .map(
                     (_) => TouchedSpotIndicatorData(
-                      FlLine(
-                        color: primary.withOpacity(0.35),
-                        strokeWidth: 1,
-                      ),
+                      FlLine(color: primary.withOpacity(0.35), strokeWidth: 1),
                       FlDotData(
                         show: true,
-                        getDotPainter: (spot, _, __, ___) =>
-                            FlDotCirclePainter(
+                        getDotPainter: (spot, _, __, ___) => FlDotCirclePainter(
                           radius: 4,
                           color: primary,
-                          strokeColor:
-                              isDark ? const Color(0xFF1C1D21) : Colors.white,
+                          strokeColor: isDark
+                              ? const Color(0xFF1C1D21)
+                              : Colors.white,
                           strokeWidth: 2,
                         ),
                       ),

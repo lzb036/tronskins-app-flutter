@@ -4,26 +4,25 @@ import 'package:dio/dio.dart';
 /// Helper class to get Steam Cookie/Session information
 /// Similar to utils/dq/steam.js in the uni-app version
 class SteamCookieHelper {
-  static final Dio _dio = Dio(BaseOptions(
-    connectTimeout: const Duration(seconds: 10),
-    receiveTimeout: const Duration(seconds: 10),
-    followRedirects: true,
-    validateStatus: (status) => status != null && status < 500,
-  ));
+  static final Dio _dio = Dio(
+    BaseOptions(
+      connectTimeout: const Duration(seconds: 10),
+      receiveTimeout: const Duration(seconds: 10),
+      followRedirects: true,
+      validateStatus: (status) => status != null && status < 500,
+    ),
+  );
 
   /// Get Steam info (steamId and sessionId) from inventory history page
   /// Returns null if not logged in or error occurs
   static Future<SteamCookieInfo?> getSteamInfo(String steamId) async {
     try {
-      final url = 'https://steamcommunity.com/profiles/$steamId/inventoryhistory';
-      
+      final url =
+          'https://steamcommunity.com/profiles/$steamId/inventoryhistory';
+
       final response = await _dio.get(
         url,
-        options: Options(
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        ),
+        options: Options(headers: {'Content-Type': 'application/json'}),
       );
 
       if (response.data == null) {
@@ -31,7 +30,7 @@ class SteamCookieHelper {
       }
 
       final String html = response.data.toString();
-      
+
       // Extract g_steamID
       final steamIdMatch = _extractSteamId(html);
       if (steamIdMatch == null) {
@@ -70,10 +69,7 @@ class SteamCookieHelper {
         message: 'Network error: ${e.message}',
       );
     } catch (e) {
-      return SteamCookieInfo(
-        status: false,
-        message: 'Error: $e',
-      );
+      return SteamCookieInfo(status: false, message: 'Error: $e');
     }
   }
 
@@ -81,7 +77,7 @@ class SteamCookieHelper {
   static String? _extractSteamId(String html) {
     // Try different patterns to find steamID
     String? result;
-    
+
     // Pattern for g_steamID = "123" or g_steamID = '123' or g_steamID = 123
     // Using single quotes for outer string since pattern contains double quotes
     final regex1 = RegExp(r'g_steamID\s*=\s*["\x27]?([0-9]+)["\x27]?');
@@ -90,7 +86,7 @@ class SteamCookieHelper {
       result = match1.group(1);
       if (result != null && result != 'false') return result;
     }
-    
+
     // Pattern for g_steamID: "123" or g_steamID: '123'
     final regex2 = RegExp(r'g_steamID\s*:\s*["\x27]?([0-9]+)["\x27]?');
     final match2 = regex2.firstMatch(html);
@@ -98,7 +94,7 @@ class SteamCookieHelper {
       result = match2.group(1);
       if (result != null && result != 'false') return result;
     }
-    
+
     // Pattern for "steamid": "123"
     final regex3 = RegExp(r'"steamid"\s*:\s*["\x27]?([0-9]+)["\x27]?');
     final match3 = regex3.firstMatch(html);
@@ -117,7 +113,7 @@ class SteamCookieHelper {
   /// Extract sessionID from HTML content
   static String? _extractSessionId(String html) {
     String? result;
-    
+
     // Pattern for g_sessionID = "abc" or g_sessionID = 'abc'
     final regex1 = RegExp(r'g_sessionID\s*=\s*["\x27]([^"\x27]+)["\x27]');
     final match1 = regex1.firstMatch(html);
@@ -125,7 +121,7 @@ class SteamCookieHelper {
       result = match1.group(1);
       if (result != null) return result;
     }
-    
+
     // Pattern for g_sessionID: "abc" or g_sessionID: 'abc'
     final regex2 = RegExp(r'g_sessionID\s*:\s*["\x27]([^"\x27]+)["\x27]');
     final match2 = regex2.firstMatch(html);
@@ -133,7 +129,7 @@ class SteamCookieHelper {
       result = match2.group(1);
       if (result != null) return result;
     }
-    
+
     // Pattern for "sessionid": "abc"
     final regex3 = RegExp(r'"sessionid"\s*:\s*["\x27]([^"\x27]+)["\x27]');
     final match3 = regex3.firstMatch(html);

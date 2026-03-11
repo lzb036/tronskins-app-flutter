@@ -14,10 +14,9 @@ class IntegralDrawPage extends StatefulWidget {
 }
 
 class _IntegralDrawPageState extends State<IntegralDrawPage> {
-  final IntegralController controller =
-      Get.isRegistered<IntegralController>()
-          ? Get.find<IntegralController>()
-          : Get.put(IntegralController());
+  final IntegralController controller = Get.isRegistered<IntegralController>()
+      ? Get.find<IntegralController>()
+      : Get.put(IntegralController());
 
   final List<int> _gridOrder = const [0, 1, 2, 7, -1, 3, 6, 5, 4];
   int? _activeIndex;
@@ -150,9 +149,7 @@ class _IntegralDrawPageState extends State<IntegralDrawPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('app.user.integral.draw_weekly'.tr),
-      ),
+      appBar: AppBar(title: Text('app.user.integral.draw_weekly'.tr)),
       body: Obx(() {
         final prizes = _buildPrizes();
         return ListView(
@@ -168,18 +165,16 @@ class _IntegralDrawPageState extends State<IntegralDrawPage> {
                 children: [
                   Text(
                     '${'app.user.integral.unit'.tr}: ${controller.integralValue}',
-                    style: Theme.of(context)
-                        .textTheme
-                        .titleMedium
-                        ?.copyWith(color: Colors.white),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.titleMedium?.copyWith(color: Colors.white),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'app.user.integral.draw'.tr,
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyMedium
-                        ?.copyWith(color: Colors.white70),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
                   ),
                 ],
               ),
@@ -229,10 +224,9 @@ class _IntegralDrawPageState extends State<IntegralDrawPage> {
                 ? 'app.user.integral.drawing'.tr
                 : 'app.user.integral.draw'.tr,
             textAlign: TextAlign.center,
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
-                ?.copyWith(color: Colors.white),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(color: Colors.white),
           ),
         ),
       ),

@@ -20,10 +20,7 @@ class LoginParams {
   });
 
   Map<String, dynamic> toJson() {
-    final data = <String, dynamic>{
-      "username": username,
-      "password": password,
-    };
+    final data = <String, dynamic>{"username": username, "password": password};
     if (udid != null && udid!.isNotEmpty) {
       data["udid"] = udid;
     }

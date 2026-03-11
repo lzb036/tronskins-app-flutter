@@ -68,8 +68,7 @@ class NotifyController extends GetxController {
         _noticePage = 1;
         _noticeReachedEnd = false;
       }
-      final res =
-          await _api.noticeList(page: _noticePage, pageSize: _pageSize);
+      final res = await _api.noticeList(page: _noticePage, pageSize: _pageSize);
       if (res.success && res.datas != null) {
         final data = res.datas!;
         if (refresh) {

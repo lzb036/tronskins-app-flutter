@@ -14,10 +14,9 @@ class UserMessage extends StatefulWidget {
 class _UserMessageState extends State<UserMessage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final NotifyController _controller =
-      Get.isRegistered<NotifyController>()
-          ? Get.find<NotifyController>()
-          : Get.put(NotifyController());
+  final NotifyController _controller = Get.isRegistered<NotifyController>()
+      ? Get.find<NotifyController>()
+      : Get.put(NotifyController());
 
   @override
   void initState() {
@@ -62,10 +61,7 @@ class _UserMessageState extends State<UserMessage>
         ? await _controller.readAllTrade()
         : await _controller.readAllNotice();
     if (ok) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.system.notice.readall'.tr,
-      );
+      Get.snackbar('app.system.tips.title'.tr, 'app.system.notice.readall'.tr);
     }
   }
 
@@ -132,8 +128,9 @@ class _UserMessageState extends State<UserMessage>
                   borderRadius: BorderRadius.circular(18),
                 ),
                 labelColor: colorScheme.onPrimary,
-                unselectedLabelColor:
-                    colorScheme.onSurface.withOpacity(isDark ? 0.7 : 0.8),
+                unselectedLabelColor: colorScheme.onSurface.withOpacity(
+                  isDark ? 0.7 : 0.8,
+                ),
                 labelStyle: theme.textTheme.labelLarge?.copyWith(
                   fontWeight: FontWeight.w600,
                 ),

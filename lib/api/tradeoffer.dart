@@ -7,10 +7,7 @@ class ApiTradeOfferServer {
   Future<BaseHttpResponse<dynamic>> createTradeOffer({
     required Map<String, dynamic> params,
   }) async {
-    final response = await http.post(
-      'api/app/tradeoffer/create',
-      data: params,
-    );
+    final response = await http.post('api/app/tradeoffer/create', data: params);
     return BaseHttpResponse.fromJson(
       response.data as Map<String, dynamic>,
       (json) => json,

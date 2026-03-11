@@ -240,7 +240,10 @@ class _FeedbackCreatePageState extends State<FeedbackCreatePage> {
                               top: -6,
                               child: IconButton(
                                 onPressed: () => _removeImage(entry.key),
-                                icon: const Icon(Icons.cancel, color: Colors.red),
+                                icon: const Icon(
+                                  Icons.cancel,
+                                  color: Colors.red,
+                                ),
                               ),
                             ),
                           ],
@@ -260,10 +263,14 @@ class _FeedbackCreatePageState extends State<FeedbackCreatePage> {
                               color: fillColor,
                             ),
                             child: _uploading
-                                ? const Center(child: CircularProgressIndicator())
+                                ? const Center(
+                                    child: CircularProgressIndicator(),
+                                  )
                                 : Icon(
                                     Icons.add_photo_alternate_outlined,
-                                    color: Theme.of(context).colorScheme.outline,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.outline,
                                   ),
                           ),
                         ),
@@ -284,12 +291,7 @@ class _FeedbackCreatePageState extends State<FeedbackCreatePage> {
   }
 
   Widget _buildSectionTitle(String text) {
-    return Text(
-      text,
-      style: const TextStyle(
-        fontWeight: FontWeight.w600,
-      ),
-    );
+    return Text(text, style: const TextStyle(fontWeight: FontWeight.w600));
   }
 
   Widget _buildInputField({
@@ -315,9 +317,7 @@ class _FeedbackCreatePageState extends State<FeedbackCreatePage> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: Theme.of(context).colorScheme.primary,
-          ),
+          borderSide: BorderSide(color: Theme.of(context).colorScheme.primary),
         ),
       ),
     );

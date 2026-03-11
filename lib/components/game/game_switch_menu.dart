@@ -6,21 +6,26 @@ Future<int?> showGameSwitchMenu({
   required int currentAppId,
   Map<int, int>? pendingTotalsByAppId,
 }) {
-  final overlay = Overlay.of(iconContext).context.findRenderObject() as RenderBox;
+  final overlay =
+      Overlay.of(iconContext).context.findRenderObject() as RenderBox;
   final box = iconContext.findRenderObject() as RenderBox;
   final iconRect = box.localToGlobal(Offset.zero) & box.size;
   final screenSize = overlay.size;
-  final alignX =
-      ((iconRect.center.dx / screenSize.width) * 2 - 1).clamp(-1.0, 1.0);
+  final alignX = ((iconRect.center.dx / screenSize.width) * 2 - 1).clamp(
+    -1.0,
+    1.0,
+  );
   final alignment = Alignment(alignX.toDouble(), -1);
-  final panelTop =
-      (iconRect.bottom + 8).clamp(0.0, screenSize.height).toDouble();
+  final panelTop = (iconRect.bottom + 8)
+      .clamp(0.0, screenSize.height)
+      .toDouble();
 
   return showGeneralDialog<int>(
     context: iconContext,
     barrierDismissible: true,
-    barrierLabel:
-        MaterialLocalizations.of(iconContext).modalBarrierDismissLabel,
+    barrierLabel: MaterialLocalizations.of(
+      iconContext,
+    ).modalBarrierDismissLabel,
     barrierColor: Colors.black.withOpacity(0.2),
     transitionDuration: const Duration(milliseconds: 220),
     pageBuilder: (_, __, ___) => const SizedBox.shrink(),
@@ -53,7 +58,10 @@ class _GameSwitchOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final curved = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
+    final curved = CurvedAnimation(
+      parent: animation,
+      curve: Curves.easeOutCubic,
+    );
     return Material(
       type: MaterialType.transparency,
       child: Stack(

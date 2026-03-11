@@ -29,7 +29,8 @@ class CustomAnimatedIconButton extends StatefulWidget {
   });
 
   @override
-  State<CustomAnimatedIconButton> createState() => _CustomAnimatedIconButtonState();
+  State<CustomAnimatedIconButton> createState() =>
+      _CustomAnimatedIconButtonState();
 }
 
 class _CustomAnimatedIconButtonState extends State<CustomAnimatedIconButton> {
@@ -46,7 +47,7 @@ class _CustomAnimatedIconButtonState extends State<CustomAnimatedIconButton> {
         duration: widget.duration,
         padding: widget.padding,
         decoration: BoxDecoration(
-          color: _isPressed 
+          color: _isPressed
               ? widget.pressedColor.withValues(alpha: 0.2)
               : widget.normalColor,
           borderRadius: BorderRadius.circular(widget.borderRadius),
@@ -55,7 +56,7 @@ class _CustomAnimatedIconButtonState extends State<CustomAnimatedIconButton> {
           scale: _isPressed ? widget.pressedScale : widget.normalScale,
           child: Icon(
             widget.icon,
-            color: _isPressed 
+            color: _isPressed
                 ? widget.pressedIconColor.withValues(alpha: 0.8)
                 : widget.normalIconColor,
           ),

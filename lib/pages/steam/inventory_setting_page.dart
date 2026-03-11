@@ -97,8 +97,7 @@ class _InventorySettingPageState extends State<InventorySettingPage> {
                   WebViewWidget(controller: _controller)
                 else
                   Center(child: Text('app.user.login.message.error'.tr)),
-                if (_isPageLoading)
-                  const LinearProgressIndicator(minHeight: 2),
+                if (_isPageLoading) const LinearProgressIndicator(minHeight: 2),
               ],
             ),
           ),

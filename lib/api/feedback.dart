@@ -42,11 +42,7 @@ class ApiFeedbackServer {
   }) async {
     final response = await http.post(
       'api/app/ticket/reply/list',
-      data: {
-        'ticketId': ticketId,
-        'page': page,
-        'pageSize': pageSize,
-      },
+      data: {'ticketId': ticketId, 'page': page, 'pageSize': pageSize},
     );
     return BaseHttpResponse.fromJson(
       response.data as Map<String, dynamic>,
@@ -85,11 +81,7 @@ class ApiFeedbackServer {
   }) async {
     final response = await http.post(
       'api/app/ticket/reply/add',
-      data: {
-        'ticketId': ticketId,
-        'context': context,
-        'ids': ids,
-      },
+      data: {'ticketId': ticketId, 'context': context, 'ids': ids},
     );
     return BaseHttpResponse.fromJson(
       response.data as Map<String, dynamic>,
@@ -97,9 +89,7 @@ class ApiFeedbackServer {
     );
   }
 
-  Future<BaseHttpResponse<dynamic>> solveFeedback({
-    required String id,
-  }) async {
+  Future<BaseHttpResponse<dynamic>> solveFeedback({required String id}) async {
     final response = await http.post('api/app/ticket/$id/solve');
     return BaseHttpResponse.fromJson(
       response.data as Map<String, dynamic>,
@@ -114,18 +104,12 @@ class ApiFeedbackServer {
     final file = File(filePath);
     final name = filePath.split(RegExp(r'[\\/]+')).last;
     final formData = FormData.fromMap({
-      'file': await MultipartFile.fromFile(
-        file.path,
-        filename: name,
-      ),
+      'file': await MultipartFile.fromFile(file.path, filename: name),
     });
     final response = await http.request(
       isReply ? 'api/app/ticket/reply/upload' : 'api/app/ticket/upload',
       data: formData,
-      options: Options(
-        method: 'POST',
-        contentType: 'multipart/form-data',
-      ),
+      options: Options(method: 'POST', contentType: 'multipart/form-data'),
     );
     return BaseHttpResponse.fromJson(
       response.data as Map<String, dynamic>,

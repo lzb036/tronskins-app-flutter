@@ -23,22 +23,12 @@ class ListEndTip extends StatelessWidget {
           padding ?? const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
       child: Row(
         children: [
-          Expanded(
-            child: Container(
-              height: 1,
-              color: lineColor,
-            ),
-          ),
+          Expanded(child: Container(height: 1, color: lineColor)),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10),
             child: Text(label, style: textStyle, textAlign: TextAlign.center),
           ),
-          Expanded(
-            child: Container(
-              height: 1,
-              color: lineColor,
-            ),
-          ),
+          Expanded(child: Container(height: 1, color: lineColor)),
         ],
       ),
     );

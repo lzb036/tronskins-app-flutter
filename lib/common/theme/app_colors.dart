@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 /// 全局颜色管理（推荐放在 lib/core/theme/ 下）
 class AppColors extends ThemeExtension<AppColors> {
   // 主色调
-  final Color primary;      // 品牌色：霓虹蓝
-  final Color onPrimary;    // 主色上的文字/图标
+  final Color primary; // 品牌色：霓虹蓝
+  final Color onPrimary; // 主色上的文字/图标
 
   // 功能色
   final Color danger;
@@ -23,7 +23,7 @@ class AppColors extends ThemeExtension<AppColors> {
 
   // 背景颜色
   final Color background;
-  final Color surface;       // 卡片、对话框等浮动表面
+  final Color surface; // 卡片、对话框等浮动表面
   final Color surfaceVariant; // 次级表面
   final Color scaffoldBackground;
 
@@ -76,7 +76,7 @@ class AppColors extends ThemeExtension<AppColors> {
 
   // 深色模式配色（完美适配 OLED 屏）
   static const AppColors dark = AppColors(
-    primary: Color(0xFF00D4F0),        // 亮一点的霓虹蓝，更有活力
+    primary: Color(0xFF00D4F0), // 亮一点的霓虹蓝，更有活力
     onPrimary: Colors.black87,
     danger: Color(0xFFFF6B4D),
     onDanger: Colors.white,
@@ -158,7 +158,11 @@ class AppColors extends ThemeExtension<AppColors> {
       background: Color.lerp(background, other.background, t)!,
       surface: Color.lerp(surface, other.surface, t)!,
       surfaceVariant: Color.lerp(surfaceVariant, other.surfaceVariant, t)!,
-      scaffoldBackground: Color.lerp(scaffoldBackground, other.scaffoldBackground, t)!,
+      scaffoldBackground: Color.lerp(
+        scaffoldBackground,
+        other.scaffoldBackground,
+        t,
+      )!,
       border: Color.lerp(border, other.border, t)!,
       divider: Color.lerp(divider, other.divider, t)!,
     );

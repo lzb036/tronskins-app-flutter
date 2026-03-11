@@ -13,10 +13,9 @@ class CouponPage extends StatefulWidget {
 
 class _CouponPageState extends State<CouponPage>
     with SingleTickerProviderStateMixin {
-  final CouponController controller =
-      Get.isRegistered<CouponController>()
-          ? Get.find<CouponController>()
-          : Get.put(CouponController());
+  final CouponController controller = Get.isRegistered<CouponController>()
+      ? Get.find<CouponController>()
+      : Get.put(CouponController());
 
   late final TabController _tabController;
 
@@ -34,46 +33,46 @@ class _CouponPageState extends State<CouponPage>
   }
 
   List<_InterestItem> get _vested => [
-        _InterestItem(
-          label: 'app.user.equity.price_trend',
-          type: 'app.user.integral.exchange',
-          content: 'app.user.equity.price_trend_explain',
-          background: const Color(0xFFFB8402),
-        ),
-        _InterestItem(
-          label: 'app.user.equity.card',
-          type: 'app.user.integral.exchange',
-          content: 'app.user.equity.card_explain',
-          background: const Color(0xFF752D17),
-        ),
-      ];
+    _InterestItem(
+      label: 'app.user.equity.price_trend',
+      type: 'app.user.integral.exchange',
+      content: 'app.user.equity.price_trend_explain',
+      background: const Color(0xFFFB8402),
+    ),
+    _InterestItem(
+      label: 'app.user.equity.card',
+      type: 'app.user.integral.exchange',
+      content: 'app.user.equity.card_explain',
+      background: const Color(0xFF752D17),
+    ),
+  ];
 
   List<_InterestItem> get _unowned => [
-        _InterestItem(
-          label: 'app.user.equity.price_trend',
-          type: 'app.user.integral.exchange',
-          content: 'app.user.equity.price_trend_explain',
-          background: const Color(0xFF909090),
-        ),
-        _InterestItem(
-          label: 'app.user.equity.identification',
-          type: 'app.user.integral.exchange',
-          content: 'app.user.equity.identification_explain',
-          background: const Color(0xFF909090),
-        ),
-        _InterestItem(
-          label: 'app.user.equity.card',
-          type: 'app.user.integral.exchange',
-          content: 'app.user.equity.card_explain',
-          background: const Color(0xFF909090),
-        ),
-        _InterestItem(
-          label: 'app.user.equity.commission_free',
-          type: 'app.user.integral.exchange',
-          content: 'app.user.equity.commission_free_explain',
-          background: const Color(0xFF909090),
-        ),
-      ];
+    _InterestItem(
+      label: 'app.user.equity.price_trend',
+      type: 'app.user.integral.exchange',
+      content: 'app.user.equity.price_trend_explain',
+      background: const Color(0xFF909090),
+    ),
+    _InterestItem(
+      label: 'app.user.equity.identification',
+      type: 'app.user.integral.exchange',
+      content: 'app.user.equity.identification_explain',
+      background: const Color(0xFF909090),
+    ),
+    _InterestItem(
+      label: 'app.user.equity.card',
+      type: 'app.user.integral.exchange',
+      content: 'app.user.equity.card_explain',
+      background: const Color(0xFF909090),
+    ),
+    _InterestItem(
+      label: 'app.user.equity.commission_free',
+      type: 'app.user.integral.exchange',
+      content: 'app.user.equity.commission_free_explain',
+      background: const Color(0xFF909090),
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -90,10 +89,7 @@ class _CouponPageState extends State<CouponPage>
       ),
       body: TabBarView(
         controller: _tabController,
-        children: [
-          _buildInterestTab(),
-          _buildCouponTab(),
-        ],
+        children: [_buildInterestTab(), _buildCouponTab()],
       ),
     );
   }
@@ -135,25 +131,25 @@ class _CouponPageState extends State<CouponPage>
               children: [
                 Text(
                   item.label.tr,
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleMedium
-                      ?.copyWith(color: Colors.white),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleMedium?.copyWith(color: Colors.white),
                 ),
                 const SizedBox(width: 8),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.black.withOpacity(0.3),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
                     item.type.tr,
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodySmall
-                        ?.copyWith(color: Colors.white),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: Colors.white),
                   ),
                 ),
               ],
@@ -161,10 +157,9 @@ class _CouponPageState extends State<CouponPage>
             const SizedBox(height: 8),
             Text(
               item.content.tr,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(color: Colors.white70),
+              style: Theme.of(
+                context,
+              ).textTheme.bodySmall?.copyWith(color: Colors.white70),
             ),
           ],
         ),
@@ -190,8 +185,8 @@ class _CouponPageState extends State<CouponPage>
                   final color = item.couponsType == 1
                       ? const Color(0xFFFB8402)
                       : item.couponsType == 2
-                          ? const Color(0xFF752D17)
-                          : Theme.of(context).colorScheme.primaryContainer;
+                      ? const Color(0xFF752D17)
+                      : Theme.of(context).colorScheme.primaryContainer;
                   return Card(
                     margin: const EdgeInsets.only(bottom: 12),
                     child: Row(
@@ -206,12 +201,14 @@ class _CouponPageState extends State<CouponPage>
                                 const SizedBox(height: 8),
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 4),
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
                                   decoration: BoxDecoration(
                                     border: Border.all(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .primary,
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.primary,
                                     ),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
@@ -238,9 +235,7 @@ class _CouponPageState extends State<CouponPage>
                                 '${'app.user.coupon.validity'.tr}: '
                                 '${_formatDate(item.expireTime)}',
                                 textAlign: TextAlign.center,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
+                                style: Theme.of(context).textTheme.bodySmall
                                     ?.copyWith(color: Colors.white),
                               ),
                               const SizedBox(height: 8),

@@ -11,10 +11,9 @@ class IntegralPage extends StatefulWidget {
 }
 
 class _IntegralPageState extends State<IntegralPage> {
-  final IntegralController controller =
-      Get.isRegistered<IntegralController>()
-          ? Get.find<IntegralController>()
-          : Get.put(IntegralController());
+  final IntegralController controller = Get.isRegistered<IntegralController>()
+      ? Get.find<IntegralController>()
+      : Get.put(IntegralController());
 
   @override
   void initState() {
@@ -26,10 +25,7 @@ class _IntegralPageState extends State<IntegralPage> {
   Future<void> _exchange(int type) async {
     final ok = await controller.exchangeCoupon(type);
     if (ok) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.system.message.success'.tr,
-      );
+      Get.snackbar('app.system.tips.title'.tr, 'app.system.message.success'.tr);
     }
   }
 
@@ -61,18 +57,16 @@ class _IntegralPageState extends State<IntegralPage> {
                 children: [
                   Text(
                     '$integral',
-                    style: Theme.of(context)
-                        .textTheme
-                        .headlineMedium
-                        ?.copyWith(color: Colors.white),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.headlineMedium?.copyWith(color: Colors.white),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     'app.user.integral.unit'.tr,
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyMedium
-                        ?.copyWith(color: Colors.white70),
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
                   ),
                 ],
               ),
@@ -104,8 +98,8 @@ class _IntegralPageState extends State<IntegralPage> {
                   final bg = item.couponsType == 1
                       ? const Color(0xFFFB8402)
                       : item.couponsType == 2
-                          ? const Color(0xFF752D17)
-                          : Theme.of(context).colorScheme.primaryContainer;
+                      ? const Color(0xFF752D17)
+                      : Theme.of(context).colorScheme.primaryContainer;
                   return SizedBox(
                     width: (MediaQuery.of(context).size.width - 48) / 2,
                     child: Card(
@@ -120,17 +114,13 @@ class _IntegralPageState extends State<IntegralPage> {
                               children: [
                                 Text(
                                   item.desc ?? item.typeName ?? '-',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleSmall
+                                  style: Theme.of(context).textTheme.titleSmall
                                       ?.copyWith(color: Colors.white),
                                 ),
                                 const SizedBox(height: 6),
                                 Text(
                                   '${item.value ?? 0}${'app.user.integral.unit'.tr}',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyMedium
+                                  style: Theme.of(context).textTheme.bodyMedium
                                       ?.copyWith(color: Colors.white70),
                                 ),
                               ],
@@ -145,8 +135,9 @@ class _IntegralPageState extends State<IntegralPage> {
                                   Text(
                                     '${'app.user.coupon.validity'.tr}: '
                                     '${item.validate}',
-                                    style:
-                                        Theme.of(context).textTheme.bodySmall,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodySmall,
                                   ),
                                 const SizedBox(height: 8),
                                 SizedBox(

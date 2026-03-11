@@ -18,7 +18,8 @@ class ScaleButton extends StatefulWidget {
   State<ScaleButton> createState() => _ScaleButtonState();
 }
 
-class _ScaleButtonState extends State<ScaleButton> with SingleTickerProviderStateMixin {
+class _ScaleButtonState extends State<ScaleButton>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
 
@@ -43,9 +44,10 @@ class _ScaleButtonState extends State<ScaleButton> with SingleTickerProviderStat
   }
 
   void _updateAnimation() {
-    _scaleAnimation = Tween<double>(begin: 1.0, end: widget.scale).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: widget.scale,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
   }
 
   @override
@@ -83,10 +85,7 @@ class _ScaleButtonState extends State<ScaleButton> with SingleTickerProviderStat
       child: AnimatedBuilder(
         animation: _scaleAnimation,
         builder: (context, child) {
-          return Transform.scale(
-            scale: _scaleAnimation.value,
-            child: child,
-          );
+          return Transform.scale(scale: _scaleAnimation.value, child: child);
         },
         child: widget.child,
       ),

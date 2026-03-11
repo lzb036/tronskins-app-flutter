@@ -10,9 +10,7 @@ class AboutPage extends StatelessWidget {
     final version = 'v1.0.0';
     final server = ServerStorage.getServer();
     return Scaffold(
-      appBar: AppBar(
-        title: Text('app.user.setting.about'.tr),
-      ),
+      appBar: AppBar(title: Text('app.user.setting.about'.tr)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
