@@ -2676,11 +2676,13 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                         height: 32,
                         child: OutlinedButton(
                           onPressed: () async {
-                            await Get.toNamed(
+                            final result = await Get.toNamed(
                               Routers.BUYING_UPDATE_PRICE,
                               arguments: {'item': item, 'schema': schema},
                             );
-                            await controller.loadBuyRequests(reset: true);
+                            if (result == true) {
+                              await controller.loadBuyRequests(reset: true);
+                            }
                           },
                           style: OutlinedButton.styleFrom(
                             minimumSize: const Size(74, 32),

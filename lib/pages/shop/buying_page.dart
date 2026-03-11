@@ -276,22 +276,21 @@ class _BuyingPageState extends State<BuyingPage>
                           trailing: Column(
                             children: [
                               FilledButton.tonal(
-                                onPressed: () {
+                                onPressed: () async {
                                   if (!controller.purchaseOnline.value) {
                                     _showOfflineTips();
                                     return;
                                   }
-                                  Get.toNamed(
+                                  final result = await Get.toNamed(
                                     Routers.BUYING_UPDATE_PRICE,
                                     arguments: {
                                       'item': item.raw,
                                       'schema': schema?.raw,
                                     },
-                                  )?.then((value) {
-                                    if (value == true) {
-                                      controller.refreshMyBuying();
-                                    }
-                                  });
+                                  );
+                                  if (result == true) {
+                                    await controller.refreshMyBuying();
+                                  }
                                 },
                                 child: Text('app.inventory.price_change'.tr),
                               ),

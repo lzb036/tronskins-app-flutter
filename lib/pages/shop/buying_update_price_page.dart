@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:tronskins_app/api/model/shop/shop_models.dart';
 import 'package:tronskins_app/api/shop_product.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
+import 'package:tronskins_app/common/utils/app_snackbar.dart';
 import 'package:tronskins_app/components/game_item/game_item_image.dart';
 
 class BuyingUpdatePricePage extends StatefulWidget {
@@ -282,10 +283,13 @@ class _BuyingUpdatePricePageState extends State<BuyingUpdatePricePage> {
         ],
       );
       if (!res.success) {
-        Get.snackbar(
-          'app.system.tips.title'.tr,
-          res.message.isNotEmpty ? res.message : 'app.trade.filter.failed'.tr,
-        );
+        final dataText = res.datas?.toString().trim();
+        final errorText = (dataText?.isNotEmpty ?? false)
+            ? dataText!
+            : (res.message.trim().isNotEmpty
+                  ? res.message
+                  : 'app.trade.filter.failed'.tr);
+        AppSnackbar.error(errorText);
         return;
       }
       shouldClosePage = true;
