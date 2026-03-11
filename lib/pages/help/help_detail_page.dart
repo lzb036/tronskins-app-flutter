@@ -24,9 +24,8 @@ class HelpDetailPage extends StatelessWidget {
     } else if (arg is Map) {
       item = HelpItem.fromJson(Map<String, dynamic>.from(arg));
     }
-    final title = item?.title ?? 'app.user.server.help'.tr;
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
+      appBar: AppBar(title: Text('app.common.details'.tr)),
       body: item == null
           ? Center(child: Text('app.common.no_data'.tr))
           : ListView(

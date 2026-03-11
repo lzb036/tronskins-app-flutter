@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:tronskins_app/common/widgets/back_to_top_overlay.dart';
 import 'package:tronskins_app/controllers/wallet/coupon_controller.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
 
@@ -95,23 +96,26 @@ class _CouponPageState extends State<CouponPage>
   }
 
   Widget _buildInterestTab() {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        Text(
-          'app.user.equity.vested'.tr,
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-        const SizedBox(height: 8),
-        ..._vested.map(_buildInterestCard),
-        const SizedBox(height: 16),
-        Text(
-          'app.user.equity.not_owned'.tr,
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-        const SizedBox(height: 8),
-        ..._unowned.map(_buildInterestCard),
-      ],
+    return BackToTopScope(
+      enabled: false,
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Text(
+            'app.user.equity.vested'.tr,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 8),
+          ..._vested.map(_buildInterestCard),
+          const SizedBox(height: 16),
+          Text(
+            'app.user.equity.not_owned'.tr,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 8),
+          ..._unowned.map(_buildInterestCard),
+        ],
+      ),
     );
   }
 

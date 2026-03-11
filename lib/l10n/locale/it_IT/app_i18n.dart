@@ -5,6 +5,7 @@ final Map<String, String> it_IT = {
   "app.tabbar.market": "Mercato degli accessori",
   "app.tabbar.sell": "Vendere",
   "app.tabbar.mine": "Il mio",
+  "app.common.details": "Dettagli",
   "app.market.price_total": "Totale",
   "app.market.view": "Visualizza Mercato",
   "app.market.view_more": "Più",
@@ -522,6 +523,7 @@ final Map<String, String> it_IT = {
   "app.trade.buy.message.success": "Acquista con successo!",
   "app.trade.purchase.message.success":
       "Richiesta di acquisto pubblicata con successo!",
+  "app.trade.supply.message.success": "Fornitura riuscita!",
   "app.trade.purchase.text": "Acquisto",
   "app.trade.purchase.record": "Registro di acquisto",
   "app.trade.purchase.price": "Prezzo di acquisto",

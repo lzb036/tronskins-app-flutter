@@ -5,6 +5,7 @@ final Map<String, String> in_ID = {
   "app.tabbar.market": "Pasar Aksesoris",
   "app.tabbar.sell": "Menjual",
   "app.tabbar.mine": "Pertambangan",
+  "app.common.details": "Detail",
   "app.market.price_total": "Total",
   "app.market.view": "Lihat Pasar",
   "app.market.view_more": "Lebih lanjut",
@@ -515,6 +516,7 @@ final Map<String, String> in_ID = {
   "app.trade.buy.message.success": "Beli sukses!",
   "app.trade.purchase.message.success":
       "Permintaan beli berhasil dipublikasikan!",
+  "app.trade.supply.message.success": "Berhasil memasok!",
   "app.trade.purchase.text": "Pembelian",
   "app.trade.purchase.record": "Rekam Pembelian",
   "app.trade.purchase.price": "Harga Pembelian",

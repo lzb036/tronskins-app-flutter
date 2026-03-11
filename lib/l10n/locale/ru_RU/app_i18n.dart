@@ -5,6 +5,7 @@ final Map<String, String> ru_RU = {
   "app.tabbar.market": "Рынок аксессуаров",
   "app.tabbar.sell": "Продать",
   "app.tabbar.mine": "Мой",
+  "app.common.details": "Подробности",
   "app.market.price_total": "Всего",
   "app.market.view": "Посмотреть рынок",
   "app.market.view_more": "Больше",
@@ -518,6 +519,7 @@ final Map<String, String> ru_RU = {
   "app.trade.buy.message.success": "Купить успешно!",
   "app.trade.purchase.message.success":
       "Заявка на покупку успешно опубликована!",
+  "app.trade.supply.message.success": "Поставка выполнена успешно!",
   "app.trade.purchase.text": "Покупка",
   "app.trade.purchase.record": "Рекорд покупки",
   "app.trade.purchase.price": "Цена покупки",

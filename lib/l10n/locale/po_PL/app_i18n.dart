@@ -5,6 +5,7 @@ final Map<String, String> po_PL = {
   "app.tabbar.market": "Rynek akcesoriów",
   "app.tabbar.sell": "Sprzedaj",
   "app.tabbar.mine": "Moje",
+  "app.common.details": "Szczegóły",
   "app.market.price_total": "Całkowita",
   "app.market.view": "Zobacz rynek",
   "app.market.view_more": "Więcej",
@@ -509,6 +510,7 @@ final Map<String, String> po_PL = {
   "app.trade.buy.message.success": "Kup z powodzeniem!",
   "app.trade.purchase.message.success":
       "Zlecenie kupna zostało opublikowane pomyślnie!",
+  "app.trade.supply.message.success": "Dostawa zakończona pomyślnie!",
   "app.trade.purchase.text": "Zakup",
   "app.trade.purchase.record": "Rekord zakupu",
   "app.trade.purchase.price": "Cena zakupu",

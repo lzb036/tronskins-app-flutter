@@ -6,8 +6,8 @@ import 'package:tronskins_app/api/shop_product.dart';
 import 'package:tronskins_app/api/steam.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
 import 'package:tronskins_app/common/storage/user_storage.dart';
+import 'package:tronskins_app/common/utils/app_snackbar.dart';
 import 'package:tronskins_app/components/game_item/game_item_image.dart';
-import 'package:tronskins_app/components/game_item/game_item_models.dart';
 import 'package:tronskins_app/components/game_item/inventory_item_card.dart';
 import 'package:tronskins_app/components/layout/list_end_tip.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
@@ -275,7 +275,7 @@ class _BuyingSupplyPageState extends State<BuyingSupplyPage> {
     final appId = _request.appId;
     final price = _request.price;
     if (requestId == null || appId == null || price == null) {
-      Get.snackbar('app.system.tips.title'.tr, 'app.trade.filter.failed'.tr);
+      AppSnackbar.error('app.trade.filter.failed'.tr);
       return;
     }
     setState(() => _isSubmitting = true);
@@ -348,18 +348,22 @@ class _BuyingSupplyPageState extends State<BuyingSupplyPage> {
         }
       }
 
+      final dataText = datas?.toString().trim();
       if (res.success) {
+        FocusManager.instance.primaryFocus?.unfocus();
         Get.back(result: true);
-        Get.snackbar(
-          'app.system.tips.title'.tr,
-          'app.system.message.success'.tr,
-        );
-      } else {
-        Get.snackbar(
-          'app.system.tips.title'.tr,
-          res.message.isNotEmpty ? res.message : 'app.trade.filter.failed'.tr,
-        );
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          AppSnackbar.success('app.trade.supply.message.success'.tr);
+        });
+        return;
       }
+
+      final errorText = (dataText?.isNotEmpty ?? false)
+          ? dataText!
+          : (res.message.trim().isNotEmpty
+                ? res.message
+                : 'app.trade.filter.failed'.tr);
+      AppSnackbar.error(errorText);
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);
@@ -396,10 +400,6 @@ class _BuyingSupplyPageState extends State<BuyingSupplyPage> {
     final isAllSelected = maxNeed > 0
         ? _selectedIds.length >= maxNeed
         : _items.isNotEmpty && _selectedIds.length >= _items.length;
-    final tags = fallbackSchema?.raw['tags'];
-    final rarity = TagInfo.fromRaw(tags is Map ? tags['rarity'] : null);
-    final quality = TagInfo.fromRaw(tags is Map ? tags['quality'] : null);
-    final exterior = TagInfo.fromRaw(tags is Map ? tags['exterior'] : null);
     final headerAppId = _request.appId ?? 730;
     return Scaffold(
       appBar: AppBar(title: Text('app.trade.supply.inventory'.tr)),
@@ -411,16 +411,14 @@ class _BuyingSupplyPageState extends State<BuyingSupplyPage> {
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     SizedBox(
-                      width: 72,
-                      height: 43,
+                      width: 96,
+                      height: 58,
                       child: GameItemImage(
                         imageUrl: imageUrl,
                         appId: headerAppId,
-                        rarity: rarity,
-                        quality: quality,
-                        exterior: exterior,
                         count: maxNeed > 0 ? maxNeed : null,
                       ),
                     ),
@@ -535,6 +533,7 @@ class _BuyingSupplyPageState extends State<BuyingSupplyPage> {
                           return InventoryItemCard(
                             item: item,
                             schema: schema,
+                            useSchemaBuffMinPrice: false,
                             selected: selected,
                             disabledLabel: disabled ? disabledLabel : null,
                             onTap: () => _toggleSelection(item),

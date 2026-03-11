@@ -9,6 +9,8 @@ class ShopShippingNoticeController extends GetxController {
     : _api = api ?? ApiShopProductServer();
 
   static const List<int> supportedGameIds = [730, 440, 570];
+  static const int _countPageSize = 50;
+  static const int _countPageLimit = 20;
 
   final ApiShopProductServer _api;
   final RxMap<int, int> pendingTotalsByGame = <int, int>{}.obs;
@@ -77,25 +79,7 @@ class ShopShippingNoticeController extends GetxController {
     final next = <int, int>{};
     for (final appId in supportedGameIds) {
       try {
-        final res = await _api.pendingShipmentList(
-          params: {
-            'appId': appId,
-            'page': 1,
-            'pageSize': 1,
-            'field': 'time',
-            'asc': false,
-            'statusList': [2, 3, 9],
-          },
-        );
-        final data = res.datas;
-        final total = data?.total ?? data?.pager?.total ?? 0;
-        if (total > 0) {
-          next[appId] = total;
-        } else if (data?.items.isNotEmpty ?? false) {
-          next[appId] = 1;
-        } else {
-          next[appId] = 0;
-        }
+        next[appId] = await _fetchPendingTotal(appId);
       } catch (_) {
         // Keep current value on transient failures to avoid badge flicker.
         next[appId] = pendingCount(appId);
@@ -110,6 +94,46 @@ class ShopShippingNoticeController extends GetxController {
     if (!isClosed && requestToken == _requestToken) {
       pendingTotalsByGame.assignAll(next);
     }
+  }
+
+  Future<int> _fetchPendingTotal(int appId) async {
+    var page = 1;
+    var accumulated = 0;
+
+    while (page <= _countPageLimit) {
+      final res = await _api.pendingShipmentList(
+        params: {
+          'appId': appId,
+          'page': page,
+          'pageSize': _countPageSize,
+          'field': 'time',
+          'asc': false,
+          'statusList': [2, 3, 9],
+        },
+      );
+      if (!res.success) {
+        throw Exception(res.message);
+      }
+
+      final data = res.datas;
+      if (data == null) {
+        return accumulated;
+      }
+
+      final total = data.total ?? data.pager?.total;
+      if (total != null) {
+        return total < 0 ? 0 : total;
+      }
+
+      final fetchedCount = data.items.length;
+      accumulated += fetchedCount;
+      if (fetchedCount < _countPageSize) {
+        return accumulated;
+      }
+      page += 1;
+    }
+
+    return accumulated;
   }
 
   void _startPolling() {

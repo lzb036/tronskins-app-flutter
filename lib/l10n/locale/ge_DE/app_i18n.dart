@@ -5,6 +5,7 @@ final Map<String, String> ge_DE = {
   "app.tabbar.market": "Zubehör Markt",
   "app.tabbar.sell": "Verkaufen",
   "app.tabbar.mine": "Meine",
+  "app.common.details": "Details",
   "app.market.price_total": "Insgesamt",
   "app.market.view": "Markt ansehen",
   "app.market.view_more": "Mehr",
@@ -525,6 +526,7 @@ final Map<String, String> ge_DE = {
   "app.trade.buy.message.success": "Kaufen Sie erfolgreich!",
   "app.trade.purchase.message.success":
       "Kaufgesuch erfolgreich veröffentlicht!",
+  "app.trade.supply.message.success": "Lieferung erfolgreich!",
   "app.trade.purchase.text": "Einkauf",
   "app.trade.purchase.record": "Einkaufsaufzeichnung",
   "app.trade.purchase.price": "Kaufpreis",

@@ -14,6 +14,7 @@ class InventoryItemCard extends StatelessWidget {
     this.schema,
     this.schemaMap,
     this.stickerMap,
+    this.useSchemaBuffMinPrice = true,
     this.selected = false,
     this.disabledLabel,
     this.onTap,
@@ -23,6 +24,7 @@ class InventoryItemCard extends StatelessWidget {
   final ShopSchemaInfo? schema;
   final Map<dynamic, dynamic>? schemaMap;
   final Map<dynamic, dynamic>? stickerMap;
+  final bool useSchemaBuffMinPrice;
   final bool selected;
   final String? disabledLabel;
   final VoidCallback? onTap;
@@ -67,7 +69,11 @@ class InventoryItemCard extends StatelessWidget {
           item.raw['gemList'] ??
           item.raw['gems'],
     );
-    final price = _extractPrice(schema, item.price ?? 0);
+    final price = _resolveDisplayPrice(
+      schema: schema,
+      itemPrice: item.price,
+      useSchemaBuffMinPrice: useSchemaBuffMinPrice,
+    );
 
     return Card(
       margin: EdgeInsets.zero,
@@ -198,9 +204,19 @@ double _normalizePrice(double value) {
   return rounded;
 }
 
-double _extractPrice(ShopSchemaInfo? schema, double fallback) {
-  // Keep inventory card pricing aligned with tronskins-app ItemBag:
-  // use schema.buff_min_price directly.
+double _resolveDisplayPrice({
+  required ShopSchemaInfo? schema,
+  required double? itemPrice,
+  required bool useSchemaBuffMinPrice,
+}) {
+  if (!useSchemaBuffMinPrice) {
+    final directPrice = _parsePriceValue(itemPrice);
+    if (directPrice > 0) {
+      return _normalizePrice(directPrice);
+    }
+    return 0;
+  }
+
   if (schema != null) {
     final raw = schema.raw;
     final buffMinPrice = _parsePriceValue(
@@ -209,9 +225,9 @@ double _extractPrice(ShopSchemaInfo? schema, double fallback) {
     if (buffMinPrice > 0) {
       return _normalizePrice(buffMinPrice);
     }
-    return 0;
   }
-  final directPrice = _parsePriceValue(fallback);
+
+  final directPrice = _parsePriceValue(itemPrice);
   if (directPrice > 0) {
     return _normalizePrice(directPrice);
   }

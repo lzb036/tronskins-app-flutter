@@ -5,6 +5,7 @@ final Map<String, String> la_LAT = {
   "app.tabbar.market": "Mercado de Accesorios",
   "app.tabbar.sell": "Vender",
   "app.tabbar.mine": "Mi",
+  "app.common.details": "Detalles",
   "app.market.price_total": "Total",
   "app.market.view": "Ver mercado",
   "app.market.view_more": "Más",
@@ -533,6 +534,7 @@ final Map<String, String> la_LAT = {
   "app.trade.buy.message.success": " ¡Compra exitosa!",
   "app.trade.purchase.message.success":
       "¡Solicitud de compra publicada con éxito!",
+  "app.trade.supply.message.success": "¡Suministro exitoso!",
   "app.trade.purchase.text": "Compra",
   "app.trade.purchase.record": "Registro de Compras",
   "app.trade.purchase.price": "Precio de compra",

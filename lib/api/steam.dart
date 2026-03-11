@@ -108,10 +108,17 @@ class ApiSteamServer {
     required String id,
   }) async {
     final response = await http.post('api/app/steam/refresh/$id/steam/level');
-    return BaseHttpResponse.fromJson(
-      response.data as Map<String, dynamic>,
-      (json) => json as Map<String, dynamic>,
-    );
+    return BaseHttpResponse.fromJson(response.data as Map<String, dynamic>, (
+      json,
+    ) {
+      if (json is Map<String, dynamic>) {
+        return json;
+      }
+      if (json is Map) {
+        return Map<String, dynamic>.from(json);
+      }
+      return {'_message': json?.toString() ?? ''};
+    });
   }
 
   Future<BaseHttpResponse<String>> decryptSteamPassword({

@@ -356,9 +356,6 @@ class _ShopPageState extends State<ShopPage>
   }
 
   int _pendingShippingType(ShopOrderItem order) {
-    if (order.type != null) {
-      return order.type!;
-    }
     for (final detail in order.details) {
       if (detail.type == 2) {
         return 2;
@@ -469,8 +466,13 @@ class _ShopPageState extends State<ShopPage>
             .toList(growable: false);
         orderController.pendingShipments.assignAll(updated);
       } else {
+        final dataText = _extractApiErrorText(data);
         AppSnackbar.error(
-          res.message.isNotEmpty ? res.message : 'app.trade.filter.failed'.tr,
+          (dataText?.isNotEmpty ?? false)
+              ? dataText!
+              : (res.message.trim().isNotEmpty
+                    ? res.message
+                    : 'app.trade.filter.failed'.tr),
         );
       }
     } catch (_) {
@@ -482,6 +484,26 @@ class _ShopPageState extends State<ShopPage>
         });
       }
     }
+  }
+
+  String? _extractApiErrorText(Map<String, dynamic>? data) {
+    if (data == null) {
+      return null;
+    }
+    final candidates = [
+      data['_message'],
+      data['message'],
+      data['msg'],
+      data['datas'],
+      data['error'],
+    ];
+    for (final candidate in candidates) {
+      final text = candidate?.toString().trim();
+      if (text != null && text.isNotEmpty) {
+        return text;
+      }
+    }
+    return null;
   }
 
   Widget _buildPendingBuyerInfo(ShopOrderItem order) {

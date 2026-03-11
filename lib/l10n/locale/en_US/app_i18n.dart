@@ -5,6 +5,7 @@ final Map<String, String> en_US = {
   "app.tabbar.market": "Market",
   "app.tabbar.sell": "Sell",
   "app.tabbar.mine": "Mine",
+  "app.common.details": "Details",
   "app.market.price_total": "Total",
   "app.market.view": "View Market",
   "app.market.view_more": "More",
@@ -510,6 +511,7 @@ final Map<String, String> en_US = {
   "app.trade.buy.message.success": "Buy successful!",
   "app.trade.purchase.message.success":
       "Purchase request submitted successfully!",
+  "app.trade.supply.message.success": "Supply successful!",
   "app.trade.purchase.text": "Purchase",
   "app.trade.purchase.record": "Purchase Record",
   "app.trade.purchase.price": "Purchase Price",
