@@ -7,6 +7,7 @@ import 'package:tronskins_app/api/model/shop/shop_models.dart';
 import 'package:tronskins_app/api/steam.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
 import 'package:tronskins_app/common/storage/game_storage.dart';
+import 'package:tronskins_app/common/widgets/back_to_top_overlay.dart';
 import 'package:tronskins_app/components/filter/filter_models.dart';
 import 'package:tronskins_app/components/filter/market_filter_sheet.dart';
 import 'package:tronskins_app/components/filter/order_filter_sheet.dart';
@@ -818,19 +819,22 @@ class _MyPurchasePageState extends State<MyPurchasePage>
           ),
         ],
       ),
-      body: Column(
-        children: [
-          _buildSharedTopSection(),
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                _buildWaitingReceipts(currency),
-                _buildBuyRecords(currency),
-              ],
+      body: BackToTopScope(
+        enabled: false,
+        child: Column(
+          children: [
+            _buildSharedTopSection(),
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  _buildWaitingReceipts(currency),
+                  _buildBuyRecords(currency),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -854,193 +858,206 @@ class _MyPurchasePageState extends State<MyPurchasePage>
           !controller.isLoadingWaiting.value &&
           !controller.waitingHasMore;
       final showFooter = showLoadingFooter || showNoMoreFooter;
-      return RefreshIndicator(
-        onRefresh: controller.refreshWaitingReceipts,
-        child: ListView.separated(
-          controller: _receiptScroll,
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
-          itemCount: controller.waitingReceipts.length + (showFooter ? 1 : 0),
-          separatorBuilder: (_, __) => const SizedBox(height: 10),
-          itemBuilder: (context, index) {
-            if (index >= controller.waitingReceipts.length) {
-              return _buildLoadMoreFooter(
-                showLoading: showLoadingFooter,
-                showNoMore: showNoMoreFooter,
-              );
-            }
-            final order = controller.waitingReceipts[index];
-            final detail = order.details.isNotEmpty
-                ? order.details.first
-                : null;
-            final schema = _lookupSchema(controller.schemas, detail);
-            final imageUrl = detail?.imageUrl ?? schema?.imageUrl;
-            final title = detail?.marketName ?? schema?.marketName ?? '-';
-            final appId = _resolveDetailAppId(detail, schema);
-            final rarity = _schemaTag(schema, 'rarity');
-            final quality = _schemaTag(schema, 'quality');
-            final exterior = _schemaTag(schema, 'exterior');
-            final count = detail?.count ?? order.nums ?? 1;
-            final price = _sumOrderPrice(order);
-            final wear = detail?.paintWear;
-            final showCountdown = _showWaitingCountdown(order);
-            final deadlineMs = _waitingDeadlineMs(order);
-            return Card(
-              margin: EdgeInsets.zero,
-              clipBehavior: Clip.antiAlias,
-              child: InkWell(
-                onTap: () => _openOrderDetail(order),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              _formatTime(order.changeTime ?? order.createTime),
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurfaceVariant,
-                                  ),
-                            ),
-                          ),
-                          _buildStatusBadge(order),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          SizedBox(
-                            width: 98,
-                            height: 58,
-                            child: GameItemImage(
-                              imageUrl: imageUrl,
-                              appId: appId,
-                              rarity: rarity,
-                              quality: quality,
-                              exterior: exterior,
-                              count: count > 1 ? count : null,
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  title,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: Theme.of(context).textTheme.bodyMedium
-                                      ?.copyWith(fontWeight: FontWeight.w600),
+      return BackToTopScope(
+        enabled: true,
+        child: RefreshIndicator(
+          onRefresh: controller.refreshWaitingReceipts,
+          child: ListView.separated(
+            controller: _receiptScroll,
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+            itemCount: controller.waitingReceipts.length + (showFooter ? 1 : 0),
+            separatorBuilder: (_, __) => const SizedBox(height: 10),
+            itemBuilder: (context, index) {
+              if (index >= controller.waitingReceipts.length) {
+                return _buildLoadMoreFooter(
+                  showLoading: showLoadingFooter,
+                  showNoMore: showNoMoreFooter,
+                );
+              }
+              final order = controller.waitingReceipts[index];
+              final detail = order.details.isNotEmpty
+                  ? order.details.first
+                  : null;
+              final schema = _lookupSchema(controller.schemas, detail);
+              final imageUrl = detail?.imageUrl ?? schema?.imageUrl;
+              final title = detail?.marketName ?? schema?.marketName ?? '-';
+              final appId = _resolveDetailAppId(detail, schema);
+              final rarity = _schemaTag(schema, 'rarity');
+              final quality = _schemaTag(schema, 'quality');
+              final exterior = _schemaTag(schema, 'exterior');
+              final count = detail?.count ?? order.nums ?? 1;
+              final price = _sumOrderPrice(order);
+              final wear = detail?.paintWear;
+              final showCountdown = _showWaitingCountdown(order);
+              final deadlineMs = _waitingDeadlineMs(order);
+              return Card(
+                margin: EdgeInsets.zero,
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: () => _openOrderDetail(order),
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                _formatTime(
+                                  order.changeTime ?? order.createTime,
                                 ),
-                                if (wear != null) ...[
-                                  const SizedBox(height: 6),
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                                    ),
+                              ),
+                            ),
+                            _buildStatusBadge(order),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(
+                              width: 98,
+                              height: 58,
+                              child: GameItemImage(
+                                imageUrl: imageUrl,
+                                appId: appId,
+                                rarity: rarity,
+                                quality: quality,
+                                exterior: exterior,
+                                count: count > 1 ? count : null,
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
                                   Text(
-                                    '${'app.market.csgo.abradability'.tr}: '
-                                    '${wear.toStringAsFixed(6)}',
-                                    style: Theme.of(context).textTheme.bodySmall
+                                    title,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(fontWeight: FontWeight.w600),
+                                  ),
+                                  if (wear != null) ...[
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      '${'app.market.csgo.abradability'.tr}: '
+                                      '${wear.toStringAsFixed(6)}',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSurfaceVariant,
+                                          ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    WearProgressBar(paintWear: wear),
+                                  ],
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Obx(
+                                  () => Text(
+                                    currency.format(price),
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleSmall
                                         ?.copyWith(
                                           color: Theme.of(
                                             context,
-                                          ).colorScheme.onSurfaceVariant,
+                                          ).colorScheme.primary,
+                                          fontWeight: FontWeight.w700,
                                         ),
                                   ),
-                                  const SizedBox(height: 4),
-                                  WearProgressBar(paintWear: wear),
+                                ),
+                                if (showCountdown) ...[
+                                  const SizedBox(height: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 3,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFFF3E0),
+                                      borderRadius: BorderRadius.circular(999),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.schedule,
+                                          size: 12,
+                                          color: Colors.orange.shade700,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        _InlineCountdownText(
+                                          endTimeMs: deadlineMs,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .labelSmall
+                                              ?.copyWith(
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.onSurfaceVariant,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                 ],
                               ],
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              Obx(
-                                () => Text(
-                                  currency.format(price),
-                                  style: Theme.of(context).textTheme.titleSmall
-                                      ?.copyWith(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.primary,
-                                        fontWeight: FontWeight.w700,
-                                      ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: SizedBox(
+                            height: 34,
+                            child: FilledButton(
+                              style: FilledButton.styleFrom(
+                                minimumSize: const Size(92, 34),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
                                 ),
-                              ),
-                              if (showCountdown) ...[
-                                const SizedBox(height: 6),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 3,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFFFF3E0),
-                                    borderRadius: BorderRadius.circular(999),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.schedule,
-                                        size: 12,
-                                        color: Colors.orange.shade700,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      _InlineCountdownText(
-                                        endTimeMs: deadlineMs,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .labelSmall
-                                            ?.copyWith(
-                                              color: Theme.of(
-                                                context,
-                                              ).colorScheme.onSurfaceVariant,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                      ),
-                                    ],
-                                  ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
                                 ),
-                              ],
-                            ],
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: SizedBox(
-                          height: 34,
-                          child: FilledButton(
-                            style: FilledButton.styleFrom(
-                              minimumSize: const Size(92, 34),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
+                                textStyle: Theme.of(context)
+                                    .textTheme
+                                    .labelMedium
+                                    ?.copyWith(fontWeight: FontWeight.w600),
                               ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              textStyle: Theme.of(context).textTheme.labelMedium
-                                  ?.copyWith(fontWeight: FontWeight.w600),
+                              onPressed: () => _receiveOrder(order),
+                              child: Text('app.market.product.receive'.tr),
                             ),
-                            onPressed: () => _receiveOrder(order),
-                            child: Text('app.market.product.receive'.tr),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       );
     });
@@ -1063,232 +1080,241 @@ class _MyPurchasePageState extends State<MyPurchasePage>
           !controller.isLoadingRecords.value &&
           !controller.recordHasMore;
       final showFooter = showLoadingFooter || showNoMoreFooter;
-      return RefreshIndicator(
-        onRefresh: controller.refreshBuyRecords,
-        child: ListView.separated(
-          controller: _recordScroll,
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
-          itemCount: controller.buyRecords.length + (showFooter ? 1 : 0),
-          separatorBuilder: (_, __) => const SizedBox(height: 10),
-          itemBuilder: (context, index) {
-            if (index >= controller.buyRecords.length) {
-              return _buildLoadMoreFooter(
-                showLoading: showLoadingFooter,
-                showNoMore: showNoMoreFooter,
-              );
-            }
-            final order = controller.buyRecords[index];
-            final details = order.details;
-            final hasMultiple = details.length > 1;
-            final detail = details.isNotEmpty ? details.first : null;
-            final schema = _lookupSchema(controller.schemas, detail);
-            final imageUrl = detail?.imageUrl ?? schema?.imageUrl;
-            final title = detail?.marketName ?? schema?.marketName ?? '-';
-            final appId = _resolveDetailAppId(detail, schema);
-            final rarity = _schemaTag(schema, 'rarity');
-            final quality = _schemaTag(schema, 'quality');
-            final price = _sumOrderPrice(order);
-            final wear = detail?.paintWear;
-            final protectionTime = order.protectionTime;
-            final showProtectionCountdown =
-                protectionTime != null &&
-                protectionTime > 0 &&
-                order.status == 5;
-            final colorScheme = Theme.of(context).colorScheme;
-            final textTheme = Theme.of(context).textTheme;
-            return Card(
-              margin: EdgeInsets.zero,
-              clipBehavior: Clip.antiAlias,
-              child: InkWell(
-                onTap: () => _openOrderDetail(order),
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              _formatTime(order.createTime),
-                              style: textTheme.bodySmall?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ),
-                          _buildStatusBadge(order),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      if (!hasMultiple)
+      return BackToTopScope(
+        enabled: true,
+        child: RefreshIndicator(
+          onRefresh: controller.refreshBuyRecords,
+          child: ListView.separated(
+            controller: _recordScroll,
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+            itemCount: controller.buyRecords.length + (showFooter ? 1 : 0),
+            separatorBuilder: (_, __) => const SizedBox(height: 10),
+            itemBuilder: (context, index) {
+              if (index >= controller.buyRecords.length) {
+                return _buildLoadMoreFooter(
+                  showLoading: showLoadingFooter,
+                  showNoMore: showNoMoreFooter,
+                );
+              }
+              final order = controller.buyRecords[index];
+              final details = order.details;
+              final hasMultiple = details.length > 1;
+              final detail = details.isNotEmpty ? details.first : null;
+              final schema = _lookupSchema(controller.schemas, detail);
+              final imageUrl = detail?.imageUrl ?? schema?.imageUrl;
+              final title = detail?.marketName ?? schema?.marketName ?? '-';
+              final appId = _resolveDetailAppId(detail, schema);
+              final rarity = _schemaTag(schema, 'rarity');
+              final quality = _schemaTag(schema, 'quality');
+              final price = _sumOrderPrice(order);
+              final wear = detail?.paintWear;
+              final protectionTime = order.protectionTime;
+              final showProtectionCountdown =
+                  protectionTime != null &&
+                  protectionTime > 0 &&
+                  order.status == 5;
+              final colorScheme = Theme.of(context).colorScheme;
+              final textTheme = Theme.of(context).textTheme;
+              return Card(
+                margin: EdgeInsets.zero,
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: () => _openOrderDetail(order),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            SizedBox(
-                              width: 72,
-                              height: 43,
-                              child: GameItemImage(
-                                imageUrl: imageUrl,
-                                appId: appId,
-                                rarity: rarity,
-                                quality: quality,
-                                count: (detail?.count ?? 1) > 1
-                                    ? detail?.count
-                                    : null,
+                            Expanded(
+                              child: Text(
+                                _formatTime(order.createTime),
+                                style: textTheme.bodySmall?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
                               ),
                             ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          title,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: textTheme.titleSmall?.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                        if (wear != null) ...[
-                                          const SizedBox(height: 4),
+                            _buildStatusBadge(order),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        if (!hasMultiple)
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              SizedBox(
+                                width: 72,
+                                height: 43,
+                                child: GameItemImage(
+                                  imageUrl: imageUrl,
+                                  appId: appId,
+                                  rarity: rarity,
+                                  quality: quality,
+                                  count: (detail?.count ?? 1) > 1
+                                      ? detail?.count
+                                      : null,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
                                           Text(
-                                            '${'app.market.csgo.abradability'.tr}: '
-                                            '${wear.toStringAsFixed(6)}',
+                                            title,
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
+                                            style: textTheme.titleSmall
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                          ),
+                                          if (wear != null) ...[
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              '${'app.market.csgo.abradability'.tr}: '
+                                              '${wear.toStringAsFixed(6)}',
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: textTheme.bodySmall
+                                                  ?.copyWith(
+                                                    color: colorScheme
+                                                        .onSurfaceVariant,
+                                                  ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            WearProgressBar(paintWear: wear),
+                                          ],
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.end,
+                                      children: [
+                                        if (showProtectionCountdown) ...[
+                                          _RecordProtectionCountdownText(
+                                            endTimeSeconds: protectionTime,
                                             style: textTheme.bodySmall
                                                 ?.copyWith(
-                                                  color: colorScheme
-                                                      .onSurfaceVariant,
+                                                  color: Colors.orange.shade600,
+                                                  fontWeight: FontWeight.w600,
                                                 ),
                                           ),
                                           const SizedBox(height: 4),
-                                          WearProgressBar(paintWear: wear),
                                         ],
+                                        Obx(
+                                          () => Text(
+                                            currency.format(price),
+                                            style: textTheme.titleSmall
+                                                ?.copyWith(
+                                                  color: colorScheme.primary,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                          ),
+                                        ),
                                       ],
                                     ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                      if (showProtectionCountdown) ...[
-                                        _RecordProtectionCountdownText(
-                                          endTimeSeconds: protectionTime,
-                                          style: textTheme.bodySmall?.copyWith(
-                                            color: Colors.orange.shade600,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                      ],
-                                      Obx(
-                                        () => Text(
-                                          currency.format(price),
-                                          style: textTheme.titleSmall?.copyWith(
-                                            color: colorScheme.primary,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        )
-                      else
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Expanded(
-                              child: Row(
-                                children: [
-                                  ...details.take(3).map((detailItem) {
-                                    final detailSchema = _lookupSchema(
-                                      controller.schemas,
-                                      detailItem,
-                                    );
-                                    return Padding(
-                                      padding: const EdgeInsets.only(right: 8),
-                                      child: SizedBox(
-                                        width: 72,
-                                        height: 43,
-                                        child: GameItemImage(
-                                          imageUrl:
-                                              detailItem.imageUrl ??
-                                              detailSchema?.imageUrl,
-                                          appId: _resolveDetailAppId(
-                                            detailItem,
-                                            detailSchema,
-                                          ),
-                                          rarity: _schemaTag(
-                                            detailSchema,
-                                            'rarity',
-                                          ),
-                                          quality: _schemaTag(
-                                            detailSchema,
-                                            'quality',
-                                          ),
-                                          count: (detailItem.count ?? 1) > 1
-                                              ? detailItem.count
-                                              : null,
-                                        ),
-                                      ),
-                                    );
-                                  }),
-                                  if (details.length > 3)
-                                    Text(
-                                      '+${details.length - 3}',
-                                      style: textTheme.bodySmall?.copyWith(
-                                        color: colorScheme.onSurfaceVariant,
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                if (showProtectionCountdown) ...[
-                                  _RecordProtectionCountdownText(
-                                    endTimeSeconds: protectionTime,
-                                    style: textTheme.bodySmall?.copyWith(
-                                      color: Colors.orange.shade600,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                ],
-                                Obx(
-                                  () => Text(
-                                    currency.format(price),
-                                    style: textTheme.titleSmall?.copyWith(
-                                      color: colorScheme.primary,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                          ],
-                        ),
-                    ],
+                              ),
+                            ],
+                          )
+                        else
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Expanded(
+                                child: Row(
+                                  children: [
+                                    ...details.take(3).map((detailItem) {
+                                      final detailSchema = _lookupSchema(
+                                        controller.schemas,
+                                        detailItem,
+                                      );
+                                      return Padding(
+                                        padding: const EdgeInsets.only(
+                                          right: 8,
+                                        ),
+                                        child: SizedBox(
+                                          width: 72,
+                                          height: 43,
+                                          child: GameItemImage(
+                                            imageUrl:
+                                                detailItem.imageUrl ??
+                                                detailSchema?.imageUrl,
+                                            appId: _resolveDetailAppId(
+                                              detailItem,
+                                              detailSchema,
+                                            ),
+                                            rarity: _schemaTag(
+                                              detailSchema,
+                                              'rarity',
+                                            ),
+                                            quality: _schemaTag(
+                                              detailSchema,
+                                              'quality',
+                                            ),
+                                            count: (detailItem.count ?? 1) > 1
+                                                ? detailItem.count
+                                                : null,
+                                          ),
+                                        ),
+                                      );
+                                    }),
+                                    if (details.length > 3)
+                                      Text(
+                                        '+${details.length - 3}',
+                                        style: textTheme.bodySmall?.copyWith(
+                                          color: colorScheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (showProtectionCountdown) ...[
+                                    _RecordProtectionCountdownText(
+                                      endTimeSeconds: protectionTime,
+                                      style: textTheme.bodySmall?.copyWith(
+                                        color: Colors.orange.shade600,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                  ],
+                                  Obx(
+                                    () => Text(
+                                      currency.format(price),
+                                      style: textTheme.titleSmall?.copyWith(
+                                        color: colorScheme.primary,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       );
     });

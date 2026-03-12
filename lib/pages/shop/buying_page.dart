@@ -5,6 +5,7 @@ import 'package:tronskins_app/api/model/shop/shop_models.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
 import 'package:tronskins_app/common/storage/game_storage.dart';
 import 'package:tronskins_app/common/storage/user_storage.dart';
+import 'package:tronskins_app/common/widgets/back_to_top_overlay.dart';
 import 'package:tronskins_app/components/filter/filter_models.dart';
 import 'package:tronskins_app/components/filter/market_filter_sheet.dart';
 import 'package:tronskins_app/components/filter/order_filter_sheet.dart';
@@ -698,6 +699,7 @@ class _BuyingPageState extends State<BuyingPage>
     final currency = Get.find<CurrencyController>();
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    const imageAspectRatio = 72 / 43;
     final title =
         schema?.marketName ??
         schema?.marketHashName ??
@@ -715,85 +717,80 @@ class _BuyingPageState extends State<BuyingPage>
       if (item.phase?.isNotEmpty == true)
         '${'app.market.csgo.phase'.tr}: ${item.phase}',
     ];
+    final summaryHeight = switch (metaLines.length) {
+      0 => 80.0,
+      1 => 88.0,
+      _ => 94.0,
+    };
+    final imageWidth = summaryHeight * imageAspectRatio;
 
-    return IntrinsicHeight(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: 74),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Container(
-              width: 84,
-              decoration: BoxDecoration(
-                color: colorScheme.surfaceContainerHighest.withValues(
-                  alpha: 0.26,
-                ),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: Padding(
-                padding: const EdgeInsets.all(6),
-                child: GameItemImage(
-                  imageUrl: schema?.imageUrl,
-                  appId: item.appId,
-                  rarity: _schemaTag(schema, 'rarity'),
-                  quality: _schemaTag(schema, 'quality'),
-                  exterior: _schemaTag(schema, 'exterior'),
-                  count: (item.count ?? 1) > 1 ? item.count : null,
-                ),
-              ),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: imageWidth,
+          height: summaryHeight,
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.26),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Padding(
+            padding: const EdgeInsets.all(3),
+            child: GameItemImage(
+              imageUrl: schema?.imageUrl,
+              appId: item.appId,
+              rarity: _schemaTag(schema, 'rarity'),
+              quality: _schemaTag(schema, 'quality'),
+              exterior: _schemaTag(schema, 'exterior'),
+              count: (item.count ?? 1) > 1 ? item.count : null,
             ),
-            const SizedBox(width: 12),
-            Expanded(
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: summaryHeight),
+            child: Align(
+              alignment: Alignment.centerLeft,
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 2),
-                child: Row(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            title,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: textTheme.titleSmall?.copyWith(
-                              fontWeight: FontWeight.w700,
-                              height: 1.25,
-                            ),
-                          ),
-                          for (final line in metaLines) ...[
-                            const SizedBox(height: 6),
-                            _buildSummaryMetaText(line),
-                          ],
-                        ],
+                    Text(
+                      title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        height: 1.25,
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 124),
-                      child: Align(
-                        alignment: Alignment.topRight,
-                        child: Obx(
-                          () => Text(
-                            currency.format(item.price ?? 0),
-                            textAlign: TextAlign.end,
-                            style: textTheme.titleSmall?.copyWith(
-                              color: colorScheme.primary,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
+                    const SizedBox(height: 6),
+                    Obx(
+                      () => Text(
+                        currency.format(item.price ?? 0),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: textTheme.titleSmall?.copyWith(
+                          color: colorScheme.primary,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
+                    for (final line in metaLines) ...[
+                      const SizedBox(height: 6),
+                      _buildSummaryMetaText(line),
+                    ],
                   ],
                 ),
               ),
             ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 
@@ -857,6 +854,40 @@ class _BuyingPageState extends State<BuyingPage>
     );
   }
 
+  Widget _buildRecordInfoFooter(BuyRequestItem item) {
+    final colors = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    return Container(
+      padding: const EdgeInsets.only(top: 12),
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(color: colors.outline.withValues(alpha: 0.08)),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.inventory_2_outlined,
+            size: 15,
+            color: colors.onSurfaceVariant,
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              'app.trade.purchase.num'.tr,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: textTheme.bodySmall?.copyWith(
+                color: colors.onSurfaceVariant,
+              ),
+            ),
+          ),
+          _buildProgressBadge(item),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isLoggedIn = UserStorage.getUserInfo() != null;
@@ -902,16 +933,19 @@ class _BuyingPageState extends State<BuyingPage>
           const SizedBox(width: 6),
         ],
       ),
-      body: Column(
-        children: [
-          _buildSharedTopSection(),
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [_buildMyBuyingTab(), _buildRecordTab()],
+      body: BackToTopScope(
+        enabled: false,
+        child: Column(
+          children: [
+            _buildSharedTopSection(),
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [_buildMyBuyingTab(), _buildRecordTab()],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -932,55 +966,58 @@ class _BuyingPageState extends State<BuyingPage>
           !controller.myBuyingHasMore;
       final showFooter = showLoadingFooter || showNoMoreFooter;
 
-      return RefreshIndicator(
-        onRefresh: controller.refreshMyBuying,
-        child: ListView.separated(
-          controller: _myBuyingScroll,
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
-          itemCount: controller.myBuying.length + (showFooter ? 1 : 0),
-          separatorBuilder: (_, __) => const SizedBox(height: 10),
-          itemBuilder: (context, index) {
-            if (index >= controller.myBuying.length) {
-              return _buildLoadMoreFooter(
-                showLoading: showLoadingFooter,
-                showNoMore: showNoMoreFooter,
-              );
-            }
-            final item = controller.myBuying[index];
-            final schema = _lookupSchema(item);
-            return Card(
-              margin: EdgeInsets.zero,
-              clipBehavior: Clip.antiAlias,
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            _formatTime(item.upTime ?? item.createTime),
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
-                                ),
+      return BackToTopScope(
+        enabled: true,
+        child: RefreshIndicator(
+          onRefresh: controller.refreshMyBuying,
+          child: ListView.separated(
+            controller: _myBuyingScroll,
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+            itemCount: controller.myBuying.length + (showFooter ? 1 : 0),
+            separatorBuilder: (_, __) => const SizedBox(height: 10),
+            itemBuilder: (context, index) {
+              if (index >= controller.myBuying.length) {
+                return _buildLoadMoreFooter(
+                  showLoading: showLoadingFooter,
+                  showNoMore: showNoMoreFooter,
+                );
+              }
+              final item = controller.myBuying[index];
+              final schema = _lookupSchema(item);
+              return Card(
+                margin: EdgeInsets.zero,
+                clipBehavior: Clip.antiAlias,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              _formatTime(item.upTime ?? item.createTime),
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
+                            ),
                           ),
-                        ),
-                        _buildProgressBadge(item),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    _buildBuyRequestSummary(item, schema),
-                    _buildMyBuyingActionBar(item, schema),
-                  ],
+                          _buildProgressBadge(item),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      _buildBuyRequestSummary(item, schema),
+                      _buildMyBuyingActionBar(item, schema),
+                    ],
+                  ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       );
     });
@@ -1004,64 +1041,58 @@ class _BuyingPageState extends State<BuyingPage>
           !controller.recordHasMore;
       final showFooter = showLoadingFooter || showNoMoreFooter;
 
-      return RefreshIndicator(
-        onRefresh: controller.refreshBuyRecords,
-        child: ListView.separated(
-          controller: _recordScroll,
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
-          itemCount: controller.buyRecords.length + (showFooter ? 1 : 0),
-          separatorBuilder: (_, __) => const SizedBox(height: 10),
-          itemBuilder: (context, index) {
-            if (index >= controller.buyRecords.length) {
-              return _buildLoadMoreFooter(
-                showLoading: showLoadingFooter,
-                showNoMore: showNoMoreFooter,
-              );
-            }
-            final item = controller.buyRecords[index];
-            final schema = _lookupSchema(item);
-            return Card(
-              margin: EdgeInsets.zero,
-              clipBehavior: Clip.antiAlias,
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            _formatTime(item.upTime ?? item.createTime),
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
-                                ),
+      return BackToTopScope(
+        enabled: true,
+        child: RefreshIndicator(
+          onRefresh: controller.refreshBuyRecords,
+          child: ListView.separated(
+            controller: _recordScroll,
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+            itemCount: controller.buyRecords.length + (showFooter ? 1 : 0),
+            separatorBuilder: (_, __) => const SizedBox(height: 10),
+            itemBuilder: (context, index) {
+              if (index >= controller.buyRecords.length) {
+                return _buildLoadMoreFooter(
+                  showLoading: showLoadingFooter,
+                  showNoMore: showNoMoreFooter,
+                );
+              }
+              final item = controller.buyRecords[index];
+              final schema = _lookupSchema(item);
+              return Card(
+                margin: EdgeInsets.zero,
+                clipBehavior: Clip.antiAlias,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              _formatTime(item.upTime ?? item.createTime),
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                  ),
+                            ),
                           ),
-                        ),
-                        _buildRecordStatusBadge(item),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    _buildBuyRequestSummary(item, schema),
-                    const SizedBox(height: 10),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: Text(
-                        '${item.received ?? 0}/${item.nums ?? 0}',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                          _buildRecordStatusBadge(item),
+                        ],
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 10),
+                      _buildBuyRequestSummary(item, schema),
+                      _buildRecordInfoFooter(item),
+                    ],
+                  ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       );
     });

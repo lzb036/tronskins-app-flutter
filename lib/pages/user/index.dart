@@ -1,6 +1,7 @@
 // lib/pages/user/user_page.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:tronskins_app/common/widgets/back_to_top_overlay.dart';
 import 'package:tronskins_app/components/user/setting/custom_animated_icon_button.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
 import 'package:tronskins_app/common/widgets/avatar_preview_dialog.dart';
@@ -23,67 +24,70 @@ class UserPage extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final topPadding = MediaQuery.of(context).padding.top;
 
-    return Scaffold(
-      body: SafeArea(
-        top: false,
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              // 顶部区域（状态栏 + 头像 + 余额）
-              Container(
-                width: double.infinity,
-                padding: EdgeInsets.only(top: topPadding + 8, bottom: 16),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: isDark
-                        ? [const Color(0xFF1E1E1E), const Color(0xFF121212)]
-                        : [colors.primary, colors.primary.withOpacity(0.85)],
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: Align(
-                        alignment: Alignment.centerRight,
-                        child: const _TopRightButtons(),
-                      ),
+    return BackToTopScope(
+      enabled: false,
+      child: Scaffold(
+        body: SafeArea(
+          top: false,
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                // 顶部区域（状态栏 + 头像 + 余额）
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.only(top: topPadding + 8, bottom: 16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: isDark
+                          ? [const Color(0xFF1E1E1E), const Color(0xFF121212)]
+                          : [colors.primary, colors.primary.withOpacity(0.85)],
                     ),
-                    const SizedBox(height: 12),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Obx(
-                        () => _Header(
-                          avatarProvider: userCtrl.avatarProvider,
-                          nickname: userCtrl.nickname,
-                          isLoggedIn: userCtrl.isLoggedIn.value,
+                  ),
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Align(
+                          alignment: Alignment.centerRight,
+                          child: const _TopRightButtons(),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: Obx(
-                        () => _BalanceSection(
-                          balance: currency.formatUsd(userCtrl.balanceValue),
-                          gift: currency.formatUsd(userCtrl.giftValue),
-                          locked: currency.formatUsd(userCtrl.lockedValue),
-                          unsettled: currency.formatUsd(
-                            userCtrl.settlementValue,
+                      const SizedBox(height: 12),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Obx(
+                          () => _Header(
+                            avatarProvider: userCtrl.avatarProvider,
+                            nickname: userCtrl.nickname,
+                            isLoggedIn: userCtrl.isLoggedIn.value,
                           ),
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 16),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Obx(
+                          () => _BalanceSection(
+                            balance: currency.formatUsd(userCtrl.balanceValue),
+                            gift: currency.formatUsd(userCtrl.giftValue),
+                            locked: currency.formatUsd(userCtrl.lockedValue),
+                            unsettled: currency.formatUsd(
+                              userCtrl.settlementValue,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              // 菜单区
-              _MenuSection(itemConfigs: userMenuItems),
-              const SizedBox(height: 30),
-            ],
+                const SizedBox(height: 12),
+                // 菜单区
+                _MenuSection(itemConfigs: userMenuItems),
+                const SizedBox(height: 30),
+              ],
+            ),
           ),
         ),
       ),

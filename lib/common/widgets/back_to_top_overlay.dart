@@ -41,9 +41,15 @@ class BackToTopOverlay extends StatefulWidget {
     this.excludeRoutes = const <String>{},
   });
 
+  static final ValueNotifier<int> _resetNotifier = ValueNotifier<int>(0);
+
   final Widget child;
   final double threshold;
   final Set<String> excludeRoutes;
+
+  static void reset() {
+    _resetNotifier.value++;
+  }
 
   @override
   State<BackToTopOverlay> createState() => _BackToTopOverlayState();
@@ -60,6 +66,7 @@ class _BackToTopOverlayState extends State<BackToTopOverlay> {
   @override
   void initState() {
     super.initState();
+    BackToTopOverlay._resetNotifier.addListener(_resetOverlayState);
     _scheduleNavBinding();
   }
 
@@ -120,6 +127,22 @@ class _BackToTopOverlayState extends State<BackToTopOverlay> {
     _activePosition = scrollable.position;
   }
 
+  bool _hasAttachedActivePosition() {
+    final position = _activePosition;
+    if (position == null) {
+      return false;
+    }
+    final notificationContext = position.context.notificationContext;
+    return notificationContext != null && notificationContext.mounted;
+  }
+
+  void _clearDetachedActivePosition() {
+    if (_activePosition == null || _hasAttachedActivePosition()) {
+      return;
+    }
+    _resetOverlayState();
+  }
+
   void _syncVisibilityByMetrics(ScrollMetrics metrics) {
     if (metrics.axis != Axis.vertical) {
       return;
@@ -160,6 +183,7 @@ class _BackToTopOverlayState extends State<BackToTopOverlay> {
   }
 
   Future<void> _scrollToTop() async {
+    _clearDetachedActivePosition();
     final position = _activePosition;
     if (position == null) {
       return;
@@ -177,6 +201,7 @@ class _BackToTopOverlayState extends State<BackToTopOverlay> {
 
   @override
   void dispose() {
+    BackToTopOverlay._resetNotifier.removeListener(_resetOverlayState);
     _navWorker?.dispose();
     _visible.dispose();
     super.dispose();
@@ -184,6 +209,7 @@ class _BackToTopOverlayState extends State<BackToTopOverlay> {
 
   @override
   Widget build(BuildContext context) {
+    _clearDetachedActivePosition();
     final currentRoute = Get.currentRoute;
     if (currentRoute != _lastRoute) {
       _lastRoute = currentRoute;

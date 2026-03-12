@@ -75,6 +75,17 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
+      routingCallback: (routing) {
+        if (routing == null) {
+          return;
+        }
+        if (routing.isDialog == true || routing.isBottomSheet == true) {
+          return;
+        }
+        if (routing.route is PageRoute || routing.removed.isNotEmpty) {
+          BackToTopOverlay.reset();
+        }
+      },
       builder: (context, child) {
         final media = MediaQuery.of(context);
         return MediaQuery(
