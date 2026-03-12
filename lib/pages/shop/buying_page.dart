@@ -700,7 +700,7 @@ class _BuyingPageState extends State<BuyingPage>
   Widget _buildProgressBadge(BuyRequestItem item) {
     final colors = Theme.of(context).colorScheme;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: colors.primary.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(999),
@@ -710,39 +710,29 @@ class _BuyingPageState extends State<BuyingPage>
         style: Theme.of(context).textTheme.labelSmall?.copyWith(
           color: colors.primary,
           fontWeight: FontWeight.w600,
+          height: 1,
         ),
       ),
     );
   }
 
-  Widget _buildRecordStatusBadge(BuyRequestItem item) {
+  Widget _buildRecordStatusText(BuyRequestItem item) {
     final colors = Theme.of(context).colorScheme;
     final isSuccess = item.status == 1;
-    final bgColor = isSuccess
-        ? colors.tertiary.withValues(alpha: 0.14)
-        : colors.surfaceContainerHighest;
-    final fgColor = isSuccess ? colors.tertiary : colors.onSurfaceVariant;
+    const buyingOrange = Color(0xFFFFA500);
     final text = item.statusName?.trim().isNotEmpty == true
         ? item.statusName!.trim()
         : '-';
 
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 170),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.circular(999),
-        ),
-        child: Text(
-          text,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: fgColor,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+    return Text(
+      text,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      textAlign: TextAlign.right,
+      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+        color: isSuccess ? buyingOrange : colors.onSurfaceVariant,
+        fontWeight: FontWeight.w600,
+        height: 1.1,
       ),
     );
   }
@@ -762,6 +752,7 @@ class _BuyingPageState extends State<BuyingPage>
     final currency = Get.find<CurrencyController>();
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
+    const imageHeight = 62.0;
     const imageAspectRatio = 72 / 43;
     final title =
         schema?.marketName ??
@@ -780,26 +771,22 @@ class _BuyingPageState extends State<BuyingPage>
       if (item.phase?.isNotEmpty == true)
         '${'app.market.csgo.phase'.tr}: ${item.phase}',
     ];
-    final summaryHeight = switch (metaLines.length) {
-      0 => 80.0,
-      1 => 88.0,
-      _ => 94.0,
-    };
-    final imageWidth = summaryHeight * imageAspectRatio;
+    final metaText = metaLines.join('  ·  ');
+    final imageWidth = imageHeight * imageAspectRatio;
 
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Container(
           width: imageWidth,
-          height: summaryHeight,
+          height: imageHeight,
           decoration: BoxDecoration(
             color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.26),
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(9),
           ),
           clipBehavior: Clip.antiAlias,
           child: Padding(
-            padding: const EdgeInsets.all(3),
+            padding: const EdgeInsets.all(2.5),
             child: GameItemImage(
               imageUrl: schema?.imageUrl,
               appId: item.appId,
@@ -810,106 +797,118 @@ class _BuyingPageState extends State<BuyingPage>
             ),
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: 10),
         Expanded(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: summaryHeight),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 2),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        height: 1.25,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Obx(
-                      () => Text(
-                        currency.format(item.price ?? 0),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: textTheme.titleSmall?.copyWith(
-                          color: colorScheme.primary,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    for (final line in metaLines) ...[
-                      const SizedBox(height: 6),
-                      _buildSummaryMetaText(line),
-                    ],
-                  ],
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  height: 1.15,
                 ),
               ),
-            ),
+              if (metaText.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                _buildSummaryMetaText(metaText),
+              ],
+              const SizedBox(height: 4),
+              Obx(
+                () => Text(
+                  currency.format(item.price ?? 0),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.titleSmall?.copyWith(
+                    color: colorScheme.primary,
+                    fontWeight: FontWeight.w700,
+                    height: 1.1,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ],
     );
   }
 
+  Widget _buildCompactActionLabel(String text) {
+    return Text(
+      text,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      textAlign: TextAlign.center,
+    );
+  }
+
   ButtonStyle _buildPrimaryActionButtonStyle() {
-    final textStyle = Theme.of(
-      context,
-    ).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w700);
-    return FilledButton.styleFrom(
-      minimumSize: const Size.fromHeight(40),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      elevation: 0,
+    final colors = Theme.of(context).colorScheme;
+    final textStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
+      fontSize: 11,
+      fontWeight: FontWeight.w600,
+      height: 1,
+    );
+    return OutlinedButton.styleFrom(
+      minimumSize: const Size(84, 32),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      visualDensity: VisualDensity.compact,
+      foregroundColor: colors.primary,
+      side: BorderSide(color: colors.primary),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       textStyle: textStyle,
     );
   }
 
   ButtonStyle _buildDangerActionButtonStyle() {
     final colors = Theme.of(context).colorScheme;
-    final textStyle = Theme.of(
-      context,
-    ).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w700);
+    final textStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
+      fontSize: 11,
+      fontWeight: FontWeight.w600,
+      height: 1,
+    );
     return OutlinedButton.styleFrom(
-      minimumSize: const Size.fromHeight(40),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      side: BorderSide(color: colors.error.withValues(alpha: 0.34)),
-      backgroundColor: colors.errorContainer.withValues(alpha: 0.2),
+      minimumSize: const Size(84, 32),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      visualDensity: VisualDensity.compact,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      side: BorderSide(color: colors.error),
       foregroundColor: colors.error,
       textStyle: textStyle,
     );
   }
 
-  Widget _buildMyBuyingActionBar(BuyRequestItem item, ShopSchemaInfo? schema) {
-    final colors = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.only(top: 12),
-      decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(color: colors.outline.withValues(alpha: 0.08)),
-        ),
-      ),
-      child: Row(
+  Widget _buildMyBuyingTrailingActions(
+    BuyRequestItem item,
+    ShopSchemaInfo? schema,
+  ) {
+    return SizedBox(
+      width: 84,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Expanded(
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: () => _openBuyingPriceChange(item, schema),
+              style: _buildPrimaryActionButtonStyle(),
+              child: _buildCompactActionLabel('app.inventory.price_change'.tr),
+            ),
+          ),
+          const SizedBox(height: 6),
+          SizedBox(
+            width: double.infinity,
             child: OutlinedButton(
               onPressed: () => _confirmTerminateBuying(item),
               style: _buildDangerActionButtonStyle(),
-              child: Text('app.trade.purchase.terminate'.tr),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: FilledButton(
-              onPressed: () => _openBuyingPriceChange(item, schema),
-              style: _buildPrimaryActionButtonStyle(),
-              child: Text('app.inventory.price_change'.tr),
+              child: _buildCompactActionLabel(
+                'app.trade.purchase.terminate'.tr,
+              ),
             ),
           ),
         ],
@@ -917,36 +916,104 @@ class _BuyingPageState extends State<BuyingPage>
     );
   }
 
-  Widget _buildRecordInfoFooter(BuyRequestItem item) {
+  Widget _buildRecordTrailingInfo(BuyRequestItem item) {
     final colors = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    return Container(
-      padding: const EdgeInsets.only(top: 12),
-      decoration: BoxDecoration(
-        border: Border(
-          top: BorderSide(color: colors.outline.withValues(alpha: 0.08)),
-        ),
-      ),
+    return SizedBox(
+      width: 74,
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          Icon(
-            Icons.inventory_2_outlined,
-            size: 15,
-            color: colors.onSurfaceVariant,
-          ),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Text(
-              'app.trade.purchase.num'.tr,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: textTheme.bodySmall?.copyWith(
-                color: colors.onSurfaceVariant,
-              ),
+          Flexible(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                _buildRecordStatusText(item),
+                const SizedBox(height: 6),
+                Text(
+                  '${item.received ?? 0}/${item.nums ?? 0}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: textTheme.titleSmall?.copyWith(
+                    color: colors.onSurfaceVariant,
+                    fontWeight: FontWeight.w700,
+                    height: 1.1,
+                  ),
+                ),
+              ],
             ),
           ),
-          _buildProgressBadge(item),
         ],
+      ),
+    );
+  }
+
+  Widget _buildItemTimestamp(int? time) {
+    return Text(
+      _formatTime(time),
+      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+        height: 1.1,
+      ),
+    );
+  }
+
+  Widget _buildMyBuyingItem(BuyRequestItem item) {
+    final schema = _lookupSchema(item);
+    return Card(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.all(10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: _buildItemTimestamp(item.upTime ?? item.createTime),
+                ),
+                _buildProgressBadge(item),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(child: _buildBuyRequestSummary(item, schema)),
+                const SizedBox(width: 10),
+                _buildMyBuyingTrailingActions(item, schema),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRecordItem(BuyRequestItem item) {
+    final schema = _lookupSchema(item);
+    return Card(
+      margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.all(10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildItemTimestamp(item.upTime ?? item.createTime),
+            const SizedBox(height: 8),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(child: _buildBuyRequestSummary(item, schema)),
+                const SizedBox(width: 10),
+                _buildRecordTrailingInfo(item),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1038,7 +1105,7 @@ class _BuyingPageState extends State<BuyingPage>
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
             itemCount: controller.myBuying.length + (showFooter ? 1 : 0),
-            separatorBuilder: (_, __) => const SizedBox(height: 10),
+            separatorBuilder: (_, __) => const SizedBox(height: 8),
             itemBuilder: (context, index) {
               if (index >= controller.myBuying.length) {
                 return _buildLoadMoreFooter(
@@ -1047,38 +1114,7 @@ class _BuyingPageState extends State<BuyingPage>
                 );
               }
               final item = controller.myBuying[index];
-              final schema = _lookupSchema(item);
-              return Card(
-                margin: EdgeInsets.zero,
-                clipBehavior: Clip.antiAlias,
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              _formatTime(item.upTime ?? item.createTime),
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurfaceVariant,
-                                  ),
-                            ),
-                          ),
-                          _buildProgressBadge(item),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      _buildBuyRequestSummary(item, schema),
-                      _buildMyBuyingActionBar(item, schema),
-                    ],
-                  ),
-                ),
-              );
+              return _buildMyBuyingItem(item);
             },
           ),
         ),
@@ -1113,7 +1149,7 @@ class _BuyingPageState extends State<BuyingPage>
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
             itemCount: controller.buyRecords.length + (showFooter ? 1 : 0),
-            separatorBuilder: (_, __) => const SizedBox(height: 10),
+            separatorBuilder: (_, __) => const SizedBox(height: 8),
             itemBuilder: (context, index) {
               if (index >= controller.buyRecords.length) {
                 return _buildLoadMoreFooter(
@@ -1122,38 +1158,7 @@ class _BuyingPageState extends State<BuyingPage>
                 );
               }
               final item = controller.buyRecords[index];
-              final schema = _lookupSchema(item);
-              return Card(
-                margin: EdgeInsets.zero,
-                clipBehavior: Clip.antiAlias,
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              _formatTime(item.upTime ?? item.createTime),
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurfaceVariant,
-                                  ),
-                            ),
-                          ),
-                          _buildRecordStatusBadge(item),
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      _buildBuyRequestSummary(item, schema),
-                      _buildRecordInfoFooter(item),
-                    ],
-                  ),
-                ),
-              );
+              return _buildRecordItem(item);
             },
           ),
         ),
