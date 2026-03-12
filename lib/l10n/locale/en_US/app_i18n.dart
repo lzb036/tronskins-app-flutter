@@ -522,6 +522,18 @@ final Map<String, String> en_US = {
       "If your purchase request is offline, the market will hide it and it will not be available to others.",
   "app.trade.purchase.offline_tips":
       "Your purchase request is offline, please go to the settings to enable it.",
+  "app.trade.purchase.message.confirm_online_on":
+      "Confirm enabling purchase request online?",
+  "app.trade.purchase.message.confirm_online_off":
+      "Confirm disabling purchase request online?",
+  "app.trade.purchase.message.online_on_success":
+      "Purchase request is now online.",
+  "app.trade.purchase.message.online_off_success":
+      "Purchase request is now offline.",
+  "app.trade.purchase.message.online_on_failed":
+      "Failed to bring purchase request online.",
+  "app.trade.purchase.message.online_off_failed":
+      "Failed to take purchase request offline.",
   "app.trade.purchase.placeholder_price": "Please enter the purchase price",
   "app.trade.purchase.placeholder_num": "Please enter the purchase quantity",
   "app.trade.purchase.num": "Purchase Quantity",

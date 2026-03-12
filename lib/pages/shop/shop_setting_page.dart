@@ -138,49 +138,45 @@ class _ShopSettingPageState extends State<ShopSettingPage> {
           return const Center(child: CircularProgressIndicator());
         }
         final autoClose = shop.openAutoClose ?? false;
-        return RefreshIndicator(
-          onRefresh: controller.loadShop,
-          child: ListView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(16),
-            children: [
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Text('app.user.shop.notice'.tr),
-                ),
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Text('app.user.shop.notice'.tr),
               ),
-              const SizedBox(height: 12),
-              Card(
-                child: Column(
-                  children: [
-                    ListTile(
-                      title: Text('app.user.shop.name.label'.tr),
-                      subtitle: Text(shop.shopName ?? shop.name ?? '-'),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () => Get.toNamed(Routers.SHOP_RENAME),
-                    ),
-                    const Divider(height: 1),
-                    SwitchListTile(
-                      title: Text('app.user.shop.online_title'.tr),
-                      value: shop.isOnline ?? false,
-                      onChanged: _isSwitchingShopOnline
-                          ? null
-                          : _handleShopOnlineChanged,
-                    ),
-                    const Divider(height: 1),
-                    SwitchListTile(
-                      title: Text('app.user.shop.automatic_offline'.tr),
-                      value: autoClose,
-                      onChanged: _isSwitchingAutoOffline
-                          ? null
-                          : _handleAutoOfflineChanged,
-                    ),
-                  ],
-                ),
+            ),
+            const SizedBox(height: 12),
+            Card(
+              child: Column(
+                children: [
+                  ListTile(
+                    title: Text('app.user.shop.name.label'.tr),
+                    subtitle: Text(shop.shopName ?? shop.name ?? '-'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => Get.toNamed(Routers.SHOP_RENAME),
+                  ),
+                  const Divider(height: 1),
+                  SwitchListTile(
+                    title: Text('app.user.shop.online_title'.tr),
+                    value: shop.isOnline ?? false,
+                    onChanged: _isSwitchingShopOnline
+                        ? null
+                        : _handleShopOnlineChanged,
+                  ),
+                  const Divider(height: 1),
+                  SwitchListTile(
+                    title: Text('app.user.shop.automatic_offline'.tr),
+                    value: autoClose,
+                    onChanged: _isSwitchingAutoOffline
+                        ? null
+                        : _handleAutoOfflineChanged,
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         );
       }),
     );

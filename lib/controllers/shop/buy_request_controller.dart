@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import 'package:tronskins_app/api/shop.dart';
 import 'package:tronskins_app/api/shop_product.dart';
 import 'package:tronskins_app/api/model/shop/shop_models.dart';
+import 'package:tronskins_app/common/http/model/base_response.dart';
 import 'package:tronskins_app/common/storage/game_storage.dart';
 import 'package:tronskins_app/common/storage/user_storage.dart';
 
@@ -78,20 +79,12 @@ class BuyRequestController extends GetxController {
     }
   }
 
-  Future<bool> togglePurchaseStatus() async {
-    final next = !purchaseOnline.value;
-    purchaseOnline.value = next;
-    try {
-      final res = await _api.submitBuyStatus();
-      if (!res.success) {
-        purchaseOnline.value = !next;
-        return false;
-      }
-      return true;
-    } catch (_) {
-      purchaseOnline.value = !next;
-      return false;
+  Future<BaseHttpResponse<dynamic>> togglePurchaseStatus() async {
+    final res = await _api.submitBuyStatus();
+    if (res.success) {
+      await refreshPurchaseStatus();
     }
+    return res;
   }
 
   Future<void> refreshMyBuying() async {

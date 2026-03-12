@@ -203,27 +203,18 @@ class ApiMarketServer {
     bool useAuth = false,
     bool fallbackToPublicOnFail = false,
   }) async {
-    return _requestWithPublicFallback(
-      useAuth: useAuth,
-      fallbackToPublicOnFail: fallbackToPublicOnFail,
-      request: (auth) async {
-        final path = auth
-            ? 'api/app/goods/price/history/list'
-            : 'api/public/goods/price/history/list';
-        final response = await http.post(
-          path,
-          data: {
-            'appId': appId,
-            'marketHashName': marketHashName,
-            'days': days,
-            'market': market,
-          },
-        );
-        return BaseHttpResponse.fromJson(
-          response.data as Map<String, dynamic>,
-          (json) => MarketPriceTrendData.fromJson(json as Map<String, dynamic>),
-        );
+    final response = await http.post(
+      'api/public/goods/price/history/list',
+      data: {
+        'appId': appId,
+        'marketHashName': marketHashName,
+        'days': days,
+        'market': market,
       },
+    );
+    return BaseHttpResponse.fromJson(
+      response.data as Map<String, dynamic>,
+      (json) => MarketPriceTrendData.fromJson(json as Map<String, dynamic>),
     );
   }
 
