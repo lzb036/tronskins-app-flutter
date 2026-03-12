@@ -31,6 +31,7 @@ import 'package:tronskins_app/pages/user/setting/exchange_rate.dart';
 import 'package:tronskins_app/pages/user/setting/edit_nickname_page.dart';
 import 'package:tronskins_app/pages/user/setting/edit_password_page.dart';
 import 'package:tronskins_app/pages/user/guard/twofa_token_page.dart';
+import 'package:tronskins_app/pages/user/my_collection_page.dart';
 import 'package:tronskins_app/pages/notify/notice_detail_page.dart';
 import 'package:tronskins_app/pages/notify/trade_notice_detail_page.dart';
 import 'package:tronskins_app/pages/help/help_center_page.dart';
@@ -67,6 +68,7 @@ class RoutersConfig {
       binding: UserBinding(),
       transition: Transition.fade,
     ),
+    GetPage(name: Routers.USER_COLLECTION, page: () => MyCollectionPage()),
     GetPage(name: Routers.USER_SETTING, page: () => UserSetting()),
     GetPage(name: Routers.USER_SETTING_RATE, page: () => ExchangeRatePage()),
     GetPage(name: Routers.USER_EDIT_NICKNAME, page: () => EditNicknamePage()),

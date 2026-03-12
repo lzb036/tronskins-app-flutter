@@ -14,6 +14,8 @@ class Routers {
   // ignore: non_constant_identifier_names
   static String USER = '/user';
   // ignore: non_constant_identifier_names
+  static String USER_COLLECTION = '/user/collection';
+  // ignore: non_constant_identifier_names
   static String USER_SETTING = '/user/setting';
   // ignore: non_constant_identifier_names
   static String USER_SETTING_RATE = '/user/setting/rate';

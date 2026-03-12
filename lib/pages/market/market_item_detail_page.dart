@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:tronskins_app/api/market.dart';
 import 'package:tronskins_app/api/model/market/market_models.dart';
 import 'package:tronskins_app/api/shop.dart';
 import 'package:tronskins_app/api/shop_product.dart';
@@ -13,6 +14,7 @@ import 'package:tronskins_app/components/game_item/game_item_utils.dart';
 import 'package:tronskins_app/components/game_item/gem_row.dart';
 import 'package:tronskins_app/components/game_item/sticker_row.dart';
 import 'package:tronskins_app/components/game_item/wear_progress_bar.dart';
+import 'package:tronskins_app/routes/app_routes.dart';
 
 class MarketItemDetailPage extends StatefulWidget {
   const MarketItemDetailPage({super.key});
@@ -22,6 +24,7 @@ class MarketItemDetailPage extends StatefulWidget {
 }
 
 class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
+  final ApiMarketServer _marketServer = ApiMarketServer();
   final ApiShopServer _shopServer = ApiShopServer();
   final ApiShopProductServer _shopApi = ApiShopProductServer();
 
@@ -34,6 +37,8 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
   bool _loadingShopInfo = false;
   bool _shopStatsIsWeek = true;
   bool _isPurchasing = false;
+  bool _favorited = false;
+  bool _favoriteSubmitting = false;
 
   @override
   void initState() {
@@ -44,6 +49,7 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
     _user = _parseUser(args['user']);
     _schemas = _parseSchemas(args['schemas']);
     _stickers = _parseStickerMap(args['stickers']);
+    _favorited = _item.favorited == true;
     _loadShopInfo();
   }
 
@@ -116,7 +122,7 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
     if (_item.appId == 570 && raw['dota2Asset'] is Map<String, dynamic>) {
       return raw['dota2Asset'] as Map<String, dynamic>;
     }
-    return raw is Map<String, dynamic> ? raw : null;
+    return raw;
   }
 
   String? _extractText(dynamic raw, List<String> keys) {
@@ -296,6 +302,47 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
     } finally {
       if (mounted) {
         setState(() => _isPurchasing = false);
+      }
+    }
+  }
+
+  Future<void> _toggleFavorite() async {
+    if (_favoriteSubmitting) {
+      return;
+    }
+    if (UserStorage.getUserInfo() == null) {
+      await Get.toNamed(Routers.LOGIN);
+      return;
+    }
+    final itemId = _item.id;
+    final appId = _item.appId ?? _schema?.appId ?? 730;
+    if (itemId == null) {
+      AppSnackbar.error('app.trade.filter.failed'.tr);
+      return;
+    }
+    setState(() => _favoriteSubmitting = true);
+    try {
+      final res = _favorited
+          ? await _marketServer.removeFavorite(itemId: itemId)
+          : await _marketServer.addFavorite(appId: appId, itemId: itemId);
+      if (!res.success) {
+        AppSnackbar.error(
+          res.message.isNotEmpty ? res.message : 'app.trade.filter.failed'.tr,
+        );
+        return;
+      }
+      setState(() => _favorited = !_favorited);
+      AppSnackbar.success(
+        (_favorited
+                ? 'app.user.collection.message.success'
+                : 'app.user.collection.uncollect_success')
+            .tr,
+      );
+    } catch (_) {
+      AppSnackbar.error('app.trade.filter.failed'.tr);
+    } finally {
+      if (mounted) {
+        setState(() => _favoriteSubmitting = false);
       }
     }
   }
@@ -652,9 +699,9 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.15),
+        color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color.withOpacity(0.5)),
+        border: Border.all(color: color.withValues(alpha: 0.5)),
       ),
       child: Text(
         tag.label ?? '',
@@ -682,7 +729,7 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
     required String imageUrl,
     required TagInfo? rarity,
   }) {
-    return Container(
+    return SizedBox(
       height: 320,
       child: Stack(
         fit: StackFit.expand,
@@ -799,6 +846,10 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
       child: Scaffold(
         appBar: AppBar(
           titleSpacing: 0,
+          leading: IconButton(
+            onPressed: () => Get.back(),
+            icon: const Icon(Icons.arrow_back),
+          ),
           title: ShaderMask(
             shaderCallback: (bounds) => LinearGradient(
               colors: [
@@ -818,6 +869,22 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
               ),
             ),
           ),
+          actions: isOwnOnSale
+              ? const []
+              : [
+                  IconButton(
+                    onPressed: _favoriteSubmitting ? null : _toggleFavorite,
+                    icon: _favoriteSubmitting
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : Icon(
+                            _favorited ? Icons.favorite : Icons.favorite_border,
+                          ),
+                  ),
+                ],
         ),
         body: ListView(
           padding: EdgeInsets.zero,
@@ -931,7 +998,7 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
             color: Theme.of(context).cardColor,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.08),
+                color: Colors.black.withValues(alpha: 0.08),
                 blurRadius: 8,
                 offset: const Offset(0, -2),
               ),

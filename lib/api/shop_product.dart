@@ -1,3 +1,4 @@
+import 'package:tronskins_app/api/model/user/collection_models.dart';
 import 'package:tronskins_app/api/model/shop/shop_models.dart';
 import 'package:tronskins_app/common/http/http_helper.dart';
 import 'package:tronskins_app/common/http/model/base_response.dart';
@@ -223,6 +224,30 @@ class ApiShopProductServer {
     return BaseHttpResponse.fromJson(
       response.data as Map<String, dynamic>,
       (json) => json,
+    );
+  }
+
+  Future<BaseHttpResponse<CollectionListResponse<CollectionTemplateItem>>>
+  productCollectList({required Map<String, dynamic> params}) async {
+    final response = await http.post('api/app/collect/list', data: params);
+    return BaseHttpResponse.fromJson(
+      response.data as Map<String, dynamic>,
+      (json) => CollectionListResponse.fromJson(
+        json as Map<String, dynamic>,
+        CollectionTemplateItem.fromJson,
+      ),
+    );
+  }
+
+  Future<BaseHttpResponse<CollectionListResponse<CollectionFavoriteItem>>>
+  productFavoriteList({required Map<String, dynamic> params}) async {
+    final response = await http.post('api/app/favorite/list', data: params);
+    return BaseHttpResponse.fromJson(
+      response.data as Map<String, dynamic>,
+      (json) => CollectionListResponse.fromJson(
+        json as Map<String, dynamic>,
+        CollectionFavoriteItem.fromJson,
+      ),
     );
   }
 

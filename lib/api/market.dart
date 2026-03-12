@@ -287,4 +287,58 @@ class ApiMarketServer {
       (json) => BuyRemainInfo.fromJson(json as Map<String, dynamic>),
     );
   }
+
+  Future<BaseHttpResponse<dynamic>> addCollection({
+    required int appId,
+    required int schemaId,
+  }) async {
+    final response = await http.post(
+      'api/app/collect/add',
+      data: {'appId': appId, 'schemaId': schemaId},
+    );
+    return BaseHttpResponse.fromJson(
+      response.data as Map<String, dynamic>,
+      (json) => json,
+    );
+  }
+
+  Future<BaseHttpResponse<dynamic>> removeCollection({
+    required int schemaId,
+  }) async {
+    final response = await http.request(
+      'api/app/collect/$schemaId',
+      method: 'DELETE',
+    );
+    return BaseHttpResponse.fromJson(
+      response.data as Map<String, dynamic>,
+      (json) => json,
+    );
+  }
+
+  Future<BaseHttpResponse<dynamic>> addFavorite({
+    required int appId,
+    required int itemId,
+  }) async {
+    final response = await http.post(
+      'api/app/favorite/add',
+      data: {'appId': appId, 'itemId': itemId},
+    );
+    return BaseHttpResponse.fromJson(
+      response.data as Map<String, dynamic>,
+      (json) => json,
+    );
+  }
+
+  Future<BaseHttpResponse<dynamic>> removeFavorite({
+    required int itemId,
+  }) async {
+    final response = await http.request(
+      'api/app/favorite/$itemId',
+      method: 'DELETE',
+    );
+    return BaseHttpResponse.fromJson(
+      response.data as Map<String, dynamic>,
+      (json) => json,
+    );
+  }
 }

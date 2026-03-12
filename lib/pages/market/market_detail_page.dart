@@ -55,6 +55,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
   String? _onSaleSortField;
   bool? _onSaleSortAsc;
   final Set<String> _onSalePurchasingIds = <String>{};
+  bool _collectionSubmitting = false;
 
   @override
   void initState() {
@@ -497,6 +498,61 @@ class _MarketDetailPageState extends State<MarketDetailPage>
     await _loadTemplate(schemaId: schemaId);
   }
 
+  Future<void> _toggleCollection() async {
+    if (_collectionSubmitting) {
+      return;
+    }
+    if (UserStorage.getUserInfo() == null) {
+      await Get.toNamed(Routers.LOGIN);
+      return;
+    }
+    final schemaId = controller.schemaId ?? _templateDetail?.schema?.schemaId;
+    if (schemaId == null) {
+      AppSnackbar.error('app.trade.filter.failed'.tr);
+      return;
+    }
+    final isCollected = _templateDetail?.isCollected == true;
+    setState(() => _collectionSubmitting = true);
+    try {
+      final res = isCollected
+          ? await _marketApi.removeCollection(schemaId: schemaId)
+          : await _marketApi.addCollection(
+              appId: controller.appId,
+              schemaId: schemaId,
+            );
+      if (!res.success) {
+        AppSnackbar.error(
+          res.message.isNotEmpty ? res.message : 'app.trade.filter.failed'.tr,
+        );
+        return;
+      }
+      final detail = _templateDetail;
+      if (detail != null) {
+        _templateDetail = MarketTemplateDetail(
+          schema: detail.schema,
+          qualityMap: detail.qualityMap,
+          paintKits: detail.paintKits,
+          isCollected: !isCollected,
+        );
+      }
+      if (mounted) {
+        setState(() {});
+      }
+      AppSnackbar.success(
+        (!isCollected
+                ? 'app.user.collection.message.success'
+                : 'app.user.collection.uncollect_success')
+            .tr,
+      );
+    } catch (_) {
+      AppSnackbar.error('app.trade.filter.failed'.tr);
+    } finally {
+      if (mounted) {
+        setState(() => _collectionSubmitting = false);
+      }
+    }
+  }
+
   List<_WearOption> _parseWearOptions(dynamic raw) {
     if (raw is! List) {
       return <_WearOption>[];
@@ -604,12 +660,22 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                 ),
                 actions: [
                   IconButton(
-                    icon: const Icon(Icons.share, color: Colors.white),
-                    onPressed: () {},
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.more_horiz, color: Colors.white),
-                    onPressed: () {},
+                    onPressed: _collectionSubmitting ? null : _toggleCollection,
+                    icon: _collectionSubmitting
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Icon(
+                            _templateDetail?.isCollected == true
+                                ? Icons.favorite
+                                : Icons.favorite_border,
+                            color: Colors.white,
+                          ),
                   ),
                 ],
                 flexibleSpace: FlexibleSpaceBar(

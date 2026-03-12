@@ -250,6 +250,7 @@ class MarketListItem {
   final int? schemaId;
   final int? userId;
   final bool? own;
+  final bool? favorited;
   final String? marketHashName;
   final double? price;
   final String? typeName;
@@ -262,6 +263,7 @@ class MarketListItem {
     this.schemaId,
     this.userId,
     this.own,
+    this.favorited,
     this.marketHashName,
     this.price,
     this.typeName,
@@ -275,7 +277,10 @@ class MarketListItem {
       appId: _asInt(json['app_id'] ?? json['appId']),
       schemaId: _asInt(json['schema_id'] ?? json['schemaId']),
       userId: _asInt(json['userId'] ?? json['user_id']),
-      own: _asBool(json['own']),
+      own: _asBool(json['own'] ?? json['isOwn'] ?? json['Own']),
+      favorited: _asBool(
+        json['favorited'] ?? json['favorite'] ?? json['isFavorited'],
+      ),
       marketHashName: json['market_hash_name']?.toString(),
       price: _asDouble(json['price']),
       typeName: json['typeName']?.toString(),

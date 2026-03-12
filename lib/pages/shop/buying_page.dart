@@ -599,32 +599,95 @@ class _BuyingPageState extends State<BuyingPage>
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 6, 12, 4),
-            child: TabBar(
-              controller: _tabController,
-              isScrollable: false,
-              indicatorSize: TabBarIndicatorSize.tab,
-              indicator: BoxDecoration(
-                color: colors.primary.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              dividerColor: Colors.transparent,
-              labelColor: colors.primary,
-              unselectedLabelColor: colors.onSurface.withValues(alpha: 0.6),
-              labelStyle: theme.textTheme.labelMedium?.copyWith(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                height: 1,
-              ),
-              unselectedLabelStyle: theme.textTheme.labelMedium?.copyWith(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                height: 1,
-              ),
-              splashBorderRadius: BorderRadius.circular(16),
-              tabs: [
-                Tab(height: 30, text: 'app.user.menu.purchase'.tr),
-                Tab(height: 30, text: 'app.trade.purchase.record'.tr),
-              ],
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final dragWidth = constraints.maxWidth;
+                final maxIndex = (_tabController.length - 1).toDouble();
+
+                void settleToClosestTab() {
+                  if (_tabController.indexIsChanging) {
+                    return;
+                  }
+                  final value =
+                      _tabController.animation?.value ??
+                      _tabController.index.toDouble();
+                  final targetIndex = value.round().clamp(
+                    0,
+                    _tabController.length - 1,
+                  );
+                  if (targetIndex == _tabController.index) {
+                    _tabController.offset = 0;
+                    return;
+                  }
+                  _tabController.animateTo(
+                    targetIndex,
+                    duration: const Duration(milliseconds: 180),
+                    curve: Curves.easeOutCubic,
+                  );
+                }
+
+                return GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onHorizontalDragUpdate: (details) {
+                    if (_tabController.indexIsChanging || dragWidth <= 0) {
+                      return;
+                    }
+                    final currentValue =
+                        _tabController.animation?.value ??
+                        _tabController.index.toDouble();
+                    final nextValue =
+                        (currentValue - (details.delta.dx / dragWidth))
+                            .clamp(0.0, maxIndex)
+                            .toDouble();
+                    final nextOffset = (nextValue - _tabController.index)
+                        .clamp(-1.0, 1.0)
+                        .toDouble();
+                    if (nextOffset >= 0.98 &&
+                        _tabController.index < _tabController.length - 1) {
+                      _tabController.index = _tabController.index + 1;
+                      _tabController.offset = 0;
+                      return;
+                    }
+                    if (nextOffset <= -0.98 && _tabController.index > 0) {
+                      _tabController.index = _tabController.index - 1;
+                      _tabController.offset = 0;
+                      return;
+                    }
+                    _tabController.offset = nextOffset;
+                  },
+                  onHorizontalDragEnd: (_) => settleToClosestTab(),
+                  onHorizontalDragCancel: settleToClosestTab,
+                  child: TabBar(
+                    controller: _tabController,
+                    isScrollable: false,
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    indicator: BoxDecoration(
+                      color: colors.primary.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    dividerColor: Colors.transparent,
+                    labelColor: colors.primary,
+                    unselectedLabelColor: colors.onSurface.withValues(
+                      alpha: 0.6,
+                    ),
+                    labelStyle: theme.textTheme.labelMedium?.copyWith(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      height: 1,
+                    ),
+                    unselectedLabelStyle: theme.textTheme.labelMedium?.copyWith(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      height: 1,
+                    ),
+                    splashBorderRadius: BorderRadius.circular(16),
+                    tabs: [
+                      Tab(height: 30, text: 'app.user.menu.purchase'.tr),
+                      Tab(height: 30, text: 'app.trade.purchase.record'.tr),
+                    ],
+                  ),
+                );
+              },
             ),
           ),
           Obx(() => _buildSearchBar()),

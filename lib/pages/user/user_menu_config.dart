@@ -28,7 +28,11 @@ final userMenuItems = [
     Icons.search,
     () => Get.toNamed(Routers.BUYING),
   ),
-  UserMenuItem('app.user.menu.collection', Icons.favorite_border),
+  UserMenuItem(
+    'app.user.menu.collection',
+    Icons.favorite_border,
+    () => Get.toNamed(Routers.USER_COLLECTION),
+  ),
   UserMenuItem(
     'app.user.menu.guard',
     Icons.security_outlined,
