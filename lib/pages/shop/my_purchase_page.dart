@@ -27,6 +27,7 @@ class MyPurchasePage extends StatefulWidget {
 
 class _MyPurchasePageState extends State<MyPurchasePage>
     with SingleTickerProviderStateMixin {
+  static const double _loadMoreThreshold = 200;
   final ShopOrderController controller = Get.isRegistered<ShopOrderController>()
       ? Get.find<ShopOrderController>()
       : Get.put(ShopOrderController());
@@ -114,18 +115,33 @@ class _MyPurchasePageState extends State<MyPurchasePage>
     setState(() => _currentTabIndex = nextIndex);
   }
 
-  void _handleReceiptScroll() {
-    if (_receiptScroll.position.pixels >
-        _receiptScroll.position.maxScrollExtent - 200) {
-      controller.loadWaitingReceipts();
+  bool _shouldLoadMore(ScrollController scrollController) {
+    if (!scrollController.hasClients) {
+      return false;
     }
+    final position = scrollController.position;
+    if (position.outOfRange) {
+      return false;
+    }
+    return position.extentAfter <= _loadMoreThreshold;
+  }
+
+  void _handleReceiptScroll() {
+    if (!_shouldLoadMore(_receiptScroll) ||
+        controller.isLoadingWaiting.value ||
+        !controller.waitingHasMore) {
+      return;
+    }
+    controller.loadWaitingReceipts();
   }
 
   void _handleRecordScroll() {
-    if (_recordScroll.position.pixels >
-        _recordScroll.position.maxScrollExtent - 200) {
-      controller.loadBuyRecords();
+    if (!_shouldLoadMore(_recordScroll) ||
+        controller.isLoadingRecords.value ||
+        !controller.recordHasMore) {
+      return;
     }
+    controller.loadBuyRecords();
   }
 
   ShopSchemaInfo? _lookupSchema(

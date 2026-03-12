@@ -8,6 +8,7 @@ import 'package:tronskins_app/common/storage/user_storage.dart';
 class BuyRequestController extends GetxController {
   final ApiShopProductServer _api = ApiShopProductServer();
   final ApiShopServer _shopApi = ApiShopServer();
+  static const int _pageSize = 20;
 
   final RxList<BuyRequestItem> myBuying = <BuyRequestItem>[].obs;
   final RxList<BuyRequestItem> buyRecords = <BuyRequestItem>[].obs;
@@ -34,6 +35,20 @@ class BuyRequestController extends GetxController {
   bool _recordHasMore = true;
   bool get myBuyingHasMore => _myBuyingHasMore;
   bool get recordHasMore => _recordHasMore;
+
+  bool _hasMoreData({
+    required int fetchedCount,
+    required int accumulatedCount,
+    required int? total,
+  }) {
+    if (fetchedCount <= 0) {
+      return false;
+    }
+    if (total != null && total > 0) {
+      return accumulatedCount < total;
+    }
+    return fetchedCount >= _pageSize;
+  }
 
   String _buyingSortField = 'upTime';
   String get buyingSortField => _buyingSortField;
@@ -99,7 +114,7 @@ class BuyRequestController extends GetxController {
         'appId': appId,
         'status': 1,
         'page': _myBuyingPage,
-        'pageSize': 20,
+        'pageSize': _pageSize,
         'asc': buyingSortAsc.value,
         'field': _buyingSortField,
         'keywords': buyingKeywords.value.isEmpty ? null : buyingKeywords.value,
@@ -108,13 +123,22 @@ class BuyRequestController extends GetxController {
       }..removeWhere((key, value) => value == null || value == '');
       final res = await _api.myBuyOrderList(params: params);
       final data = res.datas;
-      if (data == null || data.items.isEmpty) {
+      final fetchedCount = data?.items.length ?? 0;
+      final total = data?.pager?.total ?? data?.total;
+      if (data == null || fetchedCount == 0) {
         _myBuyingHasMore = false;
       } else {
         myBuying.addAll(data.items);
-        _myBuyingPage += 1;
+        _myBuyingHasMore = _hasMoreData(
+          fetchedCount: fetchedCount,
+          accumulatedCount: myBuying.length,
+          total: total,
+        );
+        if (_myBuyingHasMore) {
+          _myBuyingPage += 1;
+        }
       }
-      totalMyBuying.value = data?.pager?.total ?? data?.total ?? 0;
+      totalMyBuying.value = total ?? 0;
       schemas.addAll(data?.schemas ?? const {});
     } finally {
       isLoadingMyBuying.value = false;
@@ -140,7 +164,7 @@ class BuyRequestController extends GetxController {
       final params = {
         'appId': appId,
         'page': _recordPage,
-        'pageSize': 20,
+        'pageSize': _pageSize,
         'asc': recordSortAsc.value,
         'field': 'time',
         'keywords': recordKeywords.value.isEmpty ? null : recordKeywords.value,
@@ -149,13 +173,22 @@ class BuyRequestController extends GetxController {
       }..removeWhere((key, value) => value == null || value == '');
       final res = await _api.myBuyOrderList(params: params);
       final data = res.datas;
-      if (data == null || data.items.isEmpty) {
+      final fetchedCount = data?.items.length ?? 0;
+      final total = data?.pager?.total ?? data?.total;
+      if (data == null || fetchedCount == 0) {
         _recordHasMore = false;
       } else {
         buyRecords.addAll(data.items);
-        _recordPage += 1;
+        _recordHasMore = _hasMoreData(
+          fetchedCount: fetchedCount,
+          accumulatedCount: buyRecords.length,
+          total: total,
+        );
+        if (_recordHasMore) {
+          _recordPage += 1;
+        }
       }
-      totalRecords.value = data?.pager?.total ?? data?.total ?? 0;
+      totalRecords.value = total ?? 0;
       schemas.addAll(data?.schemas ?? const {});
     } finally {
       isLoadingRecords.value = false;

@@ -9,6 +9,7 @@ import 'package:tronskins_app/components/filter/filter_models.dart';
 import 'package:tronskins_app/components/filter/market_filter_sheet.dart';
 import 'package:tronskins_app/components/filter/order_filter_sheet.dart';
 import 'package:tronskins_app/components/game/game_switch_menu.dart';
+import 'package:tronskins_app/components/game/game_icon_button.dart';
 import 'package:tronskins_app/components/game_item/game_item_image.dart';
 import 'package:tronskins_app/components/game_item/game_item_models.dart';
 import 'package:tronskins_app/components/layout/list_end_tip.dart';
@@ -24,6 +25,7 @@ class BuyingPage extends StatefulWidget {
 
 class _BuyingPageState extends State<BuyingPage>
     with SingleTickerProviderStateMixin {
+  static const double _loadMoreThreshold = 200;
   final BuyRequestController controller =
       Get.isRegistered<BuyRequestController>()
       ? Get.find<BuyRequestController>()
@@ -83,18 +85,33 @@ class _BuyingPageState extends State<BuyingPage>
     }
   }
 
-  void _handleMyBuyingScroll() {
-    if (_myBuyingScroll.position.pixels >
-        _myBuyingScroll.position.maxScrollExtent - 200) {
-      controller.loadMyBuying();
+  bool _shouldLoadMore(ScrollController scrollController) {
+    if (!scrollController.hasClients) {
+      return false;
     }
+    final position = scrollController.position;
+    if (position.outOfRange) {
+      return false;
+    }
+    return position.extentAfter <= _loadMoreThreshold;
+  }
+
+  void _handleMyBuyingScroll() {
+    if (!_shouldLoadMore(_myBuyingScroll) ||
+        controller.isLoadingMyBuying.value ||
+        !controller.myBuyingHasMore) {
+      return;
+    }
+    controller.loadMyBuying();
   }
 
   void _handleRecordScroll() {
-    if (_recordScroll.position.pixels >
-        _recordScroll.position.maxScrollExtent - 200) {
-      controller.loadBuyRecords();
+    if (!_shouldLoadMore(_recordScroll) ||
+        controller.isLoadingRecords.value ||
+        !controller.recordHasMore) {
+      return;
     }
+    controller.loadBuyRecords();
   }
 
   ShopSchemaInfo? _lookupSchema(BuyRequestItem item) {
@@ -135,6 +152,54 @@ class _BuyingPageState extends State<BuyingPage>
       'app.system.tips.title'.tr,
       'app.trade.purchase.offline_tips'.tr,
     );
+  }
+
+  Future<void> _openBuyingPriceChange(
+    BuyRequestItem item,
+    ShopSchemaInfo? schema,
+  ) async {
+    if (!controller.purchaseOnline.value) {
+      _showOfflineTips();
+      return;
+    }
+    final result = await Get.toNamed(
+      Routers.BUYING_UPDATE_PRICE,
+      arguments: {'item': item.raw, 'schema': schema?.raw},
+    );
+    if (result == true) {
+      await controller.refreshMyBuying();
+    }
+  }
+
+  Future<void> _confirmTerminateBuying(BuyRequestItem item) async {
+    if (!controller.purchaseOnline.value) {
+      _showOfflineTips();
+      return;
+    }
+    final id = item.id?.toString();
+    if (id == null) {
+      return;
+    }
+    final confirm = await Get.dialog<bool>(
+      AlertDialog(
+        title: Text('app.system.tips.title'.tr),
+        content: Text('app.trade.purchase.message.confirm_terminate'.tr),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: Text('app.common.cancel'.tr),
+          ),
+          TextButton(
+            onPressed: () => Get.back(result: true),
+            child: Text('app.common.confirm'.tr),
+          ),
+        ],
+      ),
+    );
+    if (confirm == true) {
+      await controller.cancelBuy(id);
+      Get.snackbar('app.system.tips.title'.tr, 'app.system.message.success'.tr);
+    }
   }
 
   bool get _isMyBuyingTab => _currentTabIndex == 0;
@@ -368,6 +433,76 @@ class _BuyingPageState extends State<BuyingPage>
     );
   }
 
+  Widget _buildTopIconAction({
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback onTap,
+  }) {
+    final colors = Theme.of(context).colorScheme;
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: onTap,
+          child: SizedBox(
+            width: 34,
+            height: 34,
+            child: Icon(icon, size: 18, color: colors.onSurfaceVariant),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTopActionWithDot({
+    required Widget child,
+    required Color dotColor,
+    required bool visible,
+  }) {
+    if (!visible) {
+      return child;
+    }
+    return Stack(
+      children: [
+        child,
+        Positioned(
+          right: 2,
+          top: 2,
+          child: Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: dotColor,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Theme.of(context).colorScheme.surface,
+                width: 1,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPullToRefreshEmpty({
+    required Future<void> Function() onRefresh,
+  }) {
+    return RefreshIndicator(
+      onRefresh: onRefresh,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(12),
+        children: [
+          const SizedBox(height: 180),
+          Center(child: Text('app.common.no_data'.tr)),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSearchBar() {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
@@ -548,6 +683,17 @@ class _BuyingPageState extends State<BuyingPage>
     );
   }
 
+  Widget _buildSummaryMetaText(String text) {
+    return Text(
+      text,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+      ),
+    );
+  }
+
   Widget _buildBuyRequestSummary(BuyRequestItem item, ShopSchemaInfo? schema) {
     final currency = Get.find<CurrencyController>();
     final colorScheme = Theme.of(context).colorScheme;
@@ -563,124 +709,184 @@ class _BuyingPageState extends State<BuyingPage>
     final wearMax =
         _rawText(item.raw, const ['paint_wear_max', 'paintWearMax']) ??
         item.paintWearMax?.toString();
+    final metaLines = <String>[
+      if (wearMin != null && wearMax != null)
+        '${'app.market.csgo.wear'.tr}: $wearMin - $wearMax',
+      if (item.phase?.isNotEmpty == true)
+        '${'app.market.csgo.phase'.tr}: ${item.phase}',
+    ];
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          width: 72,
-          height: 43,
-          child: GameItemImage(
-            imageUrl: schema?.imageUrl,
-            appId: item.appId,
-            rarity: _schemaTag(schema, 'rarity'),
-            quality: _schemaTag(schema, 'quality'),
-            exterior: _schemaTag(schema, 'exterior'),
-            count: (item.count ?? 1) > 1 ? item.count : null,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
+    return IntrinsicHeight(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 74),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              width: 84,
+              decoration: BoxDecoration(
+                color: colorScheme.surfaceContainerHighest.withValues(
+                  alpha: 0.26,
+                ),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Padding(
+                padding: const EdgeInsets.all(6),
+                child: GameItemImage(
+                  imageUrl: schema?.imageUrl,
+                  appId: item.appId,
+                  rarity: _schemaTag(schema, 'rarity'),
+                  quality: _schemaTag(schema, 'quality'),
+                  exterior: _schemaTag(schema, 'exterior'),
+                  count: (item.count ?? 1) > 1 ? item.count : null,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 2),
+                child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              height: 1.25,
+                            ),
+                          ),
+                          for (final line in metaLines) ...[
+                            const SizedBox(height: 6),
+                            _buildSummaryMetaText(line),
+                          ],
+                        ],
                       ),
                     ),
-                    if (wearMin != null && wearMax != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        '${'app.market.csgo.wear'.tr}: $wearMin - $wearMax',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
+                    const SizedBox(width: 12),
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 124),
+                      child: Align(
+                        alignment: Alignment.topRight,
+                        child: Obx(
+                          () => Text(
+                            currency.format(item.price ?? 0),
+                            textAlign: TextAlign.end,
+                            style: textTheme.titleSmall?.copyWith(
+                              color: colorScheme.primary,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                         ),
                       ),
-                    ],
-                    if (item.phase?.isNotEmpty == true) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        '${'app.market.csgo.phase'.tr}: ${item.phase}',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
+                    ),
                   ],
                 ),
               ),
-              const SizedBox(width: 12),
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 110),
-                child: Obx(
-                  () => Text(
-                    currency.format(item.price ?? 0),
-                    textAlign: TextAlign.end,
-                    style: textTheme.titleSmall?.copyWith(
-                      color: colorScheme.primary,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
-  ButtonStyle _buildActionButtonStyle({required bool outlined}) {
+  ButtonStyle _buildPrimaryActionButtonStyle() {
     final textStyle = Theme.of(
       context,
-    ).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w600);
-    if (outlined) {
-      return OutlinedButton.styleFrom(
-        minimumSize: const Size(92, 34),
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        textStyle: textStyle,
-      );
-    }
+    ).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w700);
     return FilledButton.styleFrom(
-      minimumSize: const Size(92, 34),
-      padding: const EdgeInsets.symmetric(horizontal: 14),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      minimumSize: const Size.fromHeight(40),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      elevation: 0,
       textStyle: textStyle,
+    );
+  }
+
+  ButtonStyle _buildDangerActionButtonStyle() {
+    final colors = Theme.of(context).colorScheme;
+    final textStyle = Theme.of(
+      context,
+    ).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w700);
+    return OutlinedButton.styleFrom(
+      minimumSize: const Size.fromHeight(40),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      side: BorderSide(color: colors.error.withValues(alpha: 0.34)),
+      backgroundColor: colors.errorContainer.withValues(alpha: 0.2),
+      foregroundColor: colors.error,
+      textStyle: textStyle,
+    );
+  }
+
+  Widget _buildMyBuyingActionBar(BuyRequestItem item, ShopSchemaInfo? schema) {
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.only(top: 12),
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(color: colors.outline.withValues(alpha: 0.08)),
+        ),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton(
+              onPressed: () => _confirmTerminateBuying(item),
+              style: _buildDangerActionButtonStyle(),
+              child: Text('app.trade.purchase.terminate'.tr),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: FilledButton(
+              onPressed: () => _openBuyingPriceChange(item, schema),
+              style: _buildPrimaryActionButtonStyle(),
+              child: Text('app.inventory.price_change'.tr),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final isLoggedIn = UserStorage.getUserInfo() != null;
+    final colors = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
-        title: Text('app.trade.purchase.text'.tr),
+        title: Text('app.user.menu.purchase'.tr),
         actions: [
+          if (isLoggedIn)
+            Obx(() {
+              final isOnline = controller.purchaseOnline.value;
+              return _buildTopActionWithDot(
+                visible: true,
+                dotColor: isOnline
+                    ? const Color(0xFF22C55E)
+                    : colors.outlineVariant,
+                child: _buildTopIconAction(
+                  icon: Icons.settings,
+                  tooltip: 'app.trade.purchase.setting'.tr,
+                  onTap: () => Get.toNamed(Routers.PURCHASE_SETTING),
+                ),
+              );
+            }),
+          if (isLoggedIn) const SizedBox(width: 6),
           Builder(
             builder: (iconContext) {
-              return IconButton(
-                icon: Image.asset(
-                  'assets/images/game/icon/$_currentAppId.png',
-                  width: 40,
-                  height: 40,
-                  errorBuilder: (context, error, stackTrace) {
-                    return const Icon(Icons.videogame_asset);
-                  },
-                ),
-                onPressed: () async {
+              return GameIconButton(
+                appId: _currentAppId,
+                size: 34,
+                onTap: () async {
                   final selected = await showGameSwitchMenu(
                     iconContext: iconContext,
                     currentAppId: _currentAppId,
@@ -693,33 +899,7 @@ class _BuyingPageState extends State<BuyingPage>
               );
             },
           ),
-          if (isLoggedIn)
-            Obx(() {
-              final isOnline = controller.purchaseOnline.value;
-              return Stack(
-                alignment: Alignment.center,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.tune_outlined),
-                    onPressed: () => Get.toNamed(Routers.PURCHASE_SETTING),
-                  ),
-                  Positioned(
-                    right: 12,
-                    top: 12,
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: isOnline
-                            ? Theme.of(context).colorScheme.tertiary
-                            : Theme.of(context).colorScheme.outlineVariant,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            }),
+          const SizedBox(width: 6),
         ],
       ),
       body: Column(
@@ -742,7 +922,7 @@ class _BuyingPageState extends State<BuyingPage>
         return const Center(child: CircularProgressIndicator());
       }
       if (controller.myBuying.isEmpty) {
-        return Center(child: Text('app.common.no_data'.tr));
+        return _buildPullToRefreshEmpty(onRefresh: controller.refreshMyBuying);
       }
       final showLoadingFooter =
           controller.isLoadingMyBuying.value && controller.myBuying.isNotEmpty;
@@ -752,124 +932,56 @@ class _BuyingPageState extends State<BuyingPage>
           !controller.myBuyingHasMore;
       final showFooter = showLoadingFooter || showNoMoreFooter;
 
-      return ListView.separated(
-        controller: _myBuyingScroll,
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
-        itemCount: controller.myBuying.length + (showFooter ? 1 : 0),
-        separatorBuilder: (_, __) => const SizedBox(height: 10),
-        itemBuilder: (context, index) {
-          if (index >= controller.myBuying.length) {
-            return _buildLoadMoreFooter(
-              showLoading: showLoadingFooter,
-              showNoMore: showNoMoreFooter,
-            );
-          }
-          final item = controller.myBuying[index];
-          final schema = _lookupSchema(item);
-          return Card(
-            margin: EdgeInsets.zero,
-            clipBehavior: Clip.antiAlias,
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          _formatTime(item.upTime ?? item.createTime),
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                              ),
-                        ),
-                      ),
-                      _buildProgressBadge(item),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  _buildBuyRequestSummary(item, schema),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      SizedBox(
-                        height: 34,
-                        child: FilledButton.tonal(
-                          onPressed: () async {
-                            if (!controller.purchaseOnline.value) {
-                              _showOfflineTips();
-                              return;
-                            }
-                            final result = await Get.toNamed(
-                              Routers.BUYING_UPDATE_PRICE,
-                              arguments: {
-                                'item': item.raw,
-                                'schema': schema?.raw,
-                              },
-                            );
-                            if (result == true) {
-                              await controller.refreshMyBuying();
-                            }
-                          },
-                          style: _buildActionButtonStyle(outlined: false),
-                          child: Text('app.inventory.price_change'.tr),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      SizedBox(
-                        height: 34,
-                        child: OutlinedButton(
-                          onPressed: () async {
-                            if (!controller.purchaseOnline.value) {
-                              _showOfflineTips();
-                              return;
-                            }
-                            final id = item.id?.toString();
-                            if (id == null) {
-                              return;
-                            }
-                            final confirm = await Get.dialog<bool>(
-                              AlertDialog(
-                                title: Text('app.system.tips.title'.tr),
-                                content: Text(
-                                  'app.trade.purchase.message.confirm_terminate'
-                                      .tr,
+      return RefreshIndicator(
+        onRefresh: controller.refreshMyBuying,
+        child: ListView.separated(
+          controller: _myBuyingScroll,
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+          itemCount: controller.myBuying.length + (showFooter ? 1 : 0),
+          separatorBuilder: (_, __) => const SizedBox(height: 10),
+          itemBuilder: (context, index) {
+            if (index >= controller.myBuying.length) {
+              return _buildLoadMoreFooter(
+                showLoading: showLoadingFooter,
+                showNoMore: showNoMoreFooter,
+              );
+            }
+            final item = controller.myBuying[index];
+            final schema = _lookupSchema(item);
+            return Card(
+              margin: EdgeInsets.zero,
+              clipBehavior: Clip.antiAlias,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            _formatTime(item.upTime ?? item.createTime),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
                                 ),
-                                actions: [
-                                  TextButton(
-                                    onPressed: () => Get.back(result: false),
-                                    child: Text('app.common.cancel'.tr),
-                                  ),
-                                  TextButton(
-                                    onPressed: () => Get.back(result: true),
-                                    child: Text('app.common.confirm'.tr),
-                                  ),
-                                ],
-                              ),
-                            );
-                            if (confirm == true) {
-                              await controller.cancelBuy(id);
-                              Get.snackbar(
-                                'app.system.tips.title'.tr,
-                                'app.system.message.success'.tr,
-                              );
-                            }
-                          },
-                          style: _buildActionButtonStyle(outlined: true),
-                          child: Text('app.trade.purchase.terminate'.tr),
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                        _buildProgressBadge(item),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    _buildBuyRequestSummary(item, schema),
+                    _buildMyBuyingActionBar(item, schema),
+                  ],
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       );
     });
   }
@@ -880,7 +992,9 @@ class _BuyingPageState extends State<BuyingPage>
         return const Center(child: CircularProgressIndicator());
       }
       if (controller.buyRecords.isEmpty) {
-        return Center(child: Text('app.common.no_data'.tr));
+        return _buildPullToRefreshEmpty(
+          onRefresh: controller.refreshBuyRecords,
+        );
       }
       final showLoadingFooter =
           controller.isLoadingRecords.value && controller.buyRecords.isNotEmpty;
@@ -890,61 +1004,65 @@ class _BuyingPageState extends State<BuyingPage>
           !controller.recordHasMore;
       final showFooter = showLoadingFooter || showNoMoreFooter;
 
-      return ListView.separated(
-        controller: _recordScroll,
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
-        itemCount: controller.buyRecords.length + (showFooter ? 1 : 0),
-        separatorBuilder: (_, __) => const SizedBox(height: 10),
-        itemBuilder: (context, index) {
-          if (index >= controller.buyRecords.length) {
-            return _buildLoadMoreFooter(
-              showLoading: showLoadingFooter,
-              showNoMore: showNoMoreFooter,
-            );
-          }
-          final item = controller.buyRecords[index];
-          final schema = _lookupSchema(item);
-          return Card(
-            margin: EdgeInsets.zero,
-            clipBehavior: Clip.antiAlias,
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          _formatTime(item.upTime ?? item.createTime),
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                              ),
+      return RefreshIndicator(
+        onRefresh: controller.refreshBuyRecords,
+        child: ListView.separated(
+          controller: _recordScroll,
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+          itemCount: controller.buyRecords.length + (showFooter ? 1 : 0),
+          separatorBuilder: (_, __) => const SizedBox(height: 10),
+          itemBuilder: (context, index) {
+            if (index >= controller.buyRecords.length) {
+              return _buildLoadMoreFooter(
+                showLoading: showLoadingFooter,
+                showNoMore: showNoMoreFooter,
+              );
+            }
+            final item = controller.buyRecords[index];
+            final schema = _lookupSchema(item);
+            return Card(
+              margin: EdgeInsets.zero,
+              clipBehavior: Clip.antiAlias,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            _formatTime(item.upTime ?? item.createTime),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
+                          ),
+                        ),
+                        _buildRecordStatusBadge(item),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    _buildBuyRequestSummary(item, schema),
+                    const SizedBox(height: 10),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        '${item.received ?? 0}/${item.nums ?? 0}',
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
-                      _buildRecordStatusBadge(item),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  _buildBuyRequestSummary(item, schema),
-                  const SizedBox(height: 10),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Text(
-                      '${item.received ?? 0}/${item.nums ?? 0}',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       );
     });
   }
