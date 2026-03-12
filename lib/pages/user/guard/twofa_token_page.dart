@@ -399,61 +399,99 @@ class _TwoFaBindDialogState extends State<_TwoFaBindDialog> {
         ],
       ),
       actions: [
-        TextButton(
-          onPressed: () async {
-            if (_countdown != 0) {
-              return;
-            }
-            try {
-              final res = await widget.controller.sendEmailCode();
-              if (res.success) {
-                Get.snackbar(
-                  'app.system.tips.title'.tr,
-                  'app.user.guard.captcha_been_sent'.tr,
-                );
-                await _startCountdown();
-              } else {
-                _showError(
-                  _resolveMessage(res, 'app.user.guard.captcha_send_failed'),
-                );
-              }
-            } catch (_) {
-              _showError('app.user.guard.captcha_send_failed'.tr);
-            }
-          },
-          style: TextButton.styleFrom(
-            foregroundColor: _countdown == 0
-                ? Theme.of(context).colorScheme.primary
-                : Theme.of(context).disabledColor,
+        SizedBox(
+          width: double.infinity,
+          child: Row(
+            children: [
+              Expanded(
+                flex: 3,
+                child: TextButton(
+                  onPressed: () async {
+                    if (_countdown != 0) {
+                      return;
+                    }
+                    try {
+                      final res = await widget.controller.sendEmailCode();
+                      if (res.success) {
+                        Get.snackbar(
+                          'app.system.tips.title'.tr,
+                          'app.user.guard.captcha_been_sent'.tr,
+                        );
+                        await _startCountdown();
+                      } else {
+                        _showError(
+                          _resolveMessage(
+                            res,
+                            'app.user.guard.captcha_send_failed',
+                          ),
+                        );
+                      }
+                    } catch (_) {
+                      _showError('app.user.guard.captcha_send_failed'.tr);
+                    }
+                  },
+                  style: TextButton.styleFrom(
+                    foregroundColor: _countdown == 0
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).disabledColor,
+                  ),
+                  child: Text(
+                    sendLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 2,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(
+                    'app.common.cancel'.tr,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 2,
+                child: FilledButton(
+                  onPressed: () async {
+                    if (!_validateCode()) {
+                      return;
+                    }
+                    final code = _codeController.text.trim();
+                    final ok = await widget.controller.syncToken(code);
+                    if (ok) {
+                      Navigator.pop(context);
+                      Get.snackbar(
+                        'app.system.tips.title'.tr,
+                        'app.system.message.success'.tr,
+                      );
+                    }
+                  },
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                    minimumSize: const Size.fromHeight(40),
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: Text(
+                    'app.common.confirm'.tr,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+            ],
           ),
-          child: Text(sendLabel),
-        ),
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text('app.common.cancel'.tr),
-        ),
-        FilledButton(
-          onPressed: () async {
-            if (!_validateCode()) {
-              return;
-            }
-            final code = _codeController.text.trim();
-            final ok = await widget.controller.syncToken(code);
-            if (ok) {
-              Navigator.pop(context);
-              Get.snackbar(
-                'app.system.tips.title'.tr,
-                'app.system.message.success'.tr,
-              );
-            }
-          },
-          style: FilledButton.styleFrom(
-            minimumSize: const Size(92, 40),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-          child: Text('app.common.confirm'.tr),
         ),
       ],
     );
