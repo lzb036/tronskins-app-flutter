@@ -41,8 +41,11 @@ class OrderFilterResult {
     this.endDate,
     this.sortAsc,
     this.sortField,
+    this.priceMin,
+    this.priceMax,
     this.tags,
     this.itemName,
+    this.reset = false,
   });
 
   final List<int>? statusList;
@@ -50,8 +53,11 @@ class OrderFilterResult {
   final DateTime? endDate;
   final bool? sortAsc;
   final String? sortField;
+  final double? priceMin;
+  final double? priceMax;
   final Map<String, dynamic>? tags;
   final String? itemName;
+  final bool reset;
 }
 
 @immutable

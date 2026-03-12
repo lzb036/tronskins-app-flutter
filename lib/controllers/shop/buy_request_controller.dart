@@ -23,6 +23,10 @@ class BuyRequestController extends GetxController {
 
   final RxString buyingKeywords = ''.obs;
   final RxString recordKeywords = ''.obs;
+  final RxnString buyingItemName = RxnString();
+  final RxMap<String, dynamic> buyingTags = <String, dynamic>{}.obs;
+  final RxnString recordItemName = RxnString();
+  final RxMap<String, dynamic> recordTags = <String, dynamic>{}.obs;
 
   int _myBuyingPage = 1;
   int _recordPage = 1;
@@ -32,6 +36,8 @@ class BuyRequestController extends GetxController {
   bool get recordHasMore => _recordHasMore;
 
   String _buyingSortField = 'upTime';
+  String get buyingSortField => _buyingSortField;
+  bool get isBuyingSortByPrice => _buyingSortField == 'price';
 
   int get appId => GameStorage.getGameType();
 
@@ -87,6 +93,8 @@ class BuyRequestController extends GetxController {
     }
     isLoadingMyBuying.value = true;
     try {
+      final tags = Map<String, dynamic>.from(buyingTags)
+        ..removeWhere((key, value) => value == null || value == '');
       final params = {
         'appId': appId,
         'status': 1,
@@ -95,6 +103,8 @@ class BuyRequestController extends GetxController {
         'asc': buyingSortAsc.value,
         'field': _buyingSortField,
         'keywords': buyingKeywords.value.isEmpty ? null : buyingKeywords.value,
+        'itemName': buyingItemName.value,
+        'tags': tags.isEmpty ? null : tags,
       }..removeWhere((key, value) => value == null || value == '');
       final res = await _api.myBuyOrderList(params: params);
       final data = res.datas;
@@ -125,6 +135,8 @@ class BuyRequestController extends GetxController {
     }
     isLoadingRecords.value = true;
     try {
+      final tags = Map<String, dynamic>.from(recordTags)
+        ..removeWhere((key, value) => value == null || value == '');
       final params = {
         'appId': appId,
         'page': _recordPage,
@@ -132,6 +144,8 @@ class BuyRequestController extends GetxController {
         'asc': recordSortAsc.value,
         'field': 'time',
         'keywords': recordKeywords.value.isEmpty ? null : recordKeywords.value,
+        'itemName': recordItemName.value,
+        'tags': tags.isEmpty ? null : tags,
       }..removeWhere((key, value) => value == null || value == '');
       final res = await _api.myBuyOrderList(params: params);
       final data = res.datas;
@@ -164,8 +178,46 @@ class BuyRequestController extends GetxController {
     await refreshMyBuying();
   }
 
+  Future<void> applyMyBuyingFilter({
+    bool? sortAsc,
+    String? sortField,
+    Map<String, dynamic>? tags,
+    String? itemName,
+  }) async {
+    if (sortField != null && sortField.isNotEmpty) {
+      _buyingSortField = sortField;
+    }
+    if (sortAsc != null) {
+      buyingSortAsc.value = sortAsc;
+    }
+    if (tags != null) {
+      buyingTags.value = Map<String, dynamic>.from(tags);
+    }
+    if (itemName != null) {
+      buyingItemName.value = itemName.isEmpty ? null : itemName;
+    }
+    await refreshMyBuying();
+  }
+
   Future<void> toggleRecordSort() async {
     recordSortAsc.value = !recordSortAsc.value;
+    await refreshBuyRecords();
+  }
+
+  Future<void> applyRecordFilter({
+    bool? sortAsc,
+    Map<String, dynamic>? tags,
+    String? itemName,
+  }) async {
+    if (sortAsc != null) {
+      recordSortAsc.value = sortAsc;
+    }
+    if (tags != null) {
+      recordTags.value = Map<String, dynamic>.from(tags);
+    }
+    if (itemName != null) {
+      recordItemName.value = itemName.isEmpty ? null : itemName;
+    }
     await refreshBuyRecords();
   }
 

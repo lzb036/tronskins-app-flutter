@@ -4,13 +4,14 @@ import 'package:intl/intl.dart';
 import 'package:tronskins_app/components/filter/filter_models.dart';
 import 'package:tronskins_app/components/filter/market_filter_sheet.dart';
 
-enum OrderFilterSectionCategory { attribute, status, date, sort }
+enum OrderFilterSectionCategory { attribute, price, status, date, sort }
 
 class OrderFilterSheet extends StatefulWidget {
   const OrderFilterSheet({
     super.key,
     required this.initial,
     required this.statusOptions,
+    this.sortOptions = const [],
     this.titleKey = 'app.market.filter.text',
     this.showSort = false,
     this.showStatus = true,
@@ -26,6 +27,7 @@ class OrderFilterSheet extends StatefulWidget {
 
   final OrderFilterResult initial;
   final List<StatusOption> statusOptions;
+  final List<SortOption> sortOptions;
   final String titleKey;
   final bool showSort;
   final bool showStatus;
@@ -42,6 +44,7 @@ class OrderFilterSheet extends StatefulWidget {
     required BuildContext context,
     required OrderFilterResult initial,
     required List<StatusOption> statusOptions,
+    List<SortOption> sortOptions = const [],
     String titleKey = 'app.market.filter.text',
     bool showSort = false,
     bool showStatus = true,
@@ -73,6 +76,7 @@ class OrderFilterSheet extends StatefulWidget {
               child: OrderFilterSheet(
                 initial: initial,
                 statusOptions: statusOptions,
+                sortOptions: sortOptions,
                 titleKey: titleKey,
                 showSort: showSort,
                 showStatus: showStatus,
@@ -116,6 +120,9 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
   int _selectedStatusIndex = -1;
   int _currentSectionIndex = 0;
   bool _sortAsc = false;
+  late String _sortField;
+  late final TextEditingController _minController;
+  late final TextEditingController _maxController;
   late String _attributeSortField;
   late bool _attributeSortAsc;
   late Map<String, dynamic> _attributeTags;
@@ -131,6 +138,17 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
     _startDate = widget.initial.startDate;
     _endDate = widget.initial.endDate;
     _sortAsc = widget.initial.sortAsc ?? false;
+    _sortField =
+        widget.initial.sortField ??
+        (widget.sortOptions.isNotEmpty
+            ? widget.sortOptions.first.field
+            : 'time');
+    _minController = TextEditingController(
+      text: widget.initial.priceMin?.toString() ?? '',
+    );
+    _maxController = TextEditingController(
+      text: widget.initial.priceMax?.toString() ?? '',
+    );
     _attributeSortField =
         widget.initial.sortField ??
         (widget.attributeSortOptions.isNotEmpty
@@ -154,6 +172,13 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
       );
       _selectedStatusIndex = index;
     }
+  }
+
+  @override
+  void dispose() {
+    _minController.dispose();
+    _maxController.dispose();
+    super.dispose();
   }
 
   bool _listEquals(List<int> a, List<int> b) {
@@ -204,9 +229,14 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
   void _reset() {
     setState(() {
       _sortAsc = false;
+      _sortField = widget.sortOptions.isNotEmpty
+          ? widget.sortOptions.first.field
+          : 'time';
       _selectedStatusIndex = -1;
       _startDate = null;
       _endDate = null;
+      _minController.clear();
+      _maxController.clear();
       _attributeSortField = widget.attributeSortOptions.isNotEmpty
           ? widget.attributeSortOptions.first.field
           : 'time';
@@ -218,7 +248,17 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
 
   void _resetAndApply() {
     _reset();
-    _apply();
+    Navigator.of(context).pop(
+      const OrderFilterResult(
+        sortAsc: false,
+        sortField: null,
+        priceMin: null,
+        priceMax: null,
+        tags: <String, dynamic>{},
+        itemName: '',
+        reset: true,
+      ),
+    );
   }
 
   void _primeAttributeGroups() {
@@ -289,12 +329,18 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
   }
 
   void _apply() {
+    final min = double.tryParse(_minController.text.trim());
+    final max = double.tryParse(_maxController.text.trim());
     Navigator.of(context).pop(
       OrderFilterResult(
         sortAsc: widget.showSort
             ? _sortAsc
             : (widget.attributeShowSort ? _attributeSortAsc : null),
-        sortField: widget.attributeShowSort ? _attributeSortField : null,
+        sortField: widget.showSort
+            ? _sortField
+            : (widget.attributeShowSort ? _attributeSortField : null),
+        priceMin: widget.attributeShowPriceRange ? min : null,
+        priceMax: widget.attributeShowPriceRange ? max : null,
         statusList: _selectedStatusIndex >= 0
             ? widget.statusOptions[_selectedStatusIndex].values
             : null,
@@ -310,6 +356,7 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
     final sections = <_OrderFilterSection>[];
     const defaultOrder = [
       OrderFilterSectionCategory.attribute,
+      OrderFilterSectionCategory.price,
       OrderFilterSectionCategory.status,
       OrderFilterSectionCategory.date,
       OrderFilterSectionCategory.sort,
@@ -351,6 +398,17 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
               labelKey: group.labelKey,
               groupKey: group.key,
             ),
+          ),
+        );
+        return;
+      case OrderFilterSectionCategory.price:
+        if (!widget.attributeShowPriceRange) {
+          return;
+        }
+        sections.add(
+          const _OrderFilterSection(
+            type: _OrderFilterSectionType.price,
+            labelKey: 'app.market.filter.price_range',
           ),
         );
         return;
@@ -602,12 +660,98 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
     );
   }
 
+  Widget _buildPriceSection() {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final fillColor = isDark
+        ? Colors.white.withValues(alpha: 0.06)
+        : colors.surface;
+
+    InputDecoration buildInputDecoration(String label) {
+      return InputDecoration(
+        filled: true,
+        fillColor: fillColor,
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 12,
+        ),
+        labelText: label,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: colors.outline.withValues(alpha: 0.12)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: colors.outline.withValues(alpha: 0.12)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: colors.primary.withValues(alpha: 0.6)),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionTitle('app.market.filter.price_range'.tr),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _minController,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: buildInputDecoration(
+                  'app.market.filter.price_lowest'.tr,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: TextField(
+                controller: _maxController,
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
+                decoration: buildInputDecoration(
+                  'app.market.filter.price_highest'.tr,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
   Widget _buildSortSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSectionTitle('app.market.filter.sort'.tr),
         const SizedBox(height: 8),
+        if (widget.sortOptions.isNotEmpty) ...[
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: widget.sortOptions
+                .map((option) {
+                  return ChoiceChip(
+                    label: Text(option.labelKey.tr),
+                    selected: _sortField == option.field,
+                    onSelected: (_) =>
+                        setState(() => _sortField = option.field),
+                  );
+                })
+                .toList(growable: false),
+          ),
+          const SizedBox(height: 10),
+        ],
         Wrap(
           spacing: 8,
           runSpacing: 8,
@@ -634,6 +778,8 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
         return _buildAttributeSection();
       case _OrderFilterSectionType.attributeGroup:
         return _buildAttributeGroupSection(section);
+      case _OrderFilterSectionType.price:
+        return _buildPriceSection();
       case _OrderFilterSectionType.status:
         return _buildStatusSection();
       case _OrderFilterSectionType.date:
@@ -806,7 +952,14 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
   }
 }
 
-enum _OrderFilterSectionType { attribute, attributeGroup, status, date, sort }
+enum _OrderFilterSectionType {
+  attribute,
+  attributeGroup,
+  price,
+  status,
+  date,
+  sort,
+}
 
 class _OrderFilterSection {
   const _OrderFilterSection({
