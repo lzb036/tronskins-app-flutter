@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:tronskins_app/api/model/shop/shop_models.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
 import 'package:tronskins_app/common/storage/game_storage.dart';
+import 'package:tronskins_app/common/widgets/back_to_top_overlay.dart';
 import 'package:tronskins_app/components/game_item/game_item_image.dart';
 import 'package:tronskins_app/components/game_item/game_item_models.dart';
 import 'package:tronskins_app/components/game_item/sticker_row.dart';
@@ -19,18 +20,21 @@ class ShopOrderDetailPage extends StatelessWidget {
     final args = _ShopOrderDetailArgs.fromDynamic(Get.arguments);
     final order = args.order;
     if (order == null) {
-      return Scaffold(
-        appBar: AppBar(
-          title: Text('app.trade.order.details'.tr),
-          actions: [
-            IconButton(
-              tooltip: 'app.user.menu.feedback'.tr,
-              onPressed: () => Get.toNamed(Routers.FEEDBACK_LIST),
-              icon: const Icon(Icons.headset_mic_outlined),
-            ),
-          ],
+      return BackToTopScope(
+        enabled: false,
+        child: Scaffold(
+          appBar: AppBar(
+            title: Text('app.trade.order.details'.tr),
+            actions: [
+              IconButton(
+                tooltip: 'app.user.menu.feedback'.tr,
+                onPressed: () => Get.toNamed(Routers.FEEDBACK_LIST),
+                icon: const Icon(Icons.headset_mic_outlined),
+              ),
+            ],
+          ),
+          body: Center(child: Text('app.common.no_data'.tr)),
         ),
-        body: Center(child: Text('app.common.no_data'.tr)),
       );
     }
     final currency = Get.isRegistered<CurrencyController>()
@@ -49,115 +53,124 @@ class ShopOrderDetailPage extends StatelessWidget {
     final buyerName = _resolveUserName(users: args.users, userId: buyerId);
     final totalPrice = _sumOrderPrice(order);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('app.trade.order.details'.tr),
-        actions: [
-          IconButton(
-            tooltip: 'app.user.menu.feedback'.tr,
-            onPressed: () => Get.toNamed(Routers.FEEDBACK_LIST),
-            icon: const Icon(Icons.headset_mic_outlined),
-          ),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(12),
-        children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      '${'app.trade.type'.tr}: ${_resolveTypeName(order)}',
-                      style: textTheme.bodyMedium,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    _buildStatusText(order),
-                    style: textTheme.bodyMedium?.copyWith(
-                      color: _statusColor(order.status, colorScheme),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
+    return BackToTopScope(
+      enabled: false,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text('app.trade.order.details'.tr),
+          actions: [
+            IconButton(
+              tooltip: 'app.user.menu.feedback'.tr,
+              onPressed: () => Get.toNamed(Routers.FEEDBACK_LIST),
+              icon: const Icon(Icons.headset_mic_outlined),
             ),
-          ),
-          const SizedBox(height: 12),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                children: [
-                  if (sellerName != null && sellerName.isNotEmpty)
-                    _InfoRow(label: 'app.market.seller'.tr, value: sellerName),
-                  if (buyerName != null && buyerName.isNotEmpty)
-                    _InfoRow(label: 'app.market.buyer'.tr, value: buyerName),
-                  _InfoRow(
-                    label: 'app.trade.order.time'.tr,
-                    value: _formatTime(order.createTime),
-                  ),
-                  _CopyInfoRow(
-                    label: 'app.trade.order.number'.tr,
-                    value: order.id?.toString() ?? '-',
-                    onCopy: order.id == null
-                        ? null
-                        : () => _copyOrderId(order.id!.toString()),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'app.trade.order.total_price'.tr,
-                      style: textTheme.bodyMedium,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    _formatPrice(currency, totalPrice),
-                    style: textTheme.titleSmall?.copyWith(
-                      color: colorScheme.primary,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          if (order.details.isEmpty)
+          ],
+        ),
+        body: ListView(
+          padding: const EdgeInsets.all(12),
+          children: [
             Card(
               child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Center(child: Text('app.common.no_data'.tr)),
-              ),
-            )
-          else
-            ...order.details.map(
-              (detail) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _buildDetailCard(
-                  context: context,
-                  detail: detail,
-                  schemas: args.schemas,
-                  stickers: args.stickers,
-                  currency: currency,
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '${'app.trade.type'.tr}: ${_resolveTypeName(order)}',
+                        style: textTheme.bodyMedium,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      _buildStatusText(order),
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: _statusColor(order.status, colorScheme),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
-          _buildTips(context),
-        ],
+            const SizedBox(height: 12),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  children: [
+                    if (sellerName != null && sellerName.isNotEmpty)
+                      _InfoRow(
+                        label: 'app.market.seller'.tr,
+                        value: sellerName,
+                      ),
+                    if (buyerName != null && buyerName.isNotEmpty)
+                      _InfoRow(label: 'app.market.buyer'.tr, value: buyerName),
+                    _InfoRow(
+                      label: 'app.trade.order.time'.tr,
+                      value: _formatTime(order.createTime),
+                    ),
+                    _CopyInfoRow(
+                      label: 'app.trade.order.number'.tr,
+                      value: order.id?.toString() ?? '-',
+                      onCopy: order.id == null
+                          ? null
+                          : () => _copyOrderId(order.id!.toString()),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 14,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'app.trade.order.total_price'.tr,
+                        style: textTheme.bodyMedium,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      _formatPrice(currency, totalPrice),
+                      style: textTheme.titleSmall?.copyWith(
+                        color: colorScheme.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            if (order.details.isEmpty)
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Center(child: Text('app.common.no_data'.tr)),
+                ),
+              )
+            else
+              ...order.details.map(
+                (detail) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _buildDetailCard(
+                    context: context,
+                    detail: detail,
+                    schemas: args.schemas,
+                    stickers: args.stickers,
+                    currency: currency,
+                  ),
+                ),
+              ),
+            _buildTips(context),
+          ],
+        ),
       ),
     );
   }
@@ -497,6 +510,8 @@ class ShopOrderDetailPage extends StatelessWidget {
     Get.snackbar(
       'app.system.tips.title'.tr,
       'app.system.message.copy_success'.tr,
+
+      titleText: const SizedBox.shrink(),
     );
   }
 }

@@ -18,6 +18,8 @@ class SteamSessionPage extends StatelessWidget {
       snackPosition: SnackPosition.TOP,
       backgroundColor: Colors.green,
       colorText: Colors.white,
+
+      titleText: const SizedBox.shrink(),
     );
   }
 

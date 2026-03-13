@@ -241,6 +241,8 @@ class _BuyingUpdatePricePageState extends State<BuyingUpdatePricePage> {
       Get.snackbar(
         'app.system.tips.title'.tr,
         'app.market.filter.message.price_error'.tr,
+
+        titleText: const SizedBox.shrink(),
       );
       return;
     }
@@ -249,6 +251,8 @@ class _BuyingUpdatePricePageState extends State<BuyingUpdatePricePage> {
       Get.snackbar(
         'app.system.tips.title'.tr,
         'app.trade.purchase.message.min_price_error'.tr,
+
+        titleText: const SizedBox.shrink(),
       );
       return;
     }
@@ -299,6 +303,8 @@ class _BuyingUpdatePricePageState extends State<BuyingUpdatePricePage> {
         Get.snackbar(
           'app.system.tips.title'.tr,
           'app.inventory.message.price_change_success'.tr,
+
+          titleText: const SizedBox.shrink(),
         );
       });
       return;

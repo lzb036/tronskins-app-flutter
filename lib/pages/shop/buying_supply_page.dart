@@ -167,18 +167,28 @@ class _BuyingSupplyPageState extends State<BuyingSupplyPage> {
         (item.coolingDown ?? false) || (item.cooldown?.isNotEmpty == true);
     final isTradable = item.tradable ?? true;
     if (isCooling) {
-      Get.snackbar('app.system.tips.title'.tr, 'app.market.product.cooling'.tr);
+      Get.snackbar(
+        'app.system.tips.title'.tr,
+        'app.market.product.cooling'.tr,
+        titleText: const SizedBox.shrink(),
+      );
       return;
     }
     if (!isTradable) {
       Get.snackbar(
         'app.system.tips.title'.tr,
         'app.inventory.message.non_tradable'.tr,
+
+        titleText: const SizedBox.shrink(),
       );
       return;
     }
     if (item.status == 2) {
-      Get.snackbar('app.system.tips.title'.tr, 'app.inventory.in_supply'.tr);
+      Get.snackbar(
+        'app.system.tips.title'.tr,
+        'app.inventory.in_supply'.tr,
+        titleText: const SizedBox.shrink(),
+      );
       return;
     }
     if (!_selectedIds.contains(id) && _maxNeed > 0) {
@@ -186,6 +196,8 @@ class _BuyingSupplyPageState extends State<BuyingSupplyPage> {
         Get.snackbar(
           'app.system.tips.title'.tr,
           'app.trade.supply.message.more_than_needed'.tr,
+
+          titleText: const SizedBox.shrink(),
         );
         return;
       }
@@ -241,6 +253,8 @@ class _BuyingSupplyPageState extends State<BuyingSupplyPage> {
       Get.snackbar(
         'app.system.tips.title'.tr,
         'app.trade.supply.message.not_selected'.tr,
+
+        titleText: const SizedBox.shrink(),
       );
       return;
     }
@@ -248,6 +262,8 @@ class _BuyingSupplyPageState extends State<BuyingSupplyPage> {
       Get.snackbar(
         'app.system.tips.title'.tr,
         'app.trade.supply.message.more_than_needed'.tr,
+
+        titleText: const SizedBox.shrink(),
       );
       return;
     }

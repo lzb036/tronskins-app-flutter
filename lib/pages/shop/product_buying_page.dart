@@ -164,6 +164,8 @@ class _ProductBuyingPageState extends State<ProductBuyingPage> {
       Get.snackbar(
         'app.system.tips.title'.tr,
         'app.market.detail.message.num_error'.tr,
+
+        titleText: const SizedBox.shrink(),
       );
     }
     final numValue = int.tryParse(_numController.text) ?? 0;
@@ -510,7 +512,11 @@ class _ProductBuyingPageState extends State<ProductBuyingPage> {
     var shouldClosePage = false;
     final user = UserStorage.getUserInfo();
     if (user == null) {
-      Get.snackbar('app.system.tips.title'.tr, 'app.system.message.nologin'.tr);
+      Get.snackbar(
+        'app.system.tips.title'.tr,
+        'app.system.message.nologin'.tr,
+        titleText: const SizedBox.shrink(),
+      );
       return;
     }
     FocusManager.instance.primaryFocus?.unfocus();
@@ -518,6 +524,8 @@ class _ProductBuyingPageState extends State<ProductBuyingPage> {
       Get.snackbar(
         'app.system.tips.title'.tr,
         'app.trade.purchase.offline_tips'.tr,
+
+        titleText: const SizedBox.shrink(),
       );
       return;
     }
@@ -528,6 +536,8 @@ class _ProductBuyingPageState extends State<ProductBuyingPage> {
       Get.snackbar(
         'app.system.tips.title'.tr,
         'app.trade.purchase.message.num_error'.tr,
+
+        titleText: const SizedBox.shrink(),
       );
       return;
     }
@@ -535,6 +545,8 @@ class _ProductBuyingPageState extends State<ProductBuyingPage> {
       Get.snackbar(
         'app.system.tips.title'.tr,
         'app.market.filter.message.price_error'.tr,
+
+        titleText: const SizedBox.shrink(),
       );
       return;
     }
@@ -542,6 +554,8 @@ class _ProductBuyingPageState extends State<ProductBuyingPage> {
       Get.snackbar(
         'app.system.tips.title'.tr,
         'app.market.detail.message.num_error'.tr,
+
+        titleText: const SizedBox.shrink(),
       );
       return;
     }
@@ -549,6 +563,8 @@ class _ProductBuyingPageState extends State<ProductBuyingPage> {
       Get.snackbar(
         'app.system.tips.title'.tr,
         'app.trade.purchase.message.balance_insufficient'.tr,
+
+        titleText: const SizedBox.shrink(),
       );
       return;
     }
@@ -656,6 +672,8 @@ class _ProductBuyingPageState extends State<ProductBuyingPage> {
         Get.snackbar(
           'app.system.tips.title'.tr,
           res.message.isNotEmpty ? res.message : 'app.trade.filter.failed'.tr,
+
+          titleText: const SizedBox.shrink(),
         );
       }
     } finally {

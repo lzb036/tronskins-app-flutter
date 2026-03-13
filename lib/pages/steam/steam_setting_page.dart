@@ -123,6 +123,8 @@ class _SteamSettingPageState extends State<SteamSettingPage> {
       message,
       backgroundColor: Theme.of(context).colorScheme.primary,
       colorText: Theme.of(context).colorScheme.onPrimary,
+
+      titleText: const SizedBox.shrink(),
     );
   }
 

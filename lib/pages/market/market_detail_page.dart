@@ -119,7 +119,11 @@ class _MarketDetailPageState extends State<MarketDetailPage>
   Future<void> _openBuying() async {
     final user = UserStorage.getUserInfo();
     if (user == null) {
-      Get.snackbar('app.system.tips.title'.tr, 'app.system.message.nologin'.tr);
+      Get.snackbar(
+        'app.system.tips.title'.tr,
+        'app.system.message.nologin'.tr,
+        titleText: const SizedBox.shrink(),
+      );
       return;
     }
     final uuid = user.uuid ?? user.shop?.uuid;
@@ -131,6 +135,8 @@ class _MarketDetailPageState extends State<MarketDetailPage>
             Get.snackbar(
               'app.system.tips.title'.tr,
               'app.trade.purchase.offline_tips'.tr,
+
+              titleText: const SizedBox.shrink(),
             );
             return;
           }
@@ -153,7 +159,11 @@ class _MarketDetailPageState extends State<MarketDetailPage>
   Future<void> _openBulkBuying() async {
     final user = UserStorage.getUserInfo();
     if (user == null) {
-      Get.snackbar('app.system.tips.title'.tr, 'app.system.message.nologin'.tr);
+      Get.snackbar(
+        'app.system.tips.title'.tr,
+        'app.system.message.nologin'.tr,
+        titleText: const SizedBox.shrink(),
+      );
       return;
     }
     final schemaId = controller.schemaId;
@@ -2853,6 +2863,8 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                                           Get.snackbar(
                                             'app.system.tips.title'.tr,
                                             'app.system.message.nologin'.tr,
+
+                                            titleText: const SizedBox.shrink(),
                                           );
                                           return;
                                         }
@@ -2971,6 +2983,8 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                                         Get.snackbar(
                                           'app.system.tips.title'.tr,
                                           'app.system.message.success'.tr,
+
+                                          titleText: const SizedBox.shrink(),
                                         );
                                       } else {
                                         Get.snackbar(
@@ -2978,12 +2992,16 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                                           res.message.isNotEmpty
                                               ? res.message
                                               : 'app.trade.filter.failed'.tr,
+
+                                          titleText: const SizedBox.shrink(),
                                         );
                                       }
                                     } catch (_) {
                                       Get.snackbar(
                                         'app.system.tips.title'.tr,
                                         'app.trade.filter.failed'.tr,
+
+                                        titleText: const SizedBox.shrink(),
                                       );
                                     }
                                     await controller.loadBuyRequests(
@@ -3239,14 +3257,22 @@ class _MarketDetailPageState extends State<MarketDetailPage>
     }
     final user = UserStorage.getUserInfo();
     if (user == null) {
-      Get.snackbar('app.system.tips.title'.tr, 'app.system.message.nologin'.tr);
+      Get.snackbar(
+        'app.system.tips.title'.tr,
+        'app.system.message.nologin'.tr,
+        titleText: const SizedBox.shrink(),
+      );
       return;
     }
     final id = item.id?.toString();
     final price = item.price;
     final appId = item.appId ?? controller.appId;
     if (id == null || price == null) {
-      Get.snackbar('app.system.tips.title'.tr, 'app.trade.filter.failed'.tr);
+      Get.snackbar(
+        'app.system.tips.title'.tr,
+        'app.trade.filter.failed'.tr,
+        titleText: const SizedBox.shrink(),
+      );
       return;
     }
     final currency = Get.find<CurrencyController>();

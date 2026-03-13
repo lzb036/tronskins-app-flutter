@@ -87,6 +87,8 @@ class _TokenRecoveryPageState extends State<TokenRecoveryPage> {
       backgroundColor: Colors.red,
       colorText: Colors.white,
       snackPosition: SnackPosition.TOP,
+
+      titleText: const SizedBox.shrink(),
     );
   }
 
@@ -97,6 +99,8 @@ class _TokenRecoveryPageState extends State<TokenRecoveryPage> {
       backgroundColor: Colors.green,
       colorText: Colors.white,
       snackPosition: SnackPosition.TOP,
+
+      titleText: const SizedBox.shrink(),
     );
   }
 

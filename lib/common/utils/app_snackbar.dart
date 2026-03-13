@@ -39,6 +39,8 @@ class AppSnackbar {
       colorText: colorText,
       margin: const EdgeInsets.all(12),
       borderRadius: 8,
+
+      titleText: const SizedBox.shrink(),
     );
   }
 }

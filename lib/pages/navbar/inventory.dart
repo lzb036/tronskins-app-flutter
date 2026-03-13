@@ -65,6 +65,8 @@ class _InventoryPageState extends State<InventoryPage> {
         Get.snackbar(
           'app.system.tips.title'.tr,
           'app.user.login.message.error'.tr,
+
+          titleText: const SizedBox.shrink(),
         );
         return;
       }
@@ -76,6 +78,8 @@ class _InventoryPageState extends State<InventoryPage> {
       Get.snackbar(
         'app.system.tips.title'.tr,
         'app.user.login.message.error'.tr,
+
+        titleText: const SizedBox.shrink(),
       );
     }
   }
@@ -445,6 +449,8 @@ class _InventoryPageState extends State<InventoryPage> {
                                     : isOnSale
                                     ? 'app.inventory.on_sale'.tr
                                     : 'app.inventory.in_supply'.tr,
+
+                                titleText: const SizedBox.shrink(),
                               );
                               return;
                             }

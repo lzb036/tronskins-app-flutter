@@ -69,11 +69,15 @@ class _FeedbackCreatePageState extends State<FeedbackCreatePage> {
         Get.snackbar(
           'app.system.tips.title'.tr,
           'app.user.feedback.message.image_upload_success'.tr,
+
+          titleText: const SizedBox.shrink(),
         );
       } else {
         Get.snackbar(
           'app.system.tips.title'.tr,
           'app.user.feedback.message.image_upload_failed'.tr,
+
+          titleText: const SizedBox.shrink(),
         );
       }
     } finally {
@@ -99,6 +103,8 @@ class _FeedbackCreatePageState extends State<FeedbackCreatePage> {
       Get.snackbar(
         'app.system.tips.title'.tr,
         'app.user.feedback.message.fill_feedback'.tr,
+
+        titleText: const SizedBox.shrink(),
       );
       return;
     }
@@ -106,6 +112,8 @@ class _FeedbackCreatePageState extends State<FeedbackCreatePage> {
       Get.snackbar(
         'app.system.tips.title'.tr,
         'app.user.feedback.message.fill_feedback'.tr,
+
+        titleText: const SizedBox.shrink(),
       );
       return;
     }
@@ -132,6 +140,8 @@ class _FeedbackCreatePageState extends State<FeedbackCreatePage> {
           _isAddFeedback
               ? 'app.user.feedback.message.reply_success'.tr
               : 'app.user.feedback.message.submit_success'.tr,
+
+          titleText: const SizedBox.shrink(),
         );
         controller.loadTickets(refresh: true);
         _backToList();
@@ -139,6 +149,8 @@ class _FeedbackCreatePageState extends State<FeedbackCreatePage> {
         Get.snackbar(
           'app.system.tips.title'.tr,
           'app.system.message.not_open'.tr,
+
+          titleText: const SizedBox.shrink(),
         );
       }
     } finally {

@@ -184,7 +184,11 @@ class _NotifyTradeDeliverSheetState extends State<NotifyTradeDeliverSheet> {
   Future<void> _submit() async {
     if (_submitting) return;
     if (_orders.isEmpty || _orders.first.id == null) {
-      Get.snackbar('app.system.tips.title'.tr, 'app.trade.filter.failed'.tr);
+      Get.snackbar(
+        'app.system.tips.title'.tr,
+        'app.trade.filter.failed'.tr,
+        titleText: const SizedBox.shrink(),
+      );
       return;
     }
     setState(() => _submitting = true);
@@ -220,6 +224,8 @@ class _NotifyTradeDeliverSheetState extends State<NotifyTradeDeliverSheet> {
         Get.snackbar(
           'app.system.tips.title'.tr,
           'app.trade.deliver.message.steam_trade_url_success'.tr,
+
+          titleText: const SizedBox.shrink(),
         );
         widget.onDelivered?.call();
         if (mounted) {
@@ -263,9 +269,15 @@ class _NotifyTradeDeliverSheetState extends State<NotifyTradeDeliverSheet> {
       Get.snackbar(
         'app.system.tips.title'.tr,
         res.message.isNotEmpty ? res.message : 'app.trade.filter.failed'.tr,
+
+        titleText: const SizedBox.shrink(),
       );
     } catch (_) {
-      Get.snackbar('app.system.tips.title'.tr, 'app.trade.filter.failed'.tr);
+      Get.snackbar(
+        'app.system.tips.title'.tr,
+        'app.trade.filter.failed'.tr,
+        titleText: const SizedBox.shrink(),
+      );
     } finally {
       if (mounted) {
         setState(() => _submitting = false);

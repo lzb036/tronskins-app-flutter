@@ -38,6 +38,8 @@ class _TwoFaTokenPageState extends State<TwoFaTokenPage> {
     Get.snackbar(
       'app.system.tips.title'.tr,
       'app.system.message.copy_success'.tr,
+
+      titleText: const SizedBox.shrink(),
     );
   }
 
@@ -72,6 +74,8 @@ class _TwoFaTokenPageState extends State<TwoFaTokenPage> {
       Get.snackbar(
         'app.system.tips.title'.tr,
         'app.user.guard.open_2fa_first'.tr,
+
+        titleText: const SizedBox.shrink(),
       );
       return;
     }
@@ -80,6 +84,8 @@ class _TwoFaTokenPageState extends State<TwoFaTokenPage> {
       Get.snackbar(
         'app.system.tips.title'.tr,
         'app.user.guard.open_2fa_first'.tr,
+
+        titleText: const SizedBox.shrink(),
       );
       return;
     }
@@ -228,6 +234,8 @@ class _TwoFaBindDialogState extends State<_TwoFaBindDialog> {
       backgroundColor: Colors.red,
       colorText: Colors.white,
       snackPosition: SnackPosition.TOP,
+
+      titleText: const SizedBox.shrink(),
     );
   }
 
@@ -416,6 +424,8 @@ class _TwoFaBindDialogState extends State<_TwoFaBindDialog> {
                         Get.snackbar(
                           'app.system.tips.title'.tr,
                           'app.user.guard.captcha_been_sent'.tr,
+
+                          titleText: const SizedBox.shrink(),
                         );
                         await _startCountdown();
                       } else {
@@ -470,6 +480,8 @@ class _TwoFaBindDialogState extends State<_TwoFaBindDialog> {
                       Get.snackbar(
                         'app.system.tips.title'.tr,
                         'app.system.message.success'.tr,
+
+                        titleText: const SizedBox.shrink(),
                       );
                     }
                   },

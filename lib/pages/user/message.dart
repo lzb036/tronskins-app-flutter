@@ -61,7 +61,11 @@ class _UserMessageState extends State<UserMessage>
         ? await _controller.readAllTrade()
         : await _controller.readAllNotice();
     if (ok) {
-      Get.snackbar('app.system.tips.title'.tr, 'app.system.notice.readall'.tr);
+      Get.snackbar(
+        'app.system.tips.title'.tr,
+        'app.system.notice.readall'.tr,
+        titleText: const SizedBox.shrink(),
+      );
     }
   }
 
@@ -89,6 +93,8 @@ class _UserMessageState extends State<UserMessage>
         Get.snackbar(
           'app.system.tips.title'.tr,
           message.isNotEmpty ? message : 'app.system.message.success'.tr,
+
+          titleText: const SizedBox.shrink(),
         );
       }
     }

@@ -35,6 +35,8 @@ class _ShopRenamePageState extends State<ShopRenamePage> {
       Get.snackbar(
         'app.system.tips.title'.tr,
         'app.user.shop.name.change_placeholder'.tr,
+
+        titleText: const SizedBox.shrink(),
       );
       return;
     }
@@ -42,7 +44,11 @@ class _ShopRenamePageState extends State<ShopRenamePage> {
     try {
       await controller.changeShopName(name);
       Get.back();
-      Get.snackbar('app.system.tips.title'.tr, 'app.system.message.success'.tr);
+      Get.snackbar(
+        'app.system.tips.title'.tr,
+        'app.system.message.success'.tr,
+        titleText: const SizedBox.shrink(),
+      );
     } finally {
       if (mounted) {
         setState(() => _isSaving = false);

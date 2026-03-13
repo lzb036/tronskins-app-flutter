@@ -429,6 +429,8 @@ class _LoginScreenState extends State<LoginScreen>
       backgroundColor: Colors.red,
       colorText: Colors.white,
       snackPosition: SnackPosition.TOP,
+
+      titleText: const SizedBox.shrink(),
     );
   }
 
@@ -439,6 +441,8 @@ class _LoginScreenState extends State<LoginScreen>
       backgroundColor: Colors.green,
       colorText: Colors.white,
       snackPosition: SnackPosition.TOP,
+
+      titleText: const SizedBox.shrink(),
     );
   }
 

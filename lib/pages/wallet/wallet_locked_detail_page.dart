@@ -5,6 +5,7 @@ import 'package:tronskins_app/api/shop_product.dart';
 import 'package:tronskins_app/api/steam.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
 import 'package:tronskins_app/common/storage/game_storage.dart';
+import 'package:tronskins_app/common/widgets/back_to_top_overlay.dart';
 import 'package:tronskins_app/controllers/wallet/wallet_controller.dart';
 import 'package:tronskins_app/api/model/wallet/wallet_models.dart';
 import 'package:tronskins_app/components/game_item/game_item_image.dart';
@@ -65,6 +66,8 @@ class _WalletLockedDetailPageState extends State<WalletLockedDetailPage> {
     Get.snackbar(
       'app.system.tips.title'.tr,
       'app.system.message.copy_success'.tr,
+
+      titleText: const SizedBox.shrink(),
     );
   }
 
@@ -87,6 +90,8 @@ class _WalletLockedDetailPageState extends State<WalletLockedDetailPage> {
       backgroundColor: backgroundColor,
       colorText: colorText,
       snackPosition: SnackPosition.TOP,
+
+      titleText: const SizedBox.shrink(),
     );
   }
 
@@ -504,33 +509,36 @@ class _WalletLockedDetailPageState extends State<WalletLockedDetailPage> {
   @override
   Widget build(BuildContext context) {
     final currency = Get.find<CurrencyController>();
-    return Scaffold(
-      backgroundColor: WalletUi.pageBackground(context),
-      appBar: AppBar(
-        title: Text('app.trade.order.details'.tr),
-        actions: [
-          IconButton(
-            tooltip: 'app.user.menu.feedback'.tr,
-            onPressed: () => Get.toNamed(Routers.FEEDBACK_LIST),
-            icon: const Icon(Icons.headset_mic_outlined),
-          ),
-        ],
-      ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _detail == null
-          ? Center(child: Text('app.common.no_data'.tr))
-          : ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                _buildOrderInfo(currency),
-                const SizedBox(height: 16),
-                _buildAssetInfo(currency),
-                const SizedBox(height: 16),
-                _buildTips(),
-              ],
+    return BackToTopScope(
+      enabled: false,
+      child: Scaffold(
+        backgroundColor: WalletUi.pageBackground(context),
+        appBar: AppBar(
+          title: Text('app.trade.order.details'.tr),
+          actions: [
+            IconButton(
+              tooltip: 'app.user.menu.feedback'.tr,
+              onPressed: () => Get.toNamed(Routers.FEEDBACK_LIST),
+              icon: const Icon(Icons.headset_mic_outlined),
             ),
-      bottomNavigationBar: _buildBottomActions(),
+          ],
+        ),
+        body: _loading
+            ? const Center(child: CircularProgressIndicator())
+            : _detail == null
+            ? Center(child: Text('app.common.no_data'.tr))
+            : ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  _buildOrderInfo(currency),
+                  const SizedBox(height: 16),
+                  _buildAssetInfo(currency),
+                  const SizedBox(height: 16),
+                  _buildTips(),
+                ],
+              ),
+        bottomNavigationBar: _buildBottomActions(),
+      ),
     );
   }
 

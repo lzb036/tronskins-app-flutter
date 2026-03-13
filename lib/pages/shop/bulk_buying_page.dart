@@ -125,6 +125,8 @@ class _BulkBuyingPageState extends State<BulkBuyingPage> {
       Get.snackbar(
         'app.system.tips.title'.tr,
         'app.market.detail.bulk_buying.price_decimal_error'.tr,
+
+        titleText: const SizedBox.shrink(),
       );
     }
   }
@@ -138,6 +140,8 @@ class _BulkBuyingPageState extends State<BulkBuyingPage> {
       Get.snackbar(
         'app.system.tips.title'.tr,
         'app.market.detail.message.num_error'.tr,
+
+        titleText: const SizedBox.shrink(),
       );
     }
     var numValue = int.tryParse(_numController.text) ?? 0;
@@ -526,7 +530,11 @@ class _BulkBuyingPageState extends State<BulkBuyingPage> {
 
     final user = UserStorage.getUserInfo();
     if (user == null) {
-      Get.snackbar('app.system.tips.title'.tr, 'app.system.message.nologin'.tr);
+      Get.snackbar(
+        'app.system.tips.title'.tr,
+        'app.system.message.nologin'.tr,
+        titleText: const SizedBox.shrink(),
+      );
       return;
     }
     FocusManager.instance.primaryFocus?.unfocus();
@@ -539,6 +547,8 @@ class _BulkBuyingPageState extends State<BulkBuyingPage> {
       Get.snackbar(
         'app.system.tips.title'.tr,
         'app.market.filter.message.price_error'.tr,
+
+        titleText: const SizedBox.shrink(),
       );
       return;
     }
@@ -547,6 +557,8 @@ class _BulkBuyingPageState extends State<BulkBuyingPage> {
       Get.snackbar(
         'app.system.tips.title'.tr,
         'app.market.detail.message.num_error'.tr,
+
+        titleText: const SizedBox.shrink(),
       );
       return;
     }
@@ -555,6 +567,8 @@ class _BulkBuyingPageState extends State<BulkBuyingPage> {
       Get.snackbar(
         'app.system.tips.title'.tr,
         'app.market.detail.bulk_buying.num_error'.tr,
+
+        titleText: const SizedBox.shrink(),
       );
       return;
     }
@@ -563,6 +577,8 @@ class _BulkBuyingPageState extends State<BulkBuyingPage> {
       Get.snackbar(
         'app.system.tips.title'.tr,
         'app.market.detail.bulk_buying.price_error'.tr,
+
+        titleText: const SizedBox.shrink(),
       );
       return;
     }
@@ -572,6 +588,8 @@ class _BulkBuyingPageState extends State<BulkBuyingPage> {
       Get.snackbar(
         'app.system.tips.title'.tr,
         'app.market.detail.bulk_buying.num_over'.tr,
+
+        titleText: const SizedBox.shrink(),
       );
       return;
     }
@@ -631,6 +649,8 @@ class _BulkBuyingPageState extends State<BulkBuyingPage> {
           Get.snackbar(
             'app.system.tips.title'.tr,
             'app.system.message.success'.tr,
+
+            titleText: const SizedBox.shrink(),
           );
         });
         return;
@@ -638,6 +658,8 @@ class _BulkBuyingPageState extends State<BulkBuyingPage> {
         Get.snackbar(
           'app.system.tips.title'.tr,
           res.message.isNotEmpty ? res.message : 'app.trade.filter.failed'.tr,
+
+          titleText: const SizedBox.shrink(),
         );
       }
     } finally {

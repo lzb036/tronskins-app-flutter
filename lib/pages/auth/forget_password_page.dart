@@ -81,6 +81,8 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
       backgroundColor: Colors.red,
       colorText: Colors.white,
       snackPosition: SnackPosition.TOP,
+
+      titleText: const SizedBox.shrink(),
     );
   }
 
@@ -91,6 +93,8 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
       backgroundColor: Colors.green,
       colorText: Colors.white,
       snackPosition: SnackPosition.TOP,
+
+      titleText: const SizedBox.shrink(),
     );
   }
 

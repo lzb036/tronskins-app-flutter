@@ -60,6 +60,8 @@ class _NotifyTradeListState extends State<NotifyTradeList> {
       'app.system.tips.title'.tr,
       message,
       snackPosition: SnackPosition.TOP,
+
+      titleText: const SizedBox.shrink(),
     );
   }
 
@@ -97,6 +99,8 @@ class _NotifyTradeListState extends State<NotifyTradeList> {
         'app.system.tips.title'.tr,
         message.isNotEmpty ? message : 'app.system.message.success'.tr,
         snackPosition: SnackPosition.TOP,
+
+        titleText: const SizedBox.shrink(),
       );
     } catch (_) {
       final insertIndex = index.clamp(0, list.length);

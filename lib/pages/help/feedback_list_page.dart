@@ -69,6 +69,8 @@ class _FeedbackListPageState extends State<FeedbackListPage> {
       Get.snackbar(
         'app.system.tips.title'.tr,
         'app.user.feedback.have_unfinished_feedback'.tr,
+
+        titleText: const SizedBox.shrink(),
       );
       return;
     }

@@ -15,7 +15,11 @@ class UserSetting extends StatelessWidget {
     final locale = Locale(languageCode, countryCode);
     Get.updateLocale(locale);
     currentLocale.value = locale;
-    Get.snackbar('Language Changed', 'Switched to ${locale.toString()}');
+    Get.snackbar(
+      'Language Changed',
+      'Switched to ${locale.toString()}',
+      titleText: const SizedBox.shrink(),
+    );
   }
 
   @override

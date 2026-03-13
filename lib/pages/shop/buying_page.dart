@@ -152,6 +152,8 @@ class _BuyingPageState extends State<BuyingPage>
     Get.snackbar(
       'app.system.tips.title'.tr,
       'app.trade.purchase.offline_tips'.tr,
+
+      titleText: const SizedBox.shrink(),
     );
   }
 
@@ -199,7 +201,11 @@ class _BuyingPageState extends State<BuyingPage>
     );
     if (confirm == true) {
       await controller.cancelBuy(id);
-      Get.snackbar('app.system.tips.title'.tr, 'app.system.message.success'.tr);
+      Get.snackbar(
+        'app.system.tips.title'.tr,
+        'app.system.message.success'.tr,
+        titleText: const SizedBox.shrink(),
+      );
     }
   }
 

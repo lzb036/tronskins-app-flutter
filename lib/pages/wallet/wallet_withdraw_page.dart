@@ -77,6 +77,8 @@ class _WalletWithdrawPageState extends State<WalletWithdrawPage> {
         Get.snackbar(
           'app.system.tips.title'.tr,
           'app.market.filter.message.price_error'.tr,
+
+          titleText: const SizedBox.shrink(),
         );
       }
       return '';
@@ -138,6 +140,8 @@ class _WalletWithdrawPageState extends State<WalletWithdrawPage> {
       Get.snackbar(
         'app.system.tips.title'.tr,
         'app.user.withdraw.message.enter_amount'.tr,
+
+        titleText: const SizedBox.shrink(),
       );
       return;
     }
@@ -145,6 +149,8 @@ class _WalletWithdrawPageState extends State<WalletWithdrawPage> {
       Get.snackbar(
         'app.system.tips.title'.tr,
         'app.user.withdraw.message.amount_error'.tr,
+
+        titleText: const SizedBox.shrink(),
       );
       return;
     }
@@ -152,6 +158,8 @@ class _WalletWithdrawPageState extends State<WalletWithdrawPage> {
       Get.snackbar(
         'app.system.tips.title'.tr,
         'app.user.withdraw.max_message'.tr,
+
+        titleText: const SizedBox.shrink(),
       );
       return;
     }
@@ -160,6 +168,8 @@ class _WalletWithdrawPageState extends State<WalletWithdrawPage> {
       Get.snackbar(
         'app.system.tips.title'.tr,
         'app.user.withdraw.message.enter_amount'.tr,
+
+        titleText: const SizedBox.shrink(),
       );
       _amountController.text = available.toStringAsFixed(2);
       return;
@@ -169,6 +179,8 @@ class _WalletWithdrawPageState extends State<WalletWithdrawPage> {
       Get.snackbar(
         'app.system.tips.title'.tr,
         'app.user.withdraw.enter_address'.tr,
+
+        titleText: const SizedBox.shrink(),
       );
       return;
     }
@@ -207,6 +219,8 @@ class _WalletWithdrawPageState extends State<WalletWithdrawPage> {
       Get.snackbar(
         'app.system.tips.title'.tr,
         'app.user.withdraw.message.success'.tr,
+
+        titleText: const SizedBox.shrink(),
       );
     }
   }
@@ -337,6 +351,8 @@ class _WalletWithdrawPageState extends State<WalletWithdrawPage> {
         Get.snackbar(
           'app.system.tips.title'.tr,
           'app.system.message.success'.tr,
+
+          titleText: const SizedBox.shrink(),
         );
       }
     }
@@ -396,6 +412,8 @@ class _WalletWithdrawPageState extends State<WalletWithdrawPage> {
                       Get.snackbar(
                         'app.system.tips.title'.tr,
                         'app.user.withdraw.message.name_empty'.tr,
+
+                        titleText: const SizedBox.shrink(),
                       );
                       return;
                     }
@@ -403,6 +421,8 @@ class _WalletWithdrawPageState extends State<WalletWithdrawPage> {
                       Get.snackbar(
                         'app.system.tips.title'.tr,
                         'app.user.withdraw.enter_address'.tr,
+
+                        titleText: const SizedBox.shrink(),
                       );
                       return;
                     }
@@ -415,6 +435,8 @@ class _WalletWithdrawPageState extends State<WalletWithdrawPage> {
                       Get.snackbar(
                         'app.system.tips.title'.tr,
                         'app.system.message.success'.tr,
+
+                        titleText: const SizedBox.shrink(),
                       );
                     }
                   },

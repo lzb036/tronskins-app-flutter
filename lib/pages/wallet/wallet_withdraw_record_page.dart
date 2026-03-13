@@ -78,6 +78,8 @@ class _WalletWithdrawRecordPageState extends State<WalletWithdrawRecordPage> {
         Get.snackbar(
           'app.system.tips.title'.tr,
           'app.system.message.success'.tr,
+
+          titleText: const SizedBox.shrink(),
         );
       }
     }

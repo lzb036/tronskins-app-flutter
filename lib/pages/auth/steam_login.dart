@@ -174,6 +174,8 @@ class _SteamLoginPageState extends State<SteamLoginPage> {
         'app.user.login.message.success'.tr,
         backgroundColor: Colors.green,
         colorText: Colors.white,
+
+        titleText: const SizedBox.shrink(),
       );
     } catch (e) {
       _showError('app.user.login.message.error'.tr);
@@ -190,6 +192,8 @@ class _SteamLoginPageState extends State<SteamLoginPage> {
       message,
       backgroundColor: Colors.red,
       colorText: Colors.white,
+
+      titleText: const SizedBox.shrink(),
     );
   }
 

@@ -22,6 +22,8 @@ class _EditNicknamePageState extends State<EditNicknamePage> {
       backgroundColor: Colors.green,
       colorText: Colors.white,
       snackPosition: SnackPosition.TOP,
+
+      titleText: const SizedBox.shrink(),
     );
   }
 
@@ -32,6 +34,8 @@ class _EditNicknamePageState extends State<EditNicknamePage> {
       backgroundColor: Colors.red,
       colorText: Colors.white,
       snackPosition: SnackPosition.TOP,
+
+      titleText: const SizedBox.shrink(),
     );
   }
 

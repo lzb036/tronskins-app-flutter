@@ -33,7 +33,11 @@ class _WalletPageState extends State<WalletPage> {
     }
     final allow = await controller.checkRechargeEnable();
     if (allow == false) {
-      Get.snackbar('app.system.tips.title'.tr, 'app.user.recharge.disable'.tr);
+      Get.snackbar(
+        'app.system.tips.title'.tr,
+        'app.user.recharge.disable'.tr,
+        titleText: const SizedBox.shrink(),
+      );
       return;
     }
     Get.toNamed(Routers.WALLET_RECHARGE);
@@ -42,7 +46,11 @@ class _WalletPageState extends State<WalletPage> {
   Future<void> _navigateWithdraw() async {
     final allow = await controller.checkWithdrawEnable();
     if (allow == false) {
-      Get.snackbar('app.system.tips.title'.tr, 'app.user.withdraw.disable'.tr);
+      Get.snackbar(
+        'app.system.tips.title'.tr,
+        'app.user.withdraw.disable'.tr,
+        titleText: const SizedBox.shrink(),
+      );
       return;
     }
     Get.toNamed(Routers.WALLET_WITHDRAW);

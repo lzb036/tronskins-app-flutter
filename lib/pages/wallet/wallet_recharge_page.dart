@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
+import 'package:tronskins_app/common/widgets/back_to_top_overlay.dart';
 import 'package:tronskins_app/controllers/wallet/wallet_controller.dart';
 import 'package:tronskins_app/pages/wallet/widgets/wallet_ui.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
@@ -135,6 +136,8 @@ class _WalletRechargePageState extends State<WalletRechargePage>
       backgroundColor: backgroundColor,
       colorText: colorText,
       snackPosition: SnackPosition.TOP,
+
+      titleText: const SizedBox.shrink(),
     );
   }
 
@@ -182,27 +185,30 @@ class _WalletRechargePageState extends State<WalletRechargePage>
   @override
   Widget build(BuildContext context) {
     final currency = Get.find<CurrencyController>();
-    return Scaffold(
-      backgroundColor: WalletUi.pageBackground(context),
-      appBar: AppBar(
-        title: Text('app.user.recharge.title'.tr),
-        actions: [
-          TextButton(
-            onPressed: () => Get.toNamed(Routers.WALLET_RECHARGE_RECORD),
-            child: Text('app.user.wallet.recharge_record'.tr),
-          ),
-        ],
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: [
-            Tab(text: 'app.user.wallet.usdt'.tr),
-            Tab(text: 'app.user.recharge.card'.tr),
+    return BackToTopScope(
+      enabled: false,
+      child: Scaffold(
+        backgroundColor: WalletUi.pageBackground(context),
+        appBar: AppBar(
+          title: Text('app.user.recharge.title'.tr),
+          actions: [
+            TextButton(
+              onPressed: () => Get.toNamed(Routers.WALLET_RECHARGE_RECORD),
+              child: Text('app.user.wallet.recharge_record'.tr),
+            ),
           ],
+          bottom: TabBar(
+            controller: _tabController,
+            tabs: [
+              Tab(text: 'app.user.wallet.usdt'.tr),
+              Tab(text: 'app.user.recharge.card'.tr),
+            ],
+          ),
         ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [Obx(() => _buildUsdtTab(currency)), _buildCardTab()],
+        body: TabBarView(
+          controller: _tabController,
+          children: [Obx(() => _buildUsdtTab(currency)), _buildCardTab()],
+        ),
       ),
     );
   }

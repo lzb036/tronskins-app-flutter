@@ -360,7 +360,11 @@ class SteamSessionController extends GetxController {
     });
     if (!res.success) {
       final failureMessage = _resolveTokenFreshFailureMessage(res);
-      Get.snackbar('app.system.tips.title'.tr, failureMessage);
+      Get.snackbar(
+        'app.system.tips.title'.tr,
+        failureMessage,
+        titleText: const SizedBox.shrink(),
+      );
       accountController.clear();
       passwordController.clear();
       codeController.clear();

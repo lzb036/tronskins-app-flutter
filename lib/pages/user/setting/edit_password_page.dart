@@ -30,6 +30,8 @@ class _EditPasswordPageState extends State<EditPasswordPage> {
       backgroundColor: Colors.green,
       colorText: Colors.white,
       snackPosition: SnackPosition.TOP,
+
+      titleText: const SizedBox.shrink(),
     );
   }
 
@@ -40,6 +42,8 @@ class _EditPasswordPageState extends State<EditPasswordPage> {
       backgroundColor: Colors.red,
       colorText: Colors.white,
       snackPosition: SnackPosition.TOP,
+
+      titleText: const SizedBox.shrink(),
     );
   }
 

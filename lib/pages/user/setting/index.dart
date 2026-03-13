@@ -81,7 +81,9 @@ class UserSetting extends StatelessWidget {
                           height: 24,
                         ),
                         const SizedBox(width: 8),
-                        Text(useLocale.getLanguageName(useLocale.currentLocale)),
+                        Text(
+                          useLocale.getLanguageName(useLocale.currentLocale),
+                        ),
                       ],
                     ),
                   ),
@@ -214,7 +216,9 @@ class UserSetting extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
-                            loggedIn ? Icons.logout_rounded : Icons.lock_outline,
+                            loggedIn
+                                ? Icons.logout_rounded
+                                : Icons.lock_outline,
                             size: 18,
                           ),
                           const SizedBox(width: 8),
@@ -298,6 +302,8 @@ class UserSetting extends StatelessWidget {
           () => Get.snackbar(
             'app.system.tips.title'.tr,
             'app.system.message.not_open'.tr,
+
+            titleText: const SizedBox.shrink(),
           ),
     );
   }

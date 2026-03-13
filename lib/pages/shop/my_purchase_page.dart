@@ -277,7 +277,11 @@ class _MyPurchasePageState extends State<MyPurchasePage>
           arguments: {'tradeOfferId': tradeOfferId},
         );
       } else {
-        Get.snackbar('app.system.tips.title'.tr, 'app.trade.filter.failed'.tr);
+        Get.snackbar(
+          'app.system.tips.title'.tr,
+          'app.trade.filter.failed'.tr,
+          titleText: const SizedBox.shrink(),
+        );
       }
       return;
     }
@@ -302,9 +306,17 @@ class _MyPurchasePageState extends State<MyPurchasePage>
     }
     try {
       await controller.acceptTradeOffer(id);
-      Get.snackbar('app.system.tips.title'.tr, 'app.system.message.success'.tr);
+      Get.snackbar(
+        'app.system.tips.title'.tr,
+        'app.system.message.success'.tr,
+        titleText: const SizedBox.shrink(),
+      );
     } catch (_) {
-      Get.snackbar('app.system.tips.title'.tr, 'app.trade.filter.failed'.tr);
+      Get.snackbar(
+        'app.system.tips.title'.tr,
+        'app.trade.filter.failed'.tr,
+        titleText: const SizedBox.shrink(),
+      );
     }
   }
 

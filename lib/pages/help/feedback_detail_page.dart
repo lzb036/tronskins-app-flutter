@@ -75,6 +75,8 @@ class _FeedbackDetailPageState extends State<FeedbackDetailPage> {
         Get.snackbar(
           'app.system.tips.title'.tr,
           'app.user.feedback.message.solve_success'.tr,
+
+          titleText: const SizedBox.shrink(),
         );
         controller.loadTickets(refresh: true);
         _backToList();
@@ -83,11 +85,17 @@ class _FeedbackDetailPageState extends State<FeedbackDetailPage> {
       final message = res.message.isNotEmpty
           ? res.message
           : 'app.system.message.not_open'.tr;
-      Get.snackbar('app.system.tips.title'.tr, message);
+      Get.snackbar(
+        'app.system.tips.title'.tr,
+        message,
+        titleText: const SizedBox.shrink(),
+      );
     } catch (_) {
       Get.snackbar(
         'app.system.tips.title'.tr,
         'app.user.login.message.error'.tr,
+
+        titleText: const SizedBox.shrink(),
       );
     }
   }

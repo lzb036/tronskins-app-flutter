@@ -56,6 +56,8 @@ class _IntegralDrawPageState extends State<IntegralDrawPage> {
       Get.snackbar(
         'app.system.tips.title'.tr,
         'app.user.integral.draw_underway'.tr,
+
+        titleText: const SizedBox.shrink(),
       );
       return;
     }
@@ -63,6 +65,8 @@ class _IntegralDrawPageState extends State<IntegralDrawPage> {
       Get.snackbar(
         'app.system.tips.title'.tr,
         'app.user.integral.insufficient'.tr,
+
+        titleText: const SizedBox.shrink(),
       );
       return;
     }

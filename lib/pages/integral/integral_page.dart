@@ -25,7 +25,11 @@ class _IntegralPageState extends State<IntegralPage> {
   Future<void> _exchange(int type) async {
     final ok = await controller.exchangeCoupon(type);
     if (ok) {
-      Get.snackbar('app.system.tips.title'.tr, 'app.system.message.success'.tr);
+      Get.snackbar(
+        'app.system.tips.title'.tr,
+        'app.system.message.success'.tr,
+        titleText: const SizedBox.shrink(),
+      );
     }
   }
 
