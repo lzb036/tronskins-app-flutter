@@ -191,6 +191,10 @@ class CollectionFavoriteItem {
 
   Map<String, dynamic>? get asset => _pickAsset(raw, appId);
 
+  dynamic get rawStatus => raw['status'];
+
+  bool get hasStatusTag => _isJsTruthy(rawStatus);
+
   dynamic get stickerRaw => asset?['stickers'] ?? raw['stickers'];
 
   dynamic get keychainRaw => asset?['keychains'] ?? raw['keychains'];
@@ -281,4 +285,20 @@ bool _asBool(dynamic value) {
   }
   final normalized = value.toString().toLowerCase();
   return normalized == 'true' || normalized == '1';
+}
+
+bool _isJsTruthy(dynamic value) {
+  if (value == null) {
+    return false;
+  }
+  if (value is bool) {
+    return value;
+  }
+  if (value is num) {
+    return value != 0;
+  }
+  if (value is String) {
+    return value.isNotEmpty;
+  }
+  return true;
 }

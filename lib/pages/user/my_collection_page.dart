@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:tronskins_app/api/market.dart';
@@ -867,7 +869,7 @@ class _CollectionFavoriteTabState
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
               itemCount: _items.length + 1,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
+              separatorBuilder: (_, __) => const SizedBox(height: 8),
               itemBuilder: (context, index) {
                 if (index >= _items.length) {
                   return _CollectionFooter(
@@ -883,10 +885,12 @@ class _CollectionFavoriteTabState
                 final keychains = parseStickerList(item.keychainRaw);
                 final gems = parseGemList(item.gemRaw);
                 final paintWearValue = double.tryParse(item.paintWear ?? '');
-                final showStatus =
-                    item.status != null &&
-                    item.status != 0 &&
-                    (item.statusName?.isNotEmpty ?? false);
+                final rawStatusName =
+                    (item.raw['statusName'] ?? item.raw['status_name'])
+                        ?.toString()
+                        .trim() ??
+                    '';
+                final showStatus = item.hasStatusTag;
                 final hasAccessories =
                     stickers.isNotEmpty ||
                     keychains.isNotEmpty ||
@@ -897,64 +901,70 @@ class _CollectionFavoriteTabState
                   child: InkWell(
                     onTap: () => _openDetail(item),
                     child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Stack(
+                      padding: const EdgeInsets.all(10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Column(
+                          Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  SizedBox(
-                                    width: 84,
-                                    height: 52,
-                                    child: GameItemImage(
-                                      imageUrl: item.imageUrl,
-                                      appId: item.appId,
-                                      rarity: rarity,
-                                      quality: quality,
-                                      exterior: exterior,
-                                      percentage: item.percentage,
-                                      phase: item.phase,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(right: 88),
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              if (showStatus) ...[
-                                                _CollectionStatusBadge(
-                                                  text: item.statusName ?? '',
-                                                  status: item.status,
+                              SizedBox(
+                                width: 84,
+                                height: 52,
+                                child: GameItemImage(
+                                  imageUrl: item.imageUrl,
+                                  appId: item.appId,
+                                  rarity: rarity,
+                                  quality: quality,
+                                  exterior: exterior,
+                                  percentage: item.percentage,
+                                  phase: item.phase,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            item.marketName ?? '',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .titleSmall
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.w600,
+                                                  height: 1.15,
                                                 ),
-                                                const SizedBox(width: 6),
-                                              ],
-                                              Expanded(
-                                                child: Text(
-                                                  item.marketName ?? '',
-                                                  maxLines: 1,
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                  style: Theme.of(context)
-                                                      .textTheme
-                                                      .titleSmall
-                                                      ?.copyWith(
-                                                        fontWeight:
-                                                            FontWeight.w600,
-                                                      ),
-                                                ),
-                                              ),
-                                            ],
                                           ),
-                                          const SizedBox(height: 10),
-                                          Obx(
+                                        ),
+                                        const SizedBox(width: 8),
+                                        _CollectionInlineActionChip(
+                                          label: 'app.user.collection.uncollect'
+                                              .tr,
+                                          onPressed: () =>
+                                              _cancelFavorite(item),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Row(
+                                      children: [
+                                        if (showStatus) ...[
+                                          _CollectionStatusBadge(
+                                            text: rawStatusName,
+                                            status: item.status,
+                                          ),
+                                          const SizedBox(width: 6),
+                                        ],
+                                        Expanded(
+                                          child: Obx(
                                             () => Text(
                                               currency.format(item.price ?? 0),
                                               maxLines: 1,
@@ -967,95 +977,73 @@ class _CollectionFavoriteTabState
                                                       context,
                                                     ).colorScheme.primary,
                                                     fontWeight: FontWeight.w700,
+                                                    height: 1.1,
                                                   ),
                                             ),
                                           ),
-                                        ],
-                                      ),
+                                        ),
+                                      ],
                                     ),
-                                  ),
-                                ],
-                              ),
-                              if ((item.paintWear?.isNotEmpty ?? false)) ...[
-                                const SizedBox(height: 10),
-                                Text(
-                                  '${'app.market.csgo.abradability'.tr}: '
-                                  '${item.paintWear}',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: Theme.of(context).textTheme.bodySmall,
+                                  ],
                                 ),
-                              ],
-                              if (paintWearValue != null || hasAccessories) ...[
-                                const SizedBox(height: 10),
-                                Row(
+                              ),
+                            ],
+                          ),
+                          if ((item.paintWear?.isNotEmpty ?? false)) ...[
+                            const SizedBox(height: 6),
+                            Text(
+                              '${'app.market.csgo.abradability'.tr}: '
+                              '${item.paintWear}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.left,
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.onSurfaceVariant,
+                                    height: 1.1,
+                                  ),
+                            ),
+                          ],
+                          if (paintWearValue != null || hasAccessories) ...[
+                            const SizedBox(height: 8),
+                            LayoutBuilder(
+                              builder: (context, constraints) {
+                                final wearWidth = math.min(
+                                  176.0,
+                                  constraints.maxWidth * 0.5,
+                                );
+                                return Row(
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
                                     if (paintWearValue != null)
-                                      Expanded(
+                                      SizedBox(
+                                        width: wearWidth,
                                         child: WearProgressBar(
                                           paintWear: paintWearValue,
+                                          height: 16,
                                         ),
-                                      )
-                                    else
-                                      const Spacer(),
+                                      ),
                                     if (hasAccessories) ...[
-                                      const SizedBox(width: 12),
-                                      Flexible(
+                                      if (paintWearValue != null)
+                                        const SizedBox(width: 10),
+                                      Expanded(
                                         child: Align(
                                           alignment: Alignment.centerRight,
-                                          child: Wrap(
-                                            spacing: 8,
-                                            runSpacing: 8,
-                                            alignment: WrapAlignment.end,
-                                            children: [
-                                              if (stickers.isNotEmpty)
-                                                StickerRow(
-                                                  stickers: stickers,
-                                                  size: 24,
-                                                ),
-                                              if (keychains.isNotEmpty)
-                                                StickerRow(
-                                                  stickers: keychains,
-                                                  size: 24,
-                                                ),
-                                              if (gems.isNotEmpty)
-                                                GemRow(gems: gems, size: 24),
-                                            ],
+                                          child: _CollectionAccessoryWrap(
+                                            stickers: stickers,
+                                            keychains: keychains,
+                                            gems: gems,
                                           ),
                                         ),
                                       ),
                                     ],
                                   ],
-                                ),
-                              ],
-                            ],
-                          ),
-                          Positioned(
-                            top: 0,
-                            right: 0,
-                            child: TextButton(
-                              onPressed: () => _cancelFavorite(item),
-                              style: TextButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 6,
-                                ),
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                minimumSize: Size.zero,
-                                backgroundColor: Theme.of(
-                                  context,
-                                ).colorScheme.surfaceContainerHighest,
-                                foregroundColor: Theme.of(
-                                  context,
-                                ).colorScheme.onSurfaceVariant,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              child: Text('app.user.collection.uncollect'.tr),
+                                );
+                              },
                             ),
-                          ),
+                          ],
                         ],
                       ),
                     ),
@@ -1247,6 +1235,76 @@ class _CollectionInlinePrice extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _CollectionInlineActionChip extends StatelessWidget {
+  const _CollectionInlineActionChip({
+    required this.label,
+    required this.onPressed,
+  });
+
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return TextButton(
+      onPressed: onPressed,
+      style: TextButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        minimumSize: const Size(0, 28),
+        backgroundColor: colors.surfaceContainerHighest,
+        foregroundColor: colors.onSurfaceVariant,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        textStyle: Theme.of(context).textTheme.labelSmall?.copyWith(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          height: 1,
+        ),
+      ),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 60),
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+        ),
+      ),
+    );
+  }
+}
+
+class _CollectionAccessoryWrap extends StatelessWidget {
+  const _CollectionAccessoryWrap({
+    required this.stickers,
+    required this.keychains,
+    required this.gems,
+  });
+
+  final List<GameItemSticker> stickers;
+  final List<GameItemSticker> keychains;
+  final List<GameItemGem> gems;
+
+  @override
+  Widget build(BuildContext context) {
+    final children = <Widget>[
+      if (stickers.isNotEmpty) StickerRow(stickers: stickers, size: 20),
+      if (keychains.isNotEmpty) StickerRow(stickers: keychains, size: 20),
+      if (gems.isNotEmpty) GemRow(gems: gems, size: 20),
+    ];
+    if (children.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return Wrap(
+      spacing: 6,
+      runSpacing: 4,
+      alignment: WrapAlignment.end,
+      children: children,
     );
   }
 }
