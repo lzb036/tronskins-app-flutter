@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -6,6 +8,7 @@ import 'package:tronskins_app/api/model/market/market_models.dart';
 import 'package:tronskins_app/api/shop_product.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
 import 'package:tronskins_app/common/storage/user_storage.dart';
+import 'package:tronskins_app/common/utils/app_snackbar.dart';
 
 class BulkBuyingPage extends StatefulWidget {
   const BulkBuyingPage({super.key});
@@ -20,6 +23,7 @@ class _BulkBuyingPageState extends State<BulkBuyingPage> {
 
   final TextEditingController _priceController = TextEditingController();
   final TextEditingController _numController = TextEditingController();
+  final FocusNode _priceFocusNode = FocusNode();
 
   late final int _appId;
   late final int _schemaId;
@@ -44,6 +48,7 @@ class _BulkBuyingPageState extends State<BulkBuyingPage> {
     _schemaId = args['schemaId'] as int? ?? 0;
     _priceController.addListener(_onInputChanged);
     _numController.addListener(_onInputChanged);
+    _priceFocusNode.addListener(_handlePriceFocusChange);
     _loadData();
   }
 
@@ -51,8 +56,10 @@ class _BulkBuyingPageState extends State<BulkBuyingPage> {
   void dispose() {
     _priceController.removeListener(_onInputChanged);
     _numController.removeListener(_onInputChanged);
+    _priceFocusNode.removeListener(_handlePriceFocusChange);
     _priceController.dispose();
     _numController.dispose();
+    _priceFocusNode.dispose();
     super.dispose();
   }
 
@@ -61,6 +68,13 @@ class _BulkBuyingPageState extends State<BulkBuyingPage> {
       return;
     }
     setState(() {});
+  }
+
+  void _handlePriceFocusChange() {
+    if (_priceFocusNode.hasFocus) {
+      return;
+    }
+    unawaited(_queryMatchedOnSale());
   }
 
   bool get _showFilter {
@@ -122,12 +136,7 @@ class _BulkBuyingPageState extends State<BulkBuyingPage> {
       _priceController.selection = TextSelection.fromPosition(
         TextPosition(offset: _priceController.text.length),
       );
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.market.detail.bulk_buying.price_decimal_error'.tr,
-
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.error('app.market.detail.bulk_buying.price_decimal_error'.tr);
     }
   }
 
@@ -137,12 +146,7 @@ class _BulkBuyingPageState extends State<BulkBuyingPage> {
       _numController.selection = TextSelection.fromPosition(
         TextPosition(offset: _numController.text.length),
       );
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.market.detail.message.num_error'.tr,
-
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.error('app.market.detail.message.num_error'.tr);
     }
     var numValue = int.tryParse(_numController.text) ?? 0;
     if (numValue > 200) {
@@ -185,8 +189,6 @@ class _BulkBuyingPageState extends State<BulkBuyingPage> {
         pageSize: 100,
         maxPrice: maxPrice,
         userId: userId,
-        paintWearMin: _wearMin,
-        paintWearMax: _wearMax,
         useAuth: useAuth,
         fallbackToPublicOnFail: true,
       );
@@ -372,7 +374,6 @@ class _BulkBuyingPageState extends State<BulkBuyingPage> {
       _wearMax = result.max;
       _filterLabel = _buildFilterLabel();
     });
-    await _queryMatchedOnSale();
   }
 
   String _buildFilterLabel() {
@@ -530,11 +531,7 @@ class _BulkBuyingPageState extends State<BulkBuyingPage> {
 
     final user = UserStorage.getUserInfo();
     if (user == null) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.system.message.nologin'.tr,
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.error('app.system.message.nologin'.tr);
       return;
     }
     FocusManager.instance.primaryFocus?.unfocus();
@@ -544,53 +541,28 @@ class _BulkBuyingPageState extends State<BulkBuyingPage> {
     final sellMin = _schema?.sellMin ?? 0;
 
     if (price <= 0) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.market.filter.message.price_error'.tr,
-
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.error('app.market.filter.message.price_error'.tr);
       return;
     }
 
     if (num <= 0) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.market.detail.message.num_error'.tr,
-
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.error('app.market.detail.message.num_error'.tr);
       return;
     }
 
     if (num > 200) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.market.detail.bulk_buying.num_error'.tr,
-
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.error('app.market.detail.bulk_buying.num_error'.tr);
       return;
     }
 
     if (sellMin > 0 && price < sellMin) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.market.detail.bulk_buying.price_error'.tr,
-
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.error('app.market.detail.bulk_buying.price_error'.tr);
       return;
     }
 
     await _queryMatchedOnSale();
     if (num > _matchedItems.length) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.market.detail.bulk_buying.num_over'.tr,
-
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.error('app.market.detail.bulk_buying.num_over'.tr);
       return;
     }
 
@@ -646,20 +618,12 @@ class _BulkBuyingPageState extends State<BulkBuyingPage> {
         FocusManager.instance.primaryFocus?.unfocus();
         Get.back(result: true);
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          Get.snackbar(
-            'app.system.tips.title'.tr,
-            'app.system.message.success'.tr,
-
-            titleText: const SizedBox.shrink(),
-          );
+          AppSnackbar.success('app.trade.buy.message.success'.tr);
         });
         return;
       } else {
-        Get.snackbar(
-          'app.system.tips.title'.tr,
+        AppSnackbar.error(
           res.message.isNotEmpty ? res.message : 'app.trade.filter.failed'.tr,
-
-          titleText: const SizedBox.shrink(),
         );
       }
     } finally {
@@ -906,6 +870,7 @@ class _BulkBuyingPageState extends State<BulkBuyingPage> {
                         context,
                         child: TextField(
                           controller: _priceController,
+                          focusNode: _priceFocusNode,
                           keyboardType: const TextInputType.numberWithOptions(
                             decimal: true,
                           ),
