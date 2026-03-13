@@ -380,34 +380,111 @@ class _MyPurchasePageState extends State<MyPurchasePage>
     return '-';
   }
 
-  ({Color bg, Color fg}) _statusPalette(int? status) {
-    if ([5, 6].contains(status)) {
-      return (bg: const Color(0xFFE8F5E9), fg: const Color(0xFF008000));
+  ({Color bg, Color fg, Color border, Color dot}) _statusPalette(int? status) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+
+    if (status == 6) {
+      final dot = isDark ? const Color(0xFF6EE7B7) : const Color(0xFF15803D);
+      return (
+        bg: dot.withValues(alpha: isDark ? 0.18 : 0.10),
+        fg: dot,
+        border: dot.withValues(alpha: isDark ? 0.30 : 0.18),
+        dot: dot,
+      );
     }
+
+    if (status == 5) {
+      final dot = isDark ? const Color(0xFF7DD3FC) : colorScheme.primary;
+      return (
+        bg: dot.withValues(alpha: isDark ? 0.18 : 0.10),
+        fg: dot,
+        border: dot.withValues(alpha: isDark ? 0.30 : 0.16),
+        dot: dot,
+      );
+    }
+
     if ([2, 3, 4].contains(status)) {
-      return (bg: const Color(0xFFFDECEC), fg: const Color(0xFFC22121));
+      final dot = isDark ? const Color(0xFFFCD34D) : const Color(0xFFB45309);
+      return (
+        bg: dot.withValues(alpha: isDark ? 0.18 : 0.12),
+        fg: dot,
+        border: dot.withValues(alpha: isDark ? 0.28 : 0.16),
+        dot: dot,
+      );
     }
-    return (bg: const Color(0xFFF5F5F5), fg: const Color(0xFF888888));
+
+    if ([-1, -2].contains(status)) {
+      final dot = isDark ? const Color(0xFFFCA5A5) : const Color(0xFFB91C1C);
+      return (
+        bg: dot.withValues(alpha: isDark ? 0.18 : 0.10),
+        fg: dot,
+        border: dot.withValues(alpha: isDark ? 0.30 : 0.15),
+        dot: dot,
+      );
+    }
+
+    final dot = colorScheme.onSurfaceVariant;
+    return (
+      bg: colorScheme.surfaceContainerHighest.withValues(
+        alpha: isDark ? 0.72 : 0.88,
+      ),
+      fg: colorScheme.onSurfaceVariant,
+      border: colorScheme.outline.withValues(alpha: isDark ? 0.24 : 0.10),
+      dot: dot,
+    );
   }
 
   Widget _buildStatusBadge(ShopOrderItem order) {
     final palette = _statusPalette(order.status);
     final text = _buildStatusText(order);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 170),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      child: DecoratedBox(
         decoration: BoxDecoration(
           color: palette.bg,
           borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: palette.border),
+          boxShadow: isDark
+              ? null
+              : [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.04),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
         ),
-        child: Text(
-          text,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-            color: palette.fg,
-            fontWeight: FontWeight.w600,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: palette.dot,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  text,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: palette.fg,
+                    fontWeight: FontWeight.w700,
+                    height: 1.1,
+                    letterSpacing: 0.1,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),

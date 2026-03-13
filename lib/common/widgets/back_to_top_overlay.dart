@@ -19,10 +19,17 @@ class BackToTopScope extends InheritedWidget {
     if (context == null) {
       return fallback;
     }
-    final element = context
-        .getElementForInheritedWidgetOfExactType<BackToTopScope>();
-    final scope = element?.widget as BackToTopScope?;
-    return scope?.enabled ?? fallback;
+    try {
+      final element = context
+          .getElementForInheritedWidgetOfExactType<BackToTopScope>();
+      final scope = element?.widget as BackToTopScope?;
+      return scope?.enabled ?? fallback;
+    } catch (_) {
+      // Scroll notifications can arrive while the originating subtree is
+      // being deactivated during route/tab switches. In that case we treat
+      // the scope as disabled and ignore the stale notification.
+      return false;
+    }
   }
 
   @override
@@ -120,11 +127,16 @@ class _BackToTopOverlayState extends State<BackToTopOverlay> {
     if (notificationContext == null) {
       return;
     }
-    final scrollable = Scrollable.maybeOf(notificationContext);
-    if (scrollable == null) {
-      return;
+    try {
+      final scrollable = notificationContext
+          .findAncestorStateOfType<ScrollableState>();
+      if (scrollable == null) {
+        return;
+      }
+      _activePosition = scrollable.position;
+    } catch (_) {
+      _activePosition = null;
     }
-    _activePosition = scrollable.position;
   }
 
   bool _hasAttachedActivePosition() {
