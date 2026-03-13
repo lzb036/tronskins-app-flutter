@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:tronskins_app/api/market.dart';
@@ -585,11 +586,68 @@ class _MarketDetailPageState extends State<MarketDetailPage>
     );
   }
 
+  Widget _buildTopNavButton({
+    required Widget child,
+    required VoidCallback? onPressed,
+    required bool collapsed,
+    required bool isDark,
+    String? tooltip,
+  }) {
+    final colors = Theme.of(context).colorScheme;
+    final backgroundColor = collapsed
+        ? (isDark
+              ? const Color(0xFF2A2C31).withValues(alpha: 0.94)
+              : Colors.white.withValues(alpha: 0.96))
+        : Colors.black.withValues(alpha: isDark ? 0.24 : 0.18);
+    final borderColor = collapsed
+        ? colors.outline.withValues(alpha: isDark ? 0.18 : 0.12)
+        : Colors.white.withValues(alpha: 0.12);
+    final shadowColor = Colors.black.withValues(
+      alpha: collapsed ? (isDark ? 0.24 : 0.10) : 0.14,
+    );
+
+    final button = Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: shadowColor,
+            blurRadius: collapsed ? 8 : 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: onPressed,
+          child: Center(child: child),
+        ),
+      ),
+    );
+
+    final wrapped = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+      child: button,
+    );
+    if (tooltip == null || tooltip.isEmpty) {
+      return wrapped;
+    }
+    return Tooltip(message: tooltip, child: wrapped);
+  }
+
   @override
   Widget build(BuildContext context) {
     final item = controller.item;
     final currency = Get.find<CurrencyController>();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
     final templateSchema = _templateDetail?.schema;
     final displayTags = templateSchema?.tags ?? item.tags;
     final displayName = templateSchema?.marketName ?? item.marketName ?? '';
@@ -626,6 +684,15 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                 Tab(text: 'app.market.detail.trade_record'.tr),
               ],
             );
+            final collapsed = innerBoxIsScrolled;
+            final navIconColor = isDark
+                ? Colors.white
+                : (collapsed ? colorScheme.onSurface : Colors.white);
+            final overlayStyle = isDark
+                ? SystemUiOverlayStyle.light
+                : (collapsed
+                      ? SystemUiOverlayStyle.dark
+                      : SystemUiOverlayStyle.light);
             return [
               SliverAppBar(
                 expandedHeight: 320,
@@ -633,14 +700,17 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                 backgroundColor: isDark
                     ? const Color(0xFF1B1C20)
                     : Colors.white,
-                elevation: 0,
+                surfaceTintColor: Colors.transparent,
+                scrolledUnderElevation: 0,
+                elevation: collapsed ? (isDark ? 0 : 1) : 0,
+                shadowColor: Colors.black.withValues(
+                  alpha: collapsed && !isDark ? 0.08 : 0,
+                ),
+                systemOverlayStyle: overlayStyle,
                 titleSpacing: 0,
                 title: ShaderMask(
                   shaderCallback: (bounds) => LinearGradient(
-                    colors: [
-                      Theme.of(context).colorScheme.primary,
-                      Theme.of(context).colorScheme.secondary,
-                    ],
+                    colors: [colorScheme.primary, colorScheme.secondary],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ).createShader(bounds),
@@ -654,27 +724,37 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                     ),
                   ),
                 ),
-                leading: IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                leadingWidth: 56,
+                leading: _buildTopNavButton(
+                  collapsed: collapsed,
+                  isDark: isDark,
                   onPressed: () => Get.back(),
+                  tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+                  child: Icon(Icons.arrow_back, color: navIconColor, size: 20),
                 ),
                 actions: [
-                  IconButton(
+                  _buildTopNavButton(
+                    collapsed: collapsed,
+                    isDark: isDark,
                     onPressed: _collectionSubmitting ? null : _toggleCollection,
-                    icon: _collectionSubmitting
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
+                    tooltip: _templateDetail?.isCollected == true
+                        ? 'app.user.collection.uncollect'.tr
+                        : null,
+                    child: _collectionSubmitting
+                        ? SizedBox(
+                            width: 18,
+                            height: 18,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: Colors.white,
+                              color: navIconColor,
                             ),
                           )
                         : Icon(
                             _templateDetail?.isCollected == true
                                 ? Icons.favorite
                                 : Icons.favorite_border,
-                            color: Colors.white,
+                            color: navIconColor,
+                            size: 20,
                           ),
                   ),
                 ],
