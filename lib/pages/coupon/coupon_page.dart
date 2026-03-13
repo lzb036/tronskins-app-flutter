@@ -146,7 +146,7 @@ class _CouponPageState extends State<CouponPage>
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.3),
+                    color: Colors.black.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
@@ -191,6 +191,7 @@ class _CouponPageState extends State<CouponPage>
                       : item.couponsType == 2
                       ? const Color(0xFF752D17)
                       : Theme.of(context).colorScheme.primaryContainer;
+                  final showExpiry = _hasExpiry(item.expireTime);
                   return Card(
                     margin: const EdgeInsets.only(bottom: 12),
                     child: Row(
@@ -235,14 +236,15 @@ class _CouponPageState extends State<CouponPage>
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text(
-                                '${'app.user.coupon.validity'.tr}: '
-                                '${_formatDate(item.expireTime)}',
-                                textAlign: TextAlign.center,
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(color: Colors.white),
-                              ),
-                              const SizedBox(height: 8),
+                              if (showExpiry)
+                                Text(
+                                  '${'app.user.coupon.validity'.tr}: '
+                                  '${_formatDate(item.expireTime)}',
+                                  textAlign: TextAlign.center,
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(color: Colors.white),
+                                ),
+                              if (showExpiry) const SizedBox(height: 8),
                               OutlinedButton(
                                 onPressed: () {},
                                 style: OutlinedButton.styleFrom(
@@ -275,11 +277,15 @@ class _CouponPageState extends State<CouponPage>
     });
   }
 
+  bool _hasExpiry(int? seconds) {
+    return seconds != null && seconds > 0;
+  }
+
   String _formatDate(int? seconds) {
-    if (seconds == null) {
+    if (!_hasExpiry(seconds)) {
       return '-';
     }
-    final date = DateTime.fromMillisecondsSinceEpoch(seconds * 1000);
+    final date = DateTime.fromMillisecondsSinceEpoch(seconds! * 1000);
     return DateFormat('yyyy-MM-dd').format(date);
   }
 }

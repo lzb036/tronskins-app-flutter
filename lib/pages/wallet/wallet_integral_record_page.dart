@@ -89,9 +89,11 @@ class _WalletIntegralRecordPageState extends State<WalletIntegralRecordPage> {
                     }
                     final item = controller.integralRecords[index];
                     final isNegative = item.type == 3;
+                    final colorScheme = Theme.of(context).colorScheme;
                     final color = isNegative
-                        ? Theme.of(context).colorScheme.error
-                        : Colors.green;
+                        ? colorScheme.error
+                        : const Color(0xFF18A058);
+                    final iconBg = color.withValues(alpha: 0.12);
                     final valueText =
                         '${isNegative ? '-' : '+'}${item.value ?? 0}';
                     return Card(
@@ -99,52 +101,139 @@ class _WalletIntegralRecordPageState extends State<WalletIntegralRecordPage> {
                       elevation: 0,
                       shape: WalletUi.cardShape(context),
                       child: Padding(
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(14),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              '${'app.trade.order.details'.tr}: ${item.id ?? '-'}',
-                              style: Theme.of(context).textTheme.bodySmall,
-                              softWrap: true,
-                            ),
-                            const SizedBox(height: 6),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: Text(
-                                _formatTime(item.createTime),
-                                style: Theme.of(context).textTheme.bodySmall,
-                                textAlign: TextAlign.end,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
                             Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Expanded(
-                                  child: Text(
-                                    item.typeName ?? '-',
-                                    style: TextStyle(color: color),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
+                                Container(
+                                  width: 40,
+                                  height: 40,
+                                  decoration: BoxDecoration(
+                                    color: iconBg,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Icon(
+                                    isNegative
+                                        ? Icons.remove_rounded
+                                        : Icons.add_rounded,
+                                    color: color,
+                                    size: 22,
                                   ),
                                 ),
                                 const SizedBox(width: 12),
-                                Text(
-                                  valueText,
-                                  style: TextStyle(
-                                    color: color,
-                                    fontWeight: FontWeight.w600,
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Text(
+                                              item.typeName ?? '-',
+                                              style: Theme.of(context)
+                                                  .textTheme
+                                                  .titleMedium
+                                                  ?.copyWith(
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 12),
+                                          Text(
+                                            valueText,
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .titleMedium
+                                                ?.copyWith(
+                                                  color: color,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        _formatTime(item.createTime),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(
+                                              color:
+                                                  colorScheme.onSurfaceVariant,
+                                            ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 8),
-                            Align(
-                              alignment: Alignment.centerRight,
-                              child: Text(
-                                '${item.changedIntegral ?? 0}',
-                                style: Theme.of(context).textTheme.bodySmall,
+                            const SizedBox(height: 12),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 9,
+                              ),
+                              decoration: BoxDecoration(
+                                color: colorScheme.surfaceContainerHighest
+                                    .withValues(alpha: 0.45),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'app.trade.order.details'.tr,
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(
+                                          color: colorScheme.onSurfaceVariant,
+                                        ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    item.id ?? '-',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                          height: 1.25,
+                                        ),
+                                    softWrap: true,
+                                  ),
+                                  const SizedBox(height: 10),
+                                  Row(
+                                    children: [
+                                      Text(
+                                        'app.user.integral.unit'.tr,
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodySmall
+                                            ?.copyWith(
+                                              color:
+                                                  colorScheme.onSurfaceVariant,
+                                            ),
+                                      ),
+                                      const Spacer(),
+                                      Text(
+                                        '${item.changedIntegral ?? 0}',
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.copyWith(
+                                              color: colorScheme.onSurface,
+                                              fontWeight: FontWeight.w700,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
                               ),
                             ),
                           ],

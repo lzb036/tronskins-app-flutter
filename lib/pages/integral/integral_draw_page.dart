@@ -1,10 +1,8 @@
-import 'dart:async';
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:tronskins_app/controllers/wallet/integral_controller.dart';
 import 'package:tronskins_app/api/model/wallet/wallet_models.dart';
+import 'package:tronskins_app/common/widgets/back_to_top_overlay.dart';
+import 'package:tronskins_app/controllers/wallet/integral_controller.dart';
 
 class IntegralDrawPage extends StatefulWidget {
   const IntegralDrawPage({super.key});
@@ -19,24 +17,13 @@ class _IntegralDrawPageState extends State<IntegralDrawPage> {
       : Get.put(IntegralController());
 
   final List<int> _gridOrder = const [0, 1, 2, 7, -1, 3, 6, 5, 4];
-  int? _activeIndex;
-  bool _isRunning = false;
-  Timer? _timer;
-  late DateTime _startTime;
-  WalletLotteryResult? _result;
-  int _targetIndex = 0;
+  bool _isUnavailableDialogVisible = false;
 
   @override
   void initState() {
     super.initState();
     controller.refreshUser();
     controller.loadLotteryPrizes();
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
   }
 
   List<WalletLotteryPrize> _buildPrizes() {
@@ -51,145 +38,87 @@ class _IntegralDrawPageState extends State<IntegralDrawPage> {
     return prizes;
   }
 
-  Future<void> _startDraw() async {
-    if (_isRunning) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.user.integral.draw_underway'.tr,
-
-        titleText: const SizedBox.shrink(),
-      );
+  Future<void> _showUnavailableDialog() async {
+    if (_isUnavailableDialogVisible) {
       return;
     }
-    if (controller.integralValue < 1000) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.user.integral.insufficient'.tr,
-
-        titleText: const SizedBox.shrink(),
-      );
-      return;
-    }
-    _isRunning = true;
-    _result = await controller.drawLottery();
-    if (_result == null) {
-      _isRunning = false;
-      return;
-    }
-    final prizes = _buildPrizes();
-    _targetIndex = _matchPrizeIndex(prizes, _result);
-    _activeIndex = Random().nextInt(8);
-    _startTime = DateTime.now();
-    _runAnimation();
-    setState(() {});
-  }
-
-  int _matchPrizeIndex(
-    List<WalletLotteryPrize> prizes,
-    WalletLotteryResult? result,
-  ) {
-    if (result == null) {
-      return Random().nextInt(8);
-    }
-    final title = result.title?.trim().toLowerCase();
-    if (title == null || title.isEmpty) {
-      return Random().nextInt(8);
-    }
-    final index = prizes.indexWhere((item) {
-      final label = item.label?.trim().toLowerCase();
-      return label != null && label.isNotEmpty && label == title;
-    });
-    return index >= 0 ? index : Random().nextInt(8);
-  }
-
-  void _runAnimation() {
-    final elapsed = DateTime.now().difference(_startTime).inMilliseconds;
-    if (elapsed >= 5000) {
-      _timer?.cancel();
-      _activeIndex = _targetIndex;
-      _isRunning = false;
-      setState(() {});
-      _showResultDialog();
-      return;
-    }
-    final speed = _calculateSpeed(elapsed);
-    _timer = Timer(Duration(milliseconds: speed), () {
-      setState(() {
-        _activeIndex = ((_activeIndex ?? 0) + 1) % 8;
-      });
-      _runAnimation();
-    });
-  }
-
-  int _calculateSpeed(int elapsed) {
-    final progress = elapsed / 5000.0;
-    if (progress < 0.3) {
-      return 200;
-    }
-    if (progress < 0.7) {
-      return 60;
-    }
-    return 200;
-  }
-
-  Future<void> _showResultDialog() async {
-    if (_result == null) {
-      return;
-    }
-    await Get.dialog<void>(
-      AlertDialog(
-        title: Text('app.user.integral.draw_congratulations'.tr),
-        content: Text(_result?.title ?? ''),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: Text('app.common.confirm'.tr),
+    _isUnavailableDialogVisible = true;
+    await showGeneralDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'integral_draw_unavailable',
+      barrierColor: Colors.black.withValues(alpha: 0.08),
+      transitionDuration: const Duration(milliseconds: 180),
+      pageBuilder: (dialogContext, animation, secondaryAnimation) {
+        return const _IntegralDrawUnavailableDialog();
+      },
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+          reverseCurve: Curves.easeInCubic,
+        );
+        return FadeTransition(
+          opacity: curved,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.94, end: 1).animate(curved),
+            child: child,
           ),
-        ],
-      ),
+        );
+      },
     );
+    if (mounted) {
+      setState(() {
+        _isUnavailableDialogVisible = false;
+      });
+      return;
+    }
+    _isUnavailableDialogVisible = false;
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('app.user.integral.draw_weekly'.tr)),
-      body: Obx(() {
-        final prizes = _buildPrizes();
-        return ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary,
-                borderRadius: BorderRadius.circular(16),
+    return BackToTopScope(
+      enabled: false,
+      child: Scaffold(
+        appBar: AppBar(title: Text('app.user.integral.draw_weekly'.tr)),
+        body: Obx(() {
+          final prizes = _buildPrizes();
+          return ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      '${'app.user.integral.unit'.tr}: ${controller.integralValue}',
+                      style: Theme.of(
+                        context,
+                      ).textTheme.titleMedium?.copyWith(color: Colors.white),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'app.user.integral.draw'.tr,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
+                    ),
+                  ],
+                ),
               ),
-              child: Column(
-                children: [
-                  Text(
-                    '${'app.user.integral.unit'.tr}: ${controller.integralValue}',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.titleMedium?.copyWith(color: Colors.white),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'app.user.integral.draw'.tr,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 16),
-            _buildGrid(prizes),
-            const SizedBox(height: 16),
-            _buildRules(),
-          ],
-        );
-      }),
+              const SizedBox(height: 16),
+              _buildGrid(prizes),
+              const SizedBox(height: 16),
+              _buildRules(),
+            ],
+          );
+        }),
+      ),
     );
   }
 
@@ -200,8 +129,7 @@ class _IntegralDrawPageState extends State<IntegralDrawPage> {
         cells.add(_buildDrawButton());
       } else {
         final prize = prizes[index];
-        final isActive = _activeIndex == index;
-        cells.add(_buildPrizeCell(prize, isActive));
+        cells.add(_buildPrizeCell(prize));
       }
     }
     return GridView.count(
@@ -216,7 +144,7 @@ class _IntegralDrawPageState extends State<IntegralDrawPage> {
 
   Widget _buildDrawButton() {
     return GestureDetector(
-      onTap: _startDraw,
+      onTap: _showUnavailableDialog,
       child: Container(
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.primary,
@@ -224,9 +152,7 @@ class _IntegralDrawPageState extends State<IntegralDrawPage> {
         ),
         child: Center(
           child: Text(
-            _isRunning
-                ? 'app.user.integral.drawing'.tr
-                : 'app.user.integral.draw'.tr,
+            'app.user.integral.draw'.tr,
             textAlign: TextAlign.center,
             style: Theme.of(
               context,
@@ -237,17 +163,13 @@ class _IntegralDrawPageState extends State<IntegralDrawPage> {
     );
   }
 
-  Widget _buildPrizeCell(WalletLotteryPrize prize, bool isActive) {
+  Widget _buildPrizeCell(WalletLotteryPrize prize) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isActive
-              ? Theme.of(context).colorScheme.tertiary
-              : Colors.transparent,
-          width: 2,
-        ),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.14)),
       ),
       padding: const EdgeInsets.all(8),
       child: Center(
@@ -285,6 +207,73 @@ class _IntegralDrawPageState extends State<IntegralDrawPage> {
                 child: Text(text),
               ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _IntegralDrawUnavailableDialog extends StatefulWidget {
+  const _IntegralDrawUnavailableDialog();
+
+  @override
+  State<_IntegralDrawUnavailableDialog> createState() =>
+      _IntegralDrawUnavailableDialogState();
+}
+
+class _IntegralDrawUnavailableDialogState
+    extends State<_IntegralDrawUnavailableDialog> {
+  @override
+  void initState() {
+    super.initState();
+    Future<void>.delayed(const Duration(milliseconds: 1400), () {
+      if (mounted) {
+        Navigator.of(context).maybePop();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Material(
+      color: Colors.transparent,
+      child: SafeArea(
+        child: Center(
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 36),
+            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.72),
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.18),
+                  blurRadius: 24,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.lock_clock_outlined,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  '功能暂未开放',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
