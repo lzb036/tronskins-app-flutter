@@ -259,18 +259,34 @@ class _MarketDetailPageState extends State<MarketDetailPage>
     _wearOptions = _parseWearOptions(qualityMap[selectedKey]);
   }
 
-  void _cycleQualityKey() {
-    if (_qualityKeys.length < 2) {
+  Future<void> _cycleQualityKey() async {
+    if (_loadingTemplate || _qualityKeys.length < 2) {
       return;
     }
-    _qualityIndex = (_qualityIndex + 1) % _qualityKeys.length;
     final qualityMap = _templateDetail?.qualityMap;
     if (qualityMap == null) {
       return;
     }
-    final selectedKey = _qualityKeys[_qualityIndex];
-    _wearOptions = _parseWearOptions(qualityMap[selectedKey]);
-    setState(() {});
+    final nextIndex = (_qualityIndex + 1) % _qualityKeys.length;
+    final targetKey = _qualityKeys[nextIndex];
+    final targetOptions = _parseWearOptions(qualityMap[targetKey]);
+    if (targetOptions.isEmpty) {
+      setState(() {
+        _qualityIndex = nextIndex;
+        _wearOptions = targetOptions;
+      });
+      return;
+    }
+    final currentExteriorLabel = _templateDetail
+        ?.schema
+        ?.tags
+        ?.exterior
+        ?.localizedName
+        ?.trim();
+    final matchedOption =
+        _matchWearOptionByExterior(targetOptions, currentExteriorLabel) ??
+        targetOptions.first;
+    await _selectWear(matchedOption.id);
   }
 
   Widget _buildMarketCountSummary({
@@ -580,6 +596,38 @@ class _MarketDetailPageState extends State<MarketDetailPage>
       }
     }
     return options;
+  }
+
+  _WearOption? _matchWearOptionByExterior(
+    List<_WearOption> options,
+    String? exteriorLabel,
+  ) {
+    final normalizedExterior = _normalizeWearLabel(exteriorLabel);
+    if (normalizedExterior == null) {
+      return null;
+    }
+    for (final option in options) {
+      final normalizedLabel = _normalizeWearLabel(option.label);
+      if (normalizedLabel == null) {
+        continue;
+      }
+      if (normalizedLabel.contains(normalizedExterior) ||
+          normalizedExterior.contains(normalizedLabel)) {
+        return option;
+      }
+    }
+    return null;
+  }
+
+  String? _normalizeWearLabel(String? value) {
+    if (value == null) {
+      return null;
+    }
+    final normalized = value.trim().toLowerCase();
+    if (normalized.isEmpty) {
+      return null;
+    }
+    return normalized;
   }
 
   MarketItemEntity _mapTemplateToItem(MarketTemplateSchema schema) {
