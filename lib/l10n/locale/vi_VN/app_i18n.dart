@@ -660,6 +660,7 @@ final Map<String, String> vi_VN = {
       "Tài khoản Steam không phù hợp! Vui lòng sử dụng tài khoản Steam sau để đăng nhập:",
   "app.steam.message.undisclosed":
       "Nó đã được phát hiện rằng hồ sơ hoặc hàng tồn kho Steam ({0}) của bạn không thể truy cập công khai.",
+  "app.steam.message.refresh_info_success": "Lam moi thanh cong!",
   "app.common.none": "Không có",
   "app.common.unlimited": "Không giới hạn",
   "app.common.no_data": "Không có dữ liệu",

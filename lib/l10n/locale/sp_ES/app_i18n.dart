@@ -691,6 +691,7 @@ final Map<String, String> sp_ES = {
       " ¡Incompatibilidad de la cuenta de Steam! Por favor, utilice la siguiente cuenta de Steam para iniciar sesión:",
   "app.steam.message.undisclosed":
       "Se ha detectado que tu perfil o inventario de Steam ({0}) no son públicamente accesibles.",
+  "app.steam.message.refresh_info_success": "Actualizacion exitosa",
   "app.common.none": "Ninguno",
   "app.common.unlimited": "ilimitado",
   "app.common.no_data": "No hay datos",

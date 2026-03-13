@@ -590,6 +590,7 @@ final Map<String, String> ko_KR = {
       "Steam 계정이 일치하지 않습니다!로그인하려면 다음 Steam 계정을 사용하십시오:",
   "app.steam.message.undisclosed":
       "Steam ({0}) 프로필이나 인벤토리가 공개적으로 액세스할 수 없음이 감지되었습니다.",
+  "app.steam.message.refresh_info_success": "새로고침에 성공했습니다",
   "app.common.none": "없음",
   "app.common.unlimited": "무제한",
   "app.common.no_data": "데이터 없음",

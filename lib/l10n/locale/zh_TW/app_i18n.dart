@@ -548,6 +548,7 @@ final Map<String, String> zh_TW = {
   "app.steam.message.load_error_2": "如果禁用加速器後問題仍然存在，請重繪並重試。",
   "app.steam.message.account_not_match": "Steam帳號不匹配！ 請使用以下Steam帳戶登入：",
   "app.steam.message.undisclosed": "檢測到您的Steam（｛0｝）設定檔或庫存無法公開訪問。",
+  "app.steam.message.refresh_info_success": "刷新成功",
   "app.common.none": "無",
   "app.common.unlimited": "無限",
   "app.common.no_data": "無數據",

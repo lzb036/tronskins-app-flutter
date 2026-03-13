@@ -679,6 +679,7 @@ final Map<String, String> en_US = {
       "Steam account mismatch! Please use the following Steam account to log in:",
   "app.steam.message.undisclosed":
       "It has been detected that your Steam ({0}) profile or inventory is not publicly accessible.",
+  "app.steam.message.refresh_info_success": "Refresh successful",
   "app.common.none": "None",
   "app.common.unlimited": "Unlimited",
   "app.common.no_data": "No Data",

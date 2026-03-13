@@ -680,6 +680,7 @@ final Map<String, String> it_IT = {
       "Incorrispondenza dell'account Steam! Usa il seguente account Steam per accedere:",
   "app.steam.message.undisclosed":
       "È stato rilevato che il tuo profilo o inventario Steam ({0}) non sono accessibili al pubblico.",
+  "app.steam.message.refresh_info_success": "Aggiornamento riuscito",
   "app.common.none": "Nessuno",
   "app.common.unlimited": "illimitato",
   "app.common.no_data": "Nessun Dati",

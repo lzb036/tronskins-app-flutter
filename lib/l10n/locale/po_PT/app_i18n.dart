@@ -684,6 +684,7 @@ final Map<String, String> po_PT = {
       "Incompatibilidade da conta Steam! Por favor, use a seguinte conta Steam para iniciar sessão:",
   "app.steam.message.undisclosed":
       "Detectou-se que o seu perfil ou inventário Steam ({0}) não está acessível ao público.",
+  "app.steam.message.refresh_info_success": "Atualizacao bem-sucedida",
   "app.common.none": "Nenhum",
   "app.common.unlimited": "ilimitado",
   "app.common.no_data": "Nenhum Dados",

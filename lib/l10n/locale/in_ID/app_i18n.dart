@@ -671,6 +671,7 @@ final Map<String, String> in_ID = {
       "Akun Steam tidak cocok! Silakan gunakan akun Steam berikut untuk masuk:",
   "app.steam.message.undisclosed":
       "Telah terdeteksi bahwa profil atau persediaan Steam ({0}) Anda tidak dapat diakses oleh publik.",
+  "app.steam.message.refresh_info_success": "Pembaruan berhasil",
   "app.common.none": "Tidak ada",
   "app.common.unlimited": "Tidak terbatas",
   "app.common.no_data": "Tidak ada data",

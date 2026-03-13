@@ -691,6 +691,7 @@ final Map<String, String> fr_FR = {
       "Incompatibilité du compte Steam ! Veuillez utiliser le compte Steam suivant pour vous connecter :",
   "app.steam.message.undisclosed":
       "Il a été détecté que votre profil Steam ({0}) ou votre inventaire n'est pas accessible au public.",
+  "app.steam.message.refresh_info_success": "Actualisation reussie",
   "app.common.none": "Aucun",
   "app.common.unlimited": "illimité",
   "app.common.no_data": "Aucune Donnée",

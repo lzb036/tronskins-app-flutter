@@ -8,6 +8,7 @@ import 'package:tronskins_app/api/steam.dart';
 import 'package:tronskins_app/api/tradeoffer.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
 import 'package:tronskins_app/common/storage/game_storage.dart';
+import 'package:tronskins_app/common/utils/app_snackbar.dart';
 import 'package:tronskins_app/components/game_item/wear_progress_bar.dart';
 import 'package:tronskins_app/controllers/user/user_controller.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
@@ -221,11 +222,8 @@ class _NotifyTradeDeliverSheetState extends State<NotifyTradeDeliverSheet> {
         params: {'id': _orders.first.id},
       );
       if (res.success) {
-        Get.snackbar(
-          'app.system.tips.title'.tr,
+        AppSnackbar.success(
           'app.trade.deliver.message.steam_trade_url_success'.tr,
-
-          titleText: const SizedBox.shrink(),
         );
         widget.onDelivered?.call();
         if (mounted) {

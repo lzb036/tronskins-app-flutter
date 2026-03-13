@@ -661,6 +661,7 @@ final Map<String, String> tu_TR = {
       "Steam hesabı uyumsuzluğu! Lütfen giriş yapmak için aşağıdaki Steam hesabını kullanın:",
   "app.steam.message.undisclosed":
       "Steam ({0}) profilinizin veya envanterinizin halka erişilebilmediği tespit edildi.",
+  "app.steam.message.refresh_info_success": "Yenileme basarili",
   "app.common.none": "Hiçbir",
   "app.common.unlimited": "Sınırsız",
   "app.common.no_data": "Veri Yok",

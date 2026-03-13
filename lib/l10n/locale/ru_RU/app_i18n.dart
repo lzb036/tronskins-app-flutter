@@ -677,6 +677,7 @@ final Map<String, String> ru_RU = {
       "Несоответствие учетной записи Steam! Пожалуйста, используйте следующую учетную запись Steam для входа:",
   "app.steam.message.undisclosed":
       "Было обнаружено, что ваш профиль Steam ({0}) или инвентарий не являются общедоступными.",
+  "app.steam.message.refresh_info_success": "Обновление успешно!",
   "app.common.none": "Никакой",
   "app.common.unlimited": "Неограниченный",
   "app.common.no_data": "Нет данных",

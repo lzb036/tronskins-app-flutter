@@ -8,6 +8,7 @@ import 'package:tronskins_app/api/steam.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
 import 'package:tronskins_app/common/storage/game_storage.dart';
 import 'package:tronskins_app/common/utils/app_snackbar.dart';
+import 'package:tronskins_app/common/widgets/glass_notice_dialog.dart';
 import 'package:tronskins_app/components/game/game_icon_button.dart';
 import 'package:tronskins_app/components/game/game_switch_menu.dart';
 import 'package:tronskins_app/components/filter/filter_models.dart';
@@ -465,18 +466,45 @@ class _ShopPageState extends State<ShopPage>
             })
             .toList(growable: false);
         orderController.pendingShipments.assignAll(updated);
+        if (mounted) {
+          unawaited(
+            showGlassNoticeDialog(
+              context,
+              message: 'app.steam.message.refresh_info_success'.tr,
+              icon: Icons.check_circle_outline_rounded,
+              barrierLabel: 'refresh_pending_buyer_success',
+            ),
+          );
+        }
       } else {
         final dataText = _extractApiErrorText(data);
-        AppSnackbar.error(
-          (dataText?.isNotEmpty ?? false)
-              ? dataText!
-              : (res.message.trim().isNotEmpty
-                    ? res.message
-                    : 'app.trade.filter.failed'.tr),
-        );
+        final message = (dataText?.isNotEmpty ?? false)
+            ? dataText!
+            : (res.message.trim().isNotEmpty
+                  ? res.message
+                  : 'app.trade.filter.failed'.tr);
+        if (mounted) {
+          unawaited(
+            showGlassNoticeDialog(
+              context,
+              message: message,
+              icon: Icons.error_outline_rounded,
+              barrierLabel: 'refresh_pending_buyer_failed',
+            ),
+          );
+        }
       }
     } catch (_) {
-      AppSnackbar.error('app.trade.filter.failed'.tr);
+      if (mounted) {
+        unawaited(
+          showGlassNoticeDialog(
+            context,
+            message: 'app.trade.filter.failed'.tr,
+            icon: Icons.error_outline_rounded,
+            barrierLabel: 'refresh_pending_buyer_failed',
+          ),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {

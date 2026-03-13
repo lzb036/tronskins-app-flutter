@@ -667,6 +667,7 @@ final Map<String, String> po_PL = {
       "Niezgodność konta Steam! Aby się zalogować, użyj następującego konta Steam:",
   "app.steam.message.undisclosed":
       "Wykryto, że Twój profil lub inwentarz Steam ({0}) nie jest publicznie dostępny.",
+  "app.steam.message.refresh_info_success": "Odswiezanie zakonczone pomyslnie",
   "app.common.none": "Żaden",
   "app.common.unlimited": "Nieograniczony",
   "app.common.no_data": "Brak danych",

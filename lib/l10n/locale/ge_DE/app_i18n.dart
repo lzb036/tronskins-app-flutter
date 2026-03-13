@@ -686,6 +686,7 @@ final Map<String, String> ge_DE = {
       "Fehler im Steam-Konto! Bitte verwenden Sie das folgende Steam-Konto, um sich anzumelden:",
   "app.steam.message.undisclosed":
       "Es wurde festgestellt, dass dein Steam-Profil oder dein Inventar nicht öffentlich zugänglich ist.",
+  "app.steam.message.refresh_info_success": "Aktualisierung erfolgreich",
   "app.common.none": "Keine",
   "app.common.unlimited": "Unbegrenzt",
   "app.common.no_data": "Keine Daten",

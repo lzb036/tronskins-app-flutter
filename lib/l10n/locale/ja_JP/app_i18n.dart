@@ -576,6 +576,7 @@ final Map<String, String> ja_JP = {
       "Steamアカウント不一致！以下のSteamアカウントを使用してログインしてください:",
   "app.steam.message.undisclosed":
       "Steam ({0}) プロフィールまたはインベントリが公開できないことが検出されました。",
+  "app.steam.message.refresh_info_success": "更新に成功しました",
   "app.common.none": "なし",
   "app.common.unlimited": "無制限",
   "app.common.no_data": "データなし",

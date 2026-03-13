@@ -646,6 +646,7 @@ final Map<String, String> th_TH = {
       "บัญชี Steam ไม่ตรงกัน! กรุณาใช้บัญชี Steam ต่อไปนี้เพื่อเข้าสู่ระบบ:",
   "app.steam.message.undisclosed":
       "ได้รับการตรวจพบว่าโปรไฟล์ Steam ({0}) หรือสินค้าคลังของคุณไม่สามารถเข้าถึงสาธารณะได้",
+  "app.steam.message.refresh_info_success": "รีเฟรชสําเร็จ!",
   "app.common.none": "ไม่มี",
   "app.common.unlimited": "ไม่ จำกัด",
   "app.common.no_data": "ไม่มีข้อมูล",

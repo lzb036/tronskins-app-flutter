@@ -541,6 +541,7 @@ final Map<String, String> zh_CN = {
   "app.steam.message.load_error_2": "若关闭加速器后仍无法解决，请刷新重试。",
   "app.steam.message.account_not_match": "Steam账号不匹配！请使用以下Steam账号进行登录：",
   "app.steam.message.undisclosed": "检测到你的Steam({0})个人资料或库存没有公开",
+  "app.steam.message.refresh_info_success": "刷新成功",
   "app.common.none": "无",
   "app.common.unlimited": "不限",
   "app.common.no_data": "无数据",
