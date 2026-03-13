@@ -103,32 +103,19 @@ class _WalletIntegralRecordPageState extends State<WalletIntegralRecordPage> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    '${'app.trade.order.details'.tr}: ${item.id ?? '-'}',
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodySmall,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Flexible(
-                                  child: Text(
-                                    _formatTime(item.createTime),
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodySmall,
-                                    textAlign: TextAlign.end,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
+                            Text(
+                              '${'app.trade.order.details'.tr}: ${item.id ?? '-'}',
+                              style: Theme.of(context).textTheme.bodySmall,
+                              softWrap: true,
+                            ),
+                            const SizedBox(height: 6),
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: Text(
+                                _formatTime(item.createTime),
+                                style: Theme.of(context).textTheme.bodySmall,
+                                textAlign: TextAlign.end,
+                              ),
                             ),
                             const SizedBox(height: 8),
                             Row(

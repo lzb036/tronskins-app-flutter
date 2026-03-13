@@ -63,6 +63,10 @@ class BackToTopOverlay extends StatefulWidget {
 }
 
 class _BackToTopOverlayState extends State<BackToTopOverlay> {
+  static const double _kBottomEdgeGap = 16.0;
+  static const double _kBottomDockClearance =
+      kBottomNavigationBarHeight + _kBottomEdgeGap;
+
   final ValueNotifier<bool> _visible = ValueNotifier<bool>(false);
   ScrollPosition? _activePosition;
   String? _lastRoute;
@@ -252,7 +256,9 @@ class _BackToTopOverlayState extends State<BackToTopOverlay> {
               builder: (context, showBackToTop, child) {
                 final routeEnabled = _isRouteEnabled();
                 final visible = routeEnabled && showBackToTop;
-                final bottomPadding = currentRoute == '/' ? 72.0 : 12.0;
+                // Keep the button on a stable baseline across pages instead of
+                // letting route-specific padding make it jump up and down.
+                const bottomPadding = _kBottomDockClearance;
 
                 return SafeArea(
                   minimum: EdgeInsets.fromLTRB(0, 0, 0, bottomPadding),
