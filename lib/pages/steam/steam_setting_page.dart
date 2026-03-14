@@ -55,8 +55,11 @@ class _SteamSettingPageState extends State<SteamSettingPage> {
     Get.toNamed(Routers.STEAM_BIND, arguments: token);
   }
 
-  void _toSteamSession() {
-    Get.toNamed(Routers.STEAM_SESSION);
+  Future<void> _toSteamSession() async {
+    final result = await Get.toNamed(Routers.STEAM_SESSION);
+    if (result == true) {
+      await controller.loadSteamConfig();
+    }
   }
 
   void _showSteamIdMismatchDialog() {

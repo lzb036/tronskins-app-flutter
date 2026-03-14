@@ -202,14 +202,12 @@ class _FeedbackDetailPageState extends State<FeedbackDetailPage> {
             ),
       body: Obx(() {
         final loading = controller.replyLoading.value;
+        final detailLoading = controller.detailLoading.value;
         final list = controller.replies;
         final detail = controller.detail.value;
         final showLoadingFooter = loading && list.isNotEmpty;
         final showNoMoreFooter =
             list.isNotEmpty && !loading && !controller.repliesHasMore;
-        if (loading && list.isEmpty && detail == null) {
-          return const Center(child: CircularProgressIndicator());
-        }
         return RefreshIndicator(
           onRefresh: () =>
               controller.loadReplies(ticketId: _ticketId, refresh: true),
@@ -218,9 +216,14 @@ class _FeedbackDetailPageState extends State<FeedbackDetailPage> {
             physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
             children: [
-              if (detail != null) _buildHeader(context, detail),
-              if (detail != null) const SizedBox(height: 12),
-              if (list.isEmpty)
+              if (detail != null)
+                _buildHeader(context, detail)
+              else if (detailLoading)
+                _buildHeaderLoading(context),
+              if (detail != null || detailLoading) const SizedBox(height: 12),
+              if (loading && list.isEmpty)
+                _buildConversationLoading(context)
+              else if (list.isEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 24),
                   child: Center(child: Text('app.common.no_data'.tr)),
@@ -258,6 +261,40 @@ class _FeedbackDetailPageState extends State<FeedbackDetailPage> {
       return const ListEndTip(padding: EdgeInsets.fromLTRB(8, 6, 8, 12));
     }
     return const SizedBox(height: 4);
+  }
+
+  Widget _buildHeaderLoading(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      decoration: HelpUi.cardDecoration(context),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildLoadingLine(
+            context,
+            width: 180,
+            height: theme.textTheme.titleMedium?.fontSize ?? 18,
+          ),
+          const SizedBox(height: 10),
+          _buildLoadingLine(context, width: 140, height: 12),
+          const SizedBox(height: 14),
+          _buildLoadingLine(context, width: double.infinity, height: 14),
+          const SizedBox(height: 8),
+          _buildLoadingLine(context, width: 220, height: 14),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildConversationLoading(BuildContext context) {
+    return Column(
+      children: const [
+        _FeedbackLoadingBubble(isAdmin: false),
+        _FeedbackLoadingBubble(isAdmin: true),
+        _FeedbackLoadingBubble(isAdmin: false),
+      ],
+    );
   }
 
   Widget _buildHeader(BuildContext context, FeedbackDetail detail) {
@@ -417,6 +454,24 @@ class _FeedbackDetailPageState extends State<FeedbackDetailPage> {
       },
     );
   }
+
+  Widget _buildLoadingLine(
+    BuildContext context, {
+    required double width,
+    required double height,
+  }) {
+    final color = Theme.of(
+      context,
+    ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.9);
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(999),
+      ),
+    );
+  }
 }
 
 class _StatusChip extends StatelessWidget {
@@ -428,4 +483,68 @@ class _StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) =>
       HelpUi.statusChip(context, status: status, label: label);
+}
+
+class _FeedbackLoadingBubble extends StatelessWidget {
+  const _FeedbackLoadingBubble({required this.isAdmin});
+
+  final bool isAdmin;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final align = isAdmin ? Alignment.centerLeft : Alignment.centerRight;
+    final bubbleColor = isAdmin
+        ? theme.colorScheme.surface
+        : theme.colorScheme.primary.withValues(
+            alpha: theme.brightness == Brightness.dark ? 0.16 : 0.10,
+          );
+    final borderColor = isAdmin
+        ? theme.colorScheme.outlineVariant.withValues(alpha: 0.26)
+        : theme.colorScheme.primary.withValues(alpha: 0.22);
+    final lineColor = theme.colorScheme.surfaceContainerHighest.withValues(
+      alpha: isAdmin ? 0.9 : 0.78,
+    );
+
+    Widget loadingLine(double width, double height) {
+      return Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          color: lineColor,
+          borderRadius: BorderRadius.circular(999),
+        ),
+      );
+    }
+
+    return Align(
+      alignment: align,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(12),
+        constraints: const BoxConstraints(maxWidth: 520),
+        decoration: BoxDecoration(
+          color: bubbleColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: borderColor),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                loadingLine(96, 12),
+                const SizedBox(width: 8),
+                loadingLine(72, 10),
+              ],
+            ),
+            const SizedBox(height: 10),
+            loadingLine(double.infinity, 14),
+            const SizedBox(height: 8),
+            loadingLine(240, 14),
+          ],
+        ),
+      ),
+    );
+  }
 }

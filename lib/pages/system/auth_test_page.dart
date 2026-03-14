@@ -1,9 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:get/get.dart';
 import 'package:tronskins_app/api/loginServer.dart';
 import 'package:tronskins_app/common/http/interceptors/auth_interceptor.dart';
 import 'package:tronskins_app/common/storage/session_storage.dart';
+import 'package:tronskins_app/common/widgets/back_to_top_overlay.dart';
 import 'package:tronskins_app/common/storage/user_storage.dart';
 
 class AuthTestPage extends StatefulWidget {
@@ -21,8 +24,6 @@ class _AuthTestPageState extends State<AuthTestPage> {
   bool _running = false;
   String? _token;
   int? _accessExpireTime;
-  int? _refreshExpireTime;
-  String? _refreshTokenCookie;
 
   @override
   void initState() {
@@ -45,9 +46,7 @@ class _AuthTestPageState extends State<AuthTestPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final hasToken = AuthInterceptor.hasToken;
     final accessExpired = AuthInterceptor.isAccessTokenExpired;
-    final refreshExpired = _isExpired(_refreshExpireTime);
 
     return Scaffold(
       backgroundColor: Color.lerp(
@@ -56,34 +55,25 @@ class _AuthTestPageState extends State<AuthTestPage> {
         theme.brightness == Brightness.dark ? 0.08 : 0.14,
       ),
       appBar: AppBar(title: const Text('认证测试中心')),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
-          children: [
-            if (_running)
-              ClipRRect(
-                borderRadius: BorderRadius.circular(999),
-                child: const LinearProgressIndicator(minHeight: 4),
-              ),
-            if (_running) const SizedBox(height: 14),
-            _buildHeroCard(
-              theme: theme,
-              hasToken: hasToken,
-              accessExpired: accessExpired,
-              refreshExpired: refreshExpired,
-            ),
-            const SizedBox(height: 14),
-            _buildSnapshotCard(
-              theme: theme,
-              hasToken: hasToken,
-              accessExpired: accessExpired,
-              refreshExpired: refreshExpired,
-            ),
-            const SizedBox(height: 14),
-            _buildActionCard(theme),
-            const SizedBox(height: 14),
-            _buildLogCard(theme),
-          ],
+      body: BackToTopScope(
+        enabled: false,
+        child: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+            children: [
+              if (_running)
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(999),
+                  child: const LinearProgressIndicator(minHeight: 4),
+                ),
+              if (_running) const SizedBox(height: 14),
+              _buildHeroCard(theme: theme, accessExpired: accessExpired),
+              const SizedBox(height: 14),
+              _buildActionCard(theme),
+              const SizedBox(height: 14),
+              _buildLogCard(theme),
+            ],
+          ),
         ),
       ),
     );
@@ -91,11 +81,12 @@ class _AuthTestPageState extends State<AuthTestPage> {
 
   Widget _buildHeroCard({
     required ThemeData theme,
-    required bool hasToken,
     required bool accessExpired,
-    required bool refreshExpired,
   }) {
     final scheme = theme.colorScheme;
+    final accessAccent = accessExpired
+        ? const Color(0xFFDC2626)
+        : const Color(0xFF2563EB);
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -162,359 +153,141 @@ class _AuthTestPageState extends State<AuthTestPage> {
             ],
           ),
           const SizedBox(height: 18),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              _buildStatusPill(
-                label: '登录状态',
-                value: hasToken ? '已登录' : '未登录',
-                icon: hasToken
-                    ? Icons.verified_user_rounded
-                    : Icons.person_off_rounded,
-                tone: hasToken
-                    ? const Color(0xFF0F9D58)
-                    : const Color(0xFFD97706),
-              ),
-              _buildStatusPill(
-                label: 'Access',
-                value: accessExpired ? '已过期' : '有效',
-                icon: accessExpired
-                    ? Icons.gpp_bad_rounded
-                    : Icons.gpp_good_rounded,
-                tone: accessExpired
-                    ? const Color(0xFFDC2626)
-                    : const Color(0xFF2563EB),
-              ),
-              _buildStatusPill(
-                label: 'Refresh',
-                value: refreshExpired ? '已过期' : '有效',
-                icon: refreshExpired
-                    ? Icons.timer_off_rounded
-                    : Icons.timelapse_rounded,
-                tone: refreshExpired
-                    ? const Color(0xFFB91C1C)
-                    : const Color(0xFF7C3AED),
-              ),
-            ],
+          _buildHeroMetricCard(
+            theme: theme,
+            label: 'Access 倒计时',
+            value: _formatCountdown(_accessExpireTime),
+            status: accessExpired ? '已过期' : '进行中',
+            icon: Icons.key_rounded,
+            accent: accessAccent,
           ),
+          const SizedBox(height: 12),
+          _buildHeroTokenCard(theme),
         ],
       ),
     );
   }
 
-  Widget _buildStatusPill({
+  Widget _buildHeroMetricCard({
+    required ThemeData theme,
     required String label,
     required String value,
-    required IconData icon,
-    required Color tone,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.16),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 28,
-            height: 28,
-            decoration: BoxDecoration(
-              color: tone.withValues(alpha: 0.18),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, size: 16, color: Colors.white),
-          ),
-          const SizedBox(width: 10),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSnapshotCard({
-    required ThemeData theme,
-    required bool hasToken,
-    required bool accessExpired,
-    required bool refreshExpired,
-  }) {
-    final scheme = theme.colorScheme;
-    return Container(
-      decoration: BoxDecoration(
-        color: scheme.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: scheme.outlineVariant.withValues(alpha: 0.55),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: scheme.shadow.withValues(alpha: 0.05),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '当前认证状态',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Access 与 Refresh 只显示实时倒计时，便于观察刷新链路。',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: scheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                FilledButton.tonalIcon(
-                  onPressed: _running ? null : _refreshSnapshot,
-                  icon: const Icon(Icons.refresh_rounded),
-                  label: const Text('刷新'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 18),
-            Wrap(
-              spacing: 12,
-              runSpacing: 12,
-              children: [
-                _buildCountdownTile(
-                  theme: theme,
-                  title: 'Access 倒计时',
-                  countdown: _formatCountdown(_accessExpireTime),
-                  expired: accessExpired,
-                  icon: Icons.key_rounded,
-                  accent: accessExpired
-                      ? const Color(0xFFDC2626)
-                      : const Color(0xFF2563EB),
-                ),
-                _buildCountdownTile(
-                  theme: theme,
-                  title: 'Refresh 倒计时',
-                  countdown: _formatCountdown(_refreshExpireTime),
-                  expired: refreshExpired,
-                  icon: Icons.restart_alt_rounded,
-                  accent: refreshExpired
-                      ? const Color(0xFFB91C1C)
-                      : const Color(0xFF7C3AED),
-                ),
-              ],
-            ),
-            const SizedBox(height: 18),
-            _buildSnapshotRow(
-              theme: theme,
-              label: '已登录',
-              value: hasToken ? '是' : '否',
-            ),
-            _buildSnapshotRow(
-              theme: theme,
-              label: 'Access 是否过期',
-              value: accessExpired ? '是' : '否',
-            ),
-            _buildSnapshotRow(
-              theme: theme,
-              label: 'Refresh 是否过期',
-              value: refreshExpired ? '是' : '否',
-            ),
-            const SizedBox(height: 10),
-            _buildPreviewBlock(
-              theme: theme,
-              label: 'Refresh Cookie',
-              value: _preview(_refreshTokenCookie),
-            ),
-            const SizedBox(height: 10),
-            _buildPreviewBlock(
-              theme: theme,
-              label: 'Access Token',
-              value: _preview(_token),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCountdownTile({
-    required ThemeData theme,
-    required String title,
-    required String countdown,
-    required bool expired,
+    required String status,
     required IconData icon,
     required Color accent,
   }) {
-    final scheme = theme.colorScheme;
-    return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 152, maxWidth: 240),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Color.lerp(scheme.surfaceContainerHighest, accent, 0.06),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: accent.withValues(alpha: 0.18)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, size: 18, color: Colors.white),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: accent.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(12),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
                   ),
-                  child: Icon(icon, color: accent, size: 18),
                 ),
-                const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: accent.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    expired ? '已过期' : '进行中',
-                    style: TextStyle(
-                      color: accent,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                    ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w800,
+                    fontFamily: 'monospace',
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 14),
-            Text(
-              title,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: scheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: Text(
+              status,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeroTokenCard(ThemeData theme) {
+    final token = (_token == null || _token!.isEmpty) ? '(空)' : _token!;
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.14)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Access Token',
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
               ),
             ),
             const SizedBox(height: 8),
-            Text(
-              countdown,
-              style: theme.textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.2,
-                fontFamily: 'monospace',
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    _compactToken(token),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: Colors.white,
+                      fontFamily: 'monospace',
+                      height: 1.45,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  onPressed: token == '(空)' ? null : () => _copyToken(token),
+                  icon: const Icon(Icons.copy_rounded),
+                  tooltip: '复制 Token',
+                  color: Colors.white,
+                  visualDensity: VisualDensity.compact,
+                ),
+              ],
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildSnapshotRow({
-    required ThemeData theme,
-    required String label,
-    required String value,
-  }) {
-    final scheme = theme.colorScheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 128,
-            child: Text(
-              label,
-              style: TextStyle(
-                color: scheme.onSurfaceVariant,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          Expanded(
-            child: SelectableText(
-              value,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPreviewBlock({
-    required ThemeData theme,
-    required String label,
-    required String value,
-  }) {
-    final scheme = theme.colorScheme;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: theme.textTheme.labelLarge?.copyWith(
-              color: scheme.onSurfaceVariant,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 8),
-          SelectableText(
-            value,
-            style: theme.textTheme.bodySmall?.copyWith(
-              fontFamily: 'monospace',
-              height: 1.45,
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -855,8 +628,6 @@ class _AuthTestPageState extends State<AuthTestPage> {
     setState(() {
       _token = AuthInterceptor.token;
       _accessExpireTime = AuthInterceptor.accessTokenExpireTime;
-      _refreshExpireTime = AuthInterceptor.refreshTokenExpireTime;
-      _refreshTokenCookie = SessionStorage.getRefreshToken();
     });
   }
 
@@ -963,6 +734,16 @@ class _AuthTestPageState extends State<AuthTestPage> {
     _appendLog(_LogLevel.info, '本地登录态与认证Cookie已清理');
   }
 
+  Future<void> _copyToken(String token) async {
+    await Clipboard.setData(ClipboardData(text: token));
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('app.system.message.copy_success'.tr)),
+    );
+  }
+
   void _appendLog(_LogLevel level, String message) {
     if (!mounted) {
       return;
@@ -1022,21 +803,11 @@ class _AuthTestPageState extends State<AuthTestPage> {
     return text.replaceFirst('Exception: ', '');
   }
 
-  String _preview(String? text) {
-    if (text == null || text.isEmpty) {
-      return '(空)';
+  String _compactToken(String token) {
+    if (token == '(空)' || token.length <= 24) {
+      return token;
     }
-    if (text.length <= 26) {
-      return text;
-    }
-    return '${text.substring(0, 12)}...${text.substring(text.length - 10)}';
-  }
-
-  bool _isExpired(int? epochMs) {
-    if (epochMs == null) {
-      return true;
-    }
-    return epochMs <= DateTime.now().millisecondsSinceEpoch;
+    return '${token.substring(0, 10)}...${token.substring(token.length - 10)}';
   }
 
   String _formatCountdown(int? epochMs) {

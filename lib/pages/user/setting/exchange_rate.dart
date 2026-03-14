@@ -10,10 +10,37 @@ class ExchangeRatePage extends StatefulWidget {
 }
 
 class _ExchangeRatePageState extends State<ExchangeRatePage> {
+  bool _refreshing = false;
+
   @override
   void initState() {
     super.initState();
     Get.find<CurrencyController>().fetchRealRates(force: true);
+  }
+
+  Future<void> _handleRefresh() async {
+    if (_refreshing) {
+      return;
+    }
+    setState(() {
+      _refreshing = true;
+    });
+    try {
+      await Get.find<CurrencyController>().fetchRealRates(force: true);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _refreshing = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _triggerRefresh() async {
+    if (_refreshing) {
+      return;
+    }
+    await _handleRefresh();
   }
 
   @override
@@ -26,17 +53,17 @@ class _ExchangeRatePageState extends State<ExchangeRatePage> {
         centerTitle: true,
         actions: [
           IconButton(
-            onPressed: () => ctrl.fetchRealRates(force: true),
+            onPressed: _triggerRefresh,
             icon: const Icon(Icons.refresh),
           ),
         ],
       ),
       body: Obx(() {
-        if (!ctrl.isLoaded) {
+        if (!ctrl.isLoaded || _refreshing) {
           return const Center(child: CircularProgressIndicator());
         }
         return RefreshIndicator(
-          onRefresh: () => ctrl.fetchRealRates(force: true),
+          onRefresh: _handleRefresh,
           child: ListView.separated(
             physics: const AlwaysScrollableScrollPhysics(),
             itemCount: ctrl.allRates.length,
@@ -74,12 +101,5 @@ class _ExchangeRatePageState extends State<ExchangeRatePage> {
         );
       }),
     );
-  }
-
-  String _formatRate(double rate) {
-    if (rate >= 100) return rate.toStringAsFixed(0);
-    if (rate >= 10) return rate.toStringAsFixed(2);
-    if (rate >= 1) return rate.toStringAsFixed(4);
-    return rate.toStringAsFixed(6);
   }
 }
