@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:tronskins_app/common/widgets/back_to_top_overlay.dart';
 import 'package:tronskins_app/controllers/help/help_controller.dart';
+import 'package:tronskins_app/pages/help/widgets/help_ui.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
 
 class HelpCenterPage extends StatefulWidget {
@@ -37,19 +38,13 @@ class _HelpCenterPageState extends State<HelpCenterPage> {
     return BackToTopScope(
       enabled: false,
       child: Scaffold(
+        backgroundColor: HelpUi.pageBackground(context),
         body: Obx(() {
           final theme = Theme.of(context);
           final isDark = theme.brightness == Brightness.dark;
           final loading = controller.categoryLoading.value;
           final list = controller.categories;
-          final gradient = LinearGradient(
-            colors: [
-              theme.colorScheme.primary.withOpacity(isDark ? 0.7 : 0.85),
-              theme.colorScheme.secondary.withOpacity(isDark ? 0.45 : 0.75),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          );
+          final gradient = HelpUi.heroGradient(context);
           if (loading && list.isEmpty) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -63,7 +58,9 @@ class _HelpCenterPageState extends State<HelpCenterPage> {
                   background: Stack(
                     fit: StackFit.expand,
                     children: [
-                      Container(decoration: BoxDecoration(gradient: gradient)),
+                      DecoratedBox(
+                        decoration: BoxDecoration(gradient: gradient),
+                      ),
                       Positioned(
                         right: -40,
                         top: 30,
@@ -71,8 +68,8 @@ class _HelpCenterPageState extends State<HelpCenterPage> {
                           width: 140,
                           height: 140,
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(
-                              isDark ? 0.08 : 0.2,
+                            color: Colors.white.withValues(
+                              alpha: isDark ? 0.08 : 0.2,
                             ),
                             shape: BoxShape.circle,
                           ),
@@ -85,8 +82,8 @@ class _HelpCenterPageState extends State<HelpCenterPage> {
                           width: 160,
                           height: 160,
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(
-                              isDark ? 0.06 : 0.14,
+                            color: Colors.white.withValues(
+                              alpha: isDark ? 0.06 : 0.14,
                             ),
                             shape: BoxShape.circle,
                           ),
@@ -132,8 +129,11 @@ class _HelpCenterPageState extends State<HelpCenterPage> {
     final isDark = theme.brightness == Brightness.dark;
     final gradient = LinearGradient(
       colors: [
-        theme.colorScheme.primary.withOpacity(isDark ? 0.65 : 0.9),
-        theme.colorScheme.secondary.withOpacity(isDark ? 0.5 : 0.8),
+        theme.colorScheme.primary.withValues(alpha: isDark ? 0.3 : 0.92),
+        Color.alphaBlend(
+          theme.colorScheme.secondary.withValues(alpha: isDark ? 0.2 : 0.28),
+          isDark ? const Color(0xFF171412) : const Color(0xFFF7E9D7),
+        ),
       ],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
@@ -142,17 +142,7 @@ class _HelpCenterPageState extends State<HelpCenterPage> {
       borderRadius: BorderRadius.circular(16),
       onTap: () => Get.toNamed(Routers.FEEDBACK_LIST),
       child: Ink(
-        decoration: BoxDecoration(
-          gradient: gradient,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: theme.colorScheme.primary.withOpacity(0.2),
-              blurRadius: 18,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
+        decoration: HelpUi.cardDecoration(context, gradient: gradient),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
@@ -161,7 +151,7 @@ class _HelpCenterPageState extends State<HelpCenterPage> {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(isDark ? 0.15 : 0.25),
+                  color: Colors.white.withValues(alpha: isDark ? 0.12 : 0.26),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(
@@ -185,7 +175,7 @@ class _HelpCenterPageState extends State<HelpCenterPage> {
                     Text(
                       'app.user.feedback.problem'.tr,
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: Colors.white.withOpacity(0.85),
+                        color: Colors.white.withValues(alpha: 0.85),
                       ),
                     ),
                   ],
@@ -210,22 +200,43 @@ class _HelpCenterPageState extends State<HelpCenterPage> {
     required VoidCallback onTap,
   }) {
     final theme = Theme.of(context);
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      child: ListTile(
-        leading: Container(
-          width: 42,
-          height: 42,
-          decoration: BoxDecoration(
-            color: theme.colorScheme.primary.withOpacity(0.12),
-            borderRadius: BorderRadius.circular(12),
+    return DecoratedBox(
+      decoration: HelpUi.cardDecoration(context, radius: 18),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 14, 12, 14),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(icon, color: theme.colorScheme.primary),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ],
+            ),
           ),
-          child: Icon(icon, color: theme.colorScheme.primary),
         ),
-        title: Text(title),
-        trailing: const Icon(Icons.chevron_right),
-        onTap: onTap,
       ),
     );
   }

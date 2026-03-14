@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:tronskins_app/api/model/help/help_models.dart';
 import 'package:tronskins_app/controllers/help/help_controller.dart';
+import 'package:tronskins_app/pages/help/widgets/help_ui.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
 
 class HelpCategoryPage extends StatefulWidget {
@@ -40,6 +41,7 @@ class _HelpCategoryPageState extends State<HelpCategoryPage> {
   Widget build(BuildContext context) {
     final title = _category?.label ?? 'app.user.server.help'.tr;
     return Scaffold(
+      backgroundColor: HelpUi.pageBackground(context),
       appBar: AppBar(title: Text(title)),
       body: Obx(() {
         final loading = controller.listLoading.value;
@@ -55,9 +57,19 @@ class _HelpCategoryPageState extends State<HelpCategoryPage> {
             Container(
               margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surfaceVariant,
-                borderRadius: BorderRadius.circular(16),
+              decoration: HelpUi.cardDecoration(
+                context,
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.10),
+                    Theme.of(context).colorScheme.surfaceContainerHighest
+                        .withValues(alpha: 0.72),
+                  ],
+                ),
               ),
               child: Row(
                 children: [
@@ -67,7 +79,7 @@ class _HelpCategoryPageState extends State<HelpCategoryPage> {
                     decoration: BoxDecoration(
                       color: Theme.of(
                         context,
-                      ).colorScheme.primary.withOpacity(0.12),
+                      ).colorScheme.primary.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
@@ -103,17 +115,57 @@ class _HelpCategoryPageState extends State<HelpCategoryPage> {
                 separatorBuilder: (_, __) => const SizedBox(height: 10),
                 itemBuilder: (context, index) {
                   final item = list[index];
-                  return Card(
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: ListTile(
-                      title: Text(item.title ?? ''),
-                      subtitle: Text(_formatTime(item.time)),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () =>
-                          Get.toNamed(Routers.HELP_DETAIL, arguments: item),
+                  return DecoratedBox(
+                    decoration: HelpUi.cardDecoration(context, radius: 18),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(18),
+                        onTap: () =>
+                            Get.toNamed(Routers.HELP_DETAIL, arguments: item),
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(14, 14, 12, 14),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      item.title ?? '',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleSmall
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      _formatTime(item.time),
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.copyWith(
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSurfaceVariant,
+                                          ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Icon(
+                                Icons.chevron_right_rounded,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
                   );
                 },

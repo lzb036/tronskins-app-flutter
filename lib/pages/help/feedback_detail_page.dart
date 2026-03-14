@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:tronskins_app/api/model/feedback/feedback_models.dart';
 import 'package:tronskins_app/components/layout/list_end_tip.dart';
 import 'package:tronskins_app/controllers/help/feedback_controller.dart';
+import 'package:tronskins_app/pages/help/widgets/help_ui.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
 
 class FeedbackDetailPage extends StatefulWidget {
@@ -22,6 +23,7 @@ class _FeedbackDetailPageState extends State<FeedbackDetailPage> {
 
   String _ticketId = '';
   int? _status;
+  String? _statusLabel;
 
   @override
   void initState() {
@@ -32,6 +34,7 @@ class _FeedbackDetailPageState extends State<FeedbackDetailPage> {
       _status = args['status'] is int
           ? args['status'] as int
           : int.tryParse(args['status']?.toString() ?? '');
+      _statusLabel = args['statusName']?.toString();
     } else {
       _ticketId = args?.toString() ?? '';
     }
@@ -66,6 +69,18 @@ class _FeedbackDetailPageState extends State<FeedbackDetailPage> {
     return DateFormat(
       'yyyy-MM-dd HH:mm:ss',
     ).format(DateTime.fromMillisecondsSinceEpoch(ts));
+  }
+
+  String? _resolveStatusLabel(FeedbackDetail detail) {
+    final detailLabel = detail.statusName?.trim();
+    if (detailLabel != null && detailLabel.isNotEmpty) {
+      return detailLabel;
+    }
+    final routeLabel = _statusLabel?.trim();
+    if (routeLabel != null && routeLabel.isNotEmpty) {
+      return routeLabel;
+    }
+    return null;
   }
 
   Future<void> _solveTicket() async {
@@ -147,6 +162,7 @@ class _FeedbackDetailPageState extends State<FeedbackDetailPage> {
   Widget build(BuildContext context) {
     final closed = _status == 2 || _status == 3;
     return Scaffold(
+      backgroundColor: HelpUi.pageBackground(context),
       appBar: AppBar(title: Text('app.user.feedback.details'.tr)),
       bottomNavigationBar: closed
           ? null
@@ -157,7 +173,7 @@ class _FeedbackDetailPageState extends State<FeedbackDetailPage> {
                   color: Theme.of(context).colorScheme.surface,
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.06),
+                      color: Colors.black.withValues(alpha: 0.06),
                       blurRadius: 12,
                       offset: const Offset(0, -4),
                     ),
@@ -245,46 +261,47 @@ class _FeedbackDetailPageState extends State<FeedbackDetailPage> {
   }
 
   Widget _buildHeader(BuildContext context, FeedbackDetail detail) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              detail.title ?? '',
-              style: Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Icon(
-                  Icons.schedule,
-                  size: 14,
-                  color: Theme.of(context).hintColor,
+    final statusLabel = _resolveStatusLabel(detail);
+    return Container(
+      decoration: HelpUi.cardDecoration(context),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            detail.title ?? '',
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(
+                Icons.schedule,
+                size: 14,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                _formatTime(detail.createTime),
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
-                const SizedBox(width: 6),
-                Text(
-                  _formatTime(detail.createTime),
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-                const Spacer(),
+              ),
+              const Spacer(),
+              if (statusLabel != null)
                 _StatusChip(
-                  status: detail.status ?? -1,
-                  label: detail.statusName ?? '',
+                  status: detail.status ?? _status ?? -1,
+                  label: statusLabel,
                 ),
-              ],
-            ),
-            if ((detail.context ?? '').isNotEmpty) ...[
-              const SizedBox(height: 12),
-              Text(detail.context ?? ''),
             ],
+          ),
+          if ((detail.context ?? '').isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(detail.context ?? ''),
           ],
-        ),
+        ],
       ),
     );
   }
@@ -293,11 +310,13 @@ class _FeedbackDetailPageState extends State<FeedbackDetailPage> {
     final isAdmin = item.isAdmin == true;
     final theme = Theme.of(context);
     final bubbleColor = isAdmin
-        ? theme.colorScheme.surfaceVariant
-        : theme.colorScheme.primaryContainer;
+        ? theme.colorScheme.surface
+        : theme.colorScheme.primary.withValues(
+            alpha: theme.brightness == Brightness.dark ? 0.16 : 0.10,
+          );
     final textColor = isAdmin
-        ? theme.colorScheme.onSurfaceVariant
-        : theme.colorScheme.onPrimaryContainer;
+        ? theme.colorScheme.onSurface
+        : theme.colorScheme.onSurface;
     final align = isAdmin ? Alignment.centerLeft : Alignment.centerRight;
     final title = isAdmin
         ? 'app.user.feedback.customer_service_reply'.tr
@@ -310,7 +329,12 @@ class _FeedbackDetailPageState extends State<FeedbackDetailPage> {
         constraints: const BoxConstraints(maxWidth: 520),
         decoration: BoxDecoration(
           color: bubbleColor,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isAdmin
+                ? theme.colorScheme.outlineVariant.withValues(alpha: 0.26)
+                : theme.colorScheme.primary.withValues(alpha: 0.22),
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -328,7 +352,7 @@ class _FeedbackDetailPageState extends State<FeedbackDetailPage> {
                 Text(
                   _formatTime(item.createTime),
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: textColor.withOpacity(0.8),
+                    color: textColor.withValues(alpha: 0.8),
                   ),
                 ),
               ],
@@ -402,45 +426,6 @@ class _StatusChip extends StatelessWidget {
   final String label;
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    Color bgColor;
-    Color textColor;
-    switch (status) {
-      case 0:
-        bgColor = Colors.orange.withOpacity(isDark ? 0.28 : 0.18);
-        textColor = isDark ? Colors.orange.shade200 : Colors.orange.shade700;
-        break;
-      case 1:
-        bgColor = theme.colorScheme.primaryContainer;
-        textColor = theme.colorScheme.onPrimaryContainer;
-        break;
-      case 2:
-        bgColor = Colors.green.withOpacity(isDark ? 0.28 : 0.18);
-        textColor = isDark ? Colors.green.shade200 : Colors.green.shade700;
-        break;
-      case 3:
-        bgColor = theme.colorScheme.outlineVariant.withOpacity(0.45);
-        textColor = theme.colorScheme.onSurfaceVariant;
-        break;
-      default:
-        bgColor = theme.colorScheme.surfaceVariant;
-        textColor = theme.colorScheme.onSurfaceVariant;
-    }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        label,
-        style: theme.textTheme.labelSmall?.copyWith(
-          color: textColor,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) =>
+      HelpUi.statusChip(context, status: status, label: label);
 }

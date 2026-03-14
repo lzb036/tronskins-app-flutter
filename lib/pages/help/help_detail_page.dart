@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:tronskins_app/api/model/help/help_models.dart';
 import 'package:tronskins_app/common/widgets/back_to_top_overlay.dart';
+import 'package:tronskins_app/pages/help/widgets/help_ui.dart';
 
 class HelpDetailPage extends StatelessWidget {
   const HelpDetailPage({super.key});
@@ -26,6 +27,7 @@ class HelpDetailPage extends StatelessWidget {
       item = HelpItem.fromJson(Map<String, dynamic>.from(arg));
     }
     return Scaffold(
+      backgroundColor: HelpUi.pageBackground(context),
       appBar: AppBar(title: Text('app.common.details'.tr)),
       body: BackToTopScope(
         enabled: false,
@@ -34,55 +36,45 @@ class HelpDetailPage extends StatelessWidget {
             : ListView(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                 children: [
-                  Card(
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
+                  Container(
+                    decoration: HelpUi.cardDecoration(
+                      context,
+                      gradient: HelpUi.heroGradient(context),
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            item.title ?? '',
-                            style: Theme.of(context).textTheme.titleLarge
-                                ?.copyWith(fontWeight: FontWeight.w700),
-                          ),
-                          const SizedBox(height: 12),
-                          Wrap(
-                            spacing: 12,
-                            runSpacing: 6,
-                            children: [
-                              if ((item.author ?? '').isNotEmpty)
-                                _MetaChip(
-                                  icon: Icons.person_outline,
-                                  label:
-                                      '${'app.system.notice.author'.tr}: ${item.author ?? ''}',
-                                ),
-                              if (item.time != null)
-                                _MetaChip(
-                                  icon: Icons.schedule,
-                                  label:
-                                      '${'app.system.notice.publish_time'.tr}: ${_formatTime(item.time)}',
-                                ),
-                            ],
-                          ),
-                        ],
-                      ),
+                    padding: const EdgeInsets.all(18),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.title ?? '',
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(fontWeight: FontWeight.w800),
+                        ),
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 12,
+                          runSpacing: 6,
+                          children: [
+                            if ((item.author ?? '').isNotEmpty)
+                              _MetaChip(
+                                icon: Icons.person_outline,
+                                label:
+                                    '${'app.system.notice.author'.tr}: ${item.author ?? ''}',
+                              ),
+                            if (item.time != null)
+                              _MetaChip(
+                                icon: Icons.schedule,
+                                label:
+                                    '${'app.system.notice.publish_time'.tr}: ${_formatTime(item.time)}',
+                              ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 16),
                   Container(
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surface,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.outlineVariant.withValues(alpha: 0.4),
-                      ),
-                    ),
+                    decoration: HelpUi.cardDecoration(context),
                     padding: const EdgeInsets.all(16),
                     child: Html(
                       data: item.content ?? '',
@@ -122,8 +114,11 @@ class _MetaChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
+        color: HelpUi.softFill(context),
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.24),
+        ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

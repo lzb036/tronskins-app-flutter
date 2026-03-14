@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:tronskins_app/common/storage/user_storage.dart';
 import 'package:tronskins_app/controllers/help/feedback_controller.dart';
+import 'package:tronskins_app/pages/help/widgets/help_ui.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
 
 class FeedbackCreatePage extends StatefulWidget {
@@ -52,7 +53,7 @@ class _FeedbackCreatePageState extends State<FeedbackCreatePage> {
   bool get _isAddFeedback => _feedType == 'addFeedback';
 
   Future<void> _pickImage() async {
-    if (_uploading || _imagePaths.length >= 1) return;
+    if (_uploading || _imagePaths.isNotEmpty) return;
     setState(() => _uploading = true);
     try {
       final file = await _picker.pickImage(source: ImageSource.gallery);
@@ -179,117 +180,103 @@ class _FeedbackCreatePageState extends State<FeedbackCreatePage> {
     final title = _isAddFeedback
         ? 'app.user.feedback.additional'.tr
         : 'app.user.feedback.problem'.tr;
-    final theme = Theme.of(context);
-    final fillColor = theme.colorScheme.surfaceVariant;
     return Scaffold(
+      backgroundColor: HelpUi.pageBackground(context),
       appBar: AppBar(title: Text(title)),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         children: [
-          Card(
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (!_isAddFeedback) ...[
-                    _buildSectionTitle('app.user.feedback.title'.tr),
-                    const SizedBox(height: 8),
-                    _buildInputField(
-                      controller: _titleController,
-                      hint: 'app.user.feedback.title_placeholder'.tr,
-                      fillColor: fillColor,
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                  _buildSectionTitle('app.user.feedback.content'.tr),
+          Container(
+            decoration: HelpUi.cardDecoration(context),
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (!_isAddFeedback) ...[
+                  _buildSectionTitle(context, 'app.user.feedback.title'.tr),
                   const SizedBox(height: 8),
                   _buildInputField(
-                    controller: _contextController,
-                    hint: 'app.user.feedback.problem_placeholder'.tr,
-                    fillColor: fillColor,
-                    maxLines: 5,
+                    context: context,
+                    controller: _titleController,
+                    hint: 'app.user.feedback.title_placeholder'.tr,
                   ),
+                  const SizedBox(height: 16),
                 ],
-              ),
+                _buildSectionTitle(context, 'app.user.feedback.content'.tr),
+                const SizedBox(height: 8),
+                _buildInputField(
+                  context: context,
+                  controller: _contextController,
+                  hint: 'app.user.feedback.problem_placeholder'.tr,
+                  maxLines: 5,
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 16),
-          Card(
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildSectionTitle('app.user.feedback.screenshots'.tr),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: [
-                      ..._imagePaths.asMap().entries.map((entry) {
-                        return Stack(
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(10),
-                              child: Image.file(
-                                File(entry.value),
-                                width: 100,
-                                height: 100,
-                                fit: BoxFit.cover,
-                              ),
+          Container(
+            decoration: HelpUi.cardDecoration(context),
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildSectionTitle(context, 'app.user.feedback.screenshots'.tr),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    ..._imagePaths.asMap().entries.map((entry) {
+                      return Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Image.file(
+                              File(entry.value),
+                              width: 100,
+                              height: 100,
+                              fit: BoxFit.cover,
                             ),
-                            Positioned(
-                              right: -6,
-                              top: -6,
-                              child: IconButton(
-                                onPressed: () => _removeImage(entry.key),
-                                icon: const Icon(
-                                  Icons.cancel,
-                                  color: Colors.red,
-                                ),
-                              ),
-                            ),
-                          ],
-                        );
-                      }),
-                      if (_imagePaths.length < 1)
-                        GestureDetector(
-                          onTap: _pickImage,
-                          child: Container(
-                            width: 100,
-                            height: 100,
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(
-                                color: Theme.of(context).colorScheme.outline,
-                              ),
-                              color: fillColor,
-                            ),
-                            child: _uploading
-                                ? const Center(
-                                    child: CircularProgressIndicator(),
-                                  )
-                                : Icon(
-                                    Icons.add_photo_alternate_outlined,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.outline,
-                                  ),
                           ),
+                          Positioned(
+                            right: -6,
+                            top: -6,
+                            child: IconButton(
+                              onPressed: () => _removeImage(entry.key),
+                              icon: const Icon(Icons.cancel, color: Colors.red),
+                            ),
+                          ),
+                        ],
+                      );
+                    }),
+                    if (_imagePaths.isEmpty)
+                      GestureDetector(
+                        onTap: _pickImage,
+                        child: Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.outlineVariant,
+                            ),
+                            color: HelpUi.softFill(context),
+                          ),
+                          child: _uploading
+                              ? const Center(child: CircularProgressIndicator())
+                              : Icon(
+                                  Icons.add_photo_alternate_outlined,
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurfaceVariant,
+                                ),
                         ),
-                    ],
-                  ),
-                ],
-              ),
+                      ),
+                  ],
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 20),
@@ -302,36 +289,25 @@ class _FeedbackCreatePageState extends State<FeedbackCreatePage> {
     );
   }
 
-  Widget _buildSectionTitle(String text) {
-    return Text(text, style: const TextStyle(fontWeight: FontWeight.w600));
+  Widget _buildSectionTitle(BuildContext context, String text) {
+    return Text(
+      text,
+      style: Theme.of(
+        context,
+      ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+    );
   }
 
   Widget _buildInputField({
+    required BuildContext context,
     required TextEditingController controller,
     required String hint,
-    required Color fillColor,
     int maxLines = 1,
   }) {
     return TextField(
       controller: controller,
       maxLines: maxLines,
-      decoration: InputDecoration(
-        hintText: hint,
-        filled: true,
-        fillColor: fillColor,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Theme.of(context).colorScheme.primary),
-        ),
-      ),
+      decoration: HelpUi.inputDecoration(context, hintText: hint),
     );
   }
 }

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:tronskins_app/components/layout/list_end_tip.dart';
 import 'package:tronskins_app/controllers/help/feedback_controller.dart';
 import 'package:tronskins_app/controllers/user/user_controller.dart';
+import 'package:tronskins_app/pages/help/widgets/help_ui.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
 
 class FeedbackListPage extends StatefulWidget {
@@ -82,6 +83,7 @@ class _FeedbackListPageState extends State<FeedbackListPage> {
     return Obx(() {
       final loggedIn = userController.isLoggedIn.value;
       return Scaffold(
+        backgroundColor: HelpUi.pageBackground(context),
         appBar: AppBar(
           title: Text('app.user.menu.feedback'.tr),
           actions: loggedIn
@@ -100,16 +102,27 @@ class _FeedbackListPageState extends State<FeedbackListPage> {
 
   Widget _buildLoginPrompt() {
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text('app.system.message.nologin'.tr),
-          const SizedBox(height: 12),
-          FilledButton(
-            onPressed: () => Get.toNamed(Routers.LOGIN),
-            child: Text('app.user.login.nologin'.tr),
-          ),
-        ],
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 24),
+        padding: const EdgeInsets.all(24),
+        decoration: HelpUi.cardDecoration(context),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.lock_outline_rounded,
+              size: 30,
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            const SizedBox(height: 12),
+            Text('app.system.message.nologin'.tr),
+            const SizedBox(height: 12),
+            FilledButton(
+              onPressed: () => Get.toNamed(Routers.LOGIN),
+              child: Text('app.user.login.nologin'.tr),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -127,9 +140,18 @@ class _FeedbackListPageState extends State<FeedbackListPage> {
           Container(
             margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceVariant,
-              borderRadius: BorderRadius.circular(16),
+            decoration: HelpUi.cardDecoration(
+              context,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.10),
+                  Theme.of(
+                    context,
+                  ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.72),
+                ],
+              ),
             ),
             child: Row(
               children: [
@@ -144,7 +166,7 @@ class _FeedbackListPageState extends State<FeedbackListPage> {
                   width: 1,
                   height: 36,
                   margin: const EdgeInsets.symmetric(horizontal: 12),
-                  color: Theme.of(context).dividerColor,
+                  color: Theme.of(context).dividerColor.withValues(alpha: 0.7),
                 ),
                 Expanded(
                   child: _StatTile(
@@ -185,73 +207,84 @@ class _FeedbackListPageState extends State<FeedbackListPage> {
                               }
                               final item = list[index];
                               final status = item.status ?? 0;
-                              return Card(
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                decoration: HelpUi.cardDecoration(
+                                  context,
+                                  radius: 18,
                                 ),
-                                child: InkWell(
-                                  borderRadius: BorderRadius.circular(14),
-                                  onTap: () => Get.toNamed(
-                                    Routers.FEEDBACK_DETAIL,
-                                    arguments: {
-                                      'id': item.id,
-                                      'status': item.status,
-                                    },
-                                  ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(14),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Row(
-                                          children: [
-                                            Expanded(
-                                              child: Text(
-                                                item.title ?? '',
+                                child: Material(
+                                  color: Colors.transparent,
+                                  child: InkWell(
+                                    borderRadius: BorderRadius.circular(18),
+                                    onTap: () => Get.toNamed(
+                                      Routers.FEEDBACK_DETAIL,
+                                      arguments: {
+                                        'id': item.id,
+                                        'status': item.status,
+                                        'statusName': item.statusName,
+                                      },
+                                    ),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(14),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Expanded(
+                                                child: Text(
+                                                  item.title ?? '',
+                                                  style: Theme.of(context)
+                                                      .textTheme
+                                                      .titleSmall
+                                                      ?.copyWith(
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                      ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 12),
+                                              _StatusChip(
+                                                status: status,
+                                                label: item.statusName ?? '',
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 10),
+                                          Row(
+                                            children: [
+                                              Icon(
+                                                Icons.schedule,
+                                                size: 14,
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.onSurfaceVariant,
+                                              ),
+                                              const SizedBox(width: 6),
+                                              Text(
+                                                _formatTime(item.createTime),
                                                 style: Theme.of(context)
                                                     .textTheme
-                                                    .titleSmall
+                                                    .bodySmall
                                                     ?.copyWith(
-                                                      fontWeight:
-                                                          FontWeight.w600,
+                                                      color: Theme.of(context)
+                                                          .colorScheme
+                                                          .onSurfaceVariant,
                                                     ),
                                               ),
-                                            ),
-                                            _StatusChip(
-                                              status: status,
-                                              label: item.statusName ?? '',
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 10),
-                                        Row(
-                                          children: [
-                                            Icon(
-                                              Icons.schedule,
-                                              size: 14,
-                                              color: Theme.of(
-                                                context,
-                                              ).textTheme.bodySmall?.color,
-                                            ),
-                                            const SizedBox(width: 6),
-                                            Text(
-                                              _formatTime(item.createTime),
-                                              style: Theme.of(
-                                                context,
-                                              ).textTheme.bodySmall,
-                                            ),
-                                            const Spacer(),
-                                            Icon(
-                                              Icons.chevron_right,
-                                              color: Theme.of(
-                                                context,
-                                              ).dividerColor,
-                                            ),
-                                          ],
-                                        ),
-                                      ],
+                                              const Spacer(),
+                                              Icon(
+                                                Icons.chevron_right_rounded,
+                                                color: Theme.of(
+                                                  context,
+                                                ).colorScheme.onSurfaceVariant,
+                                              ),
+                                            ],
+                                          ),
+                                        ],
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -307,7 +340,7 @@ class _StatTile extends StatelessWidget {
           width: 36,
           height: 36,
           decoration: BoxDecoration(
-            color: theme.colorScheme.primary.withOpacity(0.12),
+            color: theme.colorScheme.primary.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(icon, color: theme.colorScheme.primary, size: 18),
@@ -338,45 +371,6 @@ class _StatusChip extends StatelessWidget {
   final String label;
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    Color bgColor;
-    Color textColor;
-    switch (status) {
-      case 0: // 待回复
-        bgColor = Colors.orange.withOpacity(isDark ? 0.28 : 0.18);
-        textColor = isDark ? Colors.orange.shade200 : Colors.orange.shade700;
-        break;
-      case 1: // 已回复
-        bgColor = theme.colorScheme.primaryContainer;
-        textColor = theme.colorScheme.onPrimaryContainer;
-        break;
-      case 2: // 已解决
-        bgColor = Colors.green.withOpacity(isDark ? 0.28 : 0.18);
-        textColor = isDark ? Colors.green.shade200 : Colors.green.shade700;
-        break;
-      case 3: // 已关闭
-        bgColor = theme.colorScheme.outlineVariant.withOpacity(0.45);
-        textColor = theme.colorScheme.onSurfaceVariant;
-        break;
-      default:
-        bgColor = theme.colorScheme.surfaceVariant;
-        textColor = theme.colorScheme.onSurfaceVariant;
-    }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        label,
-        style: theme.textTheme.labelSmall?.copyWith(
-          color: textColor,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    );
-  }
+  Widget build(BuildContext context) =>
+      HelpUi.statusChip(context, status: status, label: label);
 }
