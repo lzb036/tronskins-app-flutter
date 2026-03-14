@@ -123,6 +123,7 @@ class _WalletWithdrawRecordPageState extends State<WalletWithdrawRecordPage> {
                     final item = controller.withdrawRecords[index];
                     final canCancel =
                         (item.status ?? 0) == 0 && (item.id ?? '').isNotEmpty;
+                    final theme = Theme.of(context);
                     return Card(
                       margin: const EdgeInsets.only(bottom: 12),
                       elevation: 0,
@@ -150,9 +151,27 @@ class _WalletWithdrawRecordPageState extends State<WalletWithdrawRecordPage> {
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   const SizedBox(height: 6),
-                                  Text(
-                                    '${'app.user.withdraw.amount'.tr}: '
-                                    '${currency.formatUsd(item.amount ?? 0)}',
+                                  Text.rich(
+                                    TextSpan(
+                                      style: theme.textTheme.bodyMedium,
+                                      children: [
+                                        TextSpan(
+                                          text:
+                                              '${'app.user.withdraw.amount'.tr}: ',
+                                        ),
+                                        TextSpan(
+                                          text: currency.formatUsd(
+                                            item.amount ?? 0,
+                                          ),
+                                          style: theme.textTheme.titleSmall
+                                              ?.copyWith(
+                                                color:
+                                                    theme.colorScheme.primary,
+                                                fontWeight: FontWeight.w700,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),

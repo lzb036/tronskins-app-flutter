@@ -3,6 +3,7 @@ import 'package:flutter_html/flutter_html.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:tronskins_app/api/model/help/help_models.dart';
+import 'package:tronskins_app/common/widgets/back_to_top_overlay.dart';
 
 class HelpDetailPage extends StatelessWidget {
   const HelpDetailPage({super.key});
@@ -26,80 +27,85 @@ class HelpDetailPage extends StatelessWidget {
     }
     return Scaffold(
       appBar: AppBar(title: Text('app.common.details'.tr)),
-      body: item == null
-          ? Center(child: Text('app.common.no_data'.tr))
-          : ListView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-              children: [
-                Card(
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item.title ?? '',
-                          style: Theme.of(context).textTheme.titleLarge
-                              ?.copyWith(fontWeight: FontWeight.w700),
-                        ),
-                        const SizedBox(height: 12),
-                        Wrap(
-                          spacing: 12,
-                          runSpacing: 6,
-                          children: [
-                            if ((item.author ?? '').isNotEmpty)
-                              _MetaChip(
-                                icon: Icons.person_outline,
-                                label:
-                                    '${'app.system.notice.author'.tr}: ${item.author ?? ''}',
-                              ),
-                            if (item.time != null)
-                              _MetaChip(
-                                icon: Icons.schedule,
-                                label:
-                                    '${'app.system.notice.publish_time'.tr}: ${_formatTime(item.time)}',
-                              ),
-                          ],
-                        ),
-                      ],
+      body: BackToTopScope(
+        enabled: false,
+        child: item == null
+            ? Center(child: Text('app.common.no_data'.tr))
+            : ListView(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                children: [
+                  Card(
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.outlineVariant.withOpacity(0.4),
-                    ),
-                  ),
-                  padding: const EdgeInsets.all(16),
-                  child: Html(
-                    data: item.content ?? '',
-                    style: {
-                      'body': Style(
-                        margin: Margins.zero,
-                        color: Theme.of(context).colorScheme.onSurface,
-                        fontSize: FontSize(15),
-                        lineHeight: const LineHeight(1.6),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            item.title ?? '',
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(fontWeight: FontWeight.w700),
+                          ),
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 12,
+                            runSpacing: 6,
+                            children: [
+                              if ((item.author ?? '').isNotEmpty)
+                                _MetaChip(
+                                  icon: Icons.person_outline,
+                                  label:
+                                      '${'app.system.notice.author'.tr}: ${item.author ?? ''}',
+                                ),
+                              if (item.time != null)
+                                _MetaChip(
+                                  icon: Icons.schedule,
+                                  label:
+                                      '${'app.system.notice.publish_time'.tr}: ${_formatTime(item.time)}',
+                                ),
+                            ],
+                          ),
+                        ],
                       ),
-                      'h1': Style(fontSize: FontSize(22)),
-                      'h2': Style(fontSize: FontSize(20)),
-                      'h3': Style(fontSize: FontSize(18)),
-                      'p': Style(margin: Margins.only(bottom: 10)),
-                      'a': Style(color: Theme.of(context).colorScheme.primary),
-                    },
+                    ),
                   ),
-                ),
-              ],
-            ),
+                  const SizedBox(height: 16),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.outlineVariant.withValues(alpha: 0.4),
+                      ),
+                    ),
+                    padding: const EdgeInsets.all(16),
+                    child: Html(
+                      data: item.content ?? '',
+                      style: {
+                        'body': Style(
+                          margin: Margins.zero,
+                          color: Theme.of(context).colorScheme.onSurface,
+                          fontSize: FontSize(15),
+                          lineHeight: const LineHeight(1.6),
+                        ),
+                        'h1': Style(fontSize: FontSize(22)),
+                        'h2': Style(fontSize: FontSize(20)),
+                        'h3': Style(fontSize: FontSize(18)),
+                        'p': Style(margin: Margins.only(bottom: 10)),
+                        'a': Style(
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      },
+                    ),
+                  ),
+                ],
+              ),
+      ),
     );
   }
 }
@@ -116,7 +122,7 @@ class _MetaChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceVariant,
+        color: theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
