@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:tronskins_app/common/utils/app_snackbar.dart';
 import 'package:tronskins_app/common/widgets/back_to_top_overlay.dart';
 import 'package:tronskins_app/controllers/auth/steam_controller.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
@@ -25,8 +26,14 @@ class _SteamSettingPageState extends State<SteamSettingPage> {
     tradeUrlController.text = controller.tradeUrl.value;
     apiKeyController.text = controller.apiKey.value;
     _configWorker = ever(controller.config, (_) {
-      tradeUrlController.text = controller.tradeUrl.value;
-      apiKeyController.text = controller.apiKey.value;
+      final nextTradeUrl = controller.tradeUrl.value;
+      final nextApiKey = controller.apiKey.value;
+      if (tradeUrlController.text != nextTradeUrl) {
+        tradeUrlController.text = nextTradeUrl;
+      }
+      if (apiKeyController.text != nextApiKey) {
+        apiKeyController.text = nextApiKey;
+      }
     });
 
     // Check for Steam ID mismatch argument
@@ -106,9 +113,15 @@ class _SteamSettingPageState extends State<SteamSettingPage> {
   }
 
   Future<void> _unbindSteam() async {
-    final canUnbind = await controller.canUnbind();
-    if (!canUnbind) {
-      _showSnack('app.user.login.message.error'.tr);
+    final res = await controller.canUnbind();
+    if (!res.success) {
+      final dataText = res.datas?.trim() ?? '';
+      final message = dataText.isNotEmpty
+          ? dataText
+          : (res.message.trim().isNotEmpty
+                ? res.message
+                : 'app.user.login.message.error'.tr);
+      AppSnackbar.error(message);
       return;
     }
     Get.dialog(

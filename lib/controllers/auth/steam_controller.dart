@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import 'package:tronskins_app/api/loginServer.dart';
 import 'package:tronskins_app/api/steam.dart';
 import 'package:tronskins_app/api/model/entity/user/user_steam_config_entity.dart';
+import 'package:tronskins_app/common/http/model/base_response.dart';
 import 'package:tronskins_app/common/utils/steam_cookie_helper.dart';
 
 class SteamController extends GetxController {
@@ -39,15 +40,20 @@ class SteamController extends GetxController {
     try {
       final res = await _userApi.getUserApi();
       if (res.success && res.datas?.config != null) {
-        config.value = res.datas?.config;
+        final nextConfig = res.datas!.config;
         userNickname.value = (res.datas?.nickname ?? '').trim();
-        _initialTradeUrl = config.value?.tradeUrl ?? '';
-        _initialApiKey = config.value?.sensitiveAccessKey ?? '';
+        _initialTradeUrl = nextConfig?.tradeUrl ?? '';
+        _initialApiKey = nextConfig?.sensitiveAccessKey ?? '';
         tradeUrl.value = _initialTradeUrl;
         apiKey.value = _initialApiKey;
+        config.value = nextConfig;
       } else {
         config.value = null;
         userNickname.value = '';
+        _initialTradeUrl = '';
+        _initialApiKey = '';
+        tradeUrl.value = '';
+        apiKey.value = '';
       }
       await refreshTradeStatus();
       await checkSession();
@@ -109,10 +115,7 @@ class SteamController extends GetxController {
     return null;
   }
 
-  Future<bool> canUnbind() async {
-    final res = await _steamApi.steamUnbindCheck();
-    return res.code == 200 || res.code == 0;
-  }
+  Future<BaseHttpResponse<String>> canUnbind() => _steamApi.steamUnbindCheck();
 
   /// Check Steam cookie/session status
   /// Returns true if session is valid, false otherwise
