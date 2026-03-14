@@ -31,6 +31,7 @@ class _SteamSettingPageState extends State<SteamSettingPage> {
 
     // Check for Steam ID mismatch argument
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      controller.loadSteamConfig();
       final args = Get.arguments;
       if (args is Map<String, dynamic> && args['showSteamIdNotMatch'] == true) {
         _showSteamIdMismatchDialog();
@@ -60,6 +61,16 @@ class _SteamSettingPageState extends State<SteamSettingPage> {
     if (result == true) {
       await controller.loadSteamConfig();
     }
+  }
+
+  Future<void> _openTradeUrlPage(String steamId) async {
+    await Get.toNamed(Routers.STEAM_TRADE_URL, arguments: steamId);
+    await controller.loadSteamConfig();
+  }
+
+  Future<void> _openApiKeyPage() async {
+    await Get.toNamed(Routers.STEAM_API_KEY);
+    await controller.loadSteamConfig();
   }
 
   void _showSteamIdMismatchDialog() {
@@ -508,10 +519,7 @@ class _SteamSettingPageState extends State<SteamSettingPage> {
                               icon: const Icon(Icons.open_in_new),
                               onPressed: steamId.isEmpty
                                   ? null
-                                  : () => Get.toNamed(
-                                      Routers.STEAM_TRADE_URL,
-                                      arguments: steamId,
-                                    ),
+                                  : () => _openTradeUrlPage(steamId),
                             ),
                           ),
                         ),
@@ -542,8 +550,7 @@ class _SteamSettingPageState extends State<SteamSettingPage> {
                             ),
                             suffixIcon: IconButton(
                               icon: const Icon(Icons.open_in_new),
-                              onPressed: () =>
-                                  Get.toNamed(Routers.STEAM_API_KEY),
+                              onPressed: _openApiKeyPage,
                             ),
                           ),
                         ),
