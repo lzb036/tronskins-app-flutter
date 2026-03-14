@@ -108,6 +108,8 @@ final Map<String, String> ja_JP = {
   "app.user.login.email_placeholder": "メールアドレスを入力してください",
   "app.steam.session.username_placeholder": "ユーザー名を入力してください",
   "app.user.login.browser_confirm": "Tronskinsブラウザのログイン確認",
+  "app.user.login.scan_title": "スキャンログイン",
+  "app.user.login.scan_prompt": "TronSkins のログイン QR コードをスキャンしてください",
   "app.user.login.enter_captcha": "メール確認コードを入力してください。",
   "app.user.login.forget_password": "パスワードを忘れました",
   "app.user.login.forget_password_desc": "認証コードを受け取るためにメールアドレスを入力してください",

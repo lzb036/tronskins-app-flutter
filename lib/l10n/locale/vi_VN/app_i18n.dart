@@ -115,6 +115,8 @@ final Map<String, String> vi_VN = {
   "app.steam.session.username_placeholder":
       "Vui lòng nhập tên người dùng của bạn",
   "app.user.login.browser_confirm": "Tronskins Browser Xác nhận đăng nhập",
+  "app.user.login.scan_title": "Quet dang nhap",
+  "app.user.login.scan_prompt": "Vui long quet ma QR dang nhap TronSkins",
   "app.user.login.enter_captcha": "Vui lòng nhập mã xác minh email của bạn.",
   "app.user.login.forget_password": "Quên mật khẩu",
   "app.user.login.forget_password_desc":

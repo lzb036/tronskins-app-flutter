@@ -119,6 +119,8 @@ final Map<String, String> po_PT = {
       "Por favor, insira o seu nome de utilizador",
   "app.user.login.browser_confirm":
       "Confirmação de login do navegador Tronskins",
+  "app.user.login.scan_title": "Login por digitalizacao",
+  "app.user.login.scan_prompt": "Digitalize o codigo QR de login do TronSkins",
   "app.user.login.enter_captcha":
       "Por favor, insira o seu código de verificação de e-mail.",
   "app.user.login.forget_password": "Esqueça a senha",

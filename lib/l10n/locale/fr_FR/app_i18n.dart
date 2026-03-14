@@ -119,6 +119,9 @@ final Map<String, String> fr_FR = {
       "Veuillez saisir votre nom d'utilisateur",
   "app.user.login.browser_confirm":
       "Tronskins Browser confirmation de connexion",
+  "app.user.login.scan_title": "Connexion par scan",
+  "app.user.login.scan_prompt":
+      "Veuillez scanner le QR code de connexion TronSkins",
   "app.user.login.enter_captcha":
       "Veuillez saisir votre code de vérification email.",
   "app.user.login.forget_password": "Mot de passe oublié",

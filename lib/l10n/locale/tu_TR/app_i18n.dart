@@ -114,6 +114,8 @@ final Map<String, String> tu_TR = {
   "app.user.login.email_placeholder": "Lütfen e-posta adresinizi girin",
   "app.steam.session.username_placeholder": "Lütfen kullanıcı adınızı girin",
   "app.user.login.browser_confirm": "Tronskins tarayıcı giriş onayı",
+  "app.user.login.scan_title": "QR ile Giris",
+  "app.user.login.scan_prompt": "Lutfen TronSkins giris QR kodunu tarayin",
   "app.user.login.enter_captcha": "Lütfen e-posta doğrulama kodunuzu girin.",
   "app.user.login.forget_password": "Şifreyi Unut",
   "app.user.login.forget_password_desc":

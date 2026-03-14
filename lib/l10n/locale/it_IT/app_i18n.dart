@@ -116,6 +116,9 @@ final Map<String, String> it_IT = {
   "app.user.login.email_placeholder": "Inserisci il tuo indirizzo email",
   "app.steam.session.username_placeholder": "Inserisci il tuo nome utente",
   "app.user.login.browser_confirm": "Conferma del login del browser Tronskins",
+  "app.user.login.scan_title": "Accesso tramite scansione",
+  "app.user.login.scan_prompt":
+      "Scansiona il codice QR di accesso di TronSkins",
   "app.user.login.enter_captcha": "Inserisci il tuo codice di verifica email.",
   "app.user.login.forget_password": "Password dimenticata",
   "app.user.login.forget_password_desc":

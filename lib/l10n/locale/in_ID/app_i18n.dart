@@ -117,6 +117,8 @@ final Map<String, String> in_ID = {
   "app.steam.session.username_placeholder":
       "Silakan masukkan nama pengguna Anda",
   "app.user.login.browser_confirm": "Konfirmasi login browser Tronskins",
+  "app.user.login.scan_title": "Login Scan",
+  "app.user.login.scan_prompt": "Silakan pindai kode QR login TronSkins",
   "app.user.login.enter_captcha":
       "Silakan masukkan kode verifikasi email Anda.",
   "app.user.login.forget_password": "Lupa Kata Sandi",

@@ -118,6 +118,8 @@ final Map<String, String> ge_DE = {
   "app.steam.session.username_placeholder":
       "Bitte geben Sie Ihren Benutzernamen ein",
   "app.user.login.browser_confirm": "Tronskins Browser Login Bestätigung",
+  "app.user.login.scan_title": "Login per Scan",
+  "app.user.login.scan_prompt": "Bitte scannen Sie den TronSkins-Login-QR-Code",
   "app.user.login.enter_captcha":
       "Bitte geben Sie Ihren E-Mail-Verifikationscode ein.",
   "app.user.login.forget_password": "Passwort vergessen",

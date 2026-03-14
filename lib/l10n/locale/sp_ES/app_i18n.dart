@@ -119,6 +119,9 @@ final Map<String, String> sp_ES = {
       "Por favor introduzca su nombre de usuario",
   "app.user.login.browser_confirm":
       "Confirmación de inicio de sesión del navegador tronskins",
+  "app.user.login.scan_title": "Inicio de sesion por escaneo",
+  "app.user.login.scan_prompt":
+      "Escanee el codigo QR de inicio de sesion de TronSkins",
   "app.user.login.enter_captcha":
       "Por favor introduzca su código de verificación de correo electrónico.",
   "app.user.login.forget_password": "Olvidado de contraseña",

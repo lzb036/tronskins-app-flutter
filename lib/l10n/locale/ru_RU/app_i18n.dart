@@ -122,6 +122,9 @@ final Map<String, String> ru_RU = {
   "app.steam.session.username_placeholder":
       "Пожалуйста, введите свое имя пользователя",
   "app.user.login.browser_confirm": "Подтверждение входа в браузер Tronskins",
+  "app.user.login.scan_title": "Вход по QR-коду",
+  "app.user.login.scan_prompt":
+      "Пожалуйста, отсканируйте QR-код входа TronSkins",
   "app.user.login.enter_captcha":
       "Пожалуйста, введите свой код проверки электронной почты.",
   "app.user.login.forget_password": "Забыл пароль",

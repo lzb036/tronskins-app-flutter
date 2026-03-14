@@ -113,6 +113,8 @@ final Map<String, String> th_TH = {
   "app.user.login.email_placeholder": "กรุณาป้อนที่อยู่อีเมลของคุณ",
   "app.steam.session.username_placeholder": "กรุณาป้อนชื่อผู้ใช้ของคุณ",
   "app.user.login.browser_confirm": "ยืนยันการเข้าสู่ระบบเบราว์เซอร์ Tronskins",
+  "app.user.login.scan_title": "สแกนเข้าสู่ระบบ",
+  "app.user.login.scan_prompt": "กรุณาสแกนคิวอาร์โค้ดเข้าสู่ระบบของ TronSkins",
   "app.user.login.enter_captcha": "กรุณาป้อนรหัสการตรวจสอบอีเมลของคุณ",
   "app.user.login.forget_password": "ลืมรหัสผ่าน",
   "app.user.login.forget_password_desc": "ป้อนอีเมลของคุณเพื่อรับรหัสยืนยัน",

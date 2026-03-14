@@ -116,6 +116,8 @@ final Map<String, String> en_US = {
   "app.user.login.email_placeholder": "Please enter your email address",
   "app.steam.session.username_placeholder": "Please enter your username",
   "app.user.login.browser_confirm": "TronSkins browser login confirmation",
+  "app.user.login.scan_title": "Scan Login",
+  "app.user.login.scan_prompt": "Please scan the TronSkins login QR code",
   "app.user.login.enter_captcha": "Please enter your email verification code.",
   "app.user.login.forget_password": "Forget Password",
   "app.user.login.forget_password_desc":

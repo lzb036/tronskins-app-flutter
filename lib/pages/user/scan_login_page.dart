@@ -95,7 +95,6 @@ class _ScanLoginPageState extends State<ScanLoginPage> {
     try {
       final res = await _api.cancelScanConfirm(qrCode: qrCode);
       if (res.success) {
-        AppSnackbar.success('app.system.message.success'.tr);
         if (mounted) {
           Navigator.of(context).maybePop();
         }
@@ -160,7 +159,7 @@ class _ScanLoginPageState extends State<ScanLoginPage> {
       child: Scaffold(
         backgroundColor: Colors.black,
         appBar: AppBar(
-          title: const Text('扫码登录'),
+          title: Text('app.user.login.scan_title'.tr),
           backgroundColor: Colors.black,
           foregroundColor: Colors.white,
         ),
@@ -205,10 +204,10 @@ class _ScanLoginPageState extends State<ScanLoginPage> {
               color: Colors.black.withValues(alpha: 0.55),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: const Text(
-              '请扫描 TronSkins 登录二维码',
+            child: Text(
+              'app.user.login.scan_prompt'.tr,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
@@ -267,15 +266,6 @@ class _ScanLoginPageState extends State<ScanLoginPage> {
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      'app.user.login.confirm'.tr,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                        height: 1.45,
                       ),
                     ),
                     const SizedBox(height: 24),

@@ -108,6 +108,8 @@ final Map<String, String> zh_CN = {
   "app.user.login.email_placeholder": "请输入您的邮箱",
   "app.steam.session.username_placeholder": "请输入您的用户名",
   "app.user.login.browser_confirm": "TronSkins 浏览器登录确认",
+  "app.user.login.scan_title": "扫码登录",
+  "app.user.login.scan_prompt": "请扫描 TronSkins 登录二维码",
   "app.user.login.enter_captcha": "请输入您的邮箱验证码",
   "app.user.login.forget_password": "忘记密码",
   "app.user.login.forget_password_desc": "请输入您的邮箱以接收验证码",

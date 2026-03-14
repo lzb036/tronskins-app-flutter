@@ -108,6 +108,8 @@ final Map<String, String> zh_TW = {
   "app.user.login.email_placeholder": "請輸入您的電子郵箱地址",
   "app.steam.session.username_placeholder": "請輸入您的用戶名",
   "app.user.login.browser_confirm": "Tronskins瀏覽器登入確認",
+  "app.user.login.scan_title": "掃碼登入",
+  "app.user.login.scan_prompt": "請掃描 TronSkins 登入二維碼",
   "app.user.login.enter_captcha": "請輸入您的電子郵件驗證碼。",
   "app.user.login.forget_password": "忘記密碼",
   "app.user.login.forget_password_desc": "請輸入您的電子郵箱以接收驗證碼",

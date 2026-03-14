@@ -110,6 +110,8 @@ final Map<String, String> ko_KR = {
   "app.user.login.email_placeholder": "이메일 주소를 입력하십시오.",
   "app.steam.session.username_placeholder": "사용자 이름을 입력하십시오.",
   "app.user.login.browser_confirm": "Tronskins 브라우저 로그인 확인",
+  "app.user.login.scan_title": "스캔 로그인",
+  "app.user.login.scan_prompt": "TronSkins 로그인 QR 코드를 스캔하세요",
   "app.user.login.enter_captcha": "이메일 확인 코드를 입력하십시오.",
   "app.user.login.forget_password": "비밀번호를 잊어버렸습니다.",
   "app.user.login.forget_password_desc": "인증 코드를 받으려면 이메일 주소를 입력하세요",
