@@ -18,6 +18,8 @@ class _ScanLoginPageState extends State<ScanLoginPage> {
   );
 
   bool _handling = false;
+  bool _submitting = false;
+  String? _pendingQrCode;
 
   @override
   void dispose() {
@@ -26,7 +28,7 @@ class _ScanLoginPageState extends State<ScanLoginPage> {
   }
 
   Future<void> _onDetect(BarcodeCapture capture) async {
-    if (_handling) {
+    if (_handling || _pendingQrCode != null || _submitting) {
       return;
     }
     final rawValue = capture.barcodes.first.rawValue?.trim() ?? '';
@@ -41,38 +43,18 @@ class _ScanLoginPageState extends State<ScanLoginPage> {
 
     _handling = true;
     await _scannerController.stop();
-
-    final confirmed = await Get.dialog<bool>(
-      AlertDialog(
-        title: Text('app.user.login.confirm'.tr),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(result: false),
-            child: Text('app.common.cancel'.tr),
-          ),
-          TextButton(
-            onPressed: () => Get.back(result: true),
-            child: Text('app.user.login.title'.tr),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      await _confirmScan(qrCode);
-      if (mounted) {
-        Navigator.of(context).maybePop();
-      }
-      return;
-    }
-
-    await _cancelScan(qrCode);
     if (mounted) {
-      Navigator.of(context).maybePop();
+      setState(() {
+        _pendingQrCode = qrCode;
+      });
     }
+    _handling = false;
   }
 
   Future<void> _confirmScan(String qrCode) async {
+    setState(() {
+      _submitting = true;
+    });
     try {
       final res = await _api.loginScanConfirm(qrCode: qrCode);
       final data = res.datas;
@@ -85,27 +67,63 @@ class _ScanLoginPageState extends State<ScanLoginPage> {
 
       if (res.success && normalizedStatus == 2) {
         AppSnackbar.success('app.user.login.message.success'.tr);
+        if (mounted) {
+          Navigator.of(context).maybePop();
+        }
         return;
       }
 
       final message = _resolveErrorMessage(res);
       AppSnackbar.error(message);
+      await _resumeScanner();
     } catch (_) {
       AppSnackbar.error('app.user.login.message.error'.tr);
+      await _resumeScanner();
+    } finally {
+      if (mounted) {
+        setState(() {
+          _submitting = false;
+        });
+      }
     }
   }
 
   Future<void> _cancelScan(String qrCode) async {
+    setState(() {
+      _submitting = true;
+    });
     try {
       final res = await _api.cancelScanConfirm(qrCode: qrCode);
       if (res.success) {
         AppSnackbar.success('app.system.message.success'.tr);
+        if (mounted) {
+          Navigator.of(context).maybePop();
+        }
         return;
       }
       AppSnackbar.error(_resolveErrorMessage(res));
+      await _resumeScanner();
     } catch (_) {
       AppSnackbar.error('app.user.login.message.error'.tr);
+      await _resumeScanner();
+    } finally {
+      if (mounted) {
+        setState(() {
+          _submitting = false;
+        });
+      }
     }
+  }
+
+  Future<void> _resumeScanner() async {
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _pendingQrCode = null;
+      _handling = false;
+    });
+    await _scannerController.start();
   }
 
   String _resolveErrorMessage(dynamic res) {
@@ -131,50 +149,260 @@ class _ScanLoginPageState extends State<ScanLoginPage> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        title: const Text('扫码登录'),
+    return PopScope(
+      canPop: _pendingQrCode == null || _submitting,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop || _pendingQrCode == null || _submitting) {
+          return;
+        }
+        await _resumeScanner();
+      },
+      child: Scaffold(
         backgroundColor: Colors.black,
-        foregroundColor: Colors.white,
+        appBar: AppBar(
+          title: const Text('扫码登录'),
+          backgroundColor: Colors.black,
+          foregroundColor: Colors.white,
+        ),
+        body: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 220),
+          child: _pendingQrCode == null
+              ? _buildScannerView(colorScheme)
+              : _buildConfirmView(context, colorScheme),
+        ),
       ),
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          MobileScanner(controller: _scannerController, onDetect: _onDetect),
-          IgnorePointer(
-            child: Center(
-              child: Container(
-                width: 220,
-                height: 220,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: colorScheme.primary.withValues(alpha: 0.9),
-                    width: 3,
-                  ),
+    );
+  }
+
+  Widget _buildScannerView(ColorScheme colorScheme) {
+    return Stack(
+      key: const ValueKey('scan'),
+      fit: StackFit.expand,
+      children: [
+        MobileScanner(controller: _scannerController, onDetect: _onDetect),
+        IgnorePointer(
+          child: Center(
+            child: Container(
+              width: 220,
+              height: 220,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: colorScheme.primary.withValues(alpha: 0.9),
+                  width: 3,
                 ),
               ),
             ),
           ),
-          Positioned(
-            left: 24,
-            right: 24,
-            bottom: 36,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.55),
-                borderRadius: BorderRadius.circular(16),
+        ),
+        Positioned(
+          left: 24,
+          right: 24,
+          bottom: 36,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.55),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Text(
+              '请扫描 TronSkins 登录二维码',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
               ),
-              child: const Text(
-                '请扫描 TronSkins 登录二维码',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildConfirmView(BuildContext context, ColorScheme colorScheme) {
+    return Container(
+      key: const ValueKey('confirm'),
+      width: double.infinity,
+      height: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            colorScheme.surface,
+            colorScheme.primaryContainer.withValues(alpha: 0.36),
+          ],
+        ),
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+          child: Column(
+            children: [
+              const Spacer(),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(22),
+                decoration: BoxDecoration(
+                  color: colorScheme.surface.withValues(alpha: 0.92),
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(
+                    color: colorScheme.outlineVariant.withValues(alpha: 0.45),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.08),
+                      blurRadius: 28,
+                      offset: const Offset(0, 12),
+                    ),
+                  ],
                 ),
+                child: Column(
+                  children: [
+                    _buildDesktopPreview(colorScheme),
+                    const SizedBox(height: 22),
+                    Text(
+                      'app.user.login.browser_confirm'.tr,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'app.user.login.confirm'.tr,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                        height: 1.45,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: _submitting
+                                ? null
+                                : () => _cancelScan(_pendingQrCode!),
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size.fromHeight(48),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: Text('app.common.cancel'.tr),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: FilledButton(
+                            onPressed: _submitting
+                                ? null
+                                : () => _confirmScan(_pendingQrCode!),
+                            style: FilledButton.styleFrom(
+                              minimumSize: const Size.fromHeight(48),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: _submitting
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : Text('app.user.login.title'.tr),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const Spacer(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDesktopPreview(ColorScheme colorScheme) {
+    return SizedBox(
+      width: 170,
+      height: 132,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Positioned(
+            top: 0,
+            child: Container(
+              width: 152,
+              height: 98,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    colorScheme.primaryContainer,
+                    colorScheme.secondaryContainer,
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: colorScheme.primary.withValues(alpha: 0.18),
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircleAvatar(
+                    radius: 20,
+                    backgroundColor: colorScheme.primary.withValues(
+                      alpha: 0.14,
+                    ),
+                    child: Icon(
+                      Icons.desktop_windows_rounded,
+                      color: colorScheme.primary,
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'PC',
+                    style: TextStyle(
+                      color: colorScheme.primary,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.1,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 18,
+            child: Container(
+              width: 44,
+              height: 10,
+              decoration: BoxDecoration(
+                color: colorScheme.outlineVariant,
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 8,
+            child: Container(
+              width: 78,
+              height: 8,
+              decoration: BoxDecoration(
+                color: colorScheme.outlineVariant.withValues(alpha: 0.7),
+                borderRadius: BorderRadius.circular(999),
               ),
             ),
           ),
