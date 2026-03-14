@@ -8,6 +8,7 @@ import 'package:tronskins_app/common/storage/user_storage.dart';
 import 'interceptors/auth_interceptor.dart';
 import 'interceptors/cookie_interceptor.dart';
 import 'interceptors/header_interceptor.dart';
+import 'interceptors/logging_interceptor.dart';
 
 class HttpHelper {
   static HttpHelper? _instance;
@@ -46,7 +47,7 @@ class HttpHelper {
     _dio.interceptors.add(HeaderInterceptor());
     _dio.interceptors.add(AuthInterceptor()); // 自动加 token
     _dio.interceptors.add(CookieInterceptor()); // WEBID 同步
-    // _dio.interceptors.add(LoggingInterceptor()); // 暂时关闭请求日志
+    _dio.interceptors.add(LoggingInterceptor());
   }
 
   /// 必须在 main() 中调用

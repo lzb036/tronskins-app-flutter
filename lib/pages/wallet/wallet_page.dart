@@ -187,14 +187,14 @@ class _WalletPageState extends State<WalletPage> {
               ),
               _buildSummaryItem(
                 context,
-                label: 'app.user.wallet.lock_amount'.tr,
-                value: currency.formatUsd(locked),
-                onTap: () => Get.toNamed(Routers.WALLET_LOCKED),
+                label: 'app.user.wallet.gift'.tr,
+                value: currency.formatUsd(gift),
               ),
               _buildSummaryItem(
                 context,
-                label: 'app.user.wallet.gift'.tr,
-                value: currency.formatUsd(gift),
+                label: 'app.user.wallet.lock_amount'.tr,
+                value: currency.formatUsd(locked),
+                onTap: () => Get.toNamed(Routers.WALLET_LOCKED),
               ),
               _buildSummaryItem(
                 context,
