@@ -186,6 +186,34 @@ class ApiLoginServer {
     );
   }
 
+  /// 扫码确认登录
+  Future<BaseHttpResponse<dynamic>> loginScanConfirm({
+    required String qrCode,
+  }) async {
+    final response = await http.post(
+      '/api/app/qr-login/submit',
+      data: {'qrCode': qrCode},
+    );
+    return BaseHttpResponse.fromJson(
+      response.data as Map<String, dynamic>,
+      (json) => json,
+    );
+  }
+
+  /// 取消扫码登录
+  Future<BaseHttpResponse<dynamic>> cancelScanConfirm({
+    required String qrCode,
+  }) async {
+    final response = await http.post(
+      '/api/app/qr-login/cancel',
+      data: {'qrCode': qrCode},
+    );
+    return BaseHttpResponse.fromJson(
+      response.data as Map<String, dynamic>,
+      (json) => json,
+    );
+  }
+
   /// 获取用户信息
   Future<BaseHttpResponse<UserInfoEntity>> getUserApi() async {
     final response = await http.get('/api/app/user/get');

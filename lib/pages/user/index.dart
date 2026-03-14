@@ -5,7 +5,9 @@ import 'package:tronskins_app/common/widgets/back_to_top_overlay.dart';
 import 'package:tronskins_app/components/user/setting/custom_animated_icon_button.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
 import 'package:tronskins_app/common/widgets/avatar_preview_dialog.dart';
+import 'package:tronskins_app/common/utils/app_snackbar.dart';
 import 'package:tronskins_app/controllers/user/user_controller.dart';
+import 'package:tronskins_app/pages/user/scan_login_page.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
 import 'package:tronskins_app/common/theme/app_colors.dart';
 import 'package:tronskins_app/common/theme/app_text_theme.dart';
@@ -340,11 +342,20 @@ class _TopActionButton extends StatelessWidget {
 class _TopRightButtons extends StatelessWidget {
   const _TopRightButtons();
 
+  Future<void> _scanCode() async {
+    final userCtrl = Get.find<UserController>();
+    if (!userCtrl.isLoggedIn.value) {
+      AppSnackbar.error('app.system.message.nologin'.tr);
+      return;
+    }
+    await Get.to(() => const ScanLoginPage());
+  }
+
   @override
   Widget build(BuildContext context) => Row(
     mainAxisSize: MainAxisSize.min,
     children: [
-      _TopActionButton(icon: Icons.center_focus_weak, onTap: () {}),
+      _TopActionButton(icon: Icons.center_focus_weak, onTap: _scanCode),
       const SizedBox(width: 10),
       _TopActionButton(
         icon: Icons.notifications_none_rounded,
