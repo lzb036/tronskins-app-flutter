@@ -1,9 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:tronskins_app/common/storage/server_storage.dart';
 
 class AboutPage extends StatelessWidget {
   const AboutPage({super.key});
+
+  Future<void> _copyWebsite(BuildContext context, String website) async {
+    await Clipboard.setData(ClipboardData(text: website));
+    if (!context.mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('app.system.message.copy_success'.tr)),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +28,30 @@ class AboutPage extends StatelessWidget {
           Card(
             child: ListTile(
               title: const Text('TronSkins'),
-              subtitle: Text(server),
+              subtitle: InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: () => _copyWebsite(context, server),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          server,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Icon(
+                        Icons.copy_rounded,
+                        size: 16,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 12),
