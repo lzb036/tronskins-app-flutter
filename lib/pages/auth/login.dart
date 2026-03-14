@@ -785,7 +785,6 @@ class _LoginScreenState extends State<LoginScreen>
                 : 'app.user.login.message.error'.tr);
       _showError(fallbackMessage);
     } catch (e) {
-      debugPrint('login failed: $e');
       _showError('app.user.login.message.error'.tr);
     } finally {
       if (mounted) setState(() => _isLoading = false);

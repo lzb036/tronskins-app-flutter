@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:tronskins_app/api/steam.dart';
@@ -410,15 +409,7 @@ class SteamSessionController extends GetxController {
   }
 
   void _logEvent(String stage, Map<String, dynamic> payload) {
-    if (!kDebugMode) {
-      return;
-    }
-    final text = payload.entries
-        .map((entry) {
-          return '${entry.key}=${entry.value}';
-        })
-        .join(', ');
-    debugPrint('[SteamSession][$stage] $text');
+    // Steam 登录调试日志暂时关闭。
   }
 
   String _mapKeys(Map<String, dynamic> data) {

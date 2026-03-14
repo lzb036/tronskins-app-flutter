@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:logger/logger.dart';
 import 'package:tronskins_app/api/system.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
@@ -21,9 +20,7 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _loadCurrencies() async {
     final apiService = ApiSystemServer();
-    final response = await apiService.getCurrencyList();
-    final logger = Logger();
-    logger.d(response.datas);
+    await apiService.getCurrencyList();
   }
 
   @override

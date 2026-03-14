@@ -27,6 +27,9 @@ class BuyingPage extends StatefulWidget {
 class _BuyingPageState extends State<BuyingPage>
     with SingleTickerProviderStateMixin {
   static const double _loadMoreThreshold = 200;
+  static const double _myBuyingActionWidth = 72;
+  static const double _myBuyingActionHeight = 30;
+  static const double _recordTrailingWidth = 64;
   final BuyRequestController controller =
       Get.isRegistered<BuyRequestController>()
       ? Get.find<BuyRequestController>()
@@ -859,8 +862,8 @@ class _BuyingPageState extends State<BuyingPage>
       height: 1,
     );
     return OutlinedButton.styleFrom(
-      minimumSize: const Size(84, 32),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+      minimumSize: const Size(_myBuyingActionWidth, _myBuyingActionHeight),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       visualDensity: VisualDensity.compact,
       foregroundColor: colors.primary,
@@ -878,8 +881,8 @@ class _BuyingPageState extends State<BuyingPage>
       height: 1,
     );
     return OutlinedButton.styleFrom(
-      minimumSize: const Size(84, 32),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+      minimumSize: const Size(_myBuyingActionWidth, _myBuyingActionHeight),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       visualDensity: VisualDensity.compact,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -894,7 +897,7 @@ class _BuyingPageState extends State<BuyingPage>
     ShopSchemaInfo? schema,
   ) {
     return SizedBox(
-      width: 84,
+      width: _myBuyingActionWidth,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -926,7 +929,7 @@ class _BuyingPageState extends State<BuyingPage>
     final colors = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     return SizedBox(
-      width: 74,
+      width: _recordTrailingWidth,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
@@ -988,7 +991,7 @@ class _BuyingPageState extends State<BuyingPage>
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Expanded(child: _buildBuyRequestSummary(item, schema)),
-                const SizedBox(width: 10),
+                const SizedBox(width: 8),
                 _buildMyBuyingTrailingActions(item, schema),
               ],
             ),
@@ -1014,7 +1017,7 @@ class _BuyingPageState extends State<BuyingPage>
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Expanded(child: _buildBuyRequestSummary(item, schema)),
-                const SizedBox(width: 10),
+                const SizedBox(width: 8),
                 _buildRecordTrailingInfo(item),
               ],
             ),

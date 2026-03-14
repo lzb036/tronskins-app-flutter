@@ -449,6 +449,20 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
     );
   }
 
+  Widget _buildAppBarIconButton({
+    required Widget icon,
+    required VoidCallback? onPressed,
+  }) {
+    return IconButton(
+      onPressed: onPressed,
+      iconSize: 24,
+      splashRadius: 24,
+      padding: const EdgeInsets.all(12),
+      constraints: const BoxConstraints.tightFor(width: 48, height: 48),
+      icon: icon,
+    );
+  }
+
   Widget _buildShopMetricRow({required String label, required String value}) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
@@ -854,7 +868,7 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
       child: Scaffold(
         appBar: AppBar(
           titleSpacing: 0,
-          leading: IconButton(
+          leading: _buildAppBarIconButton(
             onPressed: () => Get.back(),
             icon: const Icon(Icons.arrow_back),
           ),
@@ -880,7 +894,7 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
           actions: isOwnOnSale
               ? const []
               : [
-                  IconButton(
+                  _buildAppBarIconButton(
                     onPressed: _favoriteSubmitting ? null : _toggleFavorite,
                     icon: _favoriteSubmitting
                         ? const SizedBox(

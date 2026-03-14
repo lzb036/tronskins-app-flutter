@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
-import 'package:logger/logger.dart';
 import 'package:shorebird_code_push/shorebird_code_push.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
 import 'package:tronskins_app/common/http/http_helper.dart';
@@ -18,8 +17,6 @@ import 'package:tronskins_app/l10n/app_translations.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
 import 'package:tronskins_app/routes/index.dart';
 
-final Logger _shorebirdLogger = Logger();
-
 Future<void> _checkForShorebirdUpdate() async {
   if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
     return;
@@ -29,18 +26,12 @@ Future<void> _checkForShorebirdUpdate() async {
   try {
     final status = await updater.checkForUpdate();
     if (status == UpdateStatus.outdated) {
-      _shorebirdLogger.i('Shorebird update available. Downloading...');
       await updater.update();
-      _shorebirdLogger.i('Shorebird update downloaded. Restart to apply.');
-    } else if (status == UpdateStatus.upToDate) {
-      _shorebirdLogger.i('Shorebird update status: up to date.');
-    } else {
-      _shorebirdLogger.w('Shorebird update status unknown.');
     }
-  } on UpdateException catch (error) {
-    _shorebirdLogger.e('Shorebird update failed: ${error.message}');
-  } catch (error) {
-    _shorebirdLogger.e('Shorebird update failed: $error');
+  } on UpdateException {
+    return;
+  } catch (_) {
+    return;
   }
 }
 

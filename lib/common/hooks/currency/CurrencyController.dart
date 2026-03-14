@@ -4,11 +4,8 @@ import 'dart:async';
 
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
-import 'package:logger/logger.dart';
 import 'package:tronskins_app/api/system.dart';
 import 'package:tronskins_app/api/model/entity/system/currency/currency_info_entity.dart';
-
-final logger = Logger();
 
 class CurrencyController extends GetxController {
   static CurrencyController get to => Get.find();
@@ -121,8 +118,6 @@ class CurrencyController extends GetxController {
         _loaded.value = true;
         _storage.write(_ratesKey, updated);
         update(); // 触发所有 Obx 刷新
-
-        logger.d('Currency rates updated: ${updated.length} currencies');
       } else {
         _loaded.value = true; // 空数据也算“加载完成”，避免无限 loading
       }
@@ -249,7 +244,6 @@ class CurrencyController extends GetxController {
     _timer = Timer.periodic(const Duration(minutes: 1), (timer) {
       // 静默刷新，不打扰用户
       fetchRealRates(force: true);
-      logger.d('自动刷新汇率成功 - ${DateTime.now()}');
     });
   }
 

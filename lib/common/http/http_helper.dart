@@ -3,13 +3,11 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
 import 'package:flutter/foundation.dart';
-import 'package:logger/logger.dart';
 import 'package:tronskins_app/common/storage/server_storage.dart';
 import 'package:tronskins_app/common/storage/user_storage.dart';
 import 'interceptors/auth_interceptor.dart';
 import 'interceptors/cookie_interceptor.dart';
 import 'interceptors/header_interceptor.dart';
-import 'interceptors/logging_interceptor.dart';
 
 class HttpHelper {
   static HttpHelper? _instance;
@@ -18,10 +16,6 @@ class HttpHelper {
   static const String defaultBaseUrl = ServerStorage.defaultServer;
   static String _baseUrl = defaultBaseUrl;
   static String get baseUrl => _baseUrl;
-
-  final logger = Logger(
-    printer: PrettyPrinter(methodCount: 0, printEmojis: true, colors: true),
-  );
 
   static HttpHelper getInstance() => _instance ??= HttpHelper._internal();
 
@@ -52,7 +46,7 @@ class HttpHelper {
     _dio.interceptors.add(HeaderInterceptor());
     _dio.interceptors.add(AuthInterceptor()); // 自动加 token
     _dio.interceptors.add(CookieInterceptor()); // WEBID 同步
-    _dio.interceptors.add(LoggingInterceptor()); // 美化日志
+    // _dio.interceptors.add(LoggingInterceptor()); // 暂时关闭请求日志
   }
 
   /// 必须在 main() 中调用
@@ -150,7 +144,6 @@ class HttpHelper {
       msg = '连接超时，请检查网络';
     }
 
-    logger.e('HTTP Error [$code]: $msg');
     return HttpException(msg, e);
   }
 
