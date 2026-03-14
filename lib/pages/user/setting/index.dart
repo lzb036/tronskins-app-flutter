@@ -136,7 +136,7 @@ class UserSetting extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 14),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Obx(() {
@@ -154,31 +154,55 @@ class UserSetting extends StatelessWidget {
                 final disabledFg = isDark
                     ? const Color(0xFF8A8F98)
                     : const Color(0xFF8C9199);
-                final gradient = LinearGradient(
-                  colors: [
-                    Color.lerp(error, const Color(0xFFB00020), 0.15) ?? error,
-                    Color.lerp(error, errorContainer, 0.35) ?? error,
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                );
+                final activeGradient = isDark
+                    ? const LinearGradient(
+                        colors: [Color(0xFFE98773), Color(0xFFC95A47)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      )
+                    : LinearGradient(
+                        colors: [
+                          Color.lerp(error, const Color(0xFFB00020), 0.15) ??
+                              error,
+                          Color.lerp(error, errorContainer, 0.35) ?? error,
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      );
+                final activeBorder = isDark
+                    ? Border.all(
+                        color: const Color(0xFFFFD2C6).withValues(alpha: 0.18),
+                      )
+                    : null;
                 return SizedBox(
                   width: double.infinity,
                   child: Container(
                     decoration: BoxDecoration(
-                      gradient: loggedIn ? gradient : null,
+                      gradient: loggedIn ? activeGradient : null,
                       color: loggedIn ? null : disabledBg,
                       borderRadius: BorderRadius.circular(14),
                       border: loggedIn
-                          ? null
+                          ? activeBorder
                           : Border.all(color: disabledBorder),
                       boxShadow: loggedIn
                           ? [
                               BoxShadow(
-                                color: error.withOpacity(isDark ? 0.35 : 0.25),
-                                blurRadius: 16,
+                                color: isDark
+                                    ? const Color(
+                                        0xFFB94B3E,
+                                      ).withValues(alpha: 0.34)
+                                    : error.withValues(alpha: 0.25),
+                                blurRadius: isDark ? 24 : 16,
                                 offset: const Offset(0, 8),
                               ),
+                              if (isDark)
+                                BoxShadow(
+                                  color: const Color(
+                                    0xFFFFC6B5,
+                                  ).withValues(alpha: 0.12),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, -2),
+                                ),
                             ]
                           : null,
                     ),
@@ -199,14 +223,14 @@ class UserSetting extends StatelessWidget {
                               letterSpacing: 0.2,
                             ),
                           ).copyWith(
-                            overlayColor: MaterialStateProperty.resolveWith((
+                            overlayColor: WidgetStateProperty.resolveWith((
                               states,
                             ) {
-                              if (states.contains(MaterialState.pressed)) {
-                                return Colors.white.withOpacity(0.12);
+                              if (states.contains(WidgetState.pressed)) {
+                                return Colors.white.withValues(alpha: 0.12);
                               }
-                              if (states.contains(MaterialState.hovered)) {
-                                return Colors.white.withOpacity(0.06);
+                              if (states.contains(WidgetState.hovered)) {
+                                return Colors.white.withValues(alpha: 0.06);
                               }
                               return null;
                             }),

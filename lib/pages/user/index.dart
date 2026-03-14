@@ -5,7 +5,6 @@ import 'package:tronskins_app/common/widgets/back_to_top_overlay.dart';
 import 'package:tronskins_app/components/user/setting/custom_animated_icon_button.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
 import 'package:tronskins_app/common/widgets/avatar_preview_dialog.dart';
-import 'package:tronskins_app/common/utils/app_snackbar.dart';
 import 'package:tronskins_app/controllers/user/user_controller.dart';
 import 'package:tronskins_app/pages/user/scan_login_page.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
@@ -345,7 +344,11 @@ class _TopRightButtons extends StatelessWidget {
   Future<void> _scanCode() async {
     final userCtrl = Get.find<UserController>();
     if (!userCtrl.isLoggedIn.value) {
-      AppSnackbar.error('app.system.message.nologin'.tr);
+      Get.snackbar(
+        'app.system.tips.title'.tr,
+        'app.system.message.nologin'.tr,
+        titleText: const SizedBox.shrink(),
+      );
       return;
     }
     await Get.to(() => const ScanLoginPage());
