@@ -132,12 +132,17 @@ class _BackToTopOverlayState extends State<BackToTopOverlay> {
       return;
     }
     try {
-      final scrollable = notificationContext
-          .findAncestorStateOfType<ScrollableState>();
-      if (scrollable == null) {
+      final currentScrollable = Scrollable.maybeOf(notificationContext);
+      if (currentScrollable != null) {
+        _activePosition = currentScrollable.position;
         return;
       }
-      _activePosition = scrollable.position;
+      final ancestorScrollable = notificationContext
+          .findAncestorStateOfType<ScrollableState>();
+      if (ancestorScrollable == null) {
+        return;
+      }
+      _activePosition = ancestorScrollable.position;
     } catch (_) {
       _activePosition = null;
     }
