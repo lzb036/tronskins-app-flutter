@@ -276,6 +276,7 @@ class _TwoFaTokenPageState extends State<TwoFaTokenPage> {
     }
     await showDialog<void>(
       context: context,
+      barrierDismissible: true,
       builder: (context) {
         return _TwoFaBindDialog(email: emailValue, controller: controller);
       },
@@ -317,15 +318,30 @@ class _TwoFaTokenPageState extends State<TwoFaTokenPage> {
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                   children: [
-                    const SizedBox(height: 180),
-                    Center(child: Text('app.common.no_data'.tr)),
+                    const SizedBox(height: 120),
+                    Icon(
+                      Icons.security_rounded,
+                      size: 80,
+                      color: Theme.of(context).colorScheme.primary.withValues(
+                        alpha: 0.3,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Center(
+                      child: Text(
+                        'app.common.no_data'.tr,
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
                   ],
                 )
               : ListView.separated(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
                   itemCount: visibleTokens.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  separatorBuilder: (_, __) => const SizedBox(height: 16),
                   itemBuilder: (context, index) {
                     final token = visibleTokens[index];
                     final isCurrent = _isCurrentToken(token, currentUser);
@@ -465,198 +481,239 @@ class _TwoFaBindDialogState extends State<_TwoFaBindDialog> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
+    final panelColor = isDark ? const Color(0xFF1E252D) : Colors.white;
     final fillColor = isDark
         ? Colors.white.withValues(alpha: 0.08)
-        : const Color(0xFFF5F5F5);
-    final hintColor = isDark ? Colors.white38 : Colors.grey[400];
+        : const Color(0xFFF6F7F9);
+    final hintColor = isDark ? Colors.white54 : const Color(0xFF7F8894);
     final textColor = Theme.of(context).textTheme.bodyMedium?.color;
+    final borderColor = isDark
+        ? Colors.white.withValues(alpha: 0.10)
+        : const Color(0xFFE4E8EE);
+    final headerBadgeColor = colorScheme.primary.withValues(
+      alpha: isDark ? 0.22 : 0.10,
+    );
     final sendLabel = _countdown == 0
         ? 'app.user.guard.get_captcha'.tr
         : '${_countdown}s';
-    return AlertDialog(
-      title: Text(
-        'app.user.guard.bind_tips'.tr,
-        textAlign: TextAlign.center,
-        style: Theme.of(
-          context,
-        ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-      ),
-      titlePadding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
-      contentPadding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-      actionsPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            enabled: false,
-            controller: _emailController,
-            style: TextStyle(color: textColor?.withValues(alpha: 0.7)),
-            decoration: InputDecoration(
-              filled: true,
-              fillColor: fillColor,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 12,
+
+    Future<void> sendCaptcha() async {
+      if (_countdown != 0) {
+        return;
+      }
+      try {
+        final res = await widget.controller.sendEmailCode();
+        if (res.success) {
+          _showSuccess('app.user.guard.captcha_been_sent'.tr);
+          await _startCountdown();
+        } else {
+          _showError(
+            _resolveMessage(res, 'app.user.guard.captcha_send_failed'),
+          );
+        }
+      } catch (_) {
+        _showError('app.user.guard.captcha_send_failed'.tr);
+      }
+    }
+
+    Future<void> confirmSync() async {
+      if (!_validateCode()) {
+        return;
+      }
+      final code = _codeController.text.trim();
+      try {
+        final res = await widget.controller.syncToken(code);
+        if (res.success) {
+          Get.back();
+          _showSuccess('app.user.guard.sync_success'.tr);
+          return;
+        }
+        _showError(_resolveMessage(res, 'app.user.guard.sync_failed'));
+      } catch (_) {
+        _showError('app.user.guard.sync_failed'.tr);
+      }
+    }
+
+    return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 420),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(20, 22, 20, 20),
+          decoration: BoxDecoration(
+            color: panelColor,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: borderColor),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.12),
+                blurRadius: 28,
+                offset: const Offset(0, 14),
               ),
-              disabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: BorderSide.none,
-              ),
-            ),
+            ],
           ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _codeController,
-            onChanged: _onCodeChanged,
-            decoration: InputDecoration(
-              hintText: 'app.user.login.enter_captcha'.tr,
-              hintStyle: TextStyle(color: hintColor, fontSize: 14),
-              filled: true,
-              fillColor: fillColor,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 12,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: BorderSide.none,
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: BorderSide.none,
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-                borderSide: BorderSide(
-                  color: Theme.of(context).colorScheme.primary,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 52,
+                  height: 52,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: headerBadgeColor,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.verified_user_rounded,
+                    color: colorScheme.primary,
+                    size: 26,
+                  ),
                 ),
               ),
-            ),
-          ),
-          if (_codeTouched && _codeError != null) ...[
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                const Icon(
-                  Icons.error_outline,
-                  size: 14,
-                  color: Colors.redAccent,
+              const SizedBox(height: 14),
+              Text(
+                'app.user.guard.bind_tips'.tr,
+                textAlign: TextAlign.center,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'app.user.login.enter_captcha'.tr,
+                textAlign: TextAlign.center,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: hintColor, height: 1.4),
+              ),
+              const SizedBox(height: 18),
+              TextField(
+                enabled: false,
+                controller: _emailController,
+                style: TextStyle(color: textColor?.withValues(alpha: 0.72)),
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: fillColor,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 14,
+                  ),
+                  disabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    _codeError!,
-                    softWrap: true,
-                    style: const TextStyle(
-                      color: Colors.redAccent,
-                      fontSize: 12,
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _codeController,
+                onChanged: _onCodeChanged,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  hintText: '123456',
+                  hintStyle: TextStyle(color: hintColor, fontSize: 14),
+                  filled: true,
+                  fillColor: fillColor,
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 14,
+                  ),
+                  prefixIcon: Icon(
+                    Icons.mark_email_read_outlined,
+                    color: hintColor,
+                    size: 20,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(
+                      color: colorScheme.primary,
+                      width: 1.5,
                     ),
                   ),
+                ),
+              ),
+              if (_codeTouched && _codeError != null) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.error_outline,
+                      size: 14,
+                      color: Colors.redAccent,
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        _codeError!,
+                        softWrap: true,
+                        style: const TextStyle(
+                          color: Colors.redAccent,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
-            ),
-          ],
-        ],
-      ),
-      actions: [
-        SizedBox(
-          width: double.infinity,
-          child: Row(
-            children: [
-              Expanded(
-                flex: 3,
-                child: TextButton(
-                  onPressed: () async {
-                    if (_countdown != 0) {
-                      return;
-                    }
-                    try {
-                      final res = await widget.controller.sendEmailCode();
-                      if (res.success) {
-                        _showSuccess('app.user.guard.captcha_been_sent'.tr);
-                        await _startCountdown();
-                      } else {
-                        _showError(
-                          _resolveMessage(
-                            res,
-                            'app.user.guard.captcha_send_failed',
-                          ),
-                        );
-                      }
-                    } catch (_) {
-                      _showError('app.user.guard.captcha_send_failed'.tr);
-                    }
-                  },
-                  style: TextButton.styleFrom(
-                    foregroundColor: _countdown == 0
-                        ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).disabledColor,
+              const SizedBox(height: 18),
+              OutlinedButton(
+                onPressed: sendCaptcha,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: _countdown == 0
+                      ? colorScheme.primary
+                      : Theme.of(context).disabledColor,
+                  minimumSize: const Size.fromHeight(48),
+                  side: BorderSide(
+                    color: (_countdown == 0 ? colorScheme.primary : borderColor)
+                        .withValues(alpha: 0.9),
                   ),
-                  child: Text(
-                    sendLabel,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                flex: 2,
-                child: TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text(
-                    'app.common.cancel'.tr,
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                child: Text(
+                  sendLabel,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  softWrap: true,
                 ),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                flex: 2,
-                child: FilledButton(
-                  onPressed: () async {
-                    if (!_validateCode()) {
-                      return;
-                    }
-                    final code = _codeController.text.trim();
-                    try {
-                      final res = await widget.controller.syncToken(code);
-                      if (res.success) {
-                        Get.back();
-                        _showSuccess('app.user.guard.sync_success'.tr);
-                        return;
-                      }
-                      _showError(
-                        _resolveMessage(res, 'app.user.guard.sync_failed'),
-                      );
-                    } catch (_) {
-                      _showError('app.user.guard.sync_failed'.tr);
-                    }
-                  },
-                  style: FilledButton.styleFrom(
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                    minimumSize: const Size.fromHeight(40),
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+              const SizedBox(height: 10),
+              FilledButton(
+                onPressed: confirmSync,
+                style: FilledButton.styleFrom(
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
+                  minimumSize: const Size.fromHeight(50),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
                   ),
-                  child: Text(
-                    'app.common.confirm'.tr,
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
+                ),
+                child: Text(
+                  'app.common.confirm'.tr,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  softWrap: true,
                 ),
               ),
             ],
           ),
         ),
-      ],
+      ),
     );
   }
 }
@@ -703,84 +760,189 @@ class _TwoFaTokenCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     final bgColor = isCurrent
-        ? colorScheme.primaryContainer
-        : colorScheme.surface;
+        ? (isDark
+            ? colorScheme.primary.withValues(alpha: 0.15)
+            : colorScheme.primaryContainer.withValues(alpha: 0.3))
+        : (isDark ? const Color(0xFF1E1E1E) : Colors.white);
+
     final borderColor = isCurrent
-        ? colorScheme.primary.withValues(alpha: 0.2)
-        : colorScheme.outlineVariant.withValues(alpha: 0.5);
-    final codeStyle = Theme.of(context).textTheme.headlineSmall?.copyWith(
+        ? colorScheme.primary.withValues(alpha: isDark ? 0.4 : 0.3)
+        : (isDark
+            ? Colors.white.withValues(alpha: 0.08)
+            : const Color(0xFFE4E8EE));
+
+    final codeStyle = Theme.of(context).textTheme.headlineMedium?.copyWith(
       color: hasSecret ? colorScheme.primary : colorScheme.onSurface,
-      fontWeight: FontWeight.w700,
-      letterSpacing: hasSecret ? 2 : 0,
+      fontWeight: FontWeight.w800,
+      letterSpacing: hasSecret ? 4 : 0,
+      fontSize: 32,
     );
 
-    return Material(
-      color: bgColor,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: borderColor),
+    return Container(
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: borderColor, width: 1.5),
+        boxShadow: [
+          if (isCurrent)
+            BoxShadow(
+              color: colorScheme.primary.withValues(alpha: isDark ? 0.2 : 0.15),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      child: InkWell(
-        onTap: hasSecret ? onCopy : onBind,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    '[${token.appUse}]',
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          token.showEmail,
-                          style: Theme.of(context).textTheme.bodySmall,
-                          overflow: TextOverflow.ellipsis,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: hasSecret ? onCopy : onBind,
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colorScheme.primary.withValues(
+                          alpha: isDark ? 0.2 : 0.12,
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          _serverLabel(token.server),
-                          style: Theme.of(context).textTheme.labelSmall
-                              ?.copyWith(color: colorScheme.onSurfaceVariant),
-                          overflow: TextOverflow.ellipsis,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        token.appUse,
+                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: colorScheme.primary,
                         ),
-                      ],
+                      ),
+                    ),
+                    const Spacer(),
+                    if (hasSecret)
+                      _CountdownRing(progress: progress, remaining: remaining),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.email_outlined,
+                      size: 16,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        token.showEmail,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.dns_outlined,
+                      size: 16,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        _serverLabel(token.server),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 20),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
+                  decoration: BoxDecoration(
+                    color: hasSecret
+                        ? colorScheme.primary.withValues(alpha: isDark ? 0.12 : 0.08)
+                        : (isDark
+                            ? Colors.white.withValues(alpha: 0.05)
+                            : const Color(0xFFF6F7F9)),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Center(
+                    child: Text(
+                      code,
+                      style: codeStyle,
                     ),
                   ),
-                  if (hasSecret)
-                    _CountdownRing(progress: progress, remaining: remaining),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Text(code, style: codeStyle),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  if (hasSecret)
-                    IconButton(
-                      tooltip: 'app.system.message.copy_success'.tr,
-                      icon: const Icon(Icons.copy_rounded, size: 20),
-                      onPressed: onCopy,
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    if (hasSecret)
+                      Container(
+                        decoration: BoxDecoration(
+                          color: colorScheme.primary.withValues(
+                            alpha: isDark ? 0.15 : 0.1,
+                          ),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: IconButton(
+                          tooltip: 'app.system.message.copy_success'.tr,
+                          icon: Icon(
+                            Icons.copy_rounded,
+                            size: 20,
+                            color: colorScheme.primary,
+                          ),
+                          onPressed: onCopy,
+                        ),
+                      ),
+                    const SizedBox(width: 8),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.08)
+                            : const Color(0xFFF6F7F9),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: IconButton(
+                        tooltip: 'app.common.delete'.tr,
+                        icon: Icon(
+                          Icons.delete_outline,
+                          size: 20,
+                          color: colorScheme.error,
+                        ),
+                        onPressed: onDelete,
+                      ),
                     ),
-                  IconButton(
-                    icon: const Icon(Icons.delete_outline),
-                    onPressed: onDelete,
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -796,18 +958,44 @@ class _CountdownRing extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 34,
-      height: 34,
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final progressColor = remaining <= 5
+        ? colorScheme.error
+        : (remaining <= 10
+            ? Colors.orange
+            : colorScheme.primary);
+
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: progressColor.withValues(alpha: isDark ? 0.15 : 0.1),
+      ),
       child: Stack(
         alignment: Alignment.center,
         children: [
-          CircularProgressIndicator(value: progress, strokeWidth: 3),
+          SizedBox(
+            width: 40,
+            height: 40,
+            child: CircularProgressIndicator(
+              value: progress,
+              strokeWidth: 3.5,
+              backgroundColor: isDark
+                  ? Colors.white.withValues(alpha: 0.1)
+                  : Colors.black.withValues(alpha: 0.05),
+              color: progressColor,
+              strokeCap: StrokeCap.round,
+            ),
+          ),
           Text(
             remaining.toString(),
-            style: Theme.of(
-              context,
-            ).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w600),
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: progressColor,
+            ),
           ),
         ],
       ),

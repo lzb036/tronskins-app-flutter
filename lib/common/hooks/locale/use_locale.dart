@@ -4,7 +4,9 @@ import 'package:get_storage/get_storage.dart';
 
 class UseLocale extends GetxController {
   static final _storage = GetStorage('language');
-  final Rx<Locale> _currentLocale = Locale('en', 'US').obs;
+  static const Locale _defaultLocale = Locale('en', 'US');
+
+  final Rx<Locale> _currentLocale = _defaultLocale.obs;
 
   Locale get currentLocale => _currentLocale.value;
   Rx<Locale> get localeRx => _currentLocale;
@@ -51,8 +53,8 @@ class UseLocale extends GetxController {
     if (savedLanguageCode != null && savedCountryCode != null) {
       _currentLocale.value = Locale(savedLanguageCode, savedCountryCode);
     } else {
-      // 使用系统默认语言
-      _currentLocale.value = Get.deviceLocale ?? Locale('en', 'US');
+      // 没有用户显式选择时，应用默认使用英文。
+      _currentLocale.value = _defaultLocale;
     }
   }
 
