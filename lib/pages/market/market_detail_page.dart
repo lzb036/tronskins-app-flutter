@@ -1020,6 +1020,60 @@ class _MarketDetailPageState extends State<MarketDetailPage>
   }) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final releasePurchaseLabel = 'app.market.detail.release_purchase'.tr;
+    final bulkBuyingLabel = 'app.market.detail.bulk_buying.title'.tr;
+    final buttonTextStyle = theme.textTheme.labelLarge?.copyWith(
+      fontWeight: FontWeight.w600,
+    );
+
+    Widget buildActionButtons() {
+      return SizedBox(
+        height: 56,
+        child: Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _openBuying,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: colorScheme.primary,
+                  side: BorderSide(color: colorScheme.primary),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  textStyle: buttonTextStyle,
+                ),
+                child: Text(
+                  releasePurchaseLabel,
+                  maxLines: 2,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: FilledButton(
+                onPressed: _openBulkBuying,
+                style: FilledButton.styleFrom(
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: colorScheme.onPrimary,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  textStyle: buttonTextStyle,
+                ),
+                child: Text(
+                  bulkBuyingLabel,
+                  maxLines: 2,
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -1035,65 +1089,35 @@ class _MarketDetailPageState extends State<MarketDetailPage>
       ),
       child: SafeArea(
         top: false,
-        child: Row(
-          children: [
-            _buildBottomSteamPrice(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final useStackedLayout = constraints.maxWidth < 420;
+            final steamPrice = _buildBottomSteamPrice(
               context: context,
               currency: currency,
               referencePrice: referencePrice,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: SizedBox(
-                height: 44,
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: _openBuying,
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: colorScheme.primary,
-                          side: BorderSide(color: colorScheme.primary),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          textStyle: theme.textTheme.labelLarge?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        child: Text(
-                          'app.market.detail.release_purchase'.tr,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: FilledButton(
-                        onPressed: _openBulkBuying,
-                        style: FilledButton.styleFrom(
-                          backgroundColor: colorScheme.primary,
-                          foregroundColor: colorScheme.onPrimary,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          textStyle: theme.textTheme.labelLarge?.copyWith(
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        child: Text(
-                          'app.market.detail.bulk_buying.title'.tr,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
+            );
+
+            if (useStackedLayout) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  steamPrice,
+                  const SizedBox(height: 12),
+                  buildActionButtons(),
+                ],
+              );
+            }
+
+            return Row(
+              children: [
+                steamPrice,
+                const SizedBox(width: 12),
+                Expanded(child: buildActionButtons()),
+              ],
+            );
+          },
         ),
       ),
     );
