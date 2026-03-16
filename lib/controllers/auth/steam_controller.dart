@@ -66,9 +66,7 @@ class SteamController extends GetxController {
     try {
       tradeStatus.value = null;
       final res = await _steamApi.steamTradingState();
-      if (res.success) {
-        tradeStatus.value = res.datas ?? false;
-      }
+      tradeStatus.value = res.success ? (res.datas ?? false) : false;
     } catch (_) {
       tradeStatus.value = false;
     }
@@ -77,9 +75,7 @@ class SteamController extends GetxController {
   Future<void> checkSession() async {
     try {
       final res = await _steamApi.steamOnlineState();
-      if (res.success) {
-        sessionValid.value = res.datas ?? false;
-      }
+      sessionValid.value = res.success ? (res.datas ?? false) : false;
     } catch (_) {
       sessionValid.value = false;
     }

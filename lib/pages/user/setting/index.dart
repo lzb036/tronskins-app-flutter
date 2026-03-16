@@ -39,7 +39,11 @@ class UserSetting extends StatelessWidget {
                             ? nickname
                             : 'app.user.setting.nickname_not_set'.tr)
                       : 'app.user.login.nologin'.tr;
-                  return _buildInfoItem('app.user.setting.nickname'.tr, value);
+                  return _buildInfoItem(
+                    'app.user.setting.nickname'.tr,
+                    value,
+                    onTap: loggedIn ? null : () => Get.toNamed(Routers.LOGIN),
+                  );
                 }),
                 Obx(() {
                   final loggedIn = userCtrl.isLoggedIn.value;
@@ -47,7 +51,11 @@ class UserSetting extends StatelessWidget {
                   final value = loggedIn && email.isNotEmpty
                       ? email
                       : 'app.user.login.nologin'.tr;
-                  return _buildInfoItem('app.user.setting.email'.tr, value);
+                  return _buildInfoItem(
+                    'app.user.setting.email'.tr,
+                    value,
+                    onTap: loggedIn ? null : () => Get.toNamed(Routers.LOGIN),
+                  );
                 }),
               ],
             ),
@@ -305,11 +313,15 @@ class UserSetting extends StatelessWidget {
   }
 
   // ==================== 信息项（不可点） ====================
-  Widget _buildInfoItem(String title, String value) {
-    return ListTile(
-      title: Text(title),
-      trailing: Text(value, style: TextStyle(color: Colors.grey[600])),
+  Widget _buildInfoItem(String title, String value, {VoidCallback? onTap}) {
+    final trailing = Text(
+      value,
+      style: TextStyle(
+        color: onTap != null ? Get.theme.colorScheme.primary : Colors.grey[600],
+        fontWeight: onTap != null ? FontWeight.w600 : FontWeight.w400,
+      ),
     );
+    return ListTile(title: Text(title), trailing: trailing, onTap: onTap);
   }
 
   // ==================== 可点击项（统一风格） ====================

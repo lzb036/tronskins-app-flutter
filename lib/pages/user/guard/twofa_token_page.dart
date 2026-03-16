@@ -981,7 +981,7 @@ class _TwoFaTokenCard extends StatelessWidget {
                 Material(
                   color: Colors.transparent,
                   child: InkWell(
-                    onTap: hasSecret ? onCopy : onBind,
+                    onTap: hasSecret ? null : onBind,
                     borderRadius: BorderRadius.circular(16),
                     child: Ink(
                       decoration: BoxDecoration(

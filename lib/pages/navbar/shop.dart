@@ -2331,73 +2331,136 @@ class _ShopPageState extends State<ShopPage>
     final selectableTotal = selectableIds.length;
     final allSelected =
         selectableTotal > 0 && selectableIds.every(_selectedIds.contains);
+
+    Future<void> openBatchPriceChange() async {
+      final selectedItems = salesController.onSaleItems
+          .where((item) => _selectedIds.contains(item.id ?? -1))
+          .toList();
+      if (selectedItems.isEmpty) {
+        return;
+      }
+      final changed = await Get.toNamed(
+        Routers.SHOP_PRICE_CHANGE,
+        arguments: {
+          'items': selectedItems,
+          'schemas': salesController.schemas,
+          'appId': GameStorage.getGameType(),
+        },
+      );
+      if (changed == true) {
+        await salesController.refreshOnSale();
+      }
+      if (!mounted) {
+        return;
+      }
+      setState(_selectedIds.clear);
+    }
+
     return SafeArea(
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          border: Border(
-            top: BorderSide(color: Theme.of(context).dividerColor, width: 0.5),
-          ),
-        ),
-        child: Row(
-          children: [
-            _buildOnSaleSelectAllToggle(
-              selected: allSelected,
-              enabled: selectableTotal > 0,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              '${_selectedIds.length}/$selectableTotal',
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const Spacer(),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final compactLayout = constraints.maxWidth < 520;
+          final theme = Theme.of(context);
+          final actionButtons = <Widget>[
             OutlinedButton(
               onPressed: () {
                 setState(() => _selectedIds.clear());
               },
-              child: Text('app.common.cancel'.tr),
+              child: Text(
+                'app.common.cancel'.tr,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-            const SizedBox(width: 8),
             FilledButton(
-              onPressed: _selectedIds.isEmpty
-                  ? null
-                  : () async {
-                      final selectedItems = salesController.onSaleItems
-                          .where((item) => _selectedIds.contains(item.id ?? -1))
-                          .toList();
-                      if (selectedItems.isEmpty) {
-                        return;
-                      }
-                      final changed = await Get.toNamed(
-                        Routers.SHOP_PRICE_CHANGE,
-                        arguments: {
-                          'items': selectedItems,
-                          'schemas': salesController.schemas,
-                          'appId': GameStorage.getGameType(),
-                        },
-                      );
-                      if (changed == true) {
-                        await salesController.refreshOnSale();
-                      }
-                      setState(_selectedIds.clear);
-                    },
-              child: Text('app.inventory.price_change'.tr),
+              onPressed: _selectedIds.isEmpty ? null : openBatchPriceChange,
+              child: Text(
+                'app.inventory.price_change'.tr,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-            const SizedBox(width: 8),
             FilledButton(
               style: FilledButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.error,
-                foregroundColor: Theme.of(context).colorScheme.onError,
+                backgroundColor: theme.colorScheme.error,
+                foregroundColor: theme.colorScheme.onError,
               ),
               onPressed: _confirmDelist,
-              child: Text('app.inventory.delist'.tr),
+              child: Text(
+                'app.inventory.delist'.tr,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-          ],
-        ),
+          ];
+
+          return Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surface,
+              border: Border(
+                top: BorderSide(color: theme.dividerColor, width: 0.5),
+              ),
+            ),
+            child: compactLayout
+                ? Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          _buildOnSaleSelectAllToggle(
+                            selected: allSelected,
+                            enabled: selectableTotal > 0,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '${_selectedIds.length}/$selectableTotal',
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.bodyMedium,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        alignment: WrapAlignment.end,
+                        children: actionButtons,
+                      ),
+                    ],
+                  )
+                : Row(
+                    children: [
+                      _buildOnSaleSelectAllToggle(
+                        selected: allSelected,
+                        enabled: selectableTotal > 0,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${_selectedIds.length}/$selectableTotal',
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                      const Spacer(),
+                      ..._withSpacing(actionButtons),
+                    ],
+                  ),
+          );
+        },
       ),
     );
+  }
+
+  List<Widget> _withSpacing(List<Widget> children, {double spacing = 8}) {
+    return [
+      for (int index = 0; index < children.length; index++) ...[
+        if (index > 0) SizedBox(width: spacing),
+        children[index],
+      ],
+    ];
   }
 
   Future<void> _openDeliverSheet(ShopOrderItem order) async {
