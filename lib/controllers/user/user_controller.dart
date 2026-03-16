@@ -98,9 +98,13 @@ class UserController extends GetxController {
     try {
       final result = await ApiLoginServer().getUserApi();
       if (result.success && result.datas != null) {
-        user.value = result.datas!;
+        final mergedUserInfo = UserStorage.mergeUserInfo(
+          result.datas!,
+          fallbackUserInfo: user.value,
+        );
+        user.value = mergedUserInfo;
         isLoggedIn.value = true;
-        UserStorage.setUserInfo(result.datas!);
+        UserStorage.setUserInfo(mergedUserInfo);
       } else if (result.code == 401) {
         clearSession();
       }

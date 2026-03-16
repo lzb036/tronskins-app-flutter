@@ -22,16 +22,29 @@ class UserStorage {
     return null;
   }
 
+  static UserInfoEntity mergeUserInfo(
+    UserInfoEntity userInfo, {
+    UserInfoEntity? fallbackUserInfo,
+  }) {
+    final previousUserInfo = fallbackUserInfo ?? getUserInfo();
+    final mergedAppUse = _firstNonEmptyString(
+      userInfo.appUse,
+      previousUserInfo?.appUse,
+    );
+    return userInfo.copyWith(appUse: mergedAppUse);
+  }
+
   static void setUserInfo(UserInfoEntity? userInfo) {
     if (userInfo == null) {
       _box.remove(_userInfoKey);
       return;
     }
-    final data = Map<String, dynamic>.from(userInfo.toJson());
-    data['shop'] = userInfo.shop?.toJson();
-    data['fund'] = userInfo.fund?.toJson();
-    data['config'] = userInfo.config?.toJson();
-    data['userServer'] = userInfo.userServer?.toJson();
+    final mergedUserInfo = mergeUserInfo(userInfo);
+    final data = Map<String, dynamic>.from(mergedUserInfo.toJson());
+    data['shop'] = mergedUserInfo.shop?.toJson();
+    data['fund'] = mergedUserInfo.fund?.toJson();
+    data['config'] = mergedUserInfo.config?.toJson();
+    data['userServer'] = mergedUserInfo.userServer?.toJson();
     _box.write(_userInfoKey, data);
   }
 
@@ -54,5 +67,15 @@ class UserStorage {
       }
     } catch (_) {}
     return null;
+  }
+
+  static String? _firstNonEmptyString(String? primary, String? fallback) {
+    if (primary != null && primary.trim().isNotEmpty) {
+      return primary;
+    }
+    if (fallback != null && fallback.trim().isNotEmpty) {
+      return fallback;
+    }
+    return primary ?? fallback;
   }
 }

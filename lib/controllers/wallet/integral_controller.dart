@@ -48,8 +48,12 @@ class IntegralController extends GetxController {
     try {
       final res = await _userApi.getUserApi();
       if (res.success && res.datas != null) {
-        userInfo.value = res.datas;
-        UserStorage.setUserInfo(res.datas);
+        final mergedUserInfo = UserStorage.mergeUserInfo(
+          res.datas!,
+          fallbackUserInfo: userInfo.value,
+        );
+        userInfo.value = mergedUserInfo;
+        UserStorage.setUserInfo(mergedUserInfo);
         if (Get.isRegistered<UserController>()) {
           await Get.find<UserController>().fetchUserData(showLoading: false);
         }

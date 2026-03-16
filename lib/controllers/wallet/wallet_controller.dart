@@ -5,6 +5,7 @@ import 'package:tronskins_app/api/wallet.dart';
 import 'package:tronskins_app/api/model/entity/user/user_info_entity.dart';
 import 'package:tronskins_app/api/model/wallet/wallet_models.dart';
 import 'package:tronskins_app/common/http/model/base_response.dart';
+import 'package:tronskins_app/common/storage/twofa_storage.dart';
 import 'package:tronskins_app/common/storage/user_storage.dart';
 import 'package:tronskins_app/controllers/user/user_controller.dart';
 
@@ -100,8 +101,38 @@ class WalletController extends GetxController {
     try {
       final res = await _userApi.getUserApi();
       if (res.success && res.datas != null) {
-        userInfo.value = res.datas;
-        UserStorage.setUserInfo(res.datas);
+        final cachedUserInfo = UserStorage.getUserInfo();
+        final serverUserInfo = res.datas!;
+        final currentUserId = serverUserInfo.id ?? cachedUserInfo?.id ?? '';
+
+        // 如果服务器返回的 appUse 为空，尝试从 2FA token 中推导
+        String? derivedAppUse;
+        if (currentUserId.isNotEmpty &&
+            (serverUserInfo.appUse == null || serverUserInfo.appUse!.isEmpty)) {
+          final tokens = await TwoFactorStorage.getList();
+          final sameUserTokens = tokens
+              .where((token) =>
+                  token.userId == currentUserId &&
+                  token.secret.isNotEmpty)
+              .toList();
+          if (sameUserTokens.length == 1) {
+            derivedAppUse = sameUserTokens.first.appUse;
+          }
+        }
+
+        // 合并用户信息，appUse 优先级：服务器返回 > 缓存 > 从 token 推导
+        final finalAppUse = serverUserInfo.appUse?.isNotEmpty == true
+            ? serverUserInfo.appUse
+            : (cachedUserInfo?.appUse?.isNotEmpty == true
+                ? cachedUserInfo?.appUse
+                : derivedAppUse);
+
+        final mergedUserInfo = serverUserInfo.copyWith(
+          appUse: finalAppUse,
+        );
+
+        userInfo.value = mergedUserInfo;
+        UserStorage.setUserInfo(mergedUserInfo);
         if (Get.isRegistered<UserController>()) {
           await Get.find<UserController>().fetchUserData(showLoading: false);
         }

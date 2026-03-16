@@ -9,6 +9,7 @@ import 'package:tronskins_app/common/storage/server_storage.dart';
 import 'package:tronskins_app/common/storage/twofa_storage.dart';
 import 'package:tronskins_app/common/storage/user_storage.dart';
 import 'package:tronskins_app/common/utils/app_snackbar.dart';
+import 'package:tronskins_app/common/widgets/glass_notice_dialog.dart';
 import 'package:tronskins_app/controllers/auth/twofa_controller.dart';
 import 'package:tronskins_app/controllers/user/user_controller.dart';
 
@@ -88,6 +89,7 @@ class _TwoFaTokenPageState extends State<TwoFaTokenPage> {
     final currentAppUse = _normalizeText(currentUser.appUse);
     final currentServer = _normalizeServer(_currentServer());
 
+    // 精确匹配：userId + appUse + server
     for (final token in controller.tokens) {
       if (token.secret.trim().isEmpty) {
         continue;
@@ -96,6 +98,20 @@ class _TwoFaTokenPageState extends State<TwoFaTokenPage> {
           _normalizeText(token.appUse) == currentAppUse &&
           _matchesServer(token, currentServer)) {
         return token;
+      }
+    }
+
+    // 如果 currentAppUse 为空，尝试只匹配 userId + server
+    if (currentAppUse.isEmpty && currentUserId.isNotEmpty) {
+      final userServerMatches = controller.tokens
+          .where((token) {
+            return token.secret.trim().isNotEmpty &&
+                token.userId.trim() == currentUserId &&
+                _matchesServer(token, currentServer);
+          })
+          .toList(growable: false);
+      if (userServerMatches.length == 1) {
+        return userServerMatches.first;
       }
     }
 
@@ -195,7 +211,7 @@ class _TwoFaTokenPageState extends State<TwoFaTokenPage> {
     final currentServer = _normalizeServer(_currentServer());
     final currentUserId = currentUser?.id?.trim() ?? '';
     final currentAppUse = _normalizeText(currentUser?.appUse);
-    return controller.tokens
+    final tokens = controller.tokens
         .where((token) {
           if (token.secret.trim().isNotEmpty) {
             return true;
@@ -210,6 +226,22 @@ class _TwoFaTokenPageState extends State<TwoFaTokenPage> {
               );
         })
         .toList(growable: false);
+
+    if (tokens.length < 2 || currentUser == null) {
+      return tokens;
+    }
+
+    final prioritized = <TwoFactorToken>[];
+    final regular = <TwoFactorToken>[];
+    for (final token in tokens) {
+      if (_isCurrentToken(token, currentUser)) {
+        prioritized.add(token);
+      } else {
+        regular.add(token);
+      }
+    }
+
+    return <TwoFactorToken>[...prioritized, ...regular];
   }
 
   Future<void> _copyCode(String code) async {
@@ -217,11 +249,12 @@ class _TwoFaTokenPageState extends State<TwoFaTokenPage> {
       return;
     }
     await Clipboard.setData(ClipboardData(text: code));
-    Get.snackbar(
-      'app.system.tips.title'.tr,
-      'app.system.message.copy_success'.tr,
-
-      titleText: const SizedBox.shrink(),
+    if (!mounted) return;
+    await showGlassNoticeDialog(
+      context,
+      message: 'app.system.message.copy_success'.tr,
+      icon: Icons.check_circle_outline_rounded,
+      duration: const Duration(milliseconds: 1200),
     );
   }
 
@@ -289,8 +322,9 @@ class _TwoFaTokenPageState extends State<TwoFaTokenPage> {
       final loggedIn = userController.isLoggedIn.value;
       final currentUser =
           userController.user.value ?? UserStorage.getUserInfo();
-      final visibleTokens = _visibleTokens(currentUser);
       final _ = controller.tick.value;
+      controller.tokens.length; // 订阅 tokens 变化以触发重建
+      final visibleTokens = _visibleTokens(currentUser);
       final remaining = controller.remainingSeconds();
       final progress = remaining / 30;
       final hasCurrentUserToken = _hasCurrentUserToken(currentUser);
@@ -306,65 +340,79 @@ class _TwoFaTokenPageState extends State<TwoFaTokenPage> {
                 ]
               : const [],
         ),
-        body: RefreshIndicator(
-          onRefresh: () async {
-            await controller.loadTokens();
-            if (loggedIn) {
-              await controller.refreshStatus();
-            }
-          },
-          child: visibleTokens.isEmpty
-              ? ListView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                  children: [
-                    const SizedBox(height: 120),
-                    Icon(
-                      Icons.security_rounded,
-                      size: 80,
-                      color: Theme.of(context).colorScheme.primary.withValues(
-                        alpha: 0.3,
+        body: visibleTokens.isEmpty
+            ? const _TwoFaEmptyState()
+            : ListView.separated(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                itemCount: visibleTokens.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  final token = visibleTokens[index];
+                  final isCurrent = _isCurrentToken(token, currentUser);
+                  final hasSecret = token.secret.isNotEmpty;
+                  final code = hasSecret
+                      ? controller.codeForToken(token)
+                      : 'app.user.guard.bind_tips'.tr;
+                  return Align(
+                    alignment: Alignment.topCenter,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 720),
+                      child: _TwoFaTokenCard(
+                        token: token,
+                        isCurrent: isCurrent,
+                        code: code,
+                        hasSecret: hasSecret,
+                        progress: progress,
+                        remaining: remaining,
+                        onCopy: () => _copyCode(code),
+                        onBind: isCurrent ? _openBindDialog : null,
+                        onDelete: () => _confirmDelete(token),
                       ),
                     ),
-                    const SizedBox(height: 24),
-                    Center(
-                      child: Text(
-                        'app.common.no_data'.tr,
-                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                  ],
-                )
-              : ListView.separated(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
-                  itemCount: visibleTokens.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 16),
-                  itemBuilder: (context, index) {
-                    final token = visibleTokens[index];
-                    final isCurrent = _isCurrentToken(token, currentUser);
-                    final hasSecret = token.secret.isNotEmpty;
-                    final code = hasSecret
-                        ? controller.codeForToken(token)
-                        : 'app.user.guard.bind_tips'.tr;
-                    return _TwoFaTokenCard(
-                      token: token,
-                      isCurrent: isCurrent,
-                      code: code,
-                      hasSecret: hasSecret,
-                      progress: progress,
-                      remaining: remaining,
-                      onCopy: () => _copyCode(code),
-                      onBind: isCurrent ? _openBindDialog : null,
-                      onDelete: () => _confirmDelete(token),
-                    );
-                  },
-                ),
-        ),
+                  );
+                },
+              ),
       );
     });
+  }
+}
+
+class _TwoFaEmptyState extends StatelessWidget {
+  const _TwoFaEmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 88,
+              height: 88,
+              decoration: BoxDecoration(
+                color: colorScheme.primary.withValues(alpha: 0.08),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.security_rounded,
+                size: 40,
+                color: colorScheme.primary.withValues(alpha: 0.75),
+              ),
+            ),
+            const SizedBox(height: 18),
+            Text(
+              'app.common.no_data'.tr,
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -741,6 +789,28 @@ class _TwoFaTokenCard extends StatelessWidget {
   final VoidCallback? onBind;
   final VoidCallback onDelete;
 
+  String _displayCode(String value) {
+    final normalized = value.replaceAll(' ', '');
+    if (normalized.length != 6) {
+      return value;
+    }
+    return '${normalized.substring(0, 3)} ${normalized.substring(3)}';
+  }
+
+  String _title() {
+    final value = token.appUse.trim();
+    return value.isEmpty ? '2FA' : value;
+  }
+
+  String _subtitle() {
+    final email = token.showEmail.trim();
+    if (email.isNotEmpty) {
+      return email;
+    }
+    final userId = token.userId.trim();
+    return userId.isEmpty ? _serverLabel(token.server) : userId;
+  }
+
   String _serverLabel(String server) {
     final normalized = server.trim();
     if (normalized.isEmpty) {
@@ -761,185 +831,210 @@ class _TwoFaTokenCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    final bgColor = isCurrent
-        ? (isDark
-            ? colorScheme.primary.withValues(alpha: 0.15)
-            : colorScheme.primaryContainer.withValues(alpha: 0.3))
-        : (isDark ? const Color(0xFF1E1E1E) : Colors.white);
-
+    final baseSurface = isDark ? const Color(0xFF151922) : Colors.white;
+    final cardGradient = LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: isCurrent
+          ? [
+              Color.alphaBlend(
+                colorScheme.primary.withValues(alpha: isDark ? 0.18 : 0.1),
+                baseSurface,
+              ),
+              baseSurface,
+            ]
+          : [
+              baseSurface,
+              isDark ? const Color(0xFF10141C) : const Color(0xFFF8FAFD),
+            ],
+    );
     final borderColor = isCurrent
-        ? colorScheme.primary.withValues(alpha: isDark ? 0.4 : 0.3)
+        ? colorScheme.primary.withValues(alpha: isDark ? 0.38 : 0.24)
         : (isDark
-            ? Colors.white.withValues(alpha: 0.08)
-            : const Color(0xFFE4E8EE));
-
-    final codeStyle = Theme.of(context).textTheme.headlineMedium?.copyWith(
+              ? Colors.white.withValues(alpha: 0.08)
+              : const Color(0xFFE4E8EE));
+    final panelColor = hasSecret
+        ? colorScheme.primary.withValues(alpha: isDark ? 0.14 : 0.08)
+        : (isDark
+              ? Colors.white.withValues(alpha: 0.05)
+              : const Color(0xFFF4F6FA));
+    final codeStyle = Theme.of(context).textTheme.titleLarge?.copyWith(
       color: hasSecret ? colorScheme.primary : colorScheme.onSurface,
-      fontWeight: FontWeight.w800,
-      letterSpacing: hasSecret ? 4 : 0,
-      fontSize: 32,
+      fontWeight: hasSecret ? FontWeight.w800 : FontWeight.w600,
+      letterSpacing: hasSecret ? 2.6 : 0,
+      fontSize: hasSecret ? 28 : 15,
+      height: 1,
     );
 
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 220),
       decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: borderColor, width: 1.5),
+        gradient: cardGradient,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: borderColor, width: isCurrent ? 1.4 : 1),
         boxShadow: [
           if (isCurrent)
             BoxShadow(
-              color: colorScheme.primary.withValues(alpha: isDark ? 0.2 : 0.15),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
+              color: colorScheme.primary.withValues(alpha: isDark ? 0.18 : 0.1),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
             ),
           BoxShadow(
             color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: hasSecret ? onCopy : onBind,
-          borderRadius: BorderRadius.circular(20),
+          onTap: hasSecret ? null : onBind,
+          borderRadius: BorderRadius.circular(22),
           child: Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.fromLTRB(16, 14, 14, 14),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: colorScheme.primary.withValues(
-                          alpha: isDark ? 0.2 : 0.12,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        token.appUse,
-                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: colorScheme.primary,
-                        ),
-                      ),
-                    ),
-                    const Spacer(),
-                    if (hasSecret)
-                      _CountdownRing(progress: progress, remaining: remaining),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.email_outlined,
-                      size: 16,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 6),
+                    _TwoFaTokenGlyph(label: _title(), isCurrent: isCurrent),
+                    const SizedBox(width: 12),
                     Expanded(
-                      child: Text(
-                        token.showEmail,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: colorScheme.onSurface,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        overflow: TextOverflow.ellipsis,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  _title(),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context).textTheme.titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.w800),
+                                ),
+                              ),
+                              if (isCurrent)
+                                Container(
+                                  width: 28,
+                                  height: 28,
+                                  decoration: BoxDecoration(
+                                    color: colorScheme.primary.withValues(
+                                      alpha: isDark ? 0.18 : 0.12,
+                                    ),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: Icon(
+                                    Icons.verified_rounded,
+                                    size: 16,
+                                    color: colorScheme.primary,
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _subtitle(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: colorScheme.onSurfaceVariant,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.dns_outlined,
-                      size: 16,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        _serverLabel(token.server),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
+                    const SizedBox(width: 10),
+                    Column(
+                      children: [
+                        if (hasSecret) ...[
+                          _CountdownRing(
+                            progress: progress,
+                            remaining: remaining,
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                        _TwoFaActionButton(
+                          icon: Icons.delete_outline_rounded,
+                          tooltip: 'app.common.delete'.tr,
+                          foregroundColor: colorScheme.error,
+                          backgroundColor: colorScheme.error.withValues(
+                            alpha: isDark ? 0.14 : 0.1,
+                          ),
+                          onPressed: onDelete,
                         ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                      ],
                     ),
                   ],
-                ),
-                const SizedBox(height: 20),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 16,
-                  ),
-                  decoration: BoxDecoration(
-                    color: hasSecret
-                        ? colorScheme.primary.withValues(alpha: isDark ? 0.12 : 0.08)
-                        : (isDark
-                            ? Colors.white.withValues(alpha: 0.05)
-                            : const Color(0xFFF6F7F9)),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Center(
-                    child: Text(
-                      code,
-                      style: codeStyle,
-                    ),
-                  ),
                 ),
                 const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    if (hasSecret)
-                      Container(
-                        decoration: BoxDecoration(
-                          color: colorScheme.primary.withValues(
-                            alpha: isDark ? 0.15 : 0.1,
-                          ),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: IconButton(
-                          tooltip: 'app.system.message.copy_success'.tr,
-                          icon: Icon(
-                            Icons.copy_rounded,
-                            size: 20,
-                            color: colorScheme.primary,
-                          ),
-                          onPressed: onCopy,
-                        ),
-                      ),
-                    const SizedBox(width: 8),
-                    Container(
+                _TwoFaMetaChip(
+                  icon: Icons.dns_outlined,
+                  label: _serverLabel(token.server),
+                  isCurrent: isCurrent,
+                ),
+                const SizedBox(height: 12),
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: hasSecret ? onCopy : onBind,
+                    borderRadius: BorderRadius.circular(16),
+                    child: Ink(
                       decoration: BoxDecoration(
-                        color: isDark
-                            ? Colors.white.withValues(alpha: 0.08)
-                            : const Color(0xFFF6F7F9),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: IconButton(
-                        tooltip: 'app.common.delete'.tr,
-                        icon: Icon(
-                          Icons.delete_outline,
-                          size: 20,
-                          color: colorScheme.error,
+                        color: panelColor,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: hasSecret
+                              ? colorScheme.primary.withValues(
+                                  alpha: isDark ? 0.18 : 0.12,
+                                )
+                              : borderColor.withValues(alpha: 0.75),
                         ),
-                        onPressed: onDelete,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 12,
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                hasSecret ? _displayCode(code) : code,
+                                maxLines: hasSecret ? 1 : 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: codeStyle,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            _TwoFaActionButton(
+                              icon: hasSecret
+                                  ? Icons.copy_rounded
+                                  : Icons.sync_rounded,
+                              tooltip: hasSecret
+                                  ? 'app.system.message.copy_success'.tr
+                                  : 'app.user.guard.bind_tips'.tr,
+                              foregroundColor: hasSecret
+                                  ? colorScheme.primary
+                                  : colorScheme.onSurfaceVariant,
+                              backgroundColor: hasSecret
+                                  ? colorScheme.primary.withValues(
+                                      alpha: isDark ? 0.18 : 0.12,
+                                    )
+                                  : (isDark
+                                        ? Colors.white.withValues(alpha: 0.08)
+                                        : const Color(0xFFEDEFF4)),
+                              onPressed: hasSecret ? onCopy : onBind,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ],
+                  ),
                 ),
               ],
             ),
@@ -963,13 +1058,11 @@ class _CountdownRing extends StatelessWidget {
 
     final progressColor = remaining <= 5
         ? colorScheme.error
-        : (remaining <= 10
-            ? Colors.orange
-            : colorScheme.primary);
+        : (remaining <= 10 ? Colors.orange : colorScheme.primary);
 
     return Container(
-      width: 48,
-      height: 48,
+      width: 42,
+      height: 42,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: progressColor.withValues(alpha: isDark ? 0.15 : 0.1),
@@ -978,11 +1071,11 @@ class _CountdownRing extends StatelessWidget {
         alignment: Alignment.center,
         children: [
           SizedBox(
-            width: 40,
-            height: 40,
+            width: 34,
+            height: 34,
             child: CircularProgressIndicator(
               value: progress,
-              strokeWidth: 3.5,
+              strokeWidth: 3,
               backgroundColor: isDark
                   ? Colors.white.withValues(alpha: 0.1)
                   : Colors.black.withValues(alpha: 0.05),
@@ -995,9 +1088,155 @@ class _CountdownRing extends StatelessWidget {
             style: Theme.of(context).textTheme.labelLarge?.copyWith(
               fontWeight: FontWeight.w700,
               color: progressColor,
+              fontSize: 12,
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _TwoFaTokenGlyph extends StatelessWidget {
+  const _TwoFaTokenGlyph({required this.label, required this.isCurrent});
+
+  final String label;
+  final bool isCurrent;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final seed = label.trim().isEmpty ? '2' : label.trim()[0].toUpperCase();
+    return Container(
+      width: 42,
+      height: 42,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isCurrent
+              ? [
+                  colorScheme.primary.withValues(alpha: isDark ? 0.7 : 0.92),
+                  colorScheme.primary.withValues(alpha: isDark ? 0.36 : 0.62),
+                ]
+              : [
+                  colorScheme.secondaryContainer.withValues(
+                    alpha: isDark ? 0.45 : 0.92,
+                  ),
+                  colorScheme.primaryContainer.withValues(
+                    alpha: isDark ? 0.28 : 0.72,
+                  ),
+                ],
+        ),
+        borderRadius: BorderRadius.circular(15),
+      ),
+      child: Center(
+        child: Text(
+          seed,
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w800,
+            color: isCurrent
+                ? colorScheme.onPrimary
+                : colorScheme.onSecondaryContainer,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _TwoFaMetaChip extends StatelessWidget {
+  const _TwoFaMetaChip({
+    required this.icon,
+    required this.label,
+    required this.isCurrent,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool isCurrent;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: isCurrent
+            ? colorScheme.primary.withValues(alpha: isDark ? 0.14 : 0.08)
+            : (isDark
+                  ? Colors.white.withValues(alpha: 0.05)
+                  : const Color(0xFFF5F7FA)),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            size: 14,
+            color: isCurrent
+                ? colorScheme.primary
+                : colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 6),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 240),
+            child: Text(
+              label,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: isCurrent
+                    ? colorScheme.primary
+                    : colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TwoFaActionButton extends StatelessWidget {
+  const _TwoFaActionButton({
+    required this.icon,
+    required this.tooltip,
+    required this.foregroundColor,
+    required this.backgroundColor,
+    required this.onPressed,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final Color foregroundColor;
+  final Color backgroundColor;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.transparent,
+        child: Ink(
+          width: 38,
+          height: 38,
+          decoration: BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: IconButton(
+            padding: EdgeInsets.zero,
+            splashRadius: 20,
+            iconSize: 18,
+            onPressed: onPressed,
+            icon: Icon(icon, color: foregroundColor),
+          ),
+        ),
       ),
     );
   }

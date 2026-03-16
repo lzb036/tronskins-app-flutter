@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:tronskins_app/api/model/entity/user/user_info_entity.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
 import 'package:tronskins_app/common/storage/server_storage.dart';
 import 'package:tronskins_app/common/storage/twofa_storage.dart';
@@ -186,22 +187,8 @@ class _WalletWithdrawPageState extends State<WalletWithdrawPage> {
       return;
     }
     final user = controller.userInfo.value;
-    if (user?.need2FA != true || user?.safeTokenStatus != true) {
-      await _promptGuardSetup();
-      return;
-    }
-    final userId = user?.id ?? '';
-    final appUse = user?.appUse ?? '';
-    if (userId.isEmpty || appUse.isEmpty) {
-      await _promptGuardSetup();
-      return;
-    }
-    final token = await TwoFactorStorage.findToken(
-      server: ServerStorage.getServer(),
-      appUse: appUse,
-      userId: userId,
-    );
-    if (token == null || token.secret.isEmpty) {
+    final token = await _findCurrentUserToken(user);
+    if (user?.need2FA != true || user?.safeTokenStatus != true || token == null || token.secret.isEmpty) {
       await _promptGuardSetup();
       return;
     }
@@ -224,6 +211,40 @@ class _WalletWithdrawPageState extends State<WalletWithdrawPage> {
         titleText: const SizedBox.shrink(),
       );
     }
+  }
+
+  Future<TwoFactorToken?> _findCurrentUserToken(UserInfoEntity? user) async {
+    if (user == null) {
+      return null;
+    }
+    final userId = user.id ?? '';
+    final appUse = user.appUse ?? '';
+    if (userId.isEmpty) {
+      return null;
+    }
+
+    final tokens = await TwoFactorStorage.getList();
+
+    // 精确匹配：userId + appUse
+    if (appUse.isNotEmpty) {
+      final exactMatch = tokens.firstWhereOrNull((token) =>
+          token.userId == userId &&
+          token.appUse == appUse &&
+          token.secret.isNotEmpty);
+      if (exactMatch != null) {
+        return exactMatch;
+      }
+    }
+
+    // 如果 appUse 为空或精确匹配失败，只匹配 userId
+    final sameUserTokens = tokens
+        .where((token) => token.userId == userId && token.secret.isNotEmpty)
+        .toList();
+    if (sameUserTokens.length == 1) {
+      return sameUserTokens.first;
+    }
+
+    return null;
   }
 
   Future<void> _promptGuardSetup() async {
