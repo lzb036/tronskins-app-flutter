@@ -8,6 +8,8 @@ import 'package:tronskins_app/common/events/app_events.dart';
 import 'package:tronskins_app/common/http/interceptors/auth_interceptor.dart';
 import 'package:tronskins_app/common/http/http_helper.dart';
 import 'package:tronskins_app/common/storage/app_cache.dart';
+import 'package:tronskins_app/common/storage/server_storage.dart';
+import 'package:tronskins_app/common/storage/twofa_storage.dart';
 import 'package:tronskins_app/common/storage/user_storage.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
 
@@ -138,6 +140,7 @@ class UserController extends GetxController {
 
   /// 瀹為檯鎵ц閫€鍑虹櫥褰曠殑鏂规硶
   Future<void> _doLogout() async {
+    final currentUser = user.value ?? UserStorage.getUserInfo();
     try {
       // 1. 璋冪敤閫€鍑虹櫥褰?API
       await ApiLoginServer().logoutApi();
@@ -147,6 +150,15 @@ class UserController extends GetxController {
     } catch (_) {}
 
     // 3. 娓呴櫎缂撳瓨鍜屼會璇?
+    final currentUserId = currentUser?.id ?? '';
+    final currentAppUse = currentUser?.appUse ?? '';
+    if (currentUserId.isNotEmpty && currentAppUse.isNotEmpty) {
+      await TwoFactorStorage.removePendingTokenEntry(
+        server: ServerStorage.getServer(),
+        appUse: currentAppUse,
+        userId: currentUserId,
+      );
+    }
     await AppCache.clearOnLogout();
     clearSession();
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
+import 'package:tronskins_app/common/storage/server_storage.dart';
 import 'package:tronskins_app/common/storage/twofa_storage.dart';
 import 'package:tronskins_app/controllers/wallet/wallet_controller.dart';
 import 'package:tronskins_app/pages/wallet/widgets/wallet_ui.dart';
@@ -185,21 +186,21 @@ class _WalletWithdrawPageState extends State<WalletWithdrawPage> {
       return;
     }
     final user = controller.userInfo.value;
-    final tokens = await TwoFactorStorage.getList();
-    if (user?.need2FA != true ||
-        user?.safeTokenStatus != true ||
-        tokens.isEmpty) {
+    if (user?.need2FA != true || user?.safeTokenStatus != true) {
       await _promptGuardSetup();
       return;
     }
-    TwoFactorToken? token;
-    for (final item in tokens) {
-      if (item.userId == (user?.id ?? '') &&
-          item.appUse == (user?.appUse ?? '')) {
-        token = item;
-        break;
-      }
+    final userId = user?.id ?? '';
+    final appUse = user?.appUse ?? '';
+    if (userId.isEmpty || appUse.isEmpty) {
+      await _promptGuardSetup();
+      return;
     }
+    final token = await TwoFactorStorage.findToken(
+      server: ServerStorage.getServer(),
+      appUse: appUse,
+      userId: userId,
+    );
     if (token == null || token.secret.isEmpty) {
       await _promptGuardSetup();
       return;

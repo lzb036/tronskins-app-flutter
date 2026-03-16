@@ -4,12 +4,14 @@ import 'package:otp/otp.dart';
 import 'package:tronskins_app/common/security/secure_storage.dart';
 
 class TwoFactorToken {
+  final String server;
   final String appUse;
   final String userId;
   final String secret;
   final String showEmail;
 
   const TwoFactorToken({
+    required this.server,
     required this.appUse,
     required this.userId,
     required this.secret,
@@ -18,6 +20,7 @@ class TwoFactorToken {
 
   factory TwoFactorToken.fromJson(Map<String, dynamic> json) {
     return TwoFactorToken(
+      server: json['server']?.toString() ?? '',
       appUse: json['appUse']?.toString() ?? '',
       userId: json['userId']?.toString() ?? '',
       secret: json['secret']?.toString() ?? '',
@@ -27,6 +30,7 @@ class TwoFactorToken {
 
   Map<String, dynamic> toJson() {
     return {
+      'server': server,
       'appUse': appUse,
       'userId': userId,
       'secret': secret,
@@ -42,6 +46,53 @@ class TwoFactorStorage {
 
   static String _normalizeText(String? value) {
     return value?.trim().toLowerCase() ?? '';
+  }
+
+  static String _normalizeServer(String? value) {
+    final trimmed = value?.trim() ?? '';
+    if (trimmed.isEmpty) {
+      return '';
+    }
+    return trimmed.endsWith('/') ? trimmed : '$trimmed/';
+  }
+
+  static bool _matchesServer(
+    TwoFactorToken token,
+    String normalizedServer, {
+    bool allowLegacy = false,
+  }) {
+    final tokenServer = _normalizeServer(token.server);
+    if (tokenServer.isEmpty) {
+      return allowLegacy;
+    }
+    return tokenServer == normalizedServer;
+  }
+
+  static int _findIndex(
+    List<TwoFactorToken> list, {
+    required String appUse,
+    required String userId,
+    required String server,
+  }) {
+    final normalizedServer = _normalizeServer(server);
+    final exactIndex = list.indexWhere(
+      (item) =>
+          item.appUse == appUse &&
+          item.userId == userId &&
+          _matchesServer(item, normalizedServer),
+    );
+    if (exactIndex >= 0) {
+      return exactIndex;
+    }
+    if (normalizedServer.isEmpty) {
+      return -1;
+    }
+    return list.indexWhere(
+      (item) =>
+          item.appUse == appUse &&
+          item.userId == userId &&
+          _matchesServer(item, normalizedServer, allowLegacy: true),
+    );
   }
 
   static Future<List<TwoFactorToken>> getList() async {
@@ -67,16 +118,22 @@ class TwoFactorStorage {
   }
 
   static Future<void> bindSecret({
+    String server = '',
     required String appUse,
     required String userId,
     required String secret,
     String showEmail = '',
   }) async {
     final list = await getList();
-    final index = list.indexWhere(
-      (item) => item.appUse == appUse && item.userId == userId,
+    final normalizedServer = _normalizeServer(server);
+    final index = _findIndex(
+      list,
+      appUse: appUse,
+      userId: userId,
+      server: normalizedServer,
     );
     final token = TwoFactorToken(
+      server: normalizedServer,
       appUse: appUse,
       userId: userId,
       secret: secret,
@@ -91,19 +148,37 @@ class TwoFactorStorage {
   }
 
   static Future<void> ensureTokenEntry({
+    String server = '',
     required String appUse,
     required String userId,
     String showEmail = '',
   }) async {
     final list = await getList();
-    final exists = list.any(
-      (item) => item.appUse == appUse && item.userId == userId,
+    final normalizedServer = _normalizeServer(server);
+    final index = _findIndex(
+      list,
+      appUse: appUse,
+      userId: userId,
+      server: normalizedServer,
     );
-    if (exists) {
+    if (index >= 0) {
+      final existing = list[index];
+      if (_normalizeServer(existing.server) == normalizedServer) {
+        return;
+      }
+      list[index] = TwoFactorToken(
+        server: normalizedServer,
+        appUse: existing.appUse,
+        userId: existing.userId,
+        secret: existing.secret,
+        showEmail: existing.showEmail,
+      );
+      await setList(list);
       return;
     }
     list.add(
       TwoFactorToken(
+        server: normalizedServer,
         appUse: appUse,
         userId: userId,
         secret: '',
@@ -114,29 +189,61 @@ class TwoFactorStorage {
   }
 
   static Future<void> removeToken({
+    String server = '',
     required String appUse,
     required String userId,
   }) async {
     final list = await getList();
-    list.removeWhere((item) => item.appUse == appUse && item.userId == userId);
-    await setList(list);
-  }
-
-  static Future<TwoFactorToken?> findToken({
-    required String appUse,
-    required String userId,
-  }) async {
-    final list = await getList();
-    try {
-      return list.firstWhere(
-        (item) => item.appUse == appUse && item.userId == userId,
-      );
-    } catch (_) {
-      return null;
+    final index = _findIndex(
+      list,
+      appUse: appUse,
+      userId: userId,
+      server: server,
+    );
+    if (index >= 0) {
+      list.removeAt(index);
+      await setList(list);
     }
   }
 
+  static Future<void> removePendingTokenEntry({
+    String server = '',
+    required String appUse,
+    required String userId,
+  }) async {
+    final list = await getList();
+    final index = _findIndex(
+      list,
+      appUse: appUse,
+      userId: userId,
+      server: server,
+    );
+    if (index >= 0 && list[index].secret.trim().isEmpty) {
+      list.removeAt(index);
+      await setList(list);
+    }
+  }
+
+  static Future<TwoFactorToken?> findToken({
+    String server = '',
+    required String appUse,
+    required String userId,
+  }) async {
+    final list = await getList();
+    final index = _findIndex(
+      list,
+      appUse: appUse,
+      userId: userId,
+      server: server,
+    );
+    if (index < 0) {
+      return null;
+    }
+    return list[index];
+  }
+
   static Future<TwoFactorToken?> findStoredTokenForLogin({
+    String server = '',
     String appUse = '',
     String userId = '',
     String showEmail = '',
@@ -149,13 +256,24 @@ class TwoFactorStorage {
       return null;
     }
 
+    final normalizedServer = _normalizeServer(server);
     final normalizedUserId = userId.trim();
     final normalizedAppUse = _normalizeText(appUse);
     if (normalizedUserId.isNotEmpty && normalizedAppUse.isNotEmpty) {
       for (final token in tokens) {
         if (token.userId.trim() == normalizedUserId &&
-            _normalizeText(token.appUse) == normalizedAppUse) {
+            _normalizeText(token.appUse) == normalizedAppUse &&
+            _matchesServer(token, normalizedServer)) {
           return token;
+        }
+      }
+      if (normalizedServer.isNotEmpty) {
+        for (final token in tokens) {
+          if (token.userId.trim() == normalizedUserId &&
+              _normalizeText(token.appUse) == normalizedAppUse &&
+              _matchesServer(token, normalizedServer, allowLegacy: true)) {
+            return token;
+          }
         }
       }
     }
@@ -173,6 +291,39 @@ class TwoFactorStorage {
         continue;
       }
 
+      if (normalizedServer.isNotEmpty) {
+        final serverMatches = emailMatches
+            .where((item) => _matchesServer(item, normalizedServer))
+            .toList();
+        if (normalizedAppUse.isNotEmpty) {
+          final appUseMatches = serverMatches
+              .where((item) => _normalizeText(item.appUse) == normalizedAppUse)
+              .toList();
+          if (appUseMatches.length == 1) {
+            return appUseMatches.first;
+          }
+        } else if (serverMatches.length == 1) {
+          return serverMatches.first;
+        }
+
+        final legacyMatches = emailMatches
+            .where(
+              (item) =>
+                  _matchesServer(item, normalizedServer, allowLegacy: true),
+            )
+            .toList();
+        if (normalizedAppUse.isNotEmpty) {
+          final appUseMatches = legacyMatches
+              .where((item) => _normalizeText(item.appUse) == normalizedAppUse)
+              .toList();
+          if (appUseMatches.length == 1) {
+            return appUseMatches.first;
+          }
+        } else if (legacyMatches.length == 1) {
+          return legacyMatches.first;
+        }
+      }
+
       if (normalizedAppUse.isNotEmpty) {
         final appUseMatches = emailMatches
             .where((item) => _normalizeText(item.appUse) == normalizedAppUse)
@@ -180,9 +331,7 @@ class TwoFactorStorage {
         if (appUseMatches.length == 1) {
           return appUseMatches.first;
         }
-      }
-
-      if (emailMatches.length == 1) {
+      } else if (emailMatches.length == 1) {
         return emailMatches.first;
       }
     }

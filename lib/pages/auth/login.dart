@@ -8,6 +8,7 @@ import 'package:tronskins_app/common/device/device_id_helper.dart';
 import 'package:tronskins_app/common/http/model/base_response.dart';
 import 'package:tronskins_app/common/http/interceptors/auth_interceptor.dart';
 import 'package:tronskins_app/common/security/sm2_helper.dart';
+import 'package:tronskins_app/common/storage/server_storage.dart';
 import 'package:tronskins_app/common/storage/twofa_storage.dart';
 import 'package:tronskins_app/common/widgets/scale_button.dart';
 import 'package:tronskins_app/controllers/auth/login_controller.dart';
@@ -672,6 +673,7 @@ class _LoginScreenState extends State<LoginScreen>
     }
 
     final token = await TwoFactorStorage.findStoredTokenForLogin(
+      server: ServerStorage.getServer(),
       appUse: data.appUse ?? '',
       userId: data.userId ?? '',
       showEmail: data.userName ?? '',
@@ -802,6 +804,7 @@ class _LoginScreenState extends State<LoginScreen>
         final appUse = data.appUse ?? '';
         if (userId.isNotEmpty && appUse.isNotEmpty) {
           await TwoFactorStorage.ensureTokenEntry(
+            server: ServerStorage.getServer(),
             appUse: appUse,
             userId: userId,
             showEmail: data.userName ?? username,
