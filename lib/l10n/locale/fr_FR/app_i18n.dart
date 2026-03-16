@@ -178,6 +178,9 @@ final Map<String, String> fr_FR = {
   "app.user.guard.captcha_been_sent": "Le code de vérification a été envoyé",
   "app.user.guard.captcha_send_failed":
       "Échec de l'envoi du code de vérification. Veuillez réessayer.",
+  "app.user.guard.sync_success": "Synchronisation réussie",
+  "app.user.guard.sync_failed":
+      "Échec de la synchronisation. Veuillez réessayer.",
   "app.user.shop.setting": "Configuration du magasin",
   "app.user.shop.status": "Statut de la boutique",
   "app.user.shop.online_title": "Acheter en ligne",

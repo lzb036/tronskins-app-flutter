@@ -176,6 +176,9 @@ final Map<String, String> ru_RU = {
   "app.user.guard.captcha_been_sent": "Код проверки был отправлен",
   "app.user.guard.captcha_send_failed":
       "Не удалось отправить код подтверждения. Попробуйте еще раз.",
+  "app.user.guard.sync_success": "Синхронизация выполнена успешно",
+  "app.user.guard.sync_failed":
+      "Не удалось выполнить синхронизацию. Попробуйте еще раз.",
   "app.user.shop.setting": "Настройка магазина",
   "app.user.shop.status": "Статус магазина",
   "app.user.shop.online_title": "Онлайн магазин",

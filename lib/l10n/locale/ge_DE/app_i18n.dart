@@ -173,6 +173,9 @@ final Map<String, String> ge_DE = {
   "app.user.guard.captcha_been_sent": "Der Verifikationscode wurde gesendet",
   "app.user.guard.captcha_send_failed":
       "Fehler beim Senden des Bestätigungscodes. Bitte erneut versuchen.",
+  "app.user.guard.sync_success": "Synchronisierung erfolgreich",
+  "app.user.guard.sync_failed":
+      "Synchronisierung fehlgeschlagen. Bitte erneut versuchen.",
   "app.user.shop.setting": "Shop Einrichtung",
   "app.user.shop.status": "Shop Status",
   "app.user.shop.online_title": "Online kaufen",

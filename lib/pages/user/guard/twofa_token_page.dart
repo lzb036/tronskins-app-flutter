@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'package:tronskins_app/common/storage/twofa_storage.dart';
 import 'package:tronskins_app/common/storage/user_storage.dart';
 import 'package:tronskins_app/common/http/model/base_response.dart';
+import 'package:tronskins_app/common/utils/app_snackbar.dart';
 import 'package:tronskins_app/controllers/auth/twofa_controller.dart';
 import 'package:tronskins_app/controllers/user/user_controller.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
@@ -87,6 +88,9 @@ class _TwoFaTokenPageState extends State<TwoFaTokenPage> {
 
         titleText: const SizedBox.shrink(),
       );
+      return;
+    }
+    if (!mounted) {
       return;
     }
     await showDialog<void>(
@@ -228,15 +232,11 @@ class _TwoFaBindDialogState extends State<_TwoFaBindDialog> {
   }
 
   void _showError(String message) {
-    Get.snackbar(
-      'app.system.tips.title'.tr,
-      message,
-      backgroundColor: Colors.red,
-      colorText: Colors.white,
-      snackPosition: SnackPosition.TOP,
+    AppSnackbar.error(message);
+  }
 
-      titleText: const SizedBox.shrink(),
-    );
+  void _showSuccess(String message) {
+    AppSnackbar.success(message);
   }
 
   String? _extractMessage(dynamic datas) {
@@ -313,7 +313,7 @@ class _TwoFaBindDialogState extends State<_TwoFaBindDialog> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final fillColor = isDark
-        ? Colors.white.withOpacity(0.08)
+        ? Colors.white.withValues(alpha: 0.08)
         : const Color(0xFFF5F5F5);
     final hintColor = isDark ? Colors.white38 : Colors.grey[400];
     final textColor = Theme.of(context).textTheme.bodyMedium?.color;
@@ -338,7 +338,7 @@ class _TwoFaBindDialogState extends State<_TwoFaBindDialog> {
           TextField(
             enabled: false,
             controller: _emailController,
-            style: TextStyle(color: textColor?.withOpacity(0.7)),
+            style: TextStyle(color: textColor?.withValues(alpha: 0.7)),
             decoration: InputDecoration(
               filled: true,
               fillColor: fillColor,
@@ -421,12 +421,7 @@ class _TwoFaBindDialogState extends State<_TwoFaBindDialog> {
                     try {
                       final res = await widget.controller.sendEmailCode();
                       if (res.success) {
-                        Get.snackbar(
-                          'app.system.tips.title'.tr,
-                          'app.user.guard.captcha_been_sent'.tr,
-
-                          titleText: const SizedBox.shrink(),
-                        );
+                        _showSuccess('app.user.guard.captcha_been_sent'.tr);
                         await _startCountdown();
                       } else {
                         _showError(
@@ -474,15 +469,18 @@ class _TwoFaBindDialogState extends State<_TwoFaBindDialog> {
                       return;
                     }
                     final code = _codeController.text.trim();
-                    final ok = await widget.controller.syncToken(code);
-                    if (ok) {
-                      Navigator.pop(context);
-                      Get.snackbar(
-                        'app.system.tips.title'.tr,
-                        'app.system.message.success'.tr,
-
-                        titleText: const SizedBox.shrink(),
+                    try {
+                      final res = await widget.controller.syncToken(code);
+                      if (res.success) {
+                        Get.back();
+                        _showSuccess('app.user.guard.sync_success'.tr);
+                        return;
+                      }
+                      _showError(
+                        _resolveMessage(res, 'app.user.guard.sync_failed'),
                       );
+                    } catch (_) {
+                      _showError('app.user.guard.sync_failed'.tr);
                     }
                   },
                   style: FilledButton.styleFrom(
@@ -540,8 +538,8 @@ class _TwoFaTokenCard extends StatelessWidget {
         ? colorScheme.primaryContainer
         : colorScheme.surface;
     final borderColor = isCurrent
-        ? colorScheme.primary.withOpacity(0.2)
-        : colorScheme.outlineVariant.withOpacity(0.5);
+        ? colorScheme.primary.withValues(alpha: 0.2)
+        : colorScheme.outlineVariant.withValues(alpha: 0.5);
     final codeStyle = Theme.of(context).textTheme.headlineSmall?.copyWith(
       color: hasSecret ? colorScheme.primary : colorScheme.onSurface,
       fontWeight: FontWeight.w700,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:tronskins_app/api/loginServer.dart';
+import 'package:tronskins_app/api/model/loginModel.dart';
 import 'package:tronskins_app/api/model/loginRequest.dart';
 import 'package:tronskins_app/common/device/device_id_helper.dart';
 import 'package:tronskins_app/common/http/model/base_response.dart';
@@ -23,6 +24,8 @@ class _LoginScreenState extends State<LoginScreen>
     with SingleTickerProviderStateMixin {
   final LoginController controller = Get.put(LoginController());
   bool _isLoading = false;
+  bool _isAutoSubmittingTwoFactor = false;
+  bool _hasAttemptedAutoTwoFactor = false;
   bool _emailTouched = false;
   bool _passwordTouched = false;
   bool _codeTouched = false;
@@ -76,6 +79,7 @@ class _LoginScreenState extends State<LoginScreen>
     final inputFillColor = isDark
         ? const Color(0xFF2C2E34)
         : const Color(0xFFF2F2F7);
+    final isSubmitting = _isLoading || _isAutoSubmittingTwoFactor;
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -195,6 +199,10 @@ class _LoginScreenState extends State<LoginScreen>
                             if (!controller.isVerificationRequired) {
                               return const SizedBox.shrink();
                             }
+                            if (_isAutoSubmittingTwoFactor &&
+                                controller.isTwoFactorAuth.value) {
+                              return const SizedBox.shrink();
+                            }
 
                             final isEmail =
                                 controller.isEmailVerification.value;
@@ -247,7 +255,7 @@ class _LoginScreenState extends State<LoginScreen>
                       // 登录按钮
                       ScaleButton(
                         key: const ValueKey('login_btn'),
-                        onPressed: _isLoading ? null : _handleLogin,
+                        onPressed: isSubmitting ? null : _handleLogin,
                         child: SizedBox(
                           width: double.infinity,
                           height: 54, // 微调高度
@@ -257,13 +265,13 @@ class _LoginScreenState extends State<LoginScreen>
                               backgroundColor: primaryColor,
                               disabledBackgroundColor: primaryColor,
                               disabledForegroundColor: Colors.white,
-                              shadowColor: primaryColor.withOpacity(0.4),
+                              shadowColor: primaryColor.withValues(alpha: 0.4),
                               elevation: 8,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(16),
                               ),
                             ),
-                            child: _isLoading
+                            child: isSubmitting
                                 ? const SizedBox(
                                     height: 24,
                                     width: 24,
@@ -314,15 +322,15 @@ class _LoginScreenState extends State<LoginScreen>
                               ),
                             ),
                             style: ButtonStyle(
-                              backgroundColor: MaterialStateProperty.all(
+                              backgroundColor: WidgetStatePropertyAll(
                                 isDark
                                     ? const Color(0xFF2C2E34)
                                     : Colors.transparent,
                               ),
-                              foregroundColor: MaterialStateProperty.all(
+                              foregroundColor: WidgetStatePropertyAll(
                                 isDark ? Colors.white : const Color(0xFF171A21),
                               ),
-                              side: MaterialStateProperty.all(
+                              side: WidgetStatePropertyAll(
                                 BorderSide(
                                   color: isDark
                                       ? Colors.transparent
@@ -330,12 +338,12 @@ class _LoginScreenState extends State<LoginScreen>
                                   width: 1.5,
                                 ),
                               ),
-                              shape: MaterialStateProperty.all(
+                              shape: WidgetStatePropertyAll(
                                 RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16),
                                 ),
                               ),
-                              overlayColor: MaterialStateProperty.all(
+                              overlayColor: const WidgetStatePropertyAll(
                                 Colors.transparent,
                               ),
                             ),
@@ -365,7 +373,7 @@ class _LoginScreenState extends State<LoginScreen>
                             Container(
                               width: 1,
                               height: 12,
-                              color: subTextColor.withOpacity(0.3),
+                              color: subTextColor.withValues(alpha: 0.3),
                               margin: const EdgeInsets.symmetric(
                                 horizontal: 16,
                               ),
@@ -657,14 +665,57 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
-  Future<void> _handleLogin() async {
-    if (_isLoading) return;
+  Future<void> _tryAutoSubmitTwoFactor(LoginEntity data) async {
+    if (_hasAttemptedAutoTwoFactor) {
+      _showSuccess('app.user.login.enter_2fa_captcha'.tr);
+      return;
+    }
+
+    final token = await TwoFactorStorage.findStoredTokenForLogin(
+      appUse: data.appUse ?? '',
+      userId: data.userId ?? '',
+      showEmail: data.userName ?? '',
+      loginAccount: controller.username.value.trim(),
+    );
+    if (token == null || token.secret.trim().isEmpty) {
+      _showSuccess('app.user.login.enter_2fa_captcha'.tr);
+      return;
+    }
+
+    final code = TwoFactorHelper.generateCode(token.secret);
+    if (!RegExp(r'^\d{6}$').hasMatch(code)) {
+      _showSuccess('app.user.login.enter_2fa_captcha'.tr);
+      return;
+    }
+
+    _hasAttemptedAutoTwoFactor = true;
+    controller.code.value = code;
+    if (mounted) {
+      setState(() => _isAutoSubmittingTwoFactor = true);
+    }
+    try {
+      await _handleLogin(isAutoTwoFactorRetry: true, manageLoadingState: false);
+    } finally {
+      if (mounted) {
+        setState(() => _isAutoSubmittingTwoFactor = false);
+      }
+    }
+  }
+
+  Future<void> _handleLogin({
+    bool isAutoTwoFactorRetry = false,
+    bool manageLoadingState = true,
+  }) async {
+    if (_isLoading && manageLoadingState) return;
     final username = controller.username.value.trim();
     final password = controller.password.value;
+    if (!controller.isVerificationRequired) {
+      _hasAttemptedAutoTwoFactor = false;
+    }
     _markTouched(
       email: true,
       password: true,
-      code: controller.isVerificationRequired,
+      code: controller.isVerificationRequired && !isAutoTwoFactorRetry,
     );
 
     final emailError = _emailErrorText(username);
@@ -687,7 +738,9 @@ class _LoginScreenState extends State<LoginScreen>
       }
     }
 
-    setState(() => _isLoading = true);
+    if (manageLoadingState) {
+      setState(() => _isLoading = true);
+    }
 
     try {
       final pubKeyResult = await ApiLoginServer().getLoginPubKey(
@@ -720,7 +773,12 @@ class _LoginScreenState extends State<LoginScreen>
       final result = await ApiLoginServer().loginApi(params);
       if (!result.success || result.datas == null) {
         final message = _resolveMessage(result, 'app.user.login.message.error');
-        _showError(message);
+        if (isAutoTwoFactorRetry && controller.isTwoFactorAuth.value) {
+          controller.code.value = '';
+          _showError(message);
+        } else {
+          _showError(message);
+        }
         return;
       }
 
@@ -774,7 +832,7 @@ class _LoginScreenState extends State<LoginScreen>
         if (_codeTouched) {
           setState(() => _codeTouched = false);
         }
-        _showSuccess('app.user.login.enter_2fa_captcha'.tr);
+        await _tryAutoSubmitTwoFactor(data);
         return;
       }
 
@@ -785,9 +843,16 @@ class _LoginScreenState extends State<LoginScreen>
                 : 'app.user.login.message.error'.tr);
       _showError(fallbackMessage);
     } catch (e) {
-      _showError('app.user.login.message.error'.tr);
+      if (isAutoTwoFactorRetry && controller.isTwoFactorAuth.value) {
+        controller.code.value = '';
+        _showError('app.user.login.message.error'.tr);
+      } else {
+        _showError('app.user.login.message.error'.tr);
+      }
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (manageLoadingState && mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 }

@@ -170,6 +170,8 @@ final Map<String, String> in_ID = {
   "app.user.guard.captcha_been_sent": "Kode verifikasi telah dikirim",
   "app.user.guard.captcha_send_failed":
       "Gagal mengirim kode verifikasi. Silakan coba lagi.",
+  "app.user.guard.sync_success": "Sinkronisasi berhasil",
+  "app.user.guard.sync_failed": "Sinkronisasi gagal. Silakan coba lagi.",
   "app.user.shop.setting": "Pengaturan Toko",
   "app.user.shop.status": "Status Toko",
   "app.user.shop.online_title": "Belanja Online",

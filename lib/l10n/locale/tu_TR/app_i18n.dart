@@ -164,6 +164,9 @@ final Map<String, String> tu_TR = {
   "app.user.guard.captcha_been_sent": "Doğrulama kodu gönderildi",
   "app.user.guard.captcha_send_failed":
       "Doğrulama kodu gönderilemedi. Lütfen tekrar deneyin.",
+  "app.user.guard.sync_success": "Senkronizasyon başarılı",
+  "app.user.guard.sync_failed":
+      "Senkronizasyon başarısız oldu. Lütfen tekrar deneyin.",
   "app.user.shop.setting": "Dükkan Kurulumu",
   "app.user.shop.status": "Mağaza Durumu",
   "app.user.shop.online_title": "Çevrimiçi Alışveriş",

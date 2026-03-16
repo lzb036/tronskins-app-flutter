@@ -171,6 +171,9 @@ final Map<String, String> po_PL = {
   "app.user.guard.captcha_been_sent": "Kod weryfikacyjny został wysłany",
   "app.user.guard.captcha_send_failed":
       "Nie udało się wysłać kodu weryfikacyjnego. Spróbuj ponownie.",
+  "app.user.guard.sync_success": "Synchronizacja zakończona sukcesem",
+  "app.user.guard.sync_failed":
+      "Synchronizacja nie powiodła się. Spróbuj ponownie.",
   "app.user.shop.setting": "Konfiguracja sklepu",
   "app.user.shop.status": "Status sklepu",
   "app.user.shop.online_title": "Sklep online",

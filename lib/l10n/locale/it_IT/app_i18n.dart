@@ -172,6 +172,8 @@ final Map<String, String> it_IT = {
   "app.user.guard.captcha_been_sent": "Il codice di verifica è stato inviato",
   "app.user.guard.captcha_send_failed":
       "Invio del codice di verifica non riuscito. Riprova.",
+  "app.user.guard.sync_success": "Sincronizzazione riuscita",
+  "app.user.guard.sync_failed": "Sincronizzazione non riuscita. Riprova.",
   "app.user.shop.setting": "Configurazione del negozio",
   "app.user.shop.status": "Status del negozio",
   "app.user.shop.online_title": "Acquista online",

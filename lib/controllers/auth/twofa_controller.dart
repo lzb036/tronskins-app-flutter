@@ -67,7 +67,7 @@ class TwoFactorController extends GetxController {
     return _api.sendEmailCodeSubmit();
   }
 
-  Future<bool> syncToken(String emailCode) async {
+  Future<BaseHttpResponse<dynamic>> syncToken(String emailCode) async {
     final res = await _api.guardInfo(emailCode: emailCode);
     if (res.success && res.datas != null) {
       final info = res.datas as GuardInfo;
@@ -83,10 +83,14 @@ class TwoFactorController extends GetxController {
           showEmail: showEmail,
         );
         await loadTokens();
-        return true;
+        return res;
       }
     }
-    return false;
+    return BaseHttpResponse<dynamic>(
+      code: -1,
+      message: res.message,
+      datas: res.datas,
+    );
   }
 
   Future<void> deleteToken(TwoFactorToken token) async {

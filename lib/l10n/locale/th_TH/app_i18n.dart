@@ -161,6 +161,8 @@ final Map<String, String> th_TH = {
   "app.user.guard.captcha_been_sent": "รหัสการตรวจสอบถูกส่ง",
   "app.user.guard.captcha_send_failed":
       "ส่งรหัสยืนยันไม่สำเร็จ กรุณาลองอีกครั้ง",
+  "app.user.guard.sync_success": "ซิงค์สำเร็จ",
+  "app.user.guard.sync_failed": "ซิงค์ไม่สำเร็จ กรุณาลองอีกครั้ง",
   "app.user.shop.setting": "การตั้งค่าร้าน",
   "app.user.shop.status": "สถานะร้าน",
   "app.user.shop.online_title": "ร้านค้าออนไลน์",

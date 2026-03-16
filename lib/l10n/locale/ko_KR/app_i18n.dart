@@ -152,6 +152,8 @@ final Map<String, String> ko_KR = {
   "app.user.guard.get_captcha": "확인 코드 얻기",
   "app.user.guard.captcha_been_sent": "검증 코드가 보내졌습니다.",
   "app.user.guard.captcha_send_failed": "인증 코드 전송에 실패했습니다. 다시 시도해 주세요.",
+  "app.user.guard.sync_success": "동기화에 성공했습니다.",
+  "app.user.guard.sync_failed": "동기화에 실패했습니다. 다시 시도해 주세요.",
   "app.user.shop.setting": "상점 설정",
   "app.user.shop.status": "상점 상태",
   "app.user.shop.online_title": "온라인 쇼핑",

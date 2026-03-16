@@ -166,6 +166,8 @@ final Map<String, String> vi_VN = {
   "app.user.guard.captcha_been_sent": "Mã xác minh đã được gửi",
   "app.user.guard.captcha_send_failed":
       "Gửi mã xác minh thất bại. Vui lòng thử lại.",
+  "app.user.guard.sync_success": "Đồng bộ thành công",
+  "app.user.guard.sync_failed": "Đồng bộ thất bại. Vui lòng thử lại.",
   "app.user.shop.setting": "Thiết lập cửa hàng",
   "app.user.shop.status": "Tình trạng cửa hàng",
   "app.user.shop.online_title": "Cửa hàng trực tuyến",

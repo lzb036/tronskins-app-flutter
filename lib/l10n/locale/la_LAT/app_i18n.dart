@@ -180,6 +180,8 @@ final Map<String, String> la_LAT = {
       "El código de verificación ha sido enviado",
   "app.user.guard.captcha_send_failed":
       "Failed to send verification code. Please try again.",
+  "app.user.guard.sync_success": "Sincronización exitosa",
+  "app.user.guard.sync_failed": "La sincronización falló. Inténtalo de nuevo.",
   "app.user.shop.setting": "Configuración de la tienda",
   "app.user.shop.status": "Estado de la tienda",
   "app.user.shop.online_title": "Compra en línea",

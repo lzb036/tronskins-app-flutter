@@ -148,6 +148,8 @@ final Map<String, String> zh_CN = {
   "app.user.guard.get_captcha": "获取验证码",
   "app.user.guard.captcha_been_sent": "验证码已发送",
   "app.user.guard.captcha_send_failed": "验证码发送失败，请稍后再试",
+  "app.user.guard.sync_success": "同步成功",
+  "app.user.guard.sync_failed": "同步失败，请稍后再试",
   "app.user.shop.setting": "店铺设置",
   "app.user.shop.status": "店铺状态",
   "app.user.shop.online_title": "店铺在线",

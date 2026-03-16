@@ -40,6 +40,10 @@ class TwoFactorStorage {
 
   static const String _key = 'es_2fa_list';
 
+  static String _normalizeText(String? value) {
+    return value?.trim().toLowerCase() ?? '';
+  }
+
   static Future<List<TwoFactorToken>> getList() async {
     final raw = await SecureStorage.getItem(_key);
     if (raw == null || raw.isEmpty) {
@@ -131,19 +135,91 @@ class TwoFactorStorage {
       return null;
     }
   }
+
+  static Future<TwoFactorToken?> findStoredTokenForLogin({
+    String appUse = '',
+    String userId = '',
+    String showEmail = '',
+    String loginAccount = '',
+  }) async {
+    final tokens = (await getList())
+        .where((item) => item.secret.trim().isNotEmpty)
+        .toList();
+    if (tokens.isEmpty) {
+      return null;
+    }
+
+    final normalizedUserId = userId.trim();
+    final normalizedAppUse = _normalizeText(appUse);
+    if (normalizedUserId.isNotEmpty && normalizedAppUse.isNotEmpty) {
+      for (final token in tokens) {
+        if (token.userId.trim() == normalizedUserId &&
+            _normalizeText(token.appUse) == normalizedAppUse) {
+          return token;
+        }
+      }
+    }
+
+    final emails = <String>{
+      _normalizeText(showEmail),
+      _normalizeText(loginAccount),
+    }..removeWhere((item) => item.isEmpty);
+
+    for (final email in emails) {
+      final emailMatches = tokens
+          .where((item) => _normalizeText(item.showEmail) == email)
+          .toList();
+      if (emailMatches.isEmpty) {
+        continue;
+      }
+
+      if (normalizedAppUse.isNotEmpty) {
+        final appUseMatches = emailMatches
+            .where((item) => _normalizeText(item.appUse) == normalizedAppUse)
+            .toList();
+        if (appUseMatches.length == 1) {
+          return appUseMatches.first;
+        }
+      }
+
+      if (emailMatches.length == 1) {
+        return emailMatches.first;
+      }
+    }
+
+    return null;
+  }
 }
 
 class TwoFactorHelper {
   static String generateCode(String secret) {
-    if (secret.isEmpty) {
+    final normalizedSecret = secret.replaceAll(RegExp(r'\s+'), '').trim();
+    if (normalizedSecret.isEmpty) {
       return '';
     }
-    return OTP.generateTOTPCodeString(
-      secret,
-      DateTime.now().millisecondsSinceEpoch,
-      interval: 30,
-      length: 6,
-    );
+    final now = DateTime.now().millisecondsSinceEpoch;
+    try {
+      return OTP.generateTOTPCodeString(
+        normalizedSecret,
+        now,
+        interval: 30,
+        length: 6,
+        algorithm: Algorithm.SHA1,
+        isGoogle: true,
+      );
+    } catch (_) {
+      try {
+        return OTP.generateTOTPCodeString(
+          normalizedSecret,
+          now,
+          interval: 30,
+          length: 6,
+          algorithm: Algorithm.SHA1,
+        );
+      } catch (_) {
+        return '';
+      }
+    }
   }
 
   static int remainingSeconds({int interval = 30}) {

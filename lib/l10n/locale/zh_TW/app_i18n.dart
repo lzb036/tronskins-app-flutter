@@ -148,6 +148,8 @@ final Map<String, String> zh_TW = {
   "app.user.guard.get_captcha": "獲取驗證碼",
   "app.user.guard.captcha_been_sent": "驗證碼已發送",
   "app.user.guard.captcha_send_failed": "驗證碼發送失敗，請稍後再試",
+  "app.user.guard.sync_success": "同步成功",
+  "app.user.guard.sync_failed": "同步失敗，請稍後再試",
   "app.user.shop.setting": "店鋪設定",
   "app.user.shop.status": "店鋪狀態",
   "app.user.shop.online_title": "網上購物",

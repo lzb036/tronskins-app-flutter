@@ -149,6 +149,8 @@ final Map<String, String> ja_JP = {
   "app.user.guard.get_captcha": "検証コードを取得する",
   "app.user.guard.captcha_been_sent": "確認コードが送信されました",
   "app.user.guard.captcha_send_failed": "認証コードの送信に失敗しました。もう一度お試しください。",
+  "app.user.guard.sync_success": "同期に成功しました",
+  "app.user.guard.sync_failed": "同期に失敗しました。もう一度お試しください。",
   "app.user.shop.setting": "ショップ設定",
   "app.user.shop.status": "ショップの状態",
   "app.user.shop.online_title": "オンラインショップ",
