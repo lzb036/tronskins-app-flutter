@@ -195,7 +195,7 @@ final Map<String, String> en_US = {
   "app.user.shop.message.ban_offline":
       "Your store has been forcibly removed from the platform and cannot be switched online!",
   "app.user.shop.message.offline":
-      "Your store is currently offline. Users cannot view the jewelry you have listed. Please go to the store settings page and adjust it to be online.",
+      "Your shop is offline. Listed items stay hidden until you turn it back on in Shop Setup.",
   "app.user.shop.message.order_placed":
       "After the order payment is successful, the system will notify the seller to ship the goods for you.",
   "app.user.recharge.title": "Recharge",

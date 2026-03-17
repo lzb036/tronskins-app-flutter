@@ -1441,30 +1441,100 @@ class _ShopPageState extends State<ShopPage>
       if (shop == null || shop.isOnline == true) {
         return const SizedBox.shrink();
       }
+      final theme = Theme.of(context);
+      final colors = theme.colorScheme;
+      final isDark = theme.brightness == Brightness.dark;
+      final borderColor = colors.error.withValues(alpha: isDark ? 0.24 : 0.12);
+      final iconBackground = colors.error.withValues(
+        alpha: isDark ? 0.24 : 0.10,
+      );
+      final bannerColor = colors.errorContainer.withValues(
+        alpha: isDark ? 0.36 : 0.82,
+      );
+      final titleStyle = theme.textTheme.titleSmall?.copyWith(
+        fontWeight: FontWeight.w700,
+        color: colors.onErrorContainer,
+      );
+      final bodyStyle = theme.textTheme.bodySmall?.copyWith(
+        height: 1.35,
+        color: colors.onErrorContainer.withValues(alpha: 0.86),
+      );
+
       return Padding(
         padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
-        child: Card(
-          color: Theme.of(context).colorScheme.errorContainer,
-          child: Padding(
-            padding: const EdgeInsets.all(10),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.info_outline,
-                  color: Theme.of(context).colorScheme.onErrorContainer,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'app.user.shop.message.offline'.tr,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onErrorContainer,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: bannerColor,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: borderColor),
+            boxShadow: isDark
+                ? null
+                : [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.05),
+                      blurRadius: 18,
+                      offset: const Offset(0, 8),
                     ),
+                  ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: iconBackground,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    Icons.settings,
+                    color: colors.onErrorContainer,
+                    size: 20,
                   ),
                 ),
-                TextButton(
-                  onPressed: () => Get.toNamed(Routers.SHOP_SETTING),
-                  child: Text('app.user.shop.setting'.tr),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('app.user.shop.status'.tr, style: titleStyle),
+                      const SizedBox(height: 4),
+                      Text(
+                        'app.user.shop.message.offline'.tr,
+                        style: bodyStyle,
+                      ),
+                      const SizedBox(height: 10),
+                      TextButton(
+                        onPressed: () => Get.toNamed(Routers.SHOP_SETTING),
+                        style: TextButton.styleFrom(
+                          foregroundColor: colors.onErrorContainer,
+                          backgroundColor: colors.surface.withValues(
+                            alpha: isDark ? 0.14 : 0.55,
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(999),
+                            side: BorderSide(color: borderColor),
+                          ),
+                        ),
+                        child: Text(
+                          'app.user.shop.setting'.tr,
+                          style: theme.textTheme.labelLarge?.copyWith(
+                            fontWeight: FontWeight.w600,
+                            color: colors.onErrorContainer,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
