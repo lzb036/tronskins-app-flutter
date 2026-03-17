@@ -617,6 +617,9 @@ class _CollectionCategoryTabState
                   final rarity = TagInfo.fromMarketTag(item.tags?.rarity);
                   final quality = TagInfo.fromMarketTag(item.tags?.quality);
                   final exterior = TagInfo.fromMarketTag(item.tags?.exterior);
+                  final saleLabel = Get.locale?.languageCode == 'en'
+                      ? 'Sale'
+                      : 'app.trade.sale.text'.tr;
                   return Card(
                     margin: EdgeInsets.zero,
                     clipBehavior: Clip.antiAlias,
@@ -645,21 +648,39 @@ class _CollectionCategoryTabState
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    item.marketName ?? '',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .titleSmall
-                                        ?.copyWith(fontWeight: FontWeight.w600),
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          item.marketName ?? '',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleSmall
+                                              ?.copyWith(
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Icon(
+                                        Icons.chevron_right,
+                                        color: Theme.of(
+                                          context,
+                                        ).colorScheme.onSurfaceVariant,
+                                      ),
+                                    ],
                                   ),
                                   const SizedBox(height: 10),
                                   Row(
                                     children: [
                                       Expanded(
+                                        flex: 9,
                                         child: _CollectionInlinePrice(
-                                          label: 'app.trade.sale.text'.tr,
+                                          label: saleLabel,
                                           valueBuilder: () => currency.format(
                                             item.sellMinPrice ?? 0,
                                           ),
@@ -668,8 +689,9 @@ class _CollectionCategoryTabState
                                           ).colorScheme.primary,
                                         ),
                                       ),
-                                      const SizedBox(width: 12),
+                                      const SizedBox(width: 6),
                                       Expanded(
+                                        flex: 10,
                                         child: _CollectionInlinePrice(
                                           label: 'app.trade.purchase.text'.tr,
                                           valueBuilder: () => currency.format(
@@ -684,13 +706,6 @@ class _CollectionCategoryTabState
                                   ),
                                 ],
                               ),
-                            ),
-                            const SizedBox(width: 8),
-                            Icon(
-                              Icons.chevron_right,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurfaceVariant,
                             ),
                           ],
                         ),
