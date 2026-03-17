@@ -33,6 +33,8 @@ class MarketDetailPage extends StatefulWidget {
 
 class _MarketDetailPageState extends State<MarketDetailPage>
     with TickerProviderStateMixin {
+  static const double _bottomActionButtonHeight = 48;
+  static const double _bottomActionCompactBreakpoint = 390;
   static const double _topActionToolbarMaxHeight = 48;
   final MarketDetailController controller = Get.put(MarketDetailController());
   final ApiMarketServer _marketApi = ApiMarketServer();
@@ -1022,13 +1024,14 @@ class _MarketDetailPageState extends State<MarketDetailPage>
     final colorScheme = theme.colorScheme;
     final releasePurchaseLabel = 'app.market.detail.release_purchase'.tr;
     final bulkBuyingLabel = 'app.market.detail.bulk_buying.title'.tr;
-    final buttonTextStyle = theme.textTheme.labelLarge?.copyWith(
+    final buttonTextStyle = theme.textTheme.labelMedium?.copyWith(
       fontWeight: FontWeight.w600,
+      height: 1.1,
     );
 
     Widget buildActionButtons() {
       return SizedBox(
-        height: 56,
+        height: _bottomActionButtonHeight,
         child: Row(
           children: [
             Expanded(
@@ -1076,7 +1079,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF26272B) : Colors.white,
         boxShadow: [
@@ -1091,7 +1094,8 @@ class _MarketDetailPageState extends State<MarketDetailPage>
         top: false,
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final useStackedLayout = constraints.maxWidth < 420;
+            final useStackedLayout =
+                constraints.maxWidth < _bottomActionCompactBreakpoint;
             final steamPrice = _buildBottomSteamPrice(
               context: context,
               currency: currency,
@@ -1104,7 +1108,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   steamPrice,
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   buildActionButtons(),
                 ],
               );
