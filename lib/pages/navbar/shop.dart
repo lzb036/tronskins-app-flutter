@@ -8,6 +8,7 @@ import 'package:tronskins_app/api/steam.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
 import 'package:tronskins_app/common/storage/game_storage.dart';
 import 'package:tronskins_app/common/utils/app_snackbar.dart';
+import 'package:tronskins_app/common/widgets/back_to_top_overlay.dart';
 import 'package:tronskins_app/common/widgets/glass_notice_dialog.dart';
 import 'package:tronskins_app/components/game/game_icon_button.dart';
 import 'package:tronskins_app/components/game/game_switch_menu.dart';
@@ -38,6 +39,7 @@ class ShopPage extends StatefulWidget {
 
 class _ShopPageState extends State<ShopPage>
     with SingleTickerProviderStateMixin {
+  static const double _backToTopThreshold = 120;
   final ShopController shopController = Get.isRegistered<ShopController>()
       ? Get.find<ShopController>()
       : Get.put(ShopController());
@@ -69,6 +71,7 @@ class _ShopPageState extends State<ShopPage>
   final TextEditingController _recordSearchController = TextEditingController();
   final Set<int> _selectedIds = <int>{};
   final Set<int> _refreshingPendingBuyerOrderIds = <int>{};
+  final ValueNotifier<bool> _showBackToTop = ValueNotifier<bool>(false);
   Worker? _loginWorker;
   Worker? _shopTargetTabWorker;
   Worker? _shopStatusWorker;
@@ -167,6 +170,7 @@ class _ShopPageState extends State<ShopPage>
     _searchController.dispose();
     _pendingSearchController.dispose();
     _recordSearchController.dispose();
+    _showBackToTop.dispose();
     _loginWorker?.dispose();
     _shopTargetTabWorker?.dispose();
     _shopStatusWorker?.dispose();
@@ -248,9 +252,15 @@ class _ShopPageState extends State<ShopPage>
         _selectedIds.clear();
       }
     });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _syncBackToTopVisibilityForActiveTab();
+      }
+    });
   }
 
   void _handleOnSaleScroll() {
+    _updateBackToTopVisibility(_onSaleScroll);
     if (_onSaleScroll.position.pixels >
         _onSaleScroll.position.maxScrollExtent - 200) {
       salesController.loadOnSale();
@@ -258,6 +268,7 @@ class _ShopPageState extends State<ShopPage>
   }
 
   void _handlePendingScroll() {
+    _updateBackToTopVisibility(_pendingScroll);
     if (_pendingScroll.position.pixels >
         _pendingScroll.position.maxScrollExtent - 200) {
       orderController.loadPendingShipments();
@@ -265,10 +276,134 @@ class _ShopPageState extends State<ShopPage>
   }
 
   void _handleRecordScroll() {
+    _updateBackToTopVisibility(_recordScroll);
     if (_recordScroll.position.pixels >
         _recordScroll.position.maxScrollExtent - 200) {
       salesController.loadSellRecords();
     }
+  }
+
+  ScrollController? get _activeScrollController {
+    return switch (_activeTab) {
+      0 => _onSaleScroll,
+      1 => _pendingScroll,
+      2 => _recordScroll,
+      _ => null,
+    };
+  }
+
+  void _updateBackToTopVisibility(ScrollController controller) {
+    if (!controller.hasClients) {
+      return;
+    }
+    final shouldShow = controller.position.pixels > _backToTopThreshold;
+    if (shouldShow == _showBackToTop.value || !mounted) {
+      return;
+    }
+    _showBackToTop.value = shouldShow;
+  }
+
+  void _syncBackToTopVisibilityForActiveTab() {
+    final controller = _activeScrollController;
+    final shouldShow =
+        controller != null &&
+        controller.hasClients &&
+        controller.position.pixels > _backToTopThreshold;
+    if (shouldShow == _showBackToTop.value || !mounted) {
+      return;
+    }
+    _showBackToTop.value = shouldShow;
+  }
+
+  Future<void> _scrollActiveTabToTop() async {
+    final controller = _activeScrollController;
+    if (controller == null || !controller.hasClients) {
+      return;
+    }
+    if (_showBackToTop.value) {
+      _showBackToTop.value = false;
+    }
+    try {
+      await controller.animateTo(
+        0,
+        duration: const Duration(milliseconds: 420),
+        curve: Curves.easeOutCubic,
+      );
+    } catch (_) {
+      return;
+    }
+  }
+
+  Widget _buildLocalBackToTopButton() {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final backgroundColor = isDark
+        ? colors.surface.withValues(alpha: 0.76)
+        : Colors.white.withValues(alpha: 0.88);
+    final borderColor = colors.outline.withValues(alpha: isDark ? 0.34 : 0.18);
+    final iconColor = colors.onSurface.withValues(alpha: 0.82);
+
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: RepaintBoundary(
+        child: ValueListenableBuilder<bool>(
+          valueListenable: _showBackToTop,
+          builder: (context, showBackToTop, child) {
+            return IgnorePointer(
+              ignoring: !showBackToTop,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 14),
+                child: AnimatedSlide(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOutCubic,
+                  offset: showBackToTop ? Offset.zero : const Offset(0, 0.35),
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 180),
+                    curve: Curves.easeOut,
+                    opacity: showBackToTop ? 1 : 0,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: backgroundColor,
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: borderColor),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(
+                              alpha: isDark ? 0.18 : 0.10,
+                            ),
+                            blurRadius: 14,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: Material(
+                        type: MaterialType.transparency,
+                        child: InkWell(
+                          onTap: _scrollActiveTabToTop,
+                          borderRadius: BorderRadius.circular(999),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 8,
+                            ),
+                            child: Icon(
+                              Icons.keyboard_double_arrow_up_rounded,
+                              size: 20,
+                              color: iconColor,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
   }
 
   void _toggleSelection(ShopItemAsset item) {
@@ -1330,130 +1465,150 @@ class _ShopPageState extends State<ShopPage>
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
-    return Scaffold(
-      body: Obx(() {
-        if (!userController.isLoggedIn.value) {
-          return _buildLoginPrompt();
-        }
-        final isShopOnline = shopController.shop.value?.isOnline ?? false;
-        return SafeArea(
-          child: Column(
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  color: isDark ? colors.surface : Colors.white,
-                  border: Border(
-                    bottom: BorderSide(
-                      color: colors.outline.withValues(alpha: 0.08),
-                    ),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      offset: const Offset(0, 3),
-                      blurRadius: 6,
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
+    return BackToTopScope(
+      enabled: false,
+      child: Scaffold(
+        body: Obx(() {
+          if (!userController.isLoggedIn.value) {
+            return _buildLoginPrompt();
+          }
+          final isShopOnline = shopController.shop.value?.isOnline ?? false;
+          return SafeArea(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Column(
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 4,
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              'app.user.menu.shop'.tr,
-                              style: Theme.of(context).textTheme.titleMedium
-                                  ?.copyWith(fontWeight: FontWeight.bold),
-                            ),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: isDark ? colors.surface : Colors.white,
+                        border: Border(
+                          bottom: BorderSide(
+                            color: colors.outline.withValues(alpha: 0.08),
                           ),
-                          _buildShopTabSwitcher(),
-                          const SizedBox(width: 6),
-                          _buildTopActionWithDot(
-                            visible: true,
-                            dotColor: isShopOnline
-                                ? const Color(0xFF22C55E)
-                                : colors.outlineVariant,
-                            child: _buildTopIconAction(
-                              icon: Icons.settings,
-                              tooltip: 'app.user.shop.setting'.tr,
-                              onTap: () => Get.toNamed(Routers.SHOP_SETTING),
-                            ),
-                          ),
-                          const SizedBox(width: 6),
-                          Builder(
-                            builder: (iconContext) {
-                              return Obx(() {
-                                final currentAppId = GameStorage.getGameType();
-                                final hasPendingInAnyGame =
-                                    shippingNoticeController.hasAnyPending;
-                                return _buildTopActionWithDot(
-                                  visible: hasPendingInAnyGame,
-                                  dotColor: Colors.orange.shade600,
-                                  child: GameIconButton(
-                                    appId: currentAppId,
-                                    size: 34,
-                                    onTap: () async {
-                                      final selected = await showGameSwitchMenu(
-                                        iconContext: iconContext,
-                                        currentAppId: currentAppId,
-                                        pendingTotalsByAppId:
-                                            shippingNoticeController
-                                                .snapshotTotals(),
-                                      );
-                                      if (selected == null) {
-                                        return;
-                                      }
-                                      await GameStorage.setGameType(selected);
-                                      salesController.refreshOnSale();
-                                      orderController.refreshPending();
-                                      salesController.refreshSellRecords();
-                                      shippingNoticeController
-                                          .refreshPendingTotals();
-                                      setState(() {});
-                                    },
-                                  ),
-                                );
-                              });
-                            },
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.05),
+                            offset: const Offset(0, 3),
+                            blurRadius: 6,
                           ),
                         ],
                       ),
-                    ),
-                    _buildSharedTabSearchBar(),
-                    const SizedBox(height: 6),
-                    if (_activeTab == 0) ...[
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: _buildShopSummaryBar(currency),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 4,
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    'app.user.menu.shop'.tr,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                                _buildShopTabSwitcher(),
+                                const SizedBox(width: 6),
+                                _buildTopActionWithDot(
+                                  visible: true,
+                                  dotColor: isShopOnline
+                                      ? const Color(0xFF22C55E)
+                                      : colors.outlineVariant,
+                                  child: _buildTopIconAction(
+                                    icon: Icons.settings,
+                                    tooltip: 'app.user.shop.setting'.tr,
+                                    onTap: () =>
+                                        Get.toNamed(Routers.SHOP_SETTING),
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Builder(
+                                  builder: (iconContext) {
+                                    return Obx(() {
+                                      final currentAppId =
+                                          GameStorage.getGameType();
+                                      final hasPendingInAnyGame =
+                                          shippingNoticeController
+                                              .hasAnyPending;
+                                      return _buildTopActionWithDot(
+                                        visible: hasPendingInAnyGame,
+                                        dotColor: Colors.orange.shade600,
+                                        child: GameIconButton(
+                                          appId: currentAppId,
+                                          size: 34,
+                                          onTap: () async {
+                                            final selected =
+                                                await showGameSwitchMenu(
+                                                  iconContext: iconContext,
+                                                  currentAppId: currentAppId,
+                                                  pendingTotalsByAppId:
+                                                      shippingNoticeController
+                                                          .snapshotTotals(),
+                                                );
+                                            if (selected == null) {
+                                              return;
+                                            }
+                                            await GameStorage.setGameType(
+                                              selected,
+                                            );
+                                            salesController.refreshOnSale();
+                                            orderController.refreshPending();
+                                            salesController
+                                                .refreshSellRecords();
+                                            shippingNoticeController
+                                                .refreshPendingTotals();
+                                            setState(() {});
+                                          },
+                                        ),
+                                      );
+                                    });
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                          _buildSharedTabSearchBar(),
+                          const SizedBox(height: 6),
+                          if (_activeTab == 0) ...[
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                              ),
+                              child: _buildShopSummaryBar(currency),
+                            ),
+                            const SizedBox(height: 6),
+                          ],
+                        ],
                       ),
-                      const SizedBox(height: 6),
-                    ],
+                    ),
+                    Expanded(
+                      child: TabBarView(
+                        controller: _tabController,
+                        children: [
+                          _buildOnSaleTab(),
+                          _buildPendingShipmentTab(currency),
+                          _buildSellRecordTab(currency),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
-              ),
-              Expanded(
-                child: TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _buildOnSaleTab(),
-                    _buildPendingShipmentTab(currency),
-                    _buildSellRecordTab(currency),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-      }),
-      bottomNavigationBar: _activeTab == 0 && _selectedIds.isNotEmpty
-          ? _buildOnSaleActions()
-          : null,
+                _buildLocalBackToTopButton(),
+              ],
+            ),
+          );
+        }),
+        bottomNavigationBar: _activeTab == 0 && _selectedIds.isNotEmpty
+            ? _buildOnSaleActions()
+            : null,
+      ),
     );
   }
 
