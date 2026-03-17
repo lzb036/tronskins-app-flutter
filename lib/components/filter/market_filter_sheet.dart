@@ -4,6 +4,7 @@ import 'package:get_storage/get_storage.dart';
 import 'package:tronskins_app/api/market.dart';
 import 'package:tronskins_app/api/model/market/market_filter_models.dart';
 import 'package:tronskins_app/components/filter/filter_models.dart';
+import 'dart:math' as math;
 
 class MarketFilterSheet extends StatefulWidget {
   const MarketFilterSheet({
@@ -714,11 +715,102 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
     String label, {
     required bool selected,
     required ValueChanged<bool> onSelected,
+    bool fullWidth = false,
   }) {
-    return ChoiceChip(
-      label: Text(label),
-      selected: selected,
-      onSelected: onSelected,
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final chip = Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: () => onSelected(!selected),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          constraints: const BoxConstraints(minHeight: 36),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          decoration: BoxDecoration(
+            color: selected
+                ? colors.primary.withValues(alpha: 0.14)
+                : colors.surfaceContainerHighest.withValues(alpha: 0.36),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: selected
+                  ? colors.primary.withValues(alpha: 0.45)
+                  : colors.outline.withValues(alpha: 0.18),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: fullWidth ? MainAxisSize.max : MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (selected) ...[
+                Icon(Icons.check, size: 14, color: colors.primary),
+                const SizedBox(width: 4),
+              ],
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: fullWidth ? 2 : 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: selected ? colors.primary : colors.onSurface,
+                    fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (!fullWidth) {
+      return chip;
+    }
+    return SizedBox(width: double.infinity, child: chip);
+  }
+
+  Widget _buildCompactGrid({
+    required int itemCount,
+    required Widget Function(int index) itemBuilder,
+  }) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const spacing = 6.0;
+        const crossAxisCount = 2;
+        final totalSpacing = spacing * (crossAxisCount - 1);
+        final rawItemWidth =
+            (constraints.maxWidth - totalSpacing) / crossAxisCount;
+        // Use floor width to avoid sub-pixel rounding clipping on some devices.
+        final itemWidth = math.max(0.0, rawItemWidth.floorToDouble());
+        return Wrap(
+          spacing: spacing,
+          runSpacing: spacing,
+          children: List.generate(
+            itemCount,
+            (index) => SizedBox(width: itemWidth, child: itemBuilder(index)),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildOptionGrid({
+    required List<_AttributeOption> options,
+    required bool Function(_AttributeOption option) isSelected,
+    required ValueChanged<_AttributeOption> onSelected,
+  }) {
+    return _buildCompactGrid(
+      itemCount: options.length,
+      itemBuilder: (index) {
+        final option = options[index];
+        return _buildChip(
+          option.label.tr,
+          selected: isSelected(option),
+          onSelected: (_) => onSelected(option),
+          fullWidth: true,
+        );
+      },
     );
   }
 
@@ -778,10 +870,10 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
       children: [
         Expanded(
           child: Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: surface,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(10),
               border: Border.all(color: borderColor),
             ),
             child: _showAttributes
@@ -789,13 +881,13 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
                 : const SizedBox.shrink(),
           ),
         ),
-        const SizedBox(width: 10),
+        const SizedBox(width: 8),
         Container(
-          width: 96,
-          padding: const EdgeInsets.all(6),
+          width: 88,
+          padding: const EdgeInsets.all(5),
           decoration: BoxDecoration(
             color: surface,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(10),
             border: Border.all(color: borderColor),
           ),
           child: _buildSectionTabs(),
@@ -812,9 +904,9 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
         final section = _sections[index];
         final selected = index == _currentSectionIndex;
         return Padding(
-          padding: const EdgeInsets.only(bottom: 6),
+          padding: const EdgeInsets.only(bottom: 5),
           child: InkWell(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(8),
             onTap: () {
               if (index == _currentSectionIndex) {
                 return;
@@ -826,12 +918,12 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
             },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
               decoration: BoxDecoration(
                 color: selected
                     ? colors.primary.withValues(alpha: 0.16)
                     : colors.surfaceContainerHighest.withValues(alpha: 0.65),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(8),
                 border: Border.all(
                   color: selected
                       ? colors.primary.withValues(alpha: 0.45)
@@ -910,9 +1002,12 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
             width: double.infinity,
             child: SingleChildScrollView(
               physics: const ClampingScrollPhysics(),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [...children, const SizedBox(height: 8)],
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: children,
+                ),
               ),
             ),
           ),
@@ -924,38 +1019,44 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
   List<Widget> _buildSortSection() {
     return [
       _buildSectionTitle('app.market.filter.sort'.tr),
-      const SizedBox(height: 8),
-      Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: widget.sortOptions.map((option) {
+      const SizedBox(height: 6),
+      _buildCompactGrid(
+        itemCount: widget.sortOptions.length,
+        itemBuilder: (index) {
+          final option = widget.sortOptions[index];
           final selected = _sortField == option.field;
           return _buildChip(
             option.labelKey.tr,
             selected: selected,
             onSelected: (_) => setState(() => _sortField = option.field),
+            fullWidth: true,
           );
-        }).toList(),
+        },
       ),
-      const SizedBox(height: 10),
+      const SizedBox(height: 8),
       _buildSortDirectionToggle(),
     ];
   }
 
   Widget _buildSortDirectionToggle() {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
+    return Row(
       children: [
-        _buildChip(
-          '↑',
-          selected: _sortAsc,
-          onSelected: (_) => setState(() => _sortAsc = true),
+        Expanded(
+          child: _buildChip(
+            '↑',
+            selected: _sortAsc,
+            onSelected: (_) => setState(() => _sortAsc = true),
+            fullWidth: true,
+          ),
         ),
-        _buildChip(
-          '↓',
-          selected: !_sortAsc,
-          onSelected: (_) => setState(() => _sortAsc = false),
+        const SizedBox(width: 6),
+        Expanded(
+          child: _buildChip(
+            '↓',
+            selected: !_sortAsc,
+            onSelected: (_) => setState(() => _sortAsc = false),
+            fullWidth: true,
+          ),
         ),
       ],
     );
@@ -967,9 +1068,9 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
     final isDark = theme.brightness == Brightness.dark;
     final fillColor = isDark ? Colors.white.withOpacity(0.06) : colors.surface;
     return [
-      const SizedBox(height: 8),
+      const SizedBox(height: 6),
       _buildSectionTitle('app.market.filter.price_range'.tr),
-      const SizedBox(height: 8),
+      const SizedBox(height: 6),
       Row(
         children: [
           Expanded(
@@ -984,7 +1085,7 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 12,
-                  vertical: 12,
+                  vertical: 10,
                 ),
                 labelText: _priceLowestLabel(),
                 border: OutlineInputBorder(
@@ -1008,7 +1109,7 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
           Expanded(
             child: TextField(
               controller: _maxController,
@@ -1021,7 +1122,7 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 12,
-                  vertical: 12,
+                  vertical: 10,
                 ),
                 labelText: _priceHighestLabel(),
                 border: OutlineInputBorder(
@@ -1067,23 +1168,23 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
   List<Widget> _buildStatusSection() {
     return [
       _buildSectionTitle('app.trade.order.status'.tr),
-      const SizedBox(height: 8),
-      Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: List.generate(widget.statusOptions.length, (index) {
+      const SizedBox(height: 6),
+      _buildCompactGrid(
+        itemCount: widget.statusOptions.length,
+        itemBuilder: (index) {
           final option = widget.statusOptions[index];
           final selected = _selectedStatusIndex == index;
-          return FilterChip(
-            label: Text(option.labelKey.tr),
+          return _buildChip(
+            option.labelKey.tr,
             selected: selected,
+            fullWidth: true,
             onSelected: (value) {
               setState(() {
                 _selectedStatusIndex = value ? index : -1;
               });
             },
           );
-        }),
+        },
       ),
     ];
   }
@@ -1419,27 +1520,19 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
       return _buildHeroGroupSection(group);
     }
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildSectionTitle(group.label.tr),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           if (group.hasSubOptions)
             _buildSubOptionGroup(group)
           else
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: group.options
-                  .map(
-                    (option) => _buildChip(
-                      option.label.tr,
-                      selected: _isGroupSelected(group.key, option),
-                      onSelected: (_) => _selectOption(group.key, option),
-                    ),
-                  )
-                  .toList(),
+            _buildOptionGrid(
+              options: group.options,
+              isSelected: (option) => _isGroupSelected(group.key, option),
+              onSelected: (option) => _selectOption(group.key, option),
             ),
         ],
       ),
@@ -1449,67 +1542,60 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
   Widget _buildSubOptionGroup(_AttributeGroup group) {
     final unlimitedLabel = 'app.common.unlimited'.tr;
     final selected = _selectedItemName;
+    final directOptions = group.options
+        .where((option) => option.subOptions.isEmpty)
+        .toList();
+    final groupedOptions = group.options
+        .where((option) => option.subOptions.isNotEmpty)
+        .toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            _buildChip(
-              unlimitedLabel,
-              selected: selected == null,
-              onSelected: (_) => _selectSubOption(
-                group,
-                _AttributeOption(
-                  name: 'unlimited',
-                  label: unlimitedLabel,
-                  isUnlimited: true,
-                ),
-              ),
+        _buildChip(
+          unlimitedLabel,
+          selected: selected == null,
+          onSelected: (_) => _selectSubOption(
+            group,
+            _AttributeOption(
+              name: 'unlimited',
+              label: unlimitedLabel,
+              isUnlimited: true,
             ),
-          ],
+          ),
         ),
-        const SizedBox(height: 8),
-        ...group.options.map((option) {
-          if (option.subOptions.isEmpty) {
-            return Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _buildChip(
-                  option.label.tr,
-                  selected: selected == option.name,
-                  onSelected: (_) => _selectSubOption(group, option),
-                ),
-              ],
+        if (directOptions.isNotEmpty) ...[
+          const SizedBox(height: 5),
+          _buildOptionGrid(
+            options: directOptions,
+            isSelected: (option) => selected == option.name,
+            onSelected: (option) => _selectSubOption(group, option),
+          ),
+        ],
+        if (groupedOptions.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          ...groupedOptions.map((option) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    option.label.tr,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  _buildOptionGrid(
+                    options: option.subOptions,
+                    isSelected: (sub) => selected == sub.name,
+                    onSelected: (sub) => _selectSubOption(group, sub),
+                  ),
+                ],
+              ),
             );
-          }
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                option.label.tr,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              const SizedBox(height: 6),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: option.subOptions
-                    .map(
-                      (sub) => _buildChip(
-                        sub.label.tr,
-                        selected: selected == sub.name,
-                        onSelected: (_) => _selectSubOption(group, sub),
-                      ),
-                    )
-                    .toList(),
-              ),
-              const SizedBox(height: 8),
-            ],
-          );
-        }).toList(),
+          }),
+        ],
       ],
     );
   }
