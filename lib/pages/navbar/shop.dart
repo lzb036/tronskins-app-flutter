@@ -53,6 +53,9 @@ class _ShopPageState extends State<ShopPage>
       Get.isRegistered<ShopShippingNoticeController>()
       ? Get.find<ShopShippingNoticeController>()
       : Get.put(ShopShippingNoticeController(), permanent: true);
+  final NavController navController = Get.isRegistered<NavController>()
+      ? Get.find<NavController>()
+      : Get.put(NavController(), permanent: true);
   final UserController userController = Get.find<UserController>();
 
   late final TabController _tabController;
@@ -68,6 +71,10 @@ class _ShopPageState extends State<ShopPage>
   final Set<int> _refreshingPendingBuyerOrderIds = <int>{};
   Worker? _loginWorker;
   Worker? _shopTargetTabWorker;
+  Worker? _shopStatusWorker;
+  Worker? _shopTabVisibilityWorker;
+  bool _didResolveInitialOfflineDialog = false;
+  bool _isShowingInitialOfflineDialog = false;
   static const List<StatusOption> _statusOptions = [
     StatusOption(
       labelKey: 'app.market.filter.all',
@@ -91,10 +98,8 @@ class _ShopPageState extends State<ShopPage>
     _recordScroll.addListener(_handleRecordScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       MarketFilterSheet.preload(appId: GameStorage.getGameType());
+      _scheduleInitialOfflineDialogCheck();
     });
-    final navController = Get.isRegistered<NavController>()
-        ? Get.find<NavController>()
-        : Get.put(NavController(), permanent: true);
     _shopTargetTabWorker = ever<int?>(navController.pendingShopTabIndex, (
       targetTab,
     ) {
@@ -114,6 +119,17 @@ class _ShopPageState extends State<ShopPage>
         navController.clearPendingShopTab();
       });
     }
+    _shopStatusWorker = everAll(
+      [shopController.shop, shopController.isLoading],
+      (_) {
+        _scheduleInitialOfflineDialogCheck();
+      },
+    );
+    _shopTabVisibilityWorker = ever<int>(navController.currentIndex, (index) {
+      if (index == NavController.tabSell) {
+        _scheduleInitialOfflineDialogCheck();
+      }
+    });
 
     if (userController.isLoggedIn.value) {
       salesController.refreshOnSale();
@@ -123,11 +139,14 @@ class _ShopPageState extends State<ShopPage>
     }
 
     _loginWorker = ever<bool>(userController.isLoggedIn, (loggedIn) {
+      _didResolveInitialOfflineDialog = false;
+      _isShowingInitialOfflineDialog = false;
       if (loggedIn) {
         salesController.refreshOnSale();
         orderController.refreshPending();
         salesController.refreshSellRecords();
         shippingNoticeController.refreshPendingTotals();
+        _scheduleInitialOfflineDialogCheck();
       }
     });
   }
@@ -150,7 +169,65 @@ class _ShopPageState extends State<ShopPage>
     _recordSearchController.dispose();
     _loginWorker?.dispose();
     _shopTargetTabWorker?.dispose();
+    _shopStatusWorker?.dispose();
+    _shopTabVisibilityWorker?.dispose();
     super.dispose();
+  }
+
+  void _scheduleInitialOfflineDialogCheck() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      _maybeShowInitialOfflineDialog();
+    });
+  }
+
+  bool _isShopPageVisible() {
+    final route = ModalRoute.of(context);
+    final isCurrentRoute = route?.isCurrent ?? true;
+    return navController.currentIndex.value == NavController.tabSell &&
+        isCurrentRoute;
+  }
+
+  void _maybeShowInitialOfflineDialog() {
+    if (!mounted ||
+        _didResolveInitialOfflineDialog ||
+        _isShowingInitialOfflineDialog ||
+        !userController.isLoggedIn.value ||
+        !_isShopPageVisible() ||
+        shopController.isLoading.value) {
+      return;
+    }
+    final shop = shopController.shop.value;
+    if (shop == null) {
+      return;
+    }
+    if (shop.isOnline == true) {
+      _didResolveInitialOfflineDialog = true;
+      return;
+    }
+    _isShowingInitialOfflineDialog = true;
+    unawaited(
+      _showInitialOfflineDialog().whenComplete(() {
+        _isShowingInitialOfflineDialog = false;
+        _didResolveInitialOfflineDialog = true;
+      }),
+    );
+  }
+
+  Future<void> _showInitialOfflineDialog() {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) => _ShopOfflineDialog(
+        onCancel: () => Navigator.of(dialogContext).pop(),
+        onOpenSettings: () {
+          Navigator.of(dialogContext).pop();
+          Get.toNamed(Routers.SHOP_SETTING);
+        },
+      ),
+    );
   }
 
   void _switchToShopTab(int targetTab) {
@@ -208,18 +285,16 @@ class _ShopPageState extends State<ShopPage>
     });
   }
 
-  void _toggleSelectAll() {
-    final ids = salesController.onSaleItems
-        .where((item) => item.id != null)
-        .map((item) => item.id!)
-        .toSet();
+  void _toggleSelectAllOnSale(Set<int> selectableIds) {
+    if (selectableIds.isEmpty) {
+      return;
+    }
     setState(() {
-      if (_selectedIds.length == ids.length) {
-        _selectedIds.clear();
+      final isAllSelected = selectableIds.every(_selectedIds.contains);
+      if (isAllSelected) {
+        _selectedIds.removeAll(selectableIds);
       } else {
-        _selectedIds
-          ..clear()
-          ..addAll(ids);
+        _selectedIds.addAll(selectableIds);
       }
     });
   }
@@ -1249,42 +1324,6 @@ class _ShopPageState extends State<ShopPage>
     );
   }
 
-  Widget _buildOnSaleSelectAllToggle({
-    required bool selected,
-    required bool enabled,
-  }) {
-    final colors = Theme.of(context).colorScheme;
-    final borderColor = colors.outline.withValues(alpha: 0.45);
-    return Opacity(
-      opacity: enabled ? 1.0 : 0.45,
-      child: Tooltip(
-        message: selected
-            ? 'app.common.deselect_all'.tr
-            : 'app.common.select_all'.tr,
-        child: Material(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(6),
-            onTap: enabled ? _toggleSelectAll : null,
-            child: Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                color: colors.surface,
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: borderColor),
-              ),
-              child: selected
-                  ? Icon(Icons.check_rounded, color: colors.primary, size: 16)
-                  : const SizedBox.shrink(),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final currency = Get.find<CurrencyController>();
@@ -1398,7 +1437,6 @@ class _ShopPageState extends State<ShopPage>
                   ],
                 ),
               ),
-              _buildShopStatusBanner(),
               Expanded(
                 child: TabBarView(
                   controller: _tabController,
@@ -1433,115 +1471,6 @@ class _ShopPageState extends State<ShopPage>
         ],
       ),
     );
-  }
-
-  Widget _buildShopStatusBanner() {
-    return Obx(() {
-      final shop = shopController.shop.value;
-      if (shop == null || shop.isOnline == true) {
-        return const SizedBox.shrink();
-      }
-      final theme = Theme.of(context);
-      final colors = theme.colorScheme;
-      final isDark = theme.brightness == Brightness.dark;
-      final borderColor = colors.error.withValues(alpha: isDark ? 0.24 : 0.12);
-      final iconBackground = colors.error.withValues(
-        alpha: isDark ? 0.24 : 0.10,
-      );
-      final bannerColor = colors.errorContainer.withValues(
-        alpha: isDark ? 0.36 : 0.82,
-      );
-      final titleStyle = theme.textTheme.titleSmall?.copyWith(
-        fontWeight: FontWeight.w700,
-        color: colors.onErrorContainer,
-      );
-      final bodyStyle = theme.textTheme.bodySmall?.copyWith(
-        height: 1.35,
-        color: colors.onErrorContainer.withValues(alpha: 0.86),
-      );
-
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(12, 6, 12, 0),
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: bannerColor,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: borderColor),
-            boxShadow: isDark
-                ? null
-                : [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      blurRadius: 18,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: iconBackground,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    Icons.settings,
-                    color: colors.onErrorContainer,
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('app.user.shop.status'.tr, style: titleStyle),
-                      const SizedBox(height: 4),
-                      Text(
-                        'app.user.shop.message.offline'.tr,
-                        style: bodyStyle,
-                      ),
-                      const SizedBox(height: 10),
-                      TextButton(
-                        onPressed: () => Get.toNamed(Routers.SHOP_SETTING),
-                        style: TextButton.styleFrom(
-                          foregroundColor: colors.onErrorContainer,
-                          backgroundColor: colors.surface.withValues(
-                            alpha: isDark ? 0.14 : 0.55,
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(999),
-                            side: BorderSide(color: borderColor),
-                          ),
-                        ),
-                        child: Text(
-                          'app.user.shop.setting'.tr,
-                          style: theme.textTheme.labelLarge?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: colors.onErrorContainer,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    });
   }
 
   Widget _buildTabSearchBar({
@@ -2399,9 +2328,6 @@ class _ShopPageState extends State<ShopPage>
         .map((item) => item.id!)
         .toSet();
     final selectableTotal = selectableIds.length;
-    final allSelected =
-        selectableTotal > 0 && selectableIds.every(_selectedIds.contains);
-
     Future<void> openBatchPriceChange() async {
       final selectedItems = salesController.onSaleItems
           .where((item) => _selectedIds.contains(item.id ?? -1))
@@ -2429,108 +2355,174 @@ class _ShopPageState extends State<ShopPage>
     return SafeArea(
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final compactLayout = constraints.maxWidth < 520;
           final theme = Theme.of(context);
-          final actionButtons = <Widget>[
-            OutlinedButton(
-              onPressed: () {
-                setState(() => _selectedIds.clear());
-              },
-              child: Text(
-                'app.common.cancel'.tr,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            FilledButton(
-              onPressed: _selectedIds.isEmpty ? null : openBatchPriceChange,
-              child: Text(
-                'app.inventory.price_change'.tr,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: theme.colorScheme.error,
-                foregroundColor: theme.colorScheme.onError,
-              ),
-              onPressed: _confirmDelist,
-              child: Text(
-                'app.inventory.delist'.tr,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ];
+          final colors = theme.colorScheme;
+          final isDark = theme.brightness == Brightness.dark;
+          final selectedCount = _selectedIds.length;
+          final isAllSelected =
+              selectableTotal > 0 && selectedCount >= selectableTotal;
+          final toggleMessage = isAllSelected
+              ? 'app.common.deselect_all'.tr
+              : 'app.common.select_all'.tr;
+          final showCompactCount = constraints.maxWidth < 350;
+          final summaryBackground = isDark
+              ? colors.surfaceContainerHigh
+              : colors.surfaceContainerHighest.withValues(alpha: 0.82);
+          final summaryBorder = colors.outline.withValues(alpha: 0.16);
+          final dividerColor = Colors.white.withValues(
+            alpha: isDark ? 0.10 : 0.18,
+          );
 
           return Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
             decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
+              color: colors.surface,
               border: Border(
-                top: BorderSide(color: theme.dividerColor, width: 0.5),
+                top: BorderSide(color: colors.outline.withValues(alpha: 0.10)),
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.16 : 0.05),
+                  offset: const Offset(0, -2),
+                  blurRadius: 12,
+                ),
+              ],
             ),
-            child: compactLayout
-                ? Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Row(
-                        children: [
-                          _buildOnSaleSelectAllToggle(
-                            selected: allSelected,
-                            enabled: selectableTotal > 0,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              '${_selectedIds.length}/$selectableTotal',
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.bodyMedium,
+            child: Row(
+              children: [
+                Tooltip(
+                  message: toggleMessage,
+                  child: Material(
+                    color: summaryBackground,
+                    borderRadius: BorderRadius.circular(18),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(18),
+                      onTap: () => _toggleSelectAllOnSale(selectableIds),
+                      child: Container(
+                        constraints: BoxConstraints(
+                          minWidth: showCompactCount ? 82 : 94,
+                        ),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: showCompactCount ? 10 : 12,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: summaryBorder),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                color: colors.primary.withValues(
+                                  alpha: isAllSelected
+                                      ? (isDark ? 0.34 : 0.22)
+                                      : (isDark ? 0.10 : 0.05),
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: colors.primary.withValues(
+                                    alpha: isAllSelected
+                                        ? (isDark ? 0.42 : 0.30)
+                                        : (isDark ? 0.22 : 0.14),
+                                  ),
+                                ),
+                              ),
+                              child: isAllSelected
+                                  ? Icon(
+                                      Icons.check_rounded,
+                                      color: colors.primary,
+                                      size: 16,
+                                    )
+                                  : const SizedBox.shrink(),
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                showCompactCount
+                                    ? '$selectedCount/$selectableTotal'
+                                    : '($selectedCount/$selectableTotal)',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: colors.onSurface,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        alignment: WrapAlignment.end,
-                        children: actionButtons,
-                      ),
-                    ],
-                  )
-                : Row(
-                    children: [
-                      _buildOnSaleSelectAllToggle(
-                        selected: allSelected,
-                        enabled: selectableTotal > 0,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '${_selectedIds.length}/$selectableTotal',
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodyMedium,
-                      ),
-                      const Spacer(),
-                      ..._withSpacing(actionButtons),
-                    ],
+                    ),
                   ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(18),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _buildOnSaleActionSegment(
+                            label: 'app.inventory.price_change'.tr,
+                            backgroundColor: colors.primary,
+                            foregroundColor: colors.onPrimary,
+                            onTap: openBatchPriceChange,
+                          ),
+                        ),
+                        Container(width: 1, height: 54, color: dividerColor),
+                        Expanded(
+                          child: _buildOnSaleActionSegment(
+                            label: 'app.inventory.delist'.tr,
+                            backgroundColor: colors.error,
+                            foregroundColor: colors.onError,
+                            onTap: _confirmDelist,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           );
         },
       ),
     );
   }
 
-  List<Widget> _withSpacing(List<Widget> children, {double spacing = 8}) {
-    return [
-      for (int index = 0; index < children.length; index++) ...[
-        if (index > 0) SizedBox(width: spacing),
-        children[index],
-      ],
-    ];
+  Widget _buildOnSaleActionSegment({
+    required String label,
+    required Color backgroundColor,
+    required Color foregroundColor,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: backgroundColor,
+      child: InkWell(
+        onTap: onTap,
+        child: SizedBox(
+          height: 54,
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  color: foregroundColor,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _openDeliverSheet(ShopOrderItem order) async {
@@ -2802,6 +2794,119 @@ class _ShopTabSwitchOption extends StatelessWidget {
             else if (selected)
               const Icon(Icons.check, color: selectedColor, size: 18),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ShopOfflineDialog extends StatelessWidget {
+  const _ShopOfflineDialog({
+    required this.onCancel,
+    required this.onOpenSettings,
+  });
+
+  final VoidCallback onCancel;
+  final VoidCallback onOpenSettings;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final borderColor = colors.error.withValues(alpha: isDark ? 0.24 : 0.12);
+    final iconBackground = colors.error.withValues(alpha: isDark ? 0.24 : 0.10);
+    final dialogColor = colors.errorContainer.withValues(
+      alpha: isDark ? 0.44 : 0.92,
+    );
+    final titleStyle = theme.textTheme.titleSmall?.copyWith(
+      fontWeight: FontWeight.w700,
+      color: colors.onErrorContainer,
+    );
+    final bodyStyle = theme.textTheme.bodySmall?.copyWith(
+      height: 1.35,
+      color: colors.onErrorContainer.withValues(alpha: 0.86),
+    );
+
+    return Dialog(
+      alignment: Alignment.center,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20),
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 360),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: dialogColor,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: borderColor),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.10),
+                blurRadius: 24,
+                offset: const Offset(0, 12),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: iconBackground,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.settings,
+                        color: colors.onErrorContainer,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('app.user.shop.status'.tr, style: titleStyle),
+                          const SizedBox(height: 4),
+                          Text(
+                            'app.user.shop.message.offline'.tr,
+                            style: bodyStyle,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: onCancel,
+                        child: Text('app.common.cancel'.tr),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: onOpenSettings,
+                        child: Text('app.user.shop.setting'.tr),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

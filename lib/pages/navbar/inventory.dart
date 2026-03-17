@@ -166,23 +166,15 @@ class _InventoryPageState extends State<InventoryPage> {
       }
 
       _steamSessionDialogShowing = true;
-      await Get.dialog<void>(
-        AlertDialog(
-          title: Text('app.system.tips.title'.tr),
-          content: Text('app.steam.session.expired'.tr),
-          actions: [
-            TextButton(
-              onPressed: () => Get.back(),
-              child: Text('app.common.cancel'.tr),
-            ),
-            TextButton(
-              onPressed: () {
-                Get.back();
-                Get.toNamed(Routers.STEAM_SESSION);
-              },
-              child: Text('app.common.confirm'.tr),
-            ),
-          ],
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: true,
+        builder: (dialogContext) => _InventorySteamSessionExpiredDialog(
+          onCancel: () => Navigator.of(dialogContext).pop(),
+          onVerify: () {
+            Navigator.of(dialogContext).pop();
+            Get.toNamed(Routers.STEAM_SESSION);
+          },
         ),
       );
       return false;
@@ -223,13 +215,33 @@ class _InventoryPageState extends State<InventoryPage> {
     return isTradable && !isCooling && !isOnSale && !isInSupply;
   }
 
+  Future<void> _openSelectedItemsUpshop() async {
+    if (controller.selectedIds.isEmpty) {
+      return;
+    }
+    final selectedItems = controller.items
+        .where((item) => controller.selectedIds.contains(item.id ?? -1))
+        .toList();
+    if (selectedItems.isEmpty) {
+      return;
+    }
+    await Get.toNamed(
+      Routers.INVENTORY_UPSHOP,
+      arguments: {
+        'items': selectedItems,
+        'schemas': controller.schemas,
+        'appId': controller.appId,
+      },
+    );
+  }
+
   void _toggleSelectAllSellable(Set<int> sellableIds) {
     if (sellableIds.isEmpty) {
       return;
     }
     final selectedIds = controller.selectedIds;
-    final allSelected = sellableIds.every(selectedIds.contains);
-    if (allSelected) {
+    final isAllSelected = sellableIds.every(selectedIds.contains);
+    if (isAllSelected) {
       selectedIds.removeAll(sellableIds);
     } else {
       selectedIds.addAll(sellableIds);
@@ -582,110 +594,185 @@ class _InventoryPageState extends State<InventoryPage> {
             controller.selectedIds.isEmpty) {
           return const SizedBox.shrink();
         }
-        final sellableIds = controller.items
-            .where(_isItemSelectable)
-            .map((item) => item.id)
-            .whereType<int>()
-            .toSet();
-        final sellableTotal = sellableIds.length;
-        final allSellableSelected =
-            sellableTotal > 0 &&
-            sellableIds.every(controller.selectedIds.contains);
-        return SafeArea(
-          child: Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface,
-              border: Border(
-                top: BorderSide(
-                  color: Theme.of(context).dividerColor,
-                  width: 0.5,
-                ),
-              ),
-            ),
-            child: Row(
-              children: [
-                _buildSelectAllToggle(
-                  selected: allSellableSelected,
-                  enabled: sellableTotal > 0,
-                  onTap: () => _toggleSelectAllSellable(sellableIds),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  '${controller.selectedIds.length}/$sellableTotal',
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-                const Spacer(),
-                OutlinedButton(
-                  onPressed: controller.clearSelection,
-                  child: Text('app.common.cancel'.tr),
-                ),
-                const SizedBox(width: 12),
-                FilledButton(
-                  onPressed: () {
-                    if (controller.selectedIds.isEmpty) {
-                      return;
-                    }
-                    final selectedItems = controller.items
-                        .where(
-                          (item) =>
-                              controller.selectedIds.contains(item.id ?? -1),
-                        )
-                        .toList();
-                    if (selectedItems.isEmpty) {
-                      return;
-                    }
-                    Get.toNamed(
-                      Routers.INVENTORY_UPSHOP,
-                      arguments: {
-                        'items': selectedItems,
-                        'schemas': controller.schemas,
-                        'appId': controller.appId,
-                      },
-                    );
-                  },
-                  child: Text('app.inventory.upshop.text'.tr),
-                ),
-              ],
-            ),
-          ),
-        );
+        return _buildInventorySelectionBar();
       }),
     );
   }
 
-  Widget _buildSelectAllToggle({
-    required bool selected,
-    required bool enabled,
+  Widget _buildInventorySelectionBar() {
+    final sellableTotal = controller.items.where(_isItemSelectable).length;
+    return SafeArea(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final theme = Theme.of(context);
+          final colors = theme.colorScheme;
+          final isDark = theme.brightness == Brightness.dark;
+          final selectedCount = controller.selectedIds.length;
+          final isAllSelected =
+              sellableTotal > 0 && selectedCount >= sellableTotal;
+          final toggleMessage = isAllSelected
+              ? 'app.common.deselect_all'.tr
+              : 'app.common.select_all'.tr;
+          final showCompactCount = constraints.maxWidth < 350;
+          final summaryBackground = isDark
+              ? colors.surfaceContainerHigh
+              : colors.surfaceContainerHighest.withValues(alpha: 0.82);
+          final summaryBorder = colors.outline.withValues(alpha: 0.16);
+
+          return Container(
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+            decoration: BoxDecoration(
+              color: colors.surface,
+              border: Border(
+                top: BorderSide(color: colors.outline.withValues(alpha: 0.10)),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.16 : 0.05),
+                  offset: const Offset(0, -2),
+                  blurRadius: 12,
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Tooltip(
+                  message: toggleMessage,
+                  child: Material(
+                    color: summaryBackground,
+                    borderRadius: BorderRadius.circular(18),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(18),
+                      onTap: () => _toggleSelectAllSellable(
+                        controller.items
+                            .where(_isItemSelectable)
+                            .map((item) => item.id)
+                            .whereType<int>()
+                            .toSet(),
+                      ),
+                      child: Container(
+                        constraints: BoxConstraints(
+                          minWidth: showCompactCount ? 82 : 94,
+                        ),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: showCompactCount ? 10 : 12,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: summaryBorder),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 24,
+                              height: 24,
+                              decoration: BoxDecoration(
+                                color: colors.primary.withValues(
+                                  alpha: isAllSelected
+                                      ? (isDark ? 0.34 : 0.22)
+                                      : (isDark ? 0.10 : 0.05),
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: colors.primary.withValues(
+                                    alpha: isAllSelected
+                                        ? (isDark ? 0.42 : 0.30)
+                                        : (isDark ? 0.22 : 0.14),
+                                  ),
+                                ),
+                              ),
+                              child: isAllSelected
+                                  ? Icon(
+                                      Icons.check_rounded,
+                                      color: colors.primary,
+                                      size: 16,
+                                    )
+                                  : const SizedBox.shrink(),
+                            ),
+                            const SizedBox(width: 8),
+                            Flexible(
+                              child: Text(
+                                showCompactCount
+                                    ? '$selectedCount/$sellableTotal'
+                                    : '($selectedCount/$sellableTotal)',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: colors.onSurface,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _buildInventorySelectionActionButton(
+                    label: 'app.inventory.upshop.text'.tr,
+                    backgroundColor: colors.primary,
+                    foregroundColor: colors.onPrimary,
+                    onTap: _openSelectedItemsUpshop,
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildInventorySelectionActionButton({
+    required String label,
+    required Color backgroundColor,
+    required Color foregroundColor,
     required VoidCallback onTap,
   }) {
     final colors = Theme.of(context).colorScheme;
-    final borderColor = colors.outline.withValues(alpha: 0.45);
-    final backgroundColor = colors.surface;
-    return Opacity(
-      opacity: enabled ? 1.0 : 0.45,
-      child: Tooltip(
-        message: selected
-            ? 'app.common.deselect_all'.tr
-            : 'app.common.select_all'.tr,
-        child: Material(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final accentColor =
+        Color.lerp(
+          backgroundColor,
+          colors.primaryContainer,
+          isDark ? 0.26 : 0.18,
+        ) ??
+        backgroundColor;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: Material(
+        color: Colors.transparent,
+        child: Ink(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [accentColor, backgroundColor],
+            ),
+          ),
           child: InkWell(
-            borderRadius: BorderRadius.circular(6),
-            onTap: enabled ? onTap : null,
-            child: Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                color: backgroundColor,
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: borderColor),
+            onTap: onTap,
+            child: SizedBox(
+              height: 54,
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: foregroundColor,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
               ),
-              child: selected
-                  ? Icon(Icons.check_rounded, color: colors.primary, size: 16)
-                  : const SizedBox.shrink(),
             ),
           ),
         ),
@@ -1062,6 +1149,122 @@ class _InventoryPageState extends State<InventoryPage> {
             child: Text('app.user.login.nologin'.tr),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _InventorySteamSessionExpiredDialog extends StatelessWidget {
+  const _InventorySteamSessionExpiredDialog({
+    required this.onCancel,
+    required this.onVerify,
+  });
+
+  final VoidCallback onCancel;
+  final VoidCallback onVerify;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final verifyLabel = Get.locale?.languageCode == 'en'
+        ? 'Verification'
+        : 'app.steam.verification'.tr;
+    final borderColor = colors.error.withValues(alpha: isDark ? 0.24 : 0.12);
+    final iconBackground = colors.error.withValues(alpha: isDark ? 0.24 : 0.10);
+    final dialogColor = colors.errorContainer.withValues(
+      alpha: isDark ? 0.44 : 0.92,
+    );
+    final titleStyle = theme.textTheme.titleSmall?.copyWith(
+      fontWeight: FontWeight.w700,
+      color: colors.onErrorContainer,
+    );
+    final bodyStyle = theme.textTheme.bodySmall?.copyWith(
+      height: 1.35,
+      color: colors.onErrorContainer.withValues(alpha: 0.86),
+    );
+
+    return Dialog(
+      alignment: Alignment.center,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20),
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 360),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: dialogColor,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: borderColor),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.10),
+                blurRadius: 24,
+                offset: const Offset(0, 12),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: iconBackground,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.settings,
+                        color: colors.onErrorContainer,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('app.steam.verification'.tr, style: titleStyle),
+                          const SizedBox(height: 4),
+                          Text(
+                            'app.steam.session.expired'.tr,
+                            style: bodyStyle,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: onCancel,
+                        child: Text('app.common.cancel'.tr),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: onVerify,
+                        child: Text(verifyLabel),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
