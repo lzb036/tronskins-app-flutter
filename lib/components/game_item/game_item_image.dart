@@ -32,6 +32,7 @@ class GameItemImage extends StatelessWidget {
     this.onSaleBottomOffset = 0,
     this.avoidTopLeftBadgeOverlap = false,
     this.compactTopLeftBadges = false,
+    this.showTopBadges = true,
   });
 
   final String? imageUrl;
@@ -55,6 +56,7 @@ class GameItemImage extends StatelessWidget {
   final double onSaleBottomOffset;
   final bool avoidTopLeftBadgeOverlap;
   final bool compactTopLeftBadges;
+  final bool showTopBadges;
 
   bool get _isDota => appId == 570;
 
@@ -63,11 +65,9 @@ class GameItemImage extends StatelessWidget {
     final bgAsset = _isDota ? null : rarityBgAsset(rarity?.color);
     final qualityBorder = qualityBorderColor(quality?.color);
     final exteriorColor = parseHexColor(exterior?.color) ?? Colors.black54;
-    final badges = _buildBadges(
-      context,
-      exteriorColor,
-      compact: compactTopLeftBadges,
-    );
+    final badges = showTopBadges
+        ? _buildBadges(context, exteriorColor, compact: compactTopLeftBadges)
+        : const <Widget>[];
     final hasCountBadge =
         count != null && count! > 0 && (count! > 1 || alwaysShowCount);
     final stickerBottom =

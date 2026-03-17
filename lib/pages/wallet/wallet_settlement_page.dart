@@ -1,13 +1,17 @@
 import 'dart:async';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:tronskins_app/api/model/wallet/wallet_models.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
+import 'package:tronskins_app/common/storage/game_storage.dart';
+import 'package:tronskins_app/common/widgets/back_to_top_overlay.dart';
+import 'package:tronskins_app/components/game_item/game_item_image.dart';
+import 'package:tronskins_app/components/game_item/game_item_models.dart';
+import 'package:tronskins_app/components/game_item/wear_progress_bar.dart';
 import 'package:tronskins_app/components/layout/list_end_tip.dart';
 import 'package:tronskins_app/controllers/wallet/wallet_controller.dart';
-import 'package:tronskins_app/api/model/wallet/wallet_models.dart';
 import 'package:tronskins_app/pages/wallet/wallet_settlement_detail_page.dart';
 import 'package:tronskins_app/pages/wallet/widgets/wallet_ui.dart';
 
@@ -19,6 +23,7 @@ class WalletSettlementPage extends StatefulWidget {
 }
 
 class _WalletSettlementPageState extends State<WalletSettlementPage> {
+  static const Color _countdownAccent = Color(0xFFFF9800);
   final WalletController controller = Get.isRegistered<WalletController>()
       ? Get.find<WalletController>()
       : Get.put(WalletController());
@@ -40,38 +45,13 @@ class _WalletSettlementPageState extends State<WalletSettlementPage> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >
-        _scrollController.position.maxScrollExtent - 200) {
+    if (!_scrollController.hasClients) {
+      return;
+    }
+    final position = _scrollController.position;
+    if (position.pixels > position.maxScrollExtent - 200) {
       controller.loadSettlementRecords();
     }
-  }
-
-  String _formatTime(int? value) {
-    if (value == null) {
-      return '-';
-    }
-    var timestamp = value;
-    if (timestamp < 10000000000) {
-      timestamp *= 1000;
-    }
-    final date = DateTime.fromMillisecondsSinceEpoch(timestamp);
-    return DateFormat('yyyy-MM-dd HH:mm').format(date);
-  }
-
-  WalletSchemaInfo? _findSchema(WalletSettlementDetail detail) {
-    final key = detail.marketHashName ?? '';
-    if (key.isNotEmpty && controller.settlementSchemas.containsKey(key)) {
-      return controller.settlementSchemas[key];
-    }
-    return null;
-  }
-
-  String? _paintWearText(WalletSettlementDetail detail) {
-    final value = detail.raw['paint_wear'] ?? detail.raw['paintWear'];
-    if (value != null) {
-      return value.toString();
-    }
-    return detail.paintWear?.toString();
   }
 
   void _openSettlementDetail(WalletSettlementRecord record) {
@@ -87,181 +67,370 @@ class _WalletSettlementPageState extends State<WalletSettlementPage> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final currency = Get.find<CurrencyController>();
-    return Scaffold(
-      backgroundColor: WalletUi.pageBackground(context),
-      appBar: AppBar(title: Text('app.user.wallet.unsettled_details'.tr)),
-      body: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            color: Theme.of(context).colorScheme.surfaceContainerHighest,
-            child: Text(
-              'app.user.wallet.unsettled_tips'.tr,
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ),
-          Expanded(
-            child: Obx(() {
-              if (controller.isLoadingSettlement.value &&
-                  controller.settlementRecords.isEmpty) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              return RefreshIndicator(
-                onRefresh: () => controller.loadSettlementRecords(reset: true),
-                child: controller.settlementRecords.isEmpty
-                    ? ListView(
-                        controller: _scrollController,
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.all(16),
-                        children: [
-                          const SizedBox(height: 180),
-                          Center(child: Text('app.common.no_data'.tr)),
-                        ],
-                      )
-                    : ListView.builder(
-                        controller: _scrollController,
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        padding: const EdgeInsets.all(16),
-                        itemCount: controller.settlementRecords.length + 1,
-                        itemBuilder: (context, index) {
-                          if (index >= controller.settlementRecords.length) {
-                            return _buildLoadMoreFooter(
-                              loading: controller.isLoadingSettlement.value,
-                              hasMore: controller.hasMoreSettlementRecords,
-                            );
-                          }
-                          final item = controller.settlementRecords[index];
-                          return Card(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            elevation: 0,
-                            shape: WalletUi.cardShape(context),
-                            child: InkWell(
-                              borderRadius: WalletUi.cardRadius,
-                              onTap: () => _openSettlementDetail(item),
-                              child: Padding(
-                                padding: const EdgeInsets.all(12),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            _formatTime(item.protectionTime),
-                                            style: Theme.of(
-                                              context,
-                                            ).textTheme.bodySmall,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                        if (item.protectionTime != null &&
-                                            (item.status ?? 0) == 5) ...[
-                                          const SizedBox(width: 12),
-                                          Flexible(
-                                            child: CountdownText(
-                                              endTimeSeconds:
-                                                  item.protectionTime!,
-                                              style: Theme.of(
-                                                context,
-                                              ).textTheme.bodySmall,
-                                            ),
-                                          ),
-                                        ],
-                                      ],
-                                    ),
-                                    const SizedBox(height: 12),
-                                    _buildDetailRow(item, currency),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-              );
-            }),
-          ),
-        ],
+  String _formatTime(int? value) {
+    if (value == null) {
+      return '-';
+    }
+    var timestamp = value;
+    if (timestamp < 10000000000) {
+      timestamp *= 1000;
+    }
+    final date = DateTime.fromMillisecondsSinceEpoch(timestamp);
+    return DateFormat('yyyy-MM-dd HH:mm').format(date);
+  }
+
+  WalletSchemaInfo? _findSchema(WalletSettlementDetail detail) {
+    final marketHashName = detail.marketHashName ?? '';
+    if (marketHashName.isNotEmpty &&
+        controller.settlementSchemas.containsKey(marketHashName)) {
+      return controller.settlementSchemas[marketHashName];
+    }
+    final schemaIdKey = detail.schemaId?.toString();
+    if (schemaIdKey != null &&
+        controller.settlementSchemas.containsKey(schemaIdKey)) {
+      return controller.settlementSchemas[schemaIdKey];
+    }
+    return null;
+  }
+
+  TagInfo? _schemaTag(WalletSchemaInfo? schema, String key) {
+    final tags = schema?.raw['tags'];
+    if (tags is Map) {
+      return TagInfo.fromRaw(tags[key]);
+    }
+    return null;
+  }
+
+  dynamic _pickRawValue(dynamic source, List<String> keys) {
+    if (source is! Map) {
+      return null;
+    }
+    for (final key in keys) {
+      final value = source[key];
+      if (value != null) {
+        return value;
+      }
+    }
+    return null;
+  }
+
+  String? _pickRawText(dynamic source, List<String> keys) {
+    final value = _pickRawValue(source, keys);
+    return value?.toString();
+  }
+
+  int? _asInt(dynamic value) {
+    if (value is int) {
+      return value;
+    }
+    if (value is num) {
+      return value.toInt();
+    }
+    if (value is String) {
+      return int.tryParse(value);
+    }
+    return null;
+  }
+
+  double? _asDouble(dynamic value) {
+    if (value is double) {
+      return value;
+    }
+    if (value is num) {
+      return value.toDouble();
+    }
+    if (value is String) {
+      return double.tryParse(value);
+    }
+    return null;
+  }
+
+  int _resolveAppId(WalletSettlementDetail detail, WalletSchemaInfo? schema) {
+    return detail.appId ??
+        schema?.appId ??
+        _asInt(_pickRawValue(detail.raw, const ['app_id', 'appId'])) ??
+        _asInt(_pickRawValue(schema?.raw, const ['app_id', 'appId'])) ??
+        GameStorage.getGameType();
+  }
+
+  String _resolveImageUrl(
+    WalletSettlementDetail detail,
+    WalletSchemaInfo? schema,
+  ) {
+    return schema?.imageUrl ??
+        detail.imageUrl ??
+        _pickRawText(detail.raw, const ['image_url', 'imageUrl', 'image']) ??
+        _pickRawText(schema?.raw, const ['image_url', 'imageUrl', 'image']) ??
+        '';
+  }
+
+  String _resolveTitle(
+    WalletSettlementDetail detail,
+    WalletSchemaInfo? schema,
+  ) {
+    return schema?.marketName ??
+        detail.marketName ??
+        detail.marketHashName ??
+        '-';
+  }
+
+  String? _paintWearText(WalletSettlementDetail detail) {
+    final value = detail.raw['paint_wear'] ?? detail.raw['paintWear'];
+    if (value != null) {
+      return value.toString();
+    }
+    return detail.paintWear?.toString();
+  }
+
+  double? _paintWearValue(WalletSettlementDetail detail) {
+    return detail.paintWear ??
+        _asDouble(_pickRawValue(detail.raw, const ['paint_wear', 'paintWear']));
+  }
+
+  String? _phaseText(WalletSettlementDetail detail, WalletSchemaInfo? schema) {
+    return _pickRawText(detail.raw, const ['phase']) ??
+        _pickRawText(schema?.raw, const ['phase']);
+  }
+
+  String? _percentageText(
+    WalletSettlementDetail detail,
+    WalletSchemaInfo? schema,
+  ) {
+    return _pickRawText(detail.raw, const ['percentage']) ??
+        _pickRawText(schema?.raw, const ['percentage']);
+  }
+
+  List<GameItemSticker> _detailStickers(WalletSettlementDetail detail) {
+    final stickerRaw = _pickRawValue(detail.raw, const ['stickers']);
+    return parseStickerList(
+      stickerRaw,
+      stickerMap: controller.settlementStickers,
+    );
+  }
+
+  Widget _buildPreviewImage(
+    WalletSettlementDetail detail, {
+    WalletSchemaInfo? schema,
+    double width = 94,
+    double height = 58,
+    bool showTopBadges = false,
+  }) {
+    final theme = Theme.of(context);
+    return Container(
+      width: width,
+      height: height,
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest.withValues(
+          alpha: 0.34,
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.all(3),
+        child: GameItemImage(
+          imageUrl: _resolveImageUrl(detail, schema),
+          appId: _resolveAppId(detail, schema),
+          rarity: _schemaTag(schema, 'rarity'),
+          quality: _schemaTag(schema, 'quality'),
+          exterior: _schemaTag(schema, 'exterior'),
+          phase: _phaseText(detail, schema),
+          percentage: _percentageText(detail, schema),
+          stickers: _detailStickers(detail),
+          avoidTopLeftBadgeOverlap: true,
+          compactTopLeftBadges: true,
+          showTopBadges: showTopBadges,
+        ),
       ),
     );
   }
 
-  Widget _buildDetailRow(
+  Widget _buildRecordCard(
     WalletSettlementRecord record,
     CurrencyController currency,
   ) {
-    final details = record.details;
-    if (details.length <= 1) {
-      final detail = details.isNotEmpty ? details.first : null;
-      final schema = detail == null ? null : _findSchema(detail);
-      final wearText = detail == null ? null : _paintWearText(detail);
-      final imageUrl = schema?.imageUrl ?? detail?.imageUrl ?? '';
-      final name =
-          schema?.marketName ?? detail?.marketName ?? detail?.marketHashName;
-      return Row(
-        children: [
-          _buildItemImage(imageUrl),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(name ?? '-', maxLines: 2, overflow: TextOverflow.ellipsis),
-                if (wearText != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 4),
+    final theme = Theme.of(context);
+    final textTheme = theme.textTheme;
+    final colors = theme.colorScheme;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      elevation: 0,
+      clipBehavior: Clip.antiAlias,
+      shape: WalletUi.cardShape(context),
+      child: InkWell(
+        borderRadius: WalletUi.cardRadius,
+        onTap: () => _openSettlementDetail(record),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
                     child: Text(
-                      '${'app.market.csgo.abradability'.tr}: $wearText',
-                      style: Theme.of(context).textTheme.bodySmall,
+                      _formatTime(record.protectionTime),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.bodySmall?.copyWith(
+                        color: colors.onSurfaceVariant,
+                      ),
                     ),
                   ),
-              ],
-            ),
+                  if (record.protectionTime != null &&
+                      (record.status ?? 0) == 5) ...[
+                    const SizedBox(width: 12),
+                    Flexible(
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: CountdownText(
+                          endTimeSeconds: record.protectionTime!,
+                          textAlign: TextAlign.end,
+                          style: textTheme.bodySmall?.copyWith(
+                            color: _countdownAccent,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              const SizedBox(height: 12),
+              if (record.details.length <= 1)
+                _buildSingleDetailSummary(record, currency)
+              else
+                _buildMultipleDetailSummary(record, currency),
+            ],
           ),
-          const SizedBox(width: 8),
-          Text(
-            currency.formatUsd(record.price ?? 0),
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              color: Theme.of(context).colorScheme.primary,
-            ),
-          ),
-        ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSingleDetailSummary(
+    WalletSettlementRecord record,
+    CurrencyController currency,
+  ) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final textTheme = theme.textTheme;
+    final detail = record.details.isNotEmpty ? record.details.first : null;
+    if (detail == null) {
+      return Text(
+        currency.formatUsd(record.price ?? 0),
+        style: textTheme.titleSmall?.copyWith(
+          color: colors.primary,
+          fontWeight: FontWeight.w700,
+        ),
       );
     }
-    final preview = details.take(3).toList();
+
+    final schema = _findSchema(detail);
+    final wearText = _paintWearText(detail);
+    final wearValue = _paintWearValue(detail);
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildPreviewImage(detail, schema: schema),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Text(
+                      _resolveTitle(detail, schema),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        height: 1.15,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    currency.formatUsd(record.price ?? 0),
+                    textAlign: TextAlign.end,
+                    style: textTheme.titleSmall?.copyWith(
+                      color: colors.primary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+              if (wearText != null && wearText.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(
+                  '${'app.market.csgo.abradability'.tr}: $wearText',
+                  style: textTheme.bodySmall?.copyWith(
+                    color: colors.onSurfaceVariant,
+                  ),
+                ),
+              ],
+              if (wearValue != null) ...[
+                const SizedBox(height: 8),
+                WearProgressBar(paintWear: wearValue, height: 14),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMultipleDetailSummary(
+    WalletSettlementRecord record,
+    CurrencyController currency,
+  ) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final textTheme = theme.textTheme;
+    final previewDetails = record.details.take(2).toList();
+    final extraCount = record.details.length - previewDetails.length;
+
     return Row(
       children: [
         Expanded(
           child: Row(
-            children: preview.map((detail) {
+            children: previewDetails.map((detail) {
               final schema = _findSchema(detail);
-              final imageUrl = schema?.imageUrl ?? detail.imageUrl ?? '';
               return Padding(
-                padding: const EdgeInsets.only(right: 6),
-                child: _buildItemImage(imageUrl, size: 48),
+                padding: const EdgeInsets.only(right: 8),
+                child: _buildPreviewImage(
+                  detail,
+                  schema: schema,
+                  showTopBadges: false,
+                ),
               );
             }).toList(),
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 10),
         Column(
           crossAxisAlignment: CrossAxisAlignment.end,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            if (details.length > 3)
+            if (extraCount > 0)
               Text(
-                '+${details.length - 3}',
-                style: Theme.of(context).textTheme.bodySmall,
+                '+$extraCount',
+                style: textTheme.bodySmall?.copyWith(
+                  color: colors.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            const SizedBox(height: 6),
+            if (extraCount > 0) const SizedBox(height: 6),
             Text(
               currency.formatUsd(record.price ?? 0),
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                color: Theme.of(context).colorScheme.primary,
+              style: textTheme.titleSmall?.copyWith(
+                color: colors.primary,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],
@@ -289,42 +458,83 @@ class _WalletSettlementPageState extends State<WalletSettlementPage> {
     return const SizedBox(height: 4);
   }
 
-  Widget _buildItemImage(String url, {double size = 64}) {
-    if (url.isEmpty) {
-      return Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(8),
+  @override
+  Widget build(BuildContext context) {
+    return BackToTopScope(
+      enabled: true,
+      child: Scaffold(
+        backgroundColor: WalletUi.pageBackground(context),
+        appBar: AppBar(title: Text('app.user.wallet.unsettled_details'.tr)),
+        body: Column(
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
+              child: Text(
+                'app.user.wallet.unsettled_tips'.tr,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
+            Expanded(
+              child: Obx(() {
+                final loading = controller.isLoadingSettlement.value;
+                final records = controller.settlementRecords;
+                final currency = Get.find<CurrencyController>();
+
+                if (loading && records.isEmpty) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                return RefreshIndicator(
+                  onRefresh: () =>
+                      controller.loadSettlementRecords(reset: true),
+                  child: records.isEmpty
+                      ? ListView(
+                          controller: _scrollController,
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.all(16),
+                          children: [
+                            const SizedBox(height: 180),
+                            Center(child: Text('app.common.no_data'.tr)),
+                          ],
+                        )
+                      : ListView.builder(
+                          controller: _scrollController,
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: const EdgeInsets.fromLTRB(12, 10, 12, 16),
+                          itemCount: records.length + 1,
+                          itemBuilder: (context, index) {
+                            if (index >= records.length) {
+                              return _buildLoadMoreFooter(
+                                loading: loading,
+                                hasMore: controller.hasMoreSettlementRecords,
+                              );
+                            }
+                            return _buildRecordCard(records[index], currency);
+                          },
+                        ),
+                );
+              }),
+            ),
+          ],
         ),
-        child: const Icon(Icons.image_not_supported_outlined),
-      );
-    }
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: CachedNetworkImage(
-        imageUrl: url,
-        width: size,
-        height: size,
-        fit: BoxFit.cover,
-        placeholder: (context, _) => SizedBox(
-          width: size,
-          height: size,
-          child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
-        ),
-        errorWidget: (context, _, __) =>
-            const Icon(Icons.image_not_supported_outlined),
       ),
     );
   }
 }
 
 class CountdownText extends StatefulWidget {
-  const CountdownText({super.key, required this.endTimeSeconds, this.style});
+  const CountdownText({
+    super.key,
+    required this.endTimeSeconds,
+    this.style,
+    this.textAlign,
+  });
 
   final int endTimeSeconds;
   final TextStyle? style;
+  final TextAlign? textAlign;
 
   @override
   State<CountdownText> createState() => _CountdownTextState();
@@ -383,6 +593,10 @@ class _CountdownTextState extends State<CountdownText> {
 
   @override
   Widget build(BuildContext context) {
-    return Text(_formatDuration(_remaining), style: widget.style);
+    return Text(
+      _formatDuration(_remaining),
+      textAlign: widget.textAlign,
+      style: widget.style,
+    );
   }
 }
