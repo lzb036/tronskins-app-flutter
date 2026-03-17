@@ -27,7 +27,6 @@ class BuyingPage extends StatefulWidget {
 class _BuyingPageState extends State<BuyingPage>
     with SingleTickerProviderStateMixin {
   static const double _loadMoreThreshold = 200;
-  static const double _myBuyingActionWidth = 72;
   static const double _myBuyingActionHeight = 30;
   static const double _recordTrailingWidth = 64;
   final BuyRequestController controller =
@@ -848,9 +847,10 @@ class _BuyingPageState extends State<BuyingPage>
   Widget _buildCompactActionLabel(String text) {
     return Text(
       text,
-      maxLines: 1,
+      maxLines: 2,
       overflow: TextOverflow.ellipsis,
       textAlign: TextAlign.center,
+      softWrap: true,
     );
   }
 
@@ -862,8 +862,8 @@ class _BuyingPageState extends State<BuyingPage>
       height: 1,
     );
     return OutlinedButton.styleFrom(
-      minimumSize: const Size(_myBuyingActionWidth, _myBuyingActionHeight),
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+      minimumSize: const Size(0, _myBuyingActionHeight),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       visualDensity: VisualDensity.compact,
       foregroundColor: colors.primary,
@@ -881,8 +881,8 @@ class _BuyingPageState extends State<BuyingPage>
       height: 1,
     );
     return OutlinedButton.styleFrom(
-      minimumSize: const Size(_myBuyingActionWidth, _myBuyingActionHeight),
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+      minimumSize: const Size(0, _myBuyingActionHeight),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
       visualDensity: VisualDensity.compact,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -892,36 +892,44 @@ class _BuyingPageState extends State<BuyingPage>
     );
   }
 
-  Widget _buildMyBuyingTrailingActions(
-    BuyRequestItem item,
-    ShopSchemaInfo? schema,
-  ) {
-    return SizedBox(
-      width: _myBuyingActionWidth,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: () => _openBuyingPriceChange(item, schema),
-              style: _buildPrimaryActionButtonStyle(),
-              child: _buildCompactActionLabel('app.inventory.price_change'.tr),
-            ),
-          ),
-          const SizedBox(height: 6),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton(
-              onPressed: () => _confirmTerminateBuying(item),
-              style: _buildDangerActionButtonStyle(),
-              child: _buildCompactActionLabel(
-                'app.trade.purchase.terminate'.tr,
-              ),
-            ),
-          ),
-        ],
-      ),
+  Widget _buildMyBuyingActions(BuyRequestItem item, ShopSchemaInfo? schema) {
+    Widget buildPriceChangeButton() {
+      return OutlinedButton(
+        onPressed: () => _openBuyingPriceChange(item, schema),
+        style: _buildPrimaryActionButtonStyle(),
+        child: _buildCompactActionLabel('app.inventory.price_change'.tr),
+      );
+    }
+
+    Widget buildTerminateButton() {
+      return OutlinedButton(
+        onPressed: () => _confirmTerminateBuying(item),
+        style: _buildDangerActionButtonStyle(),
+        child: _buildCompactActionLabel('app.trade.purchase.terminate'.tr),
+      );
+    }
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth < 280) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              buildPriceChangeButton(),
+              const SizedBox(height: 8),
+              buildTerminateButton(),
+            ],
+          );
+        }
+
+        return Row(
+          children: [
+            Expanded(child: buildPriceChangeButton()),
+            const SizedBox(width: 8),
+            Expanded(child: buildTerminateButton()),
+          ],
+        );
+      },
     );
   }
 
@@ -987,14 +995,9 @@ class _BuyingPageState extends State<BuyingPage>
               ],
             ),
             const SizedBox(height: 8),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Expanded(child: _buildBuyRequestSummary(item, schema)),
-                const SizedBox(width: 8),
-                _buildMyBuyingTrailingActions(item, schema),
-              ],
-            ),
+            _buildBuyRequestSummary(item, schema),
+            const SizedBox(height: 10),
+            _buildMyBuyingActions(item, schema),
           ],
         ),
       ),
