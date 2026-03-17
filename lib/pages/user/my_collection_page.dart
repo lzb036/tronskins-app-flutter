@@ -594,127 +594,132 @@ class _CollectionCategoryTabState
     final currency = Get.find<CurrencyController>();
     return BackToTopScope(
       enabled: true,
-      child: RefreshIndicator(
-        onRefresh: () => loadData(refresh: true),
-        child: loading
-            ? const _CollectionLoadingState()
-            : _items.isEmpty
-            ? const _CollectionEmptyState()
-            : ListView.separated(
-                controller: scrollController,
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
-                itemCount: _items.length + 1,
-                separatorBuilder: (_, __) => const SizedBox(height: 10),
-                itemBuilder: (context, index) {
-                  if (index >= _items.length) {
-                    return _CollectionFooter(
-                      showLoading: loadingMore,
-                      showNoMore: !hasMore,
-                    );
-                  }
-                  final item = _items[index];
-                  final rarity = TagInfo.fromMarketTag(item.tags?.rarity);
-                  final quality = TagInfo.fromMarketTag(item.tags?.quality);
-                  final exterior = TagInfo.fromMarketTag(item.tags?.exterior);
-                  final saleLabel = Get.locale?.languageCode == 'en'
-                      ? 'Sale'
-                      : 'app.trade.sale.text'.tr;
-                  return Card(
-                    margin: EdgeInsets.zero,
-                    clipBehavior: Clip.antiAlias,
-                    child: InkWell(
-                      onTap: () => _openDetail(item),
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            SizedBox(
-                              width: 84,
-                              height: 52,
-                              child: GameItemImage(
-                                imageUrl: item.imageUrl,
-                                appId: item.appId,
-                                rarity: rarity,
-                                quality: quality,
-                                exterior: exterior,
-                                avoidTopLeftBadgeOverlap: true,
-                                compactTopLeftBadges: true,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
+      child: loading
+          ? const _CollectionLoadingState()
+          : RefreshIndicator(
+              onRefresh: () => loadData(refresh: true),
+              child: _items.isEmpty
+                  ? const _CollectionEmptyState()
+                  : ListView.separated(
+                      controller: scrollController,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+                      itemCount: _items.length + 1,
+                      separatorBuilder: (_, __) => const SizedBox(height: 10),
+                      itemBuilder: (context, index) {
+                        if (index >= _items.length) {
+                          return _CollectionFooter(
+                            showLoading: loadingMore,
+                            showNoMore: !hasMore,
+                          );
+                        }
+                        final item = _items[index];
+                        final rarity = TagInfo.fromMarketTag(item.tags?.rarity);
+                        final quality = TagInfo.fromMarketTag(item.tags?.quality);
+                        final exterior = TagInfo.fromMarketTag(item.tags?.exterior);
+                        final saleLabel = Get.locale?.languageCode == 'en'
+                            ? 'Sale'
+                            : 'app.trade.sale.text'.tr;
+                        return Card(
+                          margin: EdgeInsets.zero,
+                          clipBehavior: Clip.antiAlias,
+                          child: InkWell(
+                            onTap: () => _openDetail(item),
+                            child: Padding(
+                              padding: const EdgeInsets.all(12),
+                              child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          item.marketName ?? '',
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .titleSmall
-                                              ?.copyWith(
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Icon(
-                                        Icons.chevron_right,
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.onSurfaceVariant,
-                                      ),
-                                    ],
+                                  SizedBox(
+                                    width: 84,
+                                    height: 52,
+                                    child: GameItemImage(
+                                      imageUrl: item.imageUrl,
+                                      appId: item.appId,
+                                      rarity: rarity,
+                                      quality: quality,
+                                      exterior: exterior,
+                                      avoidTopLeftBadgeOverlap: true,
+                                      compactTopLeftBadges: true,
+                                    ),
                                   ),
-                                  const SizedBox(height: 10),
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        flex: 9,
-                                        child: _CollectionInlinePrice(
-                                          label: saleLabel,
-                                          valueBuilder: () => currency.format(
-                                            item.sellMinPrice ?? 0,
-                                          ),
-                                          valueColor: Theme.of(
-                                            context,
-                                          ).colorScheme.primary,
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                item.marketName ?? '',
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: Theme.of(context)
+                                                    .textTheme
+                                                    .titleSmall
+                                                    ?.copyWith(
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                    ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Icon(
+                                              Icons.chevron_right,
+                                              color: Theme.of(
+                                                context,
+                                              ).colorScheme.onSurfaceVariant,
+                                            ),
+                                          ],
                                         ),
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Expanded(
-                                        flex: 10,
-                                        child: _CollectionInlinePrice(
-                                          label: 'app.trade.purchase.text'.tr,
-                                          valueBuilder: () => currency.format(
-                                            item.buyMaxPrice ?? 0,
-                                          ),
-                                          valueColor: Theme.of(
-                                            context,
-                                          ).colorScheme.secondary,
+                                        const SizedBox(height: 10),
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              flex: 9,
+                                              child: _CollectionInlinePrice(
+                                                label: saleLabel,
+                                                valueBuilder: () =>
+                                                    currency.format(
+                                                      item.sellMinPrice ?? 0,
+                                                    ),
+                                                valueColor: Theme.of(
+                                                  context,
+                                                ).colorScheme.primary,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 6),
+                                            Expanded(
+                                              flex: 10,
+                                              child: _CollectionInlinePrice(
+                                                label: 'app.trade.purchase.text'
+                                                    .tr,
+                                                valueBuilder: () =>
+                                                    currency.format(
+                                                      item.buyMaxPrice ?? 0,
+                                                    ),
+                                                valueColor: Theme.of(
+                                                  context,
+                                                ).colorScheme.secondary,
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                 ],
                               ),
                             ),
-                          ],
-                        ),
-                      ),
+                          ),
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
-      ),
+            ),
     );
   }
 }
@@ -882,209 +887,220 @@ class _CollectionFavoriteTabState
     final currency = Get.find<CurrencyController>();
     return BackToTopScope(
       enabled: true,
-      child: RefreshIndicator(
-        onRefresh: () => loadData(refresh: true),
-        child: loading
-            ? const _CollectionLoadingState()
-            : _items.isEmpty
-            ? const _CollectionEmptyState()
-            : ListView.separated(
-                controller: scrollController,
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
-                itemCount: _items.length + 1,
-                separatorBuilder: (_, __) => const SizedBox(height: 8),
-                itemBuilder: (context, index) {
-                  if (index >= _items.length) {
-                    return _CollectionFooter(
-                      showLoading: loadingMore,
-                      showNoMore: !hasMore,
-                    );
-                  }
-                  final item = _items[index];
-                  final rarity = TagInfo.fromMarketTag(item.tags?.rarity);
-                  final quality = TagInfo.fromMarketTag(item.tags?.quality);
-                  final exterior = TagInfo.fromMarketTag(item.tags?.exterior);
-                  final stickers = parseStickerList(item.stickerRaw);
-                  final keychains = parseStickerList(item.keychainRaw);
-                  final gems = parseGemList(item.gemRaw);
-                  final paintWearValue = double.tryParse(item.paintWear ?? '');
-                  final rawStatusName =
-                      (item.raw['statusName'] ?? item.raw['status_name'])
-                          ?.toString()
-                          .trim() ??
-                      '';
-                  final showStatus = item.hasStatusTag;
-                  final hasAccessories =
-                      stickers.isNotEmpty ||
-                      keychains.isNotEmpty ||
-                      gems.isNotEmpty;
-                  return Card(
-                    margin: EdgeInsets.zero,
-                    clipBehavior: Clip.antiAlias,
-                    child: InkWell(
-                      onTap: () => _openDetail(item),
-                      child: Padding(
-                        padding: const EdgeInsets.all(10),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                SizedBox(
-                                  width: 84,
-                                  height: 52,
-                                  child: GameItemImage(
-                                    imageUrl: item.imageUrl,
-                                    appId: item.appId,
-                                    rarity: rarity,
-                                    quality: quality,
-                                    exterior: exterior,
-                                    percentage: item.percentage,
-                                    phase: item.phase,
-                                    avoidTopLeftBadgeOverlap: true,
-                                    compactTopLeftBadges: true,
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Column(
+      child: loading
+          ? const _CollectionLoadingState()
+          : RefreshIndicator(
+              onRefresh: () => loadData(refresh: true),
+              child: _items.isEmpty
+                  ? const _CollectionEmptyState()
+                  : ListView.separated(
+                      controller: scrollController,
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(12, 8, 12, 16),
+                      itemCount: _items.length + 1,
+                      separatorBuilder: (_, __) => const SizedBox(height: 8),
+                      itemBuilder: (context, index) {
+                        if (index >= _items.length) {
+                          return _CollectionFooter(
+                            showLoading: loadingMore,
+                            showNoMore: !hasMore,
+                          );
+                        }
+                        final item = _items[index];
+                        final rarity = TagInfo.fromMarketTag(item.tags?.rarity);
+                        final quality = TagInfo.fromMarketTag(item.tags?.quality);
+                        final exterior = TagInfo.fromMarketTag(item.tags?.exterior);
+                        final stickers = parseStickerList(item.stickerRaw);
+                        final keychains = parseStickerList(item.keychainRaw);
+                        final gems = parseGemList(item.gemRaw);
+                        final paintWearValue = double.tryParse(
+                          item.paintWear ?? '',
+                        );
+                        final rawStatusName =
+                            (item.raw['statusName'] ?? item.raw['status_name'])
+                                ?.toString()
+                                .trim() ??
+                            '';
+                        final showStatus = item.hasStatusTag;
+                        final hasAccessories =
+                            stickers.isNotEmpty ||
+                            keychains.isNotEmpty ||
+                            gems.isNotEmpty;
+                        return Card(
+                          margin: EdgeInsets.zero,
+                          clipBehavior: Clip.antiAlias,
+                          child: InkWell(
+                            onTap: () => _openDetail(item),
+                            child: Padding(
+                              padding: const EdgeInsets.all(10),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
-                                      Row(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Expanded(
-                                            child: Text(
-                                              item.marketName ?? '',
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: Theme.of(context)
-                                                  .textTheme
-                                                  .titleSmall
-                                                  ?.copyWith(
-                                                    fontWeight: FontWeight.w600,
-                                                    height: 1.15,
-                                                  ),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          _CollectionInlineActionChip(
-                                            label:
-                                                'app.user.collection.uncollect'
-                                                    .tr,
-                                            onPressed: () =>
-                                                _cancelFavorite(item),
-                                          ),
-                                        ],
+                                      SizedBox(
+                                        width: 84,
+                                        height: 52,
+                                        child: GameItemImage(
+                                          imageUrl: item.imageUrl,
+                                          appId: item.appId,
+                                          rarity: rarity,
+                                          quality: quality,
+                                          exterior: exterior,
+                                          percentage: item.percentage,
+                                          phase: item.phase,
+                                          avoidTopLeftBadgeOverlap: true,
+                                          compactTopLeftBadges: true,
+                                        ),
                                       ),
-                                      const SizedBox(height: 6),
-                                      Row(
-                                        children: [
-                                          if (showStatus &&
-                                              rawStatusName.isNotEmpty) ...[
-                                            _CollectionStatusBadge(
-                                              text: rawStatusName,
-                                              status: item.status,
-                                            ),
-                                            const SizedBox(width: 6),
-                                          ],
-                                          Expanded(
-                                            child: Obx(
-                                              () => Text(
-                                                currency.format(
-                                                  item.price ?? 0,
+                                      const SizedBox(width: 10),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Expanded(
+                                                  child: Text(
+                                                    item.marketName ?? '',
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    style: Theme.of(context)
+                                                        .textTheme
+                                                        .titleSmall
+                                                        ?.copyWith(
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                          height: 1.15,
+                                                        ),
+                                                  ),
                                                 ),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .titleSmall
-                                                    ?.copyWith(
-                                                      color: Theme.of(
-                                                        context,
-                                                      ).colorScheme.primary,
-                                                      fontWeight:
-                                                          FontWeight.w700,
-                                                      height: 1.1,
-                                                    ),
-                                              ),
+                                                const SizedBox(width: 8),
+                                                _CollectionInlineActionChip(
+                                                  label:
+                                                      'app.user.collection.uncollect'
+                                                          .tr,
+                                                  onPressed: () =>
+                                                      _cancelFavorite(item),
+                                                ),
+                                              ],
                                             ),
-                                          ),
-                                        ],
+                                            const SizedBox(height: 6),
+                                            Row(
+                                              children: [
+                                                if (showStatus &&
+                                                    rawStatusName
+                                                        .isNotEmpty) ...[
+                                                  _CollectionStatusBadge(
+                                                    text: rawStatusName,
+                                                    status: item.status,
+                                                  ),
+                                                  const SizedBox(width: 6),
+                                                ],
+                                                Expanded(
+                                                  child: Obx(
+                                                    () => Text(
+                                                      currency.format(
+                                                        item.price ?? 0,
+                                                      ),
+                                                      maxLines: 1,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                      style: Theme.of(context)
+                                                          .textTheme
+                                                          .titleSmall
+                                                          ?.copyWith(
+                                                            color: Theme.of(
+                                                              context,
+                                                            ).colorScheme.primary,
+                                                            fontWeight:
+                                                                FontWeight.w700,
+                                                            height: 1.1,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ],
+                                        ),
                                       ),
                                     ],
                                   ),
-                                ),
-                              ],
-                            ),
-                            if ((item.paintWear?.isNotEmpty ?? false)) ...[
-                              const SizedBox(height: 6),
-                              Text(
-                                '${'app.market.csgo.abradability'.tr}: '
-                                '${item.paintWear}',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                textAlign: TextAlign.left,
-                                style: Theme.of(context).textTheme.bodySmall
-                                    ?.copyWith(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.onSurfaceVariant,
-                                      height: 1.1,
+                                  if ((item.paintWear?.isNotEmpty ??
+                                      false)) ...[
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      '${'app.market.csgo.abradability'.tr}: '
+                                      '${item.paintWear}',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      textAlign: TextAlign.left,
+                                      style: Theme.of(context).textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: Theme.of(
+                                              context,
+                                            ).colorScheme.onSurfaceVariant,
+                                            height: 1.1,
+                                          ),
                                     ),
+                                  ],
+                                  if (paintWearValue != null ||
+                                      hasAccessories) ...[
+                                    const SizedBox(height: 8),
+                                    LayoutBuilder(
+                                      builder: (context, constraints) {
+                                        final wearWidth = math.min(
+                                          176.0,
+                                          constraints.maxWidth * 0.5,
+                                        );
+                                        return Row(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.center,
+                                          children: [
+                                            if (paintWearValue != null)
+                                              SizedBox(
+                                                width: wearWidth,
+                                                child: WearProgressBar(
+                                                  paintWear: paintWearValue,
+                                                  height: 16,
+                                                ),
+                                              ),
+                                            if (hasAccessories) ...[
+                                              if (paintWearValue != null)
+                                                const SizedBox(width: 10),
+                                              Expanded(
+                                                child: Align(
+                                                  alignment:
+                                                      Alignment.centerRight,
+                                                  child:
+                                                      _CollectionAccessoryWrap(
+                                                    stickers: stickers,
+                                                    keychains: keychains,
+                                                    gems: gems,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ],
                               ),
-                            ],
-                            if (paintWearValue != null || hasAccessories) ...[
-                              const SizedBox(height: 8),
-                              LayoutBuilder(
-                                builder: (context, constraints) {
-                                  final wearWidth = math.min(
-                                    176.0,
-                                    constraints.maxWidth * 0.5,
-                                  );
-                                  return Row(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.center,
-                                    children: [
-                                      if (paintWearValue != null)
-                                        SizedBox(
-                                          width: wearWidth,
-                                          child: WearProgressBar(
-                                            paintWear: paintWearValue,
-                                            height: 16,
-                                          ),
-                                        ),
-                                      if (hasAccessories) ...[
-                                        if (paintWearValue != null)
-                                          const SizedBox(width: 10),
-                                        Expanded(
-                                          child: Align(
-                                            alignment: Alignment.centerRight,
-                                            child: _CollectionAccessoryWrap(
-                                              stickers: stickers,
-                                              keychains: keychains,
-                                              gems: gems,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ],
-                                  );
-                                },
-                              ),
-                            ],
-                          ],
-                        ),
-                      ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                  );
-                },
-              ),
-      ),
+            ),
     );
   }
 }
