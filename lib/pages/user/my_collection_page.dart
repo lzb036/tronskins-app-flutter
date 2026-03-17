@@ -615,8 +615,12 @@ class _CollectionCategoryTabState
                         }
                         final item = _items[index];
                         final rarity = TagInfo.fromMarketTag(item.tags?.rarity);
-                        final quality = TagInfo.fromMarketTag(item.tags?.quality);
-                        final exterior = TagInfo.fromMarketTag(item.tags?.exterior);
+                        final quality = TagInfo.fromMarketTag(
+                          item.tags?.quality,
+                        );
+                        final exterior = TagInfo.fromMarketTag(
+                          item.tags?.exterior,
+                        );
                         final saleLabel = Get.locale?.languageCode == 'en'
                             ? 'Sale'
                             : 'app.trade.sale.text'.tr;
@@ -850,6 +854,7 @@ class _CollectionFavoriteTabState
     }
     final confirmed = await Get.dialog<bool>(
       AlertDialog(
+        title: Text('app.system.tips.title'.tr),
         content: Text('app.user.collection.uncollect_tips'.tr),
         actions: [
           TextButton(
@@ -908,8 +913,12 @@ class _CollectionFavoriteTabState
                         }
                         final item = _items[index];
                         final rarity = TagInfo.fromMarketTag(item.tags?.rarity);
-                        final quality = TagInfo.fromMarketTag(item.tags?.quality);
-                        final exterior = TagInfo.fromMarketTag(item.tags?.exterior);
+                        final quality = TagInfo.fromMarketTag(
+                          item.tags?.quality,
+                        );
+                        final exterior = TagInfo.fromMarketTag(
+                          item.tags?.exterior,
+                        );
                         final stickers = parseStickerList(item.stickerRaw);
                         final keychains = parseStickerList(item.keychainRaw);
                         final gems = parseGemList(item.gemRaw);
@@ -1016,9 +1025,12 @@ class _CollectionFavoriteTabState
                                                           .textTheme
                                                           .titleSmall
                                                           ?.copyWith(
-                                                            color: Theme.of(
-                                                              context,
-                                                            ).colorScheme.primary,
+                                                            color:
+                                                                Theme.of(
+                                                                      context,
+                                                                    )
+                                                                    .colorScheme
+                                                                    .primary,
                                                             fontWeight:
                                                                 FontWeight.w700,
                                                             height: 1.1,
@@ -1042,7 +1054,9 @@ class _CollectionFavoriteTabState
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       textAlign: TextAlign.left,
-                                      style: Theme.of(context).textTheme.bodySmall
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
                                           ?.copyWith(
                                             color: Theme.of(
                                               context,
@@ -1081,10 +1095,10 @@ class _CollectionFavoriteTabState
                                                       Alignment.centerRight,
                                                   child:
                                                       _CollectionAccessoryWrap(
-                                                    stickers: stickers,
-                                                    keychains: keychains,
-                                                    gems: gems,
-                                                  ),
+                                                        stickers: stickers,
+                                                        keychains: keychains,
+                                                        gems: gems,
+                                                      ),
                                                 ),
                                               ),
                                             ],
