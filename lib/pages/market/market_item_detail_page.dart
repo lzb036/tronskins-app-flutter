@@ -23,6 +23,8 @@ class MarketItemDetailPage extends StatefulWidget {
   State<MarketItemDetailPage> createState() => _MarketItemDetailPageState();
 }
 
+enum _ShopMetricType { successRate, averageTime, notShipped }
+
 class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
   final ApiMarketServer _marketServer = ApiMarketServer();
   final ApiShopServer _shopServer = ApiShopServer();
@@ -422,10 +424,62 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
     return '${rate.toStringAsFixed(2)}%';
   }
 
+  bool get _isEnglishLocale =>
+      (Get.locale?.languageCode ?? '').toLowerCase().startsWith('en');
+
+  String _shopDaysLabel(int days) {
+    if (_isEnglishLocale) {
+      return days == 1 ? '$days Day' : '$days Days';
+    }
+    return '$days${'app.common.day'.tr}';
+  }
+
+  String _shopDeliverLabel() {
+    return 'app.user.shop.deliver'.tr;
+  }
+
+  String _shopMetricLabel(_ShopMetricType type, int days) {
+    final dayLabel = _shopDaysLabel(days);
+    switch (type) {
+      case _ShopMetricType.successRate:
+        return _isEnglishLocale
+            ? '${'app.user.shop.deliver_rate_success'.tr} · $dayLabel'
+            : '${'app.user.shop.deliver_rate_success'.tr}/$dayLabel';
+      case _ShopMetricType.averageTime:
+        return _isEnglishLocale
+            ? '${'app.user.shop.deliver_time_average'.tr} · $dayLabel'
+            : '${'app.user.shop.deliver_time_average'.tr}/$dayLabel';
+      case _ShopMetricType.notShipped:
+        return _isEnglishLocale
+            ? '${'app.user.shop.undelivered_times'.tr} · $dayLabel'
+            : '${'app.user.shop.undelivered_times'.tr}/$dayLabel';
+    }
+  }
+
+  String _shopUndeliveredValue(int count) {
+    if (_isEnglishLocale) {
+      return count == 1 ? '$count Time' : '$count Times';
+    }
+    return '$count${'app.common.times'.tr}';
+  }
+
   String _formatAverageDelivery(double avgMinutes) {
     final minutes = avgMinutes.isNaN || avgMinutes.isInfinite
         ? 0
         : avgMinutes.round();
+    if (_isEnglishLocale) {
+      if (minutes >= 60) {
+        final hours = minutes ~/ 60;
+        final remain = minutes % 60;
+        final hourText = hours == 1 ? '$hours Hour' : '$hours Hours';
+        if (remain == 0) {
+          return hourText;
+        }
+        final minuteText = remain == 1 ? '$remain Minute' : '$remain Minutes';
+        return '$hourText $minuteText';
+      }
+      return minutes == 1 ? '$minutes Minute' : '$minutes Minutes';
+    }
     if (minutes > 60) {
       final hours = minutes ~/ 60;
       final remain = minutes % 60;
@@ -463,27 +517,52 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
     );
   }
 
-  Widget _buildShopMetricRow({required String label, required String value}) {
+  Widget _buildShopMetricRow({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.36),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.3),
+        ),
+      ),
       child: Row(
         children: [
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: colorScheme.primary.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Icon(icon, size: 16, color: colorScheme.primary),
+          ),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
               label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
           const SizedBox(width: 10),
           Text(
             value,
+            textAlign: TextAlign.right,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: colorScheme.onSurface,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ],
@@ -514,7 +593,7 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
             borderRadius: BorderRadius.circular(7),
           ),
           child: Text(
-            '$days${'app.common.day'.tr}',
+            _shopDaysLabel(days),
             style: theme.textTheme.bodySmall?.copyWith(
               color: active
                   ? colorScheme.primary
@@ -593,13 +672,23 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
     );
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
       decoration: BoxDecoration(
-        color: theme.cardColor,
-        borderRadius: BorderRadius.circular(12),
+        color: Color.alphaBlend(
+          colorScheme.primary.withValues(alpha: 0.02),
+          theme.cardColor,
+        ),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: colorScheme.outlineVariant.withValues(alpha: 0.6),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -635,79 +724,74 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
               _buildShopDaysToggle(),
             ],
           ),
-          const SizedBox(height: 10),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                width: 96,
-                child: Column(
+          const SizedBox(height: 12),
+          Material(
+            color: colorScheme.primary.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(14),
+            child: InkWell(
+              onTap: _showShopDeliverTips,
+              borderRadius: BorderRadius.circular(14),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                child: Row(
                   children: [
                     Container(
-                      width: 38,
-                      height: 38,
+                      width: 34,
+                      height: 34,
                       decoration: BoxDecoration(
                         color: colorScheme.primary.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(19),
+                        borderRadius: BorderRadius.circular(17),
                       ),
                       child: Icon(
                         Icons.local_shipping_outlined,
-                        size: 20,
+                        size: 18,
                         color: colorScheme.primary,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    InkWell(
-                      onTap: _showShopDeliverTips,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              'app.user.shop.deliver'.tr,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Icon(
-                            Icons.help_outline,
-                            size: 14,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ],
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        _shopDeliverLabel(),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
+                    ),
+                    Icon(
+                      Icons.help_outline,
+                      size: 16,
+                      color: colorScheme.onSurfaceVariant,
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  children: [
-                    _buildShopMetricRow(
-                      label:
-                          '${'app.user.shop.deliver_rate_success'.tr}/$days${'app.common.day'.tr}',
-                      value: _deliverySuccessRate(
-                        total: nums,
-                        notSend: notSend,
-                      ),
-                    ),
-                    _buildShopMetricRow(
-                      label:
-                          '${'app.user.shop.deliver_time_average'.tr}/$days${'app.common.day'.tr}',
-                      value: _formatAverageDelivery(avg),
-                    ),
-                    _buildShopMetricRow(
-                      label:
-                          '${'app.user.shop.undelivered_times'.tr}/$days${'app.common.day'.tr}',
-                      value: '$notSend${'app.common.times'.tr}',
-                    ),
-                  ],
-                ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Column(
+            children: [
+              _buildShopMetricRow(
+                icon: Icons.check_circle_outline_rounded,
+                label: _shopMetricLabel(_ShopMetricType.successRate, days),
+                value: _deliverySuccessRate(total: nums, notSend: notSend),
+              ),
+              const SizedBox(height: 8),
+              _buildShopMetricRow(
+                icon: Icons.schedule_rounded,
+                label: _shopMetricLabel(_ShopMetricType.averageTime, days),
+                value: _formatAverageDelivery(avg),
+              ),
+              const SizedBox(height: 8),
+              _buildShopMetricRow(
+                icon: Icons.inventory_2_outlined,
+                label: _shopMetricLabel(_ShopMetricType.notShipped, days),
+                value: _shopUndeliveredValue(notSend),
               ),
             ],
           ),
