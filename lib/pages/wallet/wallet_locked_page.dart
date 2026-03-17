@@ -90,6 +90,7 @@ class _WalletLockedPageState extends State<WalletLockedPage> {
   @override
   Widget build(BuildContext context) {
     final currency = Get.find<CurrencyController>();
+    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       backgroundColor: WalletUi.pageBackground(context),
       appBar: AppBar(title: Text('app.user.wallet.lock_details'.tr)),
@@ -143,16 +144,48 @@ class _WalletLockedPageState extends State<WalletLockedPage> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                '${'app.user.wallet.lock_amount'.tr}: '
-                                '${currency.formatUsd(item.amount ?? 0)}',
+                              Text.rich(
+                                TextSpan(
+                                  children: [
+                                    TextSpan(
+                                      text:
+                                          '${'app.user.wallet.lock_amount'.tr}: ',
+                                    ),
+                                    TextSpan(
+                                      text: currency.formatUsd(
+                                        item.amount ?? 0,
+                                      ),
+                                      style: TextStyle(
+                                        color: colorScheme.primary,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                style: Theme.of(context).textTheme.bodyMedium,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
                               const SizedBox(height: 4),
-                              Text(
-                                '${'app.user.wallet.gift_amount'.tr}: '
-                                '${currency.formatUsd(item.giftAmount ?? 0)}',
+                              Text.rich(
+                                TextSpan(
+                                  children: [
+                                    TextSpan(
+                                      text:
+                                          '${'app.user.wallet.gift_amount'.tr}: ',
+                                    ),
+                                    TextSpan(
+                                      text: currency.formatUsd(
+                                        item.giftAmount ?? 0,
+                                      ),
+                                      style: TextStyle(
+                                        color: colorScheme.primary,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                style: Theme.of(context).textTheme.bodyMedium,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),

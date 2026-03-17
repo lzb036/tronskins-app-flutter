@@ -546,32 +546,42 @@ class _WalletLockedDetailPageState extends State<WalletLockedDetailPage> {
     final order = _detail?.order;
     final orderId = order?.id?.toString() ?? '-';
     final price = currency.formatUsd(order?.price ?? 0);
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
     return Card(
       elevation: 0,
       shape: WalletUi.cardShape(context),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Text('${'app.trade.order.number'.tr}: $orderId'),
-                const Spacer(),
-                TextButton(
-                  onPressed: () => _copy(orderId),
-                  child: Text('app.common.copy'.tr),
-                ),
-              ],
+            _CopyInfoRow(
+              label: 'app.trade.order.number'.tr,
+              value: orderId,
+              onCopy: orderId == '-' ? null : () => _copy(orderId),
             ),
+            const SizedBox(height: 12),
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('${'app.trade.order.total_price'.tr}:'),
-                const Spacer(),
-                Text(
-                  price,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.primary,
-                    fontWeight: FontWeight.w600,
+                SizedBox(
+                  width: 92,
+                  child: Text(
+                    '${'app.trade.order.total_price'.tr}:',
+                    style: textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    price,
+                    style: textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.primary,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
               ],
@@ -700,6 +710,70 @@ class _WalletLockedDetailPageState extends State<WalletLockedDetailPage> {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _CopyInfoRow extends StatelessWidget {
+  const _CopyInfoRow({
+    required this.label,
+    required this.value,
+    required this.onCopy,
+  });
+
+  final String label;
+  final String value;
+  final VoidCallback? onCopy;
+
+  @override
+  Widget build(BuildContext context) {
+    final valueStyle = Theme.of(context).textTheme.bodyMedium;
+    final valueLineHeight =
+        ((valueStyle?.fontSize ?? 14) * (valueStyle?.height ?? 1.35)) + 2;
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 84,
+          child: Text(
+            '$label:',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: SizedBox(
+            height: valueLineHeight,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  value,
+                  style: valueStyle,
+                  maxLines: 1,
+                  softWrap: false,
+                ),
+              ),
+            ),
+          ),
+        ),
+        if (onCopy != null) ...[
+          const SizedBox(width: 6),
+          TextButton(
+            onPressed: onCopy,
+            style: TextButton.styleFrom(
+              minimumSize: const Size(0, 0),
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            child: Text('app.common.copy'.tr),
+          ),
+        ],
+      ],
     );
   }
 }
