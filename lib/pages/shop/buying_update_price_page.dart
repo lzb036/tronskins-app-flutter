@@ -339,13 +339,35 @@ class _BuyingUpdatePricePageState extends State<BuyingUpdatePricePage> {
     final wearMax =
         _rawText(const ['paint_wear_max', 'paintWearMax']) ??
         _item.paintWearMax?.toString();
+    final primaryActionColor = theme.colorScheme.primary;
+    final actionLabelStyle = theme.textTheme.labelLarge?.copyWith(
+      fontWeight: FontWeight.w700,
+      color: primaryActionColor,
+    );
     return Scaffold(
       appBar: AppBar(
-        title: Text('app.trade.purchase.price_change'.tr),
+        centerTitle: false,
+        leadingWidth: 40,
+        titleSpacing: 4,
+        title: Text(
+          'app.trade.purchase.price_change'.tr,
+          maxLines: 1,
+          softWrap: false,
+        ),
         actions: [
-          TextButton(
-            onPressed: _applyMaxPrice,
-            child: Text('app.inventory.pricing'.tr),
+          Padding(
+            padding: const EdgeInsets.only(right: 6),
+            child: TextButton(
+              onPressed: _applyMaxPrice,
+              style: TextButton.styleFrom(
+                foregroundColor: primaryActionColor,
+                minimumSize: Size.zero,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                visualDensity: VisualDensity.compact,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text('app.inventory.pricing'.tr, style: actionLabelStyle),
+            ),
           ),
         ],
       ),

@@ -477,7 +477,7 @@ final Map<String, String> en_US = {
   "app.inventory.pricing": "Pricing",
   "app.inventory.pricing_reference": "Reference Pricing",
   "app.inventory.pricing_abnormal": "The pricing anomaly",
-  "app.inventory.view_overview": "View Overview",
+  "app.inventory.view_overview": "Overview",
   "app.inventory.upshop.text": "On Sale",
   "app.inventory.upshop.confirm_title": "Confirmation of Shelf",
   "app.inventory.upshop.nums": "Number of Shelves",

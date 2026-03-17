@@ -1441,32 +1441,54 @@ class _ShopPriceChangePageState extends State<ShopPriceChangePage> {
   @override
   Widget build(BuildContext context) {
     final currency = Get.find<CurrencyController>();
+    final theme = Theme.of(context);
+    final primaryActionColor = theme.colorScheme.primary;
+    final actionLabelStyle = theme.textTheme.labelLarge?.copyWith(
+      fontWeight: FontWeight.w700,
+      color: primaryActionColor,
+    );
     return Scaffold(
       appBar: AppBar(
-        title: Text('app.inventory.price_change'.tr),
+        centerTitle: false,
+        leadingWidth: 40,
+        titleSpacing: 4,
+        title: Text(
+          'app.inventory.price_change'.tr,
+          maxLines: 1,
+          softWrap: false,
+        ),
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 4),
+            padding: const EdgeInsets.only(right: 2),
             child: TextButton(
               onPressed: () {
                 setState(() => _showOverview = !_showOverview);
               },
               style: TextButton.styleFrom(
+                foregroundColor: primaryActionColor,
+                minimumSize: Size.zero,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                 visualDensity: VisualDensity.compact,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              child: Text('app.inventory.view_overview'.tr),
+              child: Text(
+                'app.inventory.view_overview'.tr,
+                style: actionLabelStyle,
+              ),
             ),
           ),
           Padding(
-            padding: const EdgeInsets.only(right: 8),
+            padding: const EdgeInsets.only(right: 6),
             child: TextButton(
               onPressed: _applyReferencePrice,
               style: TextButton.styleFrom(
+                foregroundColor: primaryActionColor,
+                minimumSize: Size.zero,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                 visualDensity: VisualDensity.compact,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              child: Text('app.inventory.pricing'.tr),
+              child: Text('app.inventory.pricing'.tr, style: actionLabelStyle),
             ),
           ),
         ],
