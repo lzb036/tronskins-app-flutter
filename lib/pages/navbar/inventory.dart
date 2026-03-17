@@ -5,6 +5,7 @@ import 'package:tronskins_app/api/steam.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
 import 'package:tronskins_app/components/game/game_icon_button.dart';
 import 'package:tronskins_app/components/game/game_switch_menu.dart';
+import 'package:tronskins_app/common/widgets/back_to_top_overlay.dart';
 import 'package:tronskins_app/components/game_item/inventory_item_card.dart';
 import 'package:tronskins_app/components/filter/filter_models.dart';
 import 'package:tronskins_app/components/filter/market_filter_sheet.dart';
@@ -25,13 +26,18 @@ class InventoryPage extends StatefulWidget {
 }
 
 class _InventoryPageState extends State<InventoryPage> {
+  static const double _backToTopThreshold = 120;
   final InventoryController controller = Get.isRegistered<InventoryController>()
       ? Get.find<InventoryController>()
       : Get.put(InventoryController());
   final UserController userController = Get.find<UserController>();
   final ApiSteamServer _steamApi = ApiSteamServer();
   late final PageController _inventoryStatePageController;
+  final ScrollController _allInventoryScroll = ScrollController();
+  final ScrollController _sellableInventoryScroll = ScrollController();
+  final ScrollController _coolingInventoryScroll = ScrollController();
   final TextEditingController _searchController = TextEditingController();
+  final ValueNotifier<bool> _showBackToTop = ValueNotifier<bool>(false);
   Worker? _loginWorker;
   Worker? _tabWorker;
   bool _steamSessionDialogShowing = false;
@@ -90,6 +96,9 @@ class _InventoryPageState extends State<InventoryPage> {
     _inventoryStatePageController = PageController(
       initialPage: _inventoryFilterToPage(_currentInventoryStateFilter()),
     );
+    _allInventoryScroll.addListener(_handleAllInventoryScroll);
+    _sellableInventoryScroll.addListener(_handleSellableInventoryScroll);
+    _coolingInventoryScroll.addListener(_handleCoolingInventoryScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       MarketFilterSheet.preload(appId: controller.currentAppId.value);
     });
@@ -189,7 +198,17 @@ class _InventoryPageState extends State<InventoryPage> {
   @override
   void dispose() {
     _inventoryStatePageController.dispose();
+    _allInventoryScroll
+      ..removeListener(_handleAllInventoryScroll)
+      ..dispose();
+    _sellableInventoryScroll
+      ..removeListener(_handleSellableInventoryScroll)
+      ..dispose();
+    _coolingInventoryScroll
+      ..removeListener(_handleCoolingInventoryScroll)
+      ..dispose();
     _searchController.dispose();
+    _showBackToTop.dispose();
     _loginWorker?.dispose();
     _tabWorker?.dispose();
     super.dispose();
@@ -377,6 +396,11 @@ class _InventoryPageState extends State<InventoryPage> {
       return;
     }
     await _applyInventoryStateFilter(selected);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _syncBackToTopVisibilityForActiveView();
+      }
+    });
   }
 
   bool _onInventoryScrollNotification(ScrollNotification notification) {
@@ -390,7 +414,143 @@ class _InventoryPageState extends State<InventoryPage> {
     return false;
   }
 
-  Widget _buildInventoryListView({required Key scrollViewKey}) {
+  void _handleAllInventoryScroll() =>
+      _updateBackToTopVisibility(_allInventoryScroll);
+
+  void _handleSellableInventoryScroll() =>
+      _updateBackToTopVisibility(_sellableInventoryScroll);
+
+  void _handleCoolingInventoryScroll() =>
+      _updateBackToTopVisibility(_coolingInventoryScroll);
+
+  ScrollController get _activeInventoryScrollController {
+    if (controller.currentAppId.value == 440) {
+      return _allInventoryScroll;
+    }
+    return switch (_currentInventoryStateFilter()) {
+      _InventoryStateFilter.all => _allInventoryScroll,
+      _InventoryStateFilter.sellable => _sellableInventoryScroll,
+      _InventoryStateFilter.cooling => _coolingInventoryScroll,
+    };
+  }
+
+  void _updateBackToTopVisibility(ScrollController controller) {
+    if (!controller.hasClients) {
+      return;
+    }
+    final shouldShow = controller.position.pixels > _backToTopThreshold;
+    if (shouldShow == _showBackToTop.value || !mounted) {
+      return;
+    }
+    _showBackToTop.value = shouldShow;
+  }
+
+  void _syncBackToTopVisibilityForActiveView() {
+    final controller = _activeInventoryScrollController;
+    final shouldShow =
+        controller.hasClients &&
+        controller.position.pixels > _backToTopThreshold;
+    if (shouldShow == _showBackToTop.value || !mounted) {
+      return;
+    }
+    _showBackToTop.value = shouldShow;
+  }
+
+  Future<void> _scrollInventoryToTop() async {
+    final controller = _activeInventoryScrollController;
+    if (!controller.hasClients) {
+      return;
+    }
+    if (_showBackToTop.value) {
+      _showBackToTop.value = false;
+    }
+    try {
+      await controller.animateTo(
+        0,
+        duration: const Duration(milliseconds: 420),
+        curve: Curves.easeOutCubic,
+      );
+    } catch (_) {
+      return;
+    }
+  }
+
+  Widget _buildLocalBackToTopButton() {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final backgroundColor = isDark
+        ? colors.surface.withValues(alpha: 0.76)
+        : Colors.white.withValues(alpha: 0.88);
+    final borderColor = colors.outline.withValues(alpha: isDark ? 0.34 : 0.18);
+    final iconColor = colors.onSurface.withValues(alpha: 0.82);
+
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: RepaintBoundary(
+        child: ValueListenableBuilder<bool>(
+          valueListenable: _showBackToTop,
+          builder: (context, showBackToTop, child) {
+            return IgnorePointer(
+              ignoring: !showBackToTop,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 14),
+                child: AnimatedSlide(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOutCubic,
+                  offset: showBackToTop ? Offset.zero : const Offset(0, 0.35),
+                  child: AnimatedOpacity(
+                    duration: const Duration(milliseconds: 180),
+                    curve: Curves.easeOut,
+                    opacity: showBackToTop ? 1 : 0,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: backgroundColor,
+                        borderRadius: BorderRadius.circular(999),
+                        border: Border.all(color: borderColor),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(
+                              alpha: isDark ? 0.18 : 0.10,
+                            ),
+                            blurRadius: 14,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: Material(
+                        type: MaterialType.transparency,
+                        child: InkWell(
+                          onTap: _scrollInventoryToTop,
+                          borderRadius: BorderRadius.circular(999),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 8,
+                            ),
+                            child: Icon(
+                              Icons.keyboard_double_arrow_up_rounded,
+                              size: 20,
+                              color: iconColor,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInventoryListView({
+    required Key scrollViewKey,
+    required ScrollController scrollController,
+  }) {
     return Obx(() {
       if (controller.items.isEmpty && controller.isLoading.value) {
         return const Center(child: CircularProgressIndicator());
@@ -401,6 +561,7 @@ class _InventoryPageState extends State<InventoryPage> {
           onNotification: _onInventoryScrollNotification,
           child: CustomScrollView(
             key: scrollViewKey,
+            controller: scrollController,
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
               if (controller.items.isEmpty)
@@ -497,105 +658,118 @@ class _InventoryPageState extends State<InventoryPage> {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
-    return Scaffold(
-      body: Obx(() {
-        if (!userController.isLoggedIn.value) {
-          return _buildLoginPrompt();
-        }
-        return SafeArea(
-          child: Column(
-            children: [
-              Container(
-                decoration: BoxDecoration(
-                  color: isDark ? colors.surface : Colors.white,
-                  border: Border(
-                    bottom: BorderSide(
-                      color: colors.outline.withValues(alpha: 0.08),
-                    ),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.05),
-                      offset: const Offset(0, 3),
-                      blurRadius: 6,
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
+    return BackToTopScope(
+      enabled: false,
+      child: Scaffold(
+        body: Obx(() {
+          if (!userController.isLoggedIn.value) {
+            return _buildLoginPrompt();
+          }
+          return SafeArea(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                Column(
                   children: [
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 4,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'app.inventory.title'.tr,
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(fontWeight: FontWeight.bold),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: isDark ? colors.surface : Colors.white,
+                        border: Border(
+                          bottom: BorderSide(
+                            color: colors.outline.withValues(alpha: 0.08),
                           ),
-                          _buildTopRightActions(),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.05),
+                            offset: const Offset(0, 3),
+                            blurRadius: 6,
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 4,
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'app.inventory.title'.tr,
+                                  style: Theme.of(context).textTheme.titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.bold),
+                                ),
+                                _buildTopRightActions(),
+                              ],
+                            ),
+                          ),
+                          _buildSearchBar(),
+                          const SizedBox(height: 6),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            child: _buildInventorySummaryBar(currency),
+                          ),
+                          const SizedBox(height: 6),
                         ],
                       ),
                     ),
-                    _buildSearchBar(),
-                    const SizedBox(height: 6),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: _buildInventorySummaryBar(currency),
+                    Expanded(
+                      child: Obx(() {
+                        if (controller.currentAppId.value == 440) {
+                          return _buildInventoryListView(
+                            scrollViewKey: const PageStorageKey(
+                              'inventory_scroll_single',
+                            ),
+                            scrollController: _allInventoryScroll,
+                          );
+                        }
+                        return PageView(
+                          controller: _inventoryStatePageController,
+                          onPageChanged: (page) {
+                            _onInventoryStatePageChanged(page);
+                          },
+                          children: [
+                            _buildInventoryListView(
+                              scrollViewKey: const PageStorageKey(
+                                'inventory_scroll_all',
+                              ),
+                              scrollController: _allInventoryScroll,
+                            ),
+                            _buildInventoryListView(
+                              scrollViewKey: const PageStorageKey(
+                                'inventory_scroll_sellable',
+                              ),
+                              scrollController: _sellableInventoryScroll,
+                            ),
+                            _buildInventoryListView(
+                              scrollViewKey: const PageStorageKey(
+                                'inventory_scroll_cooling',
+                              ),
+                              scrollController: _coolingInventoryScroll,
+                            ),
+                          ],
+                        );
+                      }),
                     ),
-                    const SizedBox(height: 6),
                   ],
                 ),
-              ),
-              Expanded(
-                child: Obx(() {
-                  if (controller.currentAppId.value == 440) {
-                    return _buildInventoryListView(
-                      scrollViewKey: const PageStorageKey(
-                        'inventory_scroll_single',
-                      ),
-                    );
-                  }
-                  return PageView(
-                    controller: _inventoryStatePageController,
-                    onPageChanged: (page) {
-                      _onInventoryStatePageChanged(page);
-                    },
-                    children: [
-                      _buildInventoryListView(
-                        scrollViewKey: const PageStorageKey(
-                          'inventory_scroll_all',
-                        ),
-                      ),
-                      _buildInventoryListView(
-                        scrollViewKey: const PageStorageKey(
-                          'inventory_scroll_sellable',
-                        ),
-                      ),
-                      _buildInventoryListView(
-                        scrollViewKey: const PageStorageKey(
-                          'inventory_scroll_cooling',
-                        ),
-                      ),
-                    ],
-                  );
-                }),
-              ),
-            ],
-          ),
-        );
-      }),
-      bottomNavigationBar: Obx(() {
-        if (!userController.isLoggedIn.value ||
-            controller.selectedIds.isEmpty) {
-          return const SizedBox.shrink();
-        }
-        return _buildInventorySelectionBar();
-      }),
+                _buildLocalBackToTopButton(),
+              ],
+            ),
+          );
+        }),
+        bottomNavigationBar: Obx(() {
+          if (!userController.isLoggedIn.value ||
+              controller.selectedIds.isEmpty) {
+            return const SizedBox.shrink();
+          }
+          return _buildInventorySelectionBar();
+        }),
+      ),
     );
   }
 
