@@ -45,7 +45,7 @@ final Map<String, String> ko_KR = {
   "app.market.csgo.type": "유형",
   "app.market.csgo.category": "카테고리",
   "app.market.csgo.quality": "품질",
-  "app.market.csgo.abradability": "Abradability는",
+  "app.market.csgo.abradability": "마모도",
   "app.market.csgo.gradient_range": "그래디언트 범위",
   "app.market.csgo.gradient_unlimited": "무제한 gradient",
   "app.market.csgo.phase": "단계",

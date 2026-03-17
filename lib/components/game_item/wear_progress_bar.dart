@@ -23,7 +23,7 @@ class WearProgressBar extends StatelessWidget {
           markerHeight - 1,
           height - barHeight,
         );
-        final markerTop = (barTop - markerHeight + 1).clamp(
+        final markerTop = (barTop - markerHeight + (markerHeight * 0.4)).clamp(
           0.0,
           height - markerHeight,
         );

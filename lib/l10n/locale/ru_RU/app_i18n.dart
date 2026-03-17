@@ -49,7 +49,7 @@ final Map<String, String> ru_RU = {
   "app.market.csgo.type": "Тип",
   "app.market.csgo.category": "Категория",
   "app.market.csgo.quality": "Качество",
-  "app.market.csgo.abradability": "Abradability",
+  "app.market.csgo.abradability": "Износ",
   "app.market.csgo.gradient_range": "Диапазон градиентов",
   "app.market.csgo.gradient_unlimited": "Градиент неограниченный",
   "app.market.csgo.phase": "фаза",

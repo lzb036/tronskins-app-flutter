@@ -48,7 +48,7 @@ final Map<String, String> en_US = {
   "app.market.csgo.type": "Type",
   "app.market.csgo.category": "Category",
   "app.market.csgo.quality": "Quality",
-  "app.market.csgo.abradability": "Abradability",
+  "app.market.csgo.abradability": "Wear",
   "app.market.csgo.gradient_range": "Gradient Range",
   "app.market.csgo.gradient_unlimited": "Gradient Unlimited",
   "app.market.csgo.phase": "Phase",
