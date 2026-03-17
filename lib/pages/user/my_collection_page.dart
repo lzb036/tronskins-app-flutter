@@ -596,8 +596,8 @@ class _CollectionCategoryTabState
       enabled: true,
       child: RefreshIndicator(
         onRefresh: () => loadData(refresh: true),
-        child: loading && _items.isEmpty
-            ? const Center(child: CircularProgressIndicator())
+        child: loading
+            ? const _CollectionLoadingState()
             : _items.isEmpty
             ? const _CollectionEmptyState()
             : ListView.separated(
@@ -884,8 +884,8 @@ class _CollectionFavoriteTabState
       enabled: true,
       child: RefreshIndicator(
         onRefresh: () => loadData(refresh: true),
-        child: loading && _items.isEmpty
-            ? const Center(child: CircularProgressIndicator())
+        child: loading
+            ? const _CollectionLoadingState()
             : _items.isEmpty
             ? const _CollectionEmptyState()
             : ListView.separated(
@@ -1483,6 +1483,35 @@ class _CollectionEmptyState extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CollectionLoadingState extends StatelessWidget {
+  const _CollectionLoadingState();
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final height = MediaQuery.of(context).size.height * 0.56;
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(12),
+      children: [
+        SizedBox(
+          height: height,
+          child: Center(
+            child: SizedBox(
+              width: 34,
+              height: 34,
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                color: colors.primary,
+              ),
             ),
           ),
         ),
