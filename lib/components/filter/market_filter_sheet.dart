@@ -455,7 +455,7 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
       sections.add(
         const _FilterSection(
           type: _SectionType.price,
-          labelKey: 'app.market.filter.price_range',
+          labelKey: 'app.market.filter.price',
         ),
       );
     }
@@ -986,7 +986,7 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
                   horizontal: 12,
                   vertical: 12,
                 ),
-                labelText: 'app.market.filter.price_lowest'.tr,
+                labelText: _priceLowestLabel(),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(
@@ -1023,7 +1023,7 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
                   horizontal: 12,
                   vertical: 12,
                 ),
-                labelText: 'app.market.filter.price_highest'.tr,
+                labelText: _priceHighestLabel(),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(
@@ -1048,6 +1048,20 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
         ],
       ),
     ];
+  }
+
+  String _priceLowestLabel() {
+    if (Get.locale?.languageCode == 'en') {
+      return 'Lowest';
+    }
+    return 'app.market.filter.price_lowest'.tr;
+  }
+
+  String _priceHighestLabel() {
+    if (Get.locale?.languageCode == 'en') {
+      return 'Highest';
+    }
+    return 'app.market.filter.price_highest'.tr;
   }
 
   List<Widget> _buildStatusSection() {
