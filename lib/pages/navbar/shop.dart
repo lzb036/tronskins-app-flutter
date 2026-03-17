@@ -2345,11 +2345,11 @@ class _ShopPageState extends State<ShopPage>
       );
       if (changed == true) {
         await salesController.refreshOnSale();
+        if (!mounted) {
+          return;
+        }
+        setState(_selectedIds.clear);
       }
-      if (!mounted) {
-        return;
-      }
-      setState(_selectedIds.clear);
     }
 
     return SafeArea(
