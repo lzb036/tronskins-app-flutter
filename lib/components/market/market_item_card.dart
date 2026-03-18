@@ -25,6 +25,7 @@ class MarketItemCard extends StatelessWidget {
     final paintWearText = item.paintWear;
     final paintWearValue = double.tryParse(item.paintWear ?? '');
     final reserveWearSlot = item.appId == 730;
+    final hasWearProgress = paintWearValue != null;
     final showQualityRibbon = !isDota && _shouldShowQualityRibbon(quality);
     return Card(
       margin: EdgeInsets.zero,
@@ -62,13 +63,13 @@ class MarketItemCard extends StatelessWidget {
             ),
             if (reserveWearSlot)
               SizedBox(
-                height: 14,
-                child: paintWearValue != null
+                height: hasWearProgress ? 14 : 4,
+                child: hasWearProgress
                     ? WearProgressBar(paintWear: paintWearValue, height: 14)
                     : const SizedBox.shrink(),
               ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(8, 6, 8, 2),
+              padding: const EdgeInsets.fromLTRB(8, 2, 8, 2),
               child: Text(
                 item.marketName ?? '',
                 maxLines: 1,

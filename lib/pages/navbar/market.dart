@@ -326,7 +326,7 @@ class _MarketPageState extends State<MarketPage> {
                     crossAxisCount: 2,
                     mainAxisSpacing: 10,
                     crossAxisSpacing: 10,
-                    childAspectRatio: 1.0,
+                    childAspectRatio: 1.06,
                   ),
                   itemCount: controller.items.length,
                   itemBuilder: (context, index) {
