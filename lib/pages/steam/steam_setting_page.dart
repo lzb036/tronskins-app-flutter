@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:tronskins_app/common/utils/app_snackbar.dart';
 import 'package:tronskins_app/common/widgets/back_to_top_overlay.dart';
+import 'package:tronskins_app/common/widgets/glass_notice_dialog.dart';
 import 'package:tronskins_app/controllers/auth/steam_controller.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
 
@@ -157,8 +158,19 @@ class _SteamSettingPageState extends State<SteamSettingPage> {
   }
 
   Future<void> _copySteamId(String steamId) async {
+    if (steamId.isEmpty) {
+      return;
+    }
     await Clipboard.setData(ClipboardData(text: steamId));
-    _showSnack('app.system.message.copy_success'.tr);
+    if (!mounted) {
+      return;
+    }
+    await showGlassNoticeDialog(
+      context,
+      message: 'app.system.message.copy_success'.tr,
+      icon: Icons.check_circle_outline_rounded,
+      duration: const Duration(milliseconds: 1200),
+    );
   }
 
   @override
@@ -175,12 +187,25 @@ class _SteamSettingPageState extends State<SteamSettingPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('app.steam.account.management'.tr),
+        centerTitle: false,
+        leadingWidth: 40,
+        titleSpacing: 4,
+        title: Text(
+          'app.steam.account.management'.tr,
+          maxLines: 1,
+          softWrap: false,
+        ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.verified_user_outlined),
-            tooltip: 'app.steam.verification'.tr,
-            onPressed: _toSteamSession,
+          Padding(
+            padding: const EdgeInsets.only(right: 6),
+            child: IconButton(
+              icon: const Icon(Icons.verified_user_outlined),
+              tooltip: 'app.steam.verification'.tr,
+              onPressed: _toSteamSession,
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints.tightFor(width: 40, height: 40),
+            ),
           ),
         ],
       ),
@@ -201,6 +226,7 @@ class _SteamSettingPageState extends State<SteamSettingPage> {
               controller.isLoading.value && steamId.isEmpty;
           final isTradeStatusLoading = tradeStatus == null;
           final isBound = steamId.isNotEmpty;
+          const actionButtonWidth = 116.0;
 
           Widget steamIdContent;
           if (showSteamIdLoading) {
@@ -225,25 +251,12 @@ class _SteamSettingPageState extends State<SteamSettingPage> {
               ],
             );
           } else if (isBound) {
-            steamIdContent = Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'STEAM ID: $steamId',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Icon(
-                  Icons.copy_rounded,
-                  size: 16,
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ],
+            steamIdContent = Text(
+              'STEAM ID: $steamId',
+              softWrap: true,
+              style: textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
             );
           } else {
             steamIdContent = Text(
@@ -273,7 +286,7 @@ class _SteamSettingPageState extends State<SteamSettingPage> {
                   shape: cardShape,
                   color: colorScheme.surface,
                   child: InkWell(
-                    onTap: isBound ? () => _copySteamId(steamId) : null,
+                    onTap: null,
                     borderRadius: BorderRadius.circular(20),
                     child: Padding(
                       padding: const EdgeInsets.all(16),
@@ -325,31 +338,67 @@ class _SteamSettingPageState extends State<SteamSettingPage> {
                             ],
                           ),
                           const SizedBox(height: 14),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: isBound
-                                ? FilledButton.tonal(
-                                    onPressed: config == null
-                                        ? null
-                                        : _unbindSteam,
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              if (isBound) ...[
+                                SizedBox(
+                                  width: 42,
+                                  height: 42,
+                                  child: FilledButton.tonal(
+                                    onPressed: () => _copySteamId(steamId),
                                     style: FilledButton.styleFrom(
+                                      padding: EdgeInsets.zero,
                                       shape: RoundedRectangleBorder(
                                         borderRadius: BorderRadius.circular(12),
                                       ),
                                     ),
-                                    child: Text('app.steam.account.unbind'.tr),
-                                  )
-                                : FilledButton(
-                                    onPressed: config == null
-                                        ? null
-                                        : _bindSteam,
-                                    style: FilledButton.styleFrom(
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
+                                    child: const Icon(
+                                      Icons.copy_rounded,
+                                      size: 18,
                                     ),
-                                    child: Text('app.steam.account.bind'.tr),
                                   ),
+                                ),
+                                const SizedBox(width: 8),
+                              ],
+                              isBound
+                                  ? SizedBox(
+                                      width: actionButtonWidth,
+                                      child: FilledButton.tonal(
+                                        onPressed: config == null
+                                            ? null
+                                            : _unbindSteam,
+                                        style: FilledButton.styleFrom(
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                          ),
+                                        ),
+                                        child: Text(
+                                          'app.steam.account.unbind'.tr,
+                                        ),
+                                      ),
+                                    )
+                                  : SizedBox(
+                                      width: actionButtonWidth,
+                                      child: FilledButton(
+                                        onPressed: config == null
+                                            ? null
+                                            : _bindSteam,
+                                        style: FilledButton.styleFrom(
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
+                                          ),
+                                        ),
+                                        child: Text(
+                                          'app.steam.account.bind'.tr,
+                                        ),
+                                      ),
+                                    ),
+                            ],
                           ),
                         ],
                       ),
