@@ -3,9 +3,9 @@ import 'package:tronskins_app/api/inventory.dart';
 import 'package:tronskins_app/api/model/shop/shop_models.dart';
 import 'package:tronskins_app/api/shop_product.dart';
 import 'package:tronskins_app/common/events/app_events.dart';
+import 'package:tronskins_app/common/hooks/game/global_game_controller.dart';
 import 'package:tronskins_app/common/http/interceptors/auth_interceptor.dart';
 import 'package:tronskins_app/common/http/model/base_response.dart';
-import 'package:tronskins_app/common/storage/game_storage.dart';
 
 class _InventoryStateSnapshot {
   const _InventoryStateSnapshot({
@@ -34,6 +34,8 @@ class _InventoryStateSnapshot {
 class InventoryController extends GetxController {
   final ApiInventoryServer _inventoryApi = ApiInventoryServer();
   final ApiShopProductServer _shopApi = ApiShopProductServer();
+  final GlobalGameController _globalGameController =
+      GlobalGameController.ensureInstance();
   static const int _inventoryPageSize = 20;
 
   final RxList<InventoryItem> items = <InventoryItem>[].obs;
@@ -66,13 +68,19 @@ class InventoryController extends GetxController {
 
   static const Duration _refreshThreshold = Duration(minutes: 5);
 
-  final RxInt currentAppId = GameStorage.getGameType().obs;
+  final RxInt currentAppId = 730.obs;
   int get appId => currentAppId.value;
   bool get _hasToken => AuthInterceptor.hasToken;
+  Worker? _gameWorker;
 
   @override
   void onInit() {
     super.onInit();
+    currentAppId.value = _globalGameController.currentAppId.value;
+    _gameWorker = ever<int>(
+      _globalGameController.currentAppId,
+      _handleGlobalGameChanged,
+    );
     _logoutWorker = ever(AppEvents.userLogoutEvent, (_) {
       items.clear();
       schemas.clear();
@@ -110,7 +118,43 @@ class InventoryController extends GetxController {
   @override
   void onClose() {
     _logoutWorker?.dispose();
+    _gameWorker?.dispose();
     super.onClose();
+  }
+
+  void _handleGlobalGameChanged(int nextAppId) {
+    if (nextAppId == currentAppId.value) {
+      return;
+    }
+    currentAppId.value = nextAppId;
+    tags.clear();
+    itemName.value = null;
+    _invalidateStateCache();
+    clearSelection();
+
+    if (!_hasToken) {
+      items.clear();
+      schemas.clear();
+      stickers.clear();
+      total.value = 0;
+      totalPrice.value = 0;
+      _page = 1;
+      _hasMore = true;
+      _lastFetchedAt = null;
+      _triedRemoteFreshForCurrentRefresh = false;
+      return;
+    }
+
+    Future.microtask(() async {
+      if (isClosed) {
+        return;
+      }
+      await refreshList();
+      if (isClosed) {
+        return;
+      }
+      await preloadStateBucketsIfNeeded(force: true);
+    });
   }
 
   Future<void> refreshList() async {
@@ -329,16 +373,7 @@ class InventoryController extends GetxController {
   }
 
   Future<void> changeGame(int newAppId) async {
-    if (newAppId == currentAppId.value) {
-      return;
-    }
-    currentAppId.value = newAppId;
-    await GameStorage.setGameType(newAppId);
-    tags.clear();
-    itemName.value = null;
-    _invalidateStateCache();
-    clearSelection();
-    await refreshList();
+    await _globalGameController.switchGame(newAppId);
   }
 
   Future<void> preloadStateBucketsIfNeeded({bool force = false}) async {

@@ -3,7 +3,7 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:tronskins_app/api/model/shop/shop_models.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
-import 'package:tronskins_app/common/storage/game_storage.dart';
+import 'package:tronskins_app/common/hooks/game/global_game_controller.dart';
 import 'package:tronskins_app/common/storage/user_storage.dart';
 import 'package:tronskins_app/common/widgets/back_to_top_overlay.dart';
 import 'package:tronskins_app/components/filter/filter_models.dart';
@@ -33,6 +33,8 @@ class _BuyingPageState extends State<BuyingPage>
       Get.isRegistered<BuyRequestController>()
       ? Get.find<BuyRequestController>()
       : Get.put(BuyRequestController());
+  final GlobalGameController _globalGameController =
+      GlobalGameController.ensureInstance();
 
   late final TabController _tabController;
   late int _currentAppId;
@@ -41,14 +43,24 @@ class _BuyingPageState extends State<BuyingPage>
   final ScrollController _recordScroll = ScrollController();
   final TextEditingController _mySearchController = TextEditingController();
   final TextEditingController _recordSearchController = TextEditingController();
+  Worker? _gameWorker;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(_handleTabChange);
-    _currentAppId = GameStorage.getGameType();
+    _currentAppId = _globalGameController.appId;
     MarketFilterSheet.preload(appId: _currentAppId);
+    _gameWorker = ever<int>(_globalGameController.currentAppId, (appId) {
+      if (!mounted || appId == _currentAppId) {
+        return;
+      }
+      setState(() => _currentAppId = appId);
+      MarketFilterSheet.preload(appId: appId);
+      controller.refreshMyBuying();
+      controller.refreshBuyRecords();
+    });
     _myBuyingScroll.addListener(_handleMyBuyingScroll);
     _recordScroll.addListener(_handleRecordScroll);
     _mySearchController.addListener(_handleSearchTextChange);
@@ -69,6 +81,7 @@ class _BuyingPageState extends State<BuyingPage>
       ..dispose();
     _mySearchController.removeListener(_handleSearchTextChange);
     _recordSearchController.removeListener(_handleSearchTextChange);
+    _gameWorker?.dispose();
     _mySearchController.dispose();
     _recordSearchController.dispose();
     super.dispose();
@@ -138,16 +151,10 @@ class _BuyingPageState extends State<BuyingPage>
   }
 
   Future<void> _switchGame(int appId) async {
-    if (appId == GameStorage.getGameType()) {
+    if (appId == _globalGameController.appId) {
       return;
     }
-    await GameStorage.setGameType(appId);
-    if (mounted) {
-      setState(() => _currentAppId = appId);
-    }
-    await MarketFilterSheet.preload(appId: appId);
-    controller.refreshMyBuying();
-    controller.refreshBuyRecords();
+    await _globalGameController.switchGame(appId);
   }
 
   void _showOfflineTips() {

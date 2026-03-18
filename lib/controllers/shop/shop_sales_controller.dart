@@ -1,11 +1,13 @@
 import 'package:get/get.dart';
 import 'package:tronskins_app/api/shop_product.dart';
 import 'package:tronskins_app/api/model/shop/shop_models.dart';
+import 'package:tronskins_app/common/hooks/game/global_game_controller.dart';
 import 'package:tronskins_app/common/http/model/base_response.dart';
-import 'package:tronskins_app/common/storage/game_storage.dart';
 
 class ShopSalesController extends GetxController {
   final ApiShopProductServer _api = ApiShopProductServer();
+  final GlobalGameController _globalGameController =
+      GlobalGameController.ensureInstance();
   static const int _pageSize = 20;
 
   final RxList<ShopItemAsset> onSaleItems = <ShopItemAsset>[].obs;
@@ -42,7 +44,7 @@ class ShopSalesController extends GetxController {
   bool get onSaleHasMore => _onSaleHasMore;
   bool get recordHasMore => _recordHasMore;
 
-  int get appId => GameStorage.getGameType();
+  int get appId => _globalGameController.appId;
 
   bool _hasMoreData({
     required int fetchedCount,

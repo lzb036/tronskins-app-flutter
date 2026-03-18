@@ -2,13 +2,15 @@ import 'package:get/get.dart';
 import 'package:tronskins_app/api/shop.dart';
 import 'package:tronskins_app/api/shop_product.dart';
 import 'package:tronskins_app/api/model/shop/shop_models.dart';
+import 'package:tronskins_app/common/hooks/game/global_game_controller.dart';
 import 'package:tronskins_app/common/http/model/base_response.dart';
-import 'package:tronskins_app/common/storage/game_storage.dart';
 import 'package:tronskins_app/common/storage/user_storage.dart';
 
 class BuyRequestController extends GetxController {
   final ApiShopProductServer _api = ApiShopProductServer();
   final ApiShopServer _shopApi = ApiShopServer();
+  final GlobalGameController _globalGameController =
+      GlobalGameController.ensureInstance();
   static const int _pageSize = 20;
 
   final RxList<BuyRequestItem> myBuying = <BuyRequestItem>[].obs;
@@ -55,7 +57,7 @@ class BuyRequestController extends GetxController {
   String get buyingSortField => _buyingSortField;
   bool get isBuyingSortByPrice => _buyingSortField == 'price';
 
-  int get appId => GameStorage.getGameType();
+  int get appId => _globalGameController.appId;
 
   @override
   void onInit() {

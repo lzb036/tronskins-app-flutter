@@ -6,7 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:tronskins_app/api/model/shop/shop_models.dart';
 import 'package:tronskins_app/api/steam.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
-import 'package:tronskins_app/common/storage/game_storage.dart';
+import 'package:tronskins_app/common/hooks/game/global_game_controller.dart';
 import 'package:tronskins_app/common/utils/app_snackbar.dart';
 import 'package:tronskins_app/common/widgets/back_to_top_overlay.dart';
 import 'package:tronskins_app/common/widgets/glass_notice_dialog.dart';
@@ -59,6 +59,8 @@ class _ShopPageState extends State<ShopPage>
       ? Get.find<NavController>()
       : Get.put(NavController(), permanent: true);
   final UserController userController = Get.find<UserController>();
+  final GlobalGameController _globalGameController =
+      GlobalGameController.ensureInstance();
 
   late final TabController _tabController;
   int _activeTab = 0;
@@ -76,6 +78,7 @@ class _ShopPageState extends State<ShopPage>
   Worker? _shopTargetTabWorker;
   Worker? _shopStatusWorker;
   Worker? _shopTabVisibilityWorker;
+  Worker? _gameWorker;
   bool _didResolveInitialOfflineDialog = false;
   bool _isShowingInitialOfflineDialog = false;
   static const List<StatusOption> _statusOptions = [
@@ -100,7 +103,7 @@ class _ShopPageState extends State<ShopPage>
     _pendingScroll.addListener(_handlePendingScroll);
     _recordScroll.addListener(_handleRecordScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      MarketFilterSheet.preload(appId: GameStorage.getGameType());
+      MarketFilterSheet.preload(appId: _globalGameController.appId);
       _scheduleInitialOfflineDialogCheck();
     });
     _shopTargetTabWorker = ever<int?>(navController.pendingShopTabIndex, (
@@ -132,6 +135,19 @@ class _ShopPageState extends State<ShopPage>
       if (index == NavController.tabSell) {
         _scheduleInitialOfflineDialogCheck();
       }
+    });
+    _gameWorker = ever<int>(_globalGameController.currentAppId, (appId) {
+      if (!mounted) {
+        return;
+      }
+      unawaited(MarketFilterSheet.preload(appId: appId));
+      if (userController.isLoggedIn.value) {
+        salesController.refreshOnSale();
+        orderController.refreshPending();
+        salesController.refreshSellRecords();
+        shippingNoticeController.refreshPendingTotals();
+      }
+      setState(() {});
     });
 
     if (userController.isLoggedIn.value) {
@@ -175,6 +191,7 @@ class _ShopPageState extends State<ShopPage>
     _shopTargetTabWorker?.dispose();
     _shopStatusWorker?.dispose();
     _shopTabVisibilityWorker?.dispose();
+    _gameWorker?.dispose();
     super.dispose();
   }
 
@@ -500,7 +517,7 @@ class _ShopPageState extends State<ShopPage>
     final schemaRaw = schema?.raw;
     final rawApp = raw['app_id'] ?? raw['appId'];
     final schemaApp = schemaRaw?['app_id'] ?? schemaRaw?['appId'];
-    return _asInt(rawApp) ?? _asInt(schemaApp) ?? GameStorage.getGameType();
+    return _asInt(rawApp) ?? _asInt(schemaApp) ?? _globalGameController.appId;
   }
 
   String? _detailText(ShopOrderDetail detail, List<String> keys) {
@@ -1093,7 +1110,7 @@ class _ShopPageState extends State<ShopPage>
   Future<void> _openOnSaleFilterSheet() async {
     final result = await MarketFilterSheet.showFromRight(
       context: context,
-      appId: GameStorage.getGameType(),
+      appId: _globalGameController.appId,
       sortOptions: const [
         SortOption(labelKey: 'app.market.filter.price', field: 'price'),
         SortOption(labelKey: 'app.market.filter.hot', field: 'hot'),
@@ -1126,7 +1143,7 @@ class _ShopPageState extends State<ShopPage>
   Future<void> _openPendingFilterSheet() async {
     final result = await MarketFilterSheet.showFromRight(
       context: context,
-      appId: GameStorage.getGameType(),
+      appId: _globalGameController.appId,
       sortOptions: const [
         SortOption(labelKey: 'app.market.filter.time', field: 'time'),
       ],
@@ -1154,7 +1171,7 @@ class _ShopPageState extends State<ShopPage>
   Future<void> _openSellRecordFilterSheet() async {
     final result = await MarketFilterSheet.showFromRight(
       context: context,
-      appId: GameStorage.getGameType(),
+      appId: _globalGameController.appId,
       sortOptions: const [
         SortOption(labelKey: 'app.market.filter.time', field: 'time'),
       ],
@@ -1226,7 +1243,7 @@ class _ShopPageState extends State<ShopPage>
 
   Future<void> _openShopTabSwitchMenu(BuildContext iconContext) async {
     final currentFilter = _currentShopTabFilter();
-    final currentAppId = GameStorage.getGameType();
+    final currentAppId = _globalGameController.appId;
     final pendingTotal = shippingNoticeController.pendingCount(currentAppId);
     final selected = await _showShopTabSwitchMenu(
       iconContext: iconContext,
@@ -1262,7 +1279,7 @@ class _ShopPageState extends State<ShopPage>
               borderRadius: BorderRadius.circular(8),
               onTap: () => _openShopTabSwitchMenu(iconContext),
               child: Obx(() {
-                final currentAppId = GameStorage.getGameType();
+                final currentAppId = _globalGameController.currentAppId.value;
                 final hasPendingInCurrentGame =
                     shippingNoticeController.pendingCount(currentAppId) > 0;
                 final content = SizedBox(
@@ -1532,8 +1549,9 @@ class _ShopPageState extends State<ShopPage>
                                 Builder(
                                   builder: (iconContext) {
                                     return Obx(() {
-                                      final currentAppId =
-                                          GameStorage.getGameType();
+                                      final currentAppId = _globalGameController
+                                          .currentAppId
+                                          .value;
                                       final hasPendingInAnyGame =
                                           shippingNoticeController
                                               .hasAnyPending;
@@ -1555,16 +1573,8 @@ class _ShopPageState extends State<ShopPage>
                                             if (selected == null) {
                                               return;
                                             }
-                                            await GameStorage.setGameType(
-                                              selected,
-                                            );
-                                            salesController.refreshOnSale();
-                                            orderController.refreshPending();
-                                            salesController
-                                                .refreshSellRecords();
-                                            shippingNoticeController
-                                                .refreshPendingTotals();
-                                            setState(() {});
+                                            await _globalGameController
+                                                .switchGame(selected);
                                           },
                                         ),
                                       );
@@ -2495,7 +2505,7 @@ class _ShopPageState extends State<ShopPage>
         arguments: {
           'items': selectedItems,
           'schemas': salesController.schemas,
-          'appId': GameStorage.getGameType(),
+          'appId': _globalGameController.appId,
         },
       );
       if (changed == true) {

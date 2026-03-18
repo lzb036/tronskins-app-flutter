@@ -1,10 +1,14 @@
+import 'dart:async';
+
 import 'package:get/get.dart';
 import 'package:tronskins_app/api/market.dart';
 import 'package:tronskins_app/api/model/market/market_models.dart';
-import 'package:tronskins_app/common/storage/game_storage.dart';
+import 'package:tronskins_app/common/hooks/game/global_game_controller.dart';
 
 class MarketListController extends GetxController {
   final ApiMarketServer _api = ApiMarketServer();
+  final GlobalGameController _globalGameController =
+      GlobalGameController.ensureInstance();
   static const int _pageSize = 20;
 
   final RxInt appId = 730.obs;
@@ -23,11 +27,27 @@ class MarketListController extends GetxController {
   int _page = 1;
   bool _hasMore = true;
   bool get hasMore => _hasMore;
+  Worker? _gameWorker;
 
   @override
   void onInit() {
     super.onInit();
-    appId.value = GameStorage.getGameType();
+    appId.value = _globalGameController.currentAppId.value;
+    _gameWorker = ever<int>(_globalGameController.currentAppId, (nextAppId) {
+      if (nextAppId == appId.value) {
+        return;
+      }
+      appId.value = nextAppId;
+      tags.clear();
+      itemName.value = null;
+      refresh();
+    });
+  }
+
+  @override
+  void onClose() {
+    _gameWorker?.dispose();
+    super.onClose();
   }
 
   @override
@@ -119,14 +139,7 @@ class MarketListController extends GetxController {
   }
 
   Future<void> changeGame(int newAppId) async {
-    if (newAppId == appId.value) {
-      return;
-    }
-    appId.value = newAppId;
-    await GameStorage.setGameType(newAppId);
-    tags.clear();
-    itemName.value = null;
-    await refresh();
+    await _globalGameController.switchGame(newAppId);
   }
 
   void applyInitialArgs(Map<String, dynamic>? args) {
@@ -140,7 +153,7 @@ class MarketListController extends GetxController {
           : int.tryParse(rawAppId?.toString() ?? '');
       if (parsed != null && parsed != appId.value) {
         appId.value = parsed;
-        GameStorage.setGameType(parsed);
+        unawaited(_globalGameController.switchGame(parsed));
       }
     }
     if (args.containsKey('keyword')) {

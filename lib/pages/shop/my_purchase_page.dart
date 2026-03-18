@@ -6,7 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:tronskins_app/api/model/shop/shop_models.dart';
 import 'package:tronskins_app/api/steam.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
-import 'package:tronskins_app/common/storage/game_storage.dart';
+import 'package:tronskins_app/common/hooks/game/global_game_controller.dart';
 import 'package:tronskins_app/common/widgets/back_to_top_overlay.dart';
 import 'package:tronskins_app/components/filter/filter_models.dart';
 import 'package:tronskins_app/components/filter/market_filter_sheet.dart';
@@ -33,6 +33,8 @@ class _MyPurchasePageState extends State<MyPurchasePage>
       ? Get.find<ShopOrderController>()
       : Get.put(ShopOrderController());
   final ApiSteamServer _steamApi = ApiSteamServer();
+  final GlobalGameController _globalGameController =
+      GlobalGameController.ensureInstance();
 
   late final TabController _tabController;
   late int _currentAppId;
@@ -42,6 +44,7 @@ class _MyPurchasePageState extends State<MyPurchasePage>
   final TextEditingController _receiptSearchController =
       TextEditingController();
   final TextEditingController _recordSearchController = TextEditingController();
+  Worker? _gameWorker;
   void _handleSearchTextChange() {
     if (mounted) {
       setState(() {});
@@ -80,8 +83,17 @@ class _MyPurchasePageState extends State<MyPurchasePage>
       initialIndex: initialTab,
     );
     _currentTabIndex = initialTab;
-    _currentAppId = GameStorage.getGameType();
+    _currentAppId = _globalGameController.appId;
     unawaited(MarketFilterSheet.preload(appId: _currentAppId));
+    _gameWorker = ever<int>(_globalGameController.currentAppId, (appId) {
+      if (!mounted || appId == _currentAppId) {
+        return;
+      }
+      setState(() => _currentAppId = appId);
+      unawaited(MarketFilterSheet.preload(appId: appId));
+      controller.refreshWaitingReceipts();
+      controller.refreshBuyRecords();
+    });
     _tabController.addListener(_handleTabChange);
     _receiptScroll.addListener(_handleReceiptScroll);
     _recordScroll.addListener(_handleRecordScroll);
@@ -103,6 +115,7 @@ class _MyPurchasePageState extends State<MyPurchasePage>
       ..dispose();
     _receiptSearchController.removeListener(_handleSearchTextChange);
     _recordSearchController.removeListener(_handleSearchTextChange);
+    _gameWorker?.dispose();
     _receiptSearchController.dispose();
     _recordSearchController.dispose();
     super.dispose();
@@ -251,16 +264,10 @@ class _MyPurchasePageState extends State<MyPurchasePage>
   }
 
   Future<void> _switchGame(int appId) async {
-    if (appId == GameStorage.getGameType()) {
+    if (appId == _globalGameController.appId) {
       return;
     }
-    await GameStorage.setGameType(appId);
-    if (mounted) {
-      setState(() => _currentAppId = appId);
-    }
-    unawaited(MarketFilterSheet.preload(appId: appId));
-    controller.refreshWaitingReceipts();
-    controller.refreshBuyRecords();
+    await _globalGameController.switchGame(appId);
   }
 
   Future<void> _receiveOrder(ShopOrderItem order) async {

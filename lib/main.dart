@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:shorebird_code_push/shorebird_code_push.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
+import 'package:tronskins_app/common/hooks/game/global_game_controller.dart';
 import 'package:tronskins_app/common/http/http_helper.dart';
 import 'package:tronskins_app/common/hooks/locale/use_locale.dart';
 import 'package:tronskins_app/common/hooks/theme/use_theme.dart';
@@ -47,6 +48,7 @@ void main() async {
   // 全局持久化注入（关键！）
   Get.put(UseTheme(), permanent: true);
   Get.put(UseLocale(), permanent: true);
+  Get.put(GlobalGameController(), permanent: true);
   final currencyController = Get.put(CurrencyController(), permanent: true);
   try {
     await currencyController

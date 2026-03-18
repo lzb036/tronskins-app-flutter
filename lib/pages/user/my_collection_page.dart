@@ -6,7 +6,7 @@ import 'package:tronskins_app/api/market.dart';
 import 'package:tronskins_app/api/model/user/collection_models.dart';
 import 'package:tronskins_app/api/shop_product.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
-import 'package:tronskins_app/common/storage/game_storage.dart';
+import 'package:tronskins_app/common/hooks/game/global_game_controller.dart';
 import 'package:tronskins_app/common/utils/app_snackbar.dart';
 import 'package:tronskins_app/common/widgets/back_to_top_overlay.dart';
 import 'package:tronskins_app/components/filter/filter_models.dart';
@@ -31,21 +31,31 @@ class MyCollectionPage extends StatefulWidget {
 class _MyCollectionPageState extends State<MyCollectionPage>
     with SingleTickerProviderStateMixin {
   final UserController _userController = Get.find<UserController>();
+  final GlobalGameController _globalGameController =
+      GlobalGameController.ensureInstance();
   late final TabController _tabController;
   final _categoryTabKey = GlobalKey<_CollectionCategoryTabState>();
   final _favoriteTabKey = GlobalKey<_CollectionFavoriteTabState>();
   final _categoryControls = _CollectionTabControls();
   final _favoriteControls = _CollectionTabControls();
-  int _appId = GameStorage.getGameType();
+  late int _appId;
   int _currentTabIndex = 0;
+  Worker? _gameWorker;
 
   @override
   void initState() {
     super.initState();
+    _appId = _globalGameController.appId;
     _tabController = TabController(length: 2, vsync: this);
     _tabController.addListener(_handleTabChange);
     _categoryControls.searchController.addListener(_handleTopBarChanged);
     _favoriteControls.searchController.addListener(_handleTopBarChanged);
+    _gameWorker = ever<int>(_globalGameController.currentAppId, (appId) {
+      if (!mounted || appId == _appId) {
+        return;
+      }
+      setState(() => _appId = appId);
+    });
   }
 
   @override
@@ -54,6 +64,7 @@ class _MyCollectionPageState extends State<MyCollectionPage>
     _tabController.dispose();
     _categoryControls.searchController.removeListener(_handleTopBarChanged);
     _favoriteControls.searchController.removeListener(_handleTopBarChanged);
+    _gameWorker?.dispose();
     _categoryControls.dispose();
     _favoriteControls.dispose();
     super.dispose();
@@ -100,11 +111,7 @@ class _MyCollectionPageState extends State<MyCollectionPage>
     if (result == null || result == _appId) {
       return;
     }
-    await GameStorage.setGameType(result);
-    if (!mounted) {
-      return;
-    }
-    setState(() => _appId = result);
+    await _globalGameController.switchGame(result);
   }
 
   Widget _buildLoginPrompt() {

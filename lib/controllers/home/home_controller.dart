@@ -1,10 +1,12 @@
 import 'package:get/get.dart';
 import 'package:tronskins_app/api/market.dart';
 import 'package:tronskins_app/api/model/market/market_models.dart';
-import 'package:tronskins_app/common/storage/game_storage.dart';
+import 'package:tronskins_app/common/hooks/game/global_game_controller.dart';
 
 class HomeController extends GetxController {
   final ApiMarketServer _api = ApiMarketServer();
+  final GlobalGameController _globalGameController =
+      GlobalGameController.ensureInstance();
   static const int _latestPageSize = 10;
   static const int _hotPageSize = 20;
 
@@ -13,6 +15,7 @@ class HomeController extends GetxController {
   final RxList<MarketItemEntity> hotItems = <MarketItemEntity>[].obs;
   final RxBool isLoadingLatest = false.obs;
   final RxBool isLoadingHot = false.obs;
+  Worker? _gameWorker;
 
   int _latestPage = 1;
   int _hotPage = 1;
@@ -25,8 +28,21 @@ class HomeController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    appId.value = GameStorage.getGameType();
+    appId.value = _globalGameController.currentAppId.value;
+    _gameWorker = ever<int>(_globalGameController.currentAppId, (nextAppId) {
+      if (nextAppId == appId.value) {
+        return;
+      }
+      appId.value = nextAppId;
+      refreshAll();
+    });
     refreshAll();
+  }
+
+  @override
+  void onClose() {
+    _gameWorker?.dispose();
+    super.onClose();
   }
 
   Future<void> refreshAll() async {
@@ -34,12 +50,7 @@ class HomeController extends GetxController {
   }
 
   Future<void> changeGame(int newAppId) async {
-    if (newAppId == appId.value) {
-      return;
-    }
-    appId.value = newAppId;
-    await GameStorage.setGameType(newAppId);
-    await refreshAll();
+    await _globalGameController.switchGame(newAppId);
   }
 
   Future<void> fetchLatest({bool reset = false}) async {
