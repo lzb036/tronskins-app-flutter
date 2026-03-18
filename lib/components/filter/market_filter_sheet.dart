@@ -896,6 +896,99 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
     );
   }
 
+  String? _sectionSummary(_FilterSection section) {
+    switch (section.type) {
+      case _SectionType.sort:
+        if (_sortField.isEmpty) {
+          return null;
+        }
+        String label = _sortField;
+        for (final option in widget.sortOptions) {
+          if (option.field == _sortField) {
+            label = option.labelKey.tr;
+            break;
+          }
+        }
+        return '$label ${_sortAsc ? '↑' : '↓'}';
+      case _SectionType.price:
+        final minText = _minController.text.trim();
+        final maxText = _maxController.text.trim();
+        if (minText.isEmpty && maxText.isEmpty) {
+          return null;
+        }
+        if (minText.isNotEmpty && maxText.isNotEmpty) {
+          return '$minText-$maxText';
+        }
+        if (minText.isNotEmpty) {
+          return '>=$minText';
+        }
+        return '<=$maxText';
+      case _SectionType.status:
+        if (_selectedStatusIndex < 0 ||
+            _selectedStatusIndex >= widget.statusOptions.length) {
+          return null;
+        }
+        return widget.statusOptions[_selectedStatusIndex].labelKey.tr;
+      case _SectionType.date:
+        if (_startDate == null && _endDate == null) {
+          return null;
+        }
+        final startText = _startDate == null
+            ? null
+            : '${_startDate!.month}/${_startDate!.day}';
+        final endText = _endDate == null
+            ? null
+            : '${_endDate!.month}/${_endDate!.day}';
+        if (startText != null && endText != null) {
+          return '$startText-$endText';
+        }
+        if (startText != null) {
+          return '>=$startText';
+        }
+        return '<=$endText';
+      case _SectionType.group:
+        final group = section.group;
+        if (group == null) {
+          return null;
+        }
+        final selectedGroupValue = _selectedTags[group.key];
+        if (group.hasSubOptions) {
+          if ((_selectedItemName ?? '').isNotEmpty) {
+            return _resolveGroupOptionLabel(group, _selectedItemName!);
+          }
+          if ((selectedGroupValue ?? '').isNotEmpty) {
+            return _resolveGroupOptionLabel(group, selectedGroupValue!);
+          }
+          return null;
+        }
+        if ((selectedGroupValue ?? '').isEmpty) {
+          return null;
+        }
+        return _resolveGroupOptionLabel(group, selectedGroupValue!);
+    }
+  }
+
+  String _resolveGroupOptionLabel(_AttributeGroup group, String optionName) {
+    for (final option in group.options) {
+      if (option.name == optionName) {
+        return option.label;
+      }
+      for (final sub in option.subOptions) {
+        if (sub.name == optionName) {
+          return sub.label;
+        }
+      }
+    }
+    for (final heroSection in group.heroSections) {
+      for (final hero in heroSection.heroes) {
+        if (hero.name == optionName) {
+          return hero.label;
+        }
+      }
+    }
+    return optionName;
+  }
+
   Widget _buildSectionTabs() {
     final colors = Theme.of(context).colorScheme;
     return ListView.builder(
@@ -903,6 +996,7 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
       itemBuilder: (context, index) {
         final section = _sections[index];
         final selected = index == _currentSectionIndex;
+        final summary = _sectionSummary(section);
         return Padding(
           padding: const EdgeInsets.only(bottom: 5),
           child: InkWell(
@@ -930,15 +1024,37 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
                       : colors.outline.withValues(alpha: 0.15),
                 ),
               ),
-              child: Text(
-                section.labelKey.tr,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: selected ? colors.primary : colors.onSurfaceVariant,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    section.labelKey.tr,
+                    maxLines: summary == null ? 2 : 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: selected
+                          ? colors.primary
+                          : colors.onSurfaceVariant,
+                      fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                    ),
+                  ),
+                  if (summary != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      summary,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: selected
+                            ? colors.primary.withValues(alpha: 0.86)
+                            : colors.onSurfaceVariant.withValues(alpha: 0.82),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
           ),
