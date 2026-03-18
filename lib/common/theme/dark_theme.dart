@@ -10,6 +10,11 @@ ThemeData darkTheme() => ThemeData(
     brightness: Brightness.dark,
   ),
   scaffoldBackgroundColor: AppColors.dark.scaffoldBackground,
+  appBarTheme: const AppBarTheme(
+    centerTitle: false,
+    leadingWidth: 40,
+    titleSpacing: 4,
+  ),
   splashFactory: InkSparkle.splashFactory,
   extensions: [AppColors.dark, AppTextTheme.dark()],
 );

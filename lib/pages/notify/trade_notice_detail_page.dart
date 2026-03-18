@@ -274,10 +274,7 @@ class _TradeNoticeDetailPageState extends State<TradeNoticeDetailPage> {
     final actionLabel = item == null ? null : _actionLabel(item);
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(
-        title: Text('app.system.notice.transaction'.tr),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: Text('app.system.notice.transaction'.tr)),
       body: item == null
           ? Center(child: Text('app.common.no_data'.tr))
           : ListView(

@@ -50,7 +50,6 @@ class _ExchangeRatePageState extends State<ExchangeRatePage> {
     return Scaffold(
       appBar: AppBar(
         title: Text('app.user.setting.exchange_rate'.tr),
-        centerTitle: true,
         actions: [
           IconButton(
             onPressed: _triggerRefresh,

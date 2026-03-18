@@ -109,7 +109,6 @@ class _UserMessageState extends State<UserMessage>
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
-        centerTitle: true,
         elevation: 0,
         backgroundColor: colorScheme.surface,
         bottom: PreferredSize(

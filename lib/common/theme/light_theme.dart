@@ -7,6 +7,11 @@ ThemeData lightTheme() => ThemeData(
   brightness: Brightness.light,
   colorScheme: ColorScheme.fromSeed(seedColor: AppColors.light.primary),
   scaffoldBackgroundColor: AppColors.light.scaffoldBackground,
+  appBarTheme: const AppBarTheme(
+    centerTitle: false,
+    leadingWidth: 40,
+    titleSpacing: 4,
+  ),
   splashFactory: InkSparkle.splashFactory,
   extensions: [AppColors.light, AppTextTheme.light()],
 );
