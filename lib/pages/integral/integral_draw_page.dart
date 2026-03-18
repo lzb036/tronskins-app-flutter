@@ -46,7 +46,7 @@ class _IntegralDrawPageState extends State<IntegralDrawPage> {
     _isUnavailableDialogVisible = true;
     await showGlassNoticeDialog(
       context,
-      message: '功能暂未开放',
+      message: 'app.system.message.not_open'.tr,
       icon: Icons.lock_clock_outlined,
       barrierLabel: 'integral_draw_unavailable',
     );
@@ -166,17 +166,27 @@ class _IntegralDrawPageState extends State<IntegralDrawPage> {
   }
 
   Widget _buildRules() {
-    final rules = [
-      'app.user.integral.intro'.tr,
-      'app.user.integral.earn'.tr,
-      'app.user.integral.earn_tips'.tr,
-      'app.user.integral.use'.tr,
-      'app.user.integral.use_tips_1'.tr,
-      'app.user.integral.use_tips_2'.tr,
-      'app.user.integral.deduct'.tr,
-      'app.user.integral.deduct_tips'.tr,
-      'app.user.integral.validity'.tr,
-      'app.user.integral.validity_tips'.tr,
+    final colorScheme = Theme.of(context).colorScheme;
+    final items = <_RuleQaItem>[
+      _RuleQaItem(
+        question: 'app.user.integral.earn'.tr,
+        answers: ['app.user.integral.earn_tips'.tr],
+      ),
+      _RuleQaItem(
+        question: 'app.user.integral.use'.tr,
+        answers: [
+          'app.user.integral.use_tips_1'.tr,
+          'app.user.integral.use_tips_2'.tr,
+        ],
+      ),
+      _RuleQaItem(
+        question: 'app.user.integral.deduct'.tr,
+        answers: ['app.user.integral.deduct_tips'.tr],
+      ),
+      _RuleQaItem(
+        question: 'app.user.integral.validity'.tr,
+        answers: ['app.user.integral.validity_tips'.tr],
+      ),
     ];
     return Card(
       child: Padding(
@@ -184,14 +194,98 @@ class _IntegralDrawPageState extends State<IntegralDrawPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            for (final text in rules)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Text(text),
+            Text(
+              'app.user.integral.intro'.tr,
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 12),
+            for (var i = 0; i < items.length; i++) ...[
+              _buildRuleQaCard(
+                index: i + 1,
+                item: items[i],
+                colorScheme: colorScheme,
               ),
+              if (i != items.length - 1) const SizedBox(height: 10),
+            ],
           ],
         ),
       ),
     );
   }
+
+  Widget _buildRuleQaCard({
+    required int index,
+    required _RuleQaItem item,
+    required ColorScheme colorScheme,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.42),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.16)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 1),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                  color: colorScheme.primary.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  'Q$index',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: colorScheme.primary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 2),
+                  child: Text(
+                    item.question,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          for (var i = 0; i < item.answers.length; i++)
+            Padding(
+              padding: EdgeInsets.only(
+                bottom: i == item.answers.length - 1 ? 0 : 6,
+              ),
+              child: Text(
+                item.answers[i],
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  height: 1.4,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RuleQaItem {
+  const _RuleQaItem({required this.question, required this.answers});
+
+  final String question;
+  final List<String> answers;
 }

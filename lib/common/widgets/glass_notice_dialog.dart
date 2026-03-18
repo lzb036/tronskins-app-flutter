@@ -82,7 +82,7 @@ class _GlassNoticeDialogState extends State<_GlassNoticeDialog> {
       child: SafeArea(
         child: Center(
           child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 36),
+            margin: const EdgeInsets.symmetric(horizontal: 24),
             padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
             decoration: BoxDecoration(
               color: Colors.black.withValues(alpha: 0.72),
@@ -97,7 +97,7 @@ class _GlassNoticeDialogState extends State<_GlassNoticeDialog> {
               ],
             ),
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 320),
+              constraints: const BoxConstraints(maxWidth: 360),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -106,8 +106,9 @@ class _GlassNoticeDialogState extends State<_GlassNoticeDialog> {
                   Flexible(
                     child: Text(
                       widget.message,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
+                      maxLines: 5,
+                      overflow: TextOverflow.fade,
+                      softWrap: true,
                       style: theme.textTheme.titleSmall?.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.w700,

@@ -51,24 +51,48 @@ class _IntegralPageState extends State<IntegralPage> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isCompactTopBar = MediaQuery.sizeOf(context).width < 420;
     return Scaffold(
       backgroundColor: WalletUi.pageBackground(context),
       appBar: AppBar(
-        title: Text('app.user.integral.title'.tr),
+        centerTitle: false,
+        leadingWidth: 40,
+        titleSpacing: 4,
+        title: Text('app.user.integral.title'.tr, maxLines: 1, softWrap: false),
         actions: [
           Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: TextButton.icon(
-              onPressed: () => Get.toNamed(Routers.WALLET_INTEGRAL_RECORD),
-              icon: const Icon(Icons.receipt_long_outlined, size: 18),
-              label: Text('app.user.wallet.integral_details'.tr),
-              style: TextButton.styleFrom(
-                foregroundColor: colorScheme.primary,
-                textStyle: Theme.of(
-                  context,
-                ).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.w700),
-              ),
-            ),
+            padding: EdgeInsets.only(right: isCompactTopBar ? 6 : 8),
+            child: isCompactTopBar
+                ? IconButton(
+                    onPressed: () =>
+                        Get.toNamed(Routers.WALLET_INTEGRAL_RECORD),
+                    icon: const Icon(Icons.receipt_long_outlined, size: 20),
+                    tooltip: 'app.user.wallet.integral_details'.tr,
+                    visualDensity: VisualDensity.compact,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints.tightFor(
+                      width: 40,
+                      height: 40,
+                    ),
+                  )
+                : TextButton.icon(
+                    onPressed: () =>
+                        Get.toNamed(Routers.WALLET_INTEGRAL_RECORD),
+                    icon: const Icon(Icons.receipt_long_outlined, size: 18),
+                    label: Text('app.user.wallet.integral_details'.tr),
+                    style: TextButton.styleFrom(
+                      foregroundColor: colorScheme.primary,
+                      minimumSize: Size.zero,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 6,
+                      ),
+                      visualDensity: VisualDensity.compact,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      textStyle: Theme.of(context).textTheme.labelMedium
+                          ?.copyWith(fontWeight: FontWeight.w700),
+                    ),
+                  ),
           ),
         ],
       ),
