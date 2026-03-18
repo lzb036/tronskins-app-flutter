@@ -111,7 +111,7 @@ class InventoryItemCard extends StatelessWidget {
                   if (showQualityRibbon && quality != null)
                     Positioned(
                       right: -28,
-                      top: 8,
+                      top: 13,
                       child: QualityRibbon(quality: quality),
                     ),
                   if (selected)

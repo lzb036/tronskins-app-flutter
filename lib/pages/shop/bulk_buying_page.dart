@@ -34,6 +34,8 @@ class _BulkBuyingPageState extends State<BulkBuyingPage> {
   bool _isLoading = true;
   bool _isSubmitting = false;
   bool _isLoadingMatches = false;
+  Timer? _priceQueryDebounce;
+  int _matchQueryVersion = 0;
 
   final List<MarketListItem> _matchedItems = <MarketListItem>[];
   double? _wearMin;
@@ -54,6 +56,7 @@ class _BulkBuyingPageState extends State<BulkBuyingPage> {
 
   @override
   void dispose() {
+    _priceQueryDebounce?.cancel();
     _priceController.removeListener(_onInputChanged);
     _numController.removeListener(_onInputChanged);
     _priceFocusNode.removeListener(_handlePriceFocusChange);
@@ -74,7 +77,25 @@ class _BulkBuyingPageState extends State<BulkBuyingPage> {
     if (_priceFocusNode.hasFocus) {
       return;
     }
+    _priceQueryDebounce?.cancel();
     unawaited(_queryMatchedOnSale());
+  }
+
+  void _onPriceInputChanged(String value) {
+    _sanitizePrice(value);
+    _scheduleMatchedQuery();
+  }
+
+  void _scheduleMatchedQuery({
+    Duration delay = const Duration(milliseconds: 360),
+  }) {
+    _priceQueryDebounce?.cancel();
+    _priceQueryDebounce = Timer(delay, () {
+      if (!mounted) {
+        return;
+      }
+      unawaited(_queryMatchedOnSale());
+    });
   }
 
   bool get _showFilter {
@@ -167,6 +188,7 @@ class _BulkBuyingPageState extends State<BulkBuyingPage> {
   Future<void> _queryMatchedOnSale() async {
     final maxPrice = double.tryParse(_priceController.text);
     if (maxPrice == null || maxPrice <= 0) {
+      _matchQueryVersion++;
       if (_matchedItems.isNotEmpty || _isLoadingMatches) {
         setState(() {
           _matchedItems.clear();
@@ -179,6 +201,7 @@ class _BulkBuyingPageState extends State<BulkBuyingPage> {
     final user = UserStorage.getUserInfo();
     final useAuth = user != null;
     final userId = int.tryParse(user?.id ?? '');
+    final queryVersion = ++_matchQueryVersion;
 
     setState(() => _isLoadingMatches = true);
     try {
@@ -192,6 +215,9 @@ class _BulkBuyingPageState extends State<BulkBuyingPage> {
         useAuth: useAuth,
         fallbackToPublicOnFail: true,
       );
+      if (!mounted || queryVersion != _matchQueryVersion) {
+        return;
+      }
       final items = res.datas?.items ?? <MarketListItem>[];
       items.sort((a, b) => (a.price ?? 0).compareTo(b.price ?? 0));
       _matchedItems
@@ -206,7 +232,7 @@ class _BulkBuyingPageState extends State<BulkBuyingPage> {
         );
       }
     } finally {
-      if (mounted) {
+      if (mounted && queryVersion == _matchQueryVersion) {
         setState(() => _isLoadingMatches = false);
       }
     }
@@ -882,7 +908,7 @@ class _BulkBuyingPageState extends State<BulkBuyingPage> {
                             border: InputBorder.none,
                             contentPadding: EdgeInsets.zero,
                           ),
-                          onChanged: _sanitizePrice,
+                          onChanged: _onPriceInputChanged,
                           onEditingComplete: _queryMatchedOnSale,
                           onSubmitted: (_) => _queryMatchedOnSale(),
                         ),
