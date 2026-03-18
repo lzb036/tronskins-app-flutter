@@ -934,7 +934,7 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
         ),
         const SizedBox(width: 8),
         Container(
-          width: 88,
+          width: 104,
           padding: const EdgeInsets.all(5),
           decoration: BoxDecoration(
             color: surface,
@@ -1082,7 +1082,7 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
                 children: [
                   Text(
                     section.labelKey.tr,
-                    maxLines: summary == null ? 2 : 1,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -1093,10 +1093,10 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
                     ),
                   ),
                   if (summary != null) ...[
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 3),
                     Text(
                       summary,
-                      maxLines: 1,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
@@ -1104,6 +1104,7 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
                             ? colors.primary.withValues(alpha: 0.86)
                             : colors.onSurfaceVariant.withValues(alpha: 0.82),
                         fontWeight: FontWeight.w500,
+                        height: 1.15,
                       ),
                     ),
                   ],
