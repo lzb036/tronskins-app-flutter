@@ -33,7 +33,7 @@ class MarketDetailPage extends StatefulWidget {
 
 class _MarketDetailPageState extends State<MarketDetailPage>
     with TickerProviderStateMixin {
-  static const double _bottomActionButtonHeight = 48;
+  static const double _bottomActionButtonHeight = 42;
   static const double _bottomActionCompactBreakpoint = 390;
   static const double _topActionToolbarMaxHeight = 48;
   final MarketDetailController controller = Get.put(MarketDetailController());
@@ -463,60 +463,55 @@ class _MarketDetailPageState extends State<MarketDetailPage>
   }) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final steamLabel = 'app.market.detail.steam_price'.tr;
     if (!_steamPriceResolved) {
-      return Column(
+      return Row(
         mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: colorScheme.primary,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                width: 72,
-                height: 14,
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest.withValues(
-                    alpha: 0.8,
-                  ),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-            ],
+          SizedBox(
+            width: 14,
+            height: 14,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: colorScheme.primary,
+            ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(width: 8),
+          Container(
+            width: 68,
+            height: 12,
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.8),
+              borderRadius: BorderRadius.circular(4),
+            ),
+          ),
+          const SizedBox(width: 8),
           Text(
-            'app.market.detail.steam_price'.tr,
+            steamLabel,
             style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 10),
           ),
         ],
       );
     }
 
-    return Column(
+    return Row(
       mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Obx(
           () => Text(
             currency.format(referencePrice),
             style: TextStyle(
               color: colorScheme.primary,
-              fontSize: 20,
+              fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
           ),
         ),
+        const SizedBox(width: 6),
         Text(
-          'app.market.detail.steam_price'.tr,
+          steamLabel,
           style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 10),
         ),
       ],
@@ -1079,7 +1074,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF26272B) : Colors.white,
         boxShadow: [
@@ -1108,7 +1103,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   steamPrice,
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   buildActionButtons(),
                 ],
               );
@@ -1117,7 +1112,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
             return Row(
               children: [
                 steamPrice,
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(child: buildActionButtons()),
               ],
             );
