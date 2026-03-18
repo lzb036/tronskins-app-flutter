@@ -322,6 +322,7 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
   int _currentSectionIndex = 0;
   int _slideDirection = 1;
   bool _hasAppliedInitialGroupKey = false;
+  final Map<String, GlobalKey> _selectionAnchorKeys = {};
 
   @override
   void initState() {
@@ -517,6 +518,52 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
     _minController.dispose();
     _maxController.dispose();
     super.dispose();
+  }
+
+  GlobalKey _selectionAnchorKey(String sectionKey, String optionName) {
+    final key = '$sectionKey::$optionName';
+    return _selectionAnchorKeys.putIfAbsent(key, GlobalKey.new);
+  }
+
+  String? _selectedAnchorOptionName(_FilterSection section) {
+    if (section.type != _SectionType.group || section.group == null) {
+      return null;
+    }
+    final group = section.group!;
+    if (group.hasSubOptions) {
+      if ((_selectedItemName ?? '').isNotEmpty) {
+        return _selectedItemName;
+      }
+      return _selectedTags[group.key];
+    }
+    return _selectedTags[group.key];
+  }
+
+  void _scrollToSectionSelection(_FilterSection section) {
+    final selectedOptionName = _selectedAnchorOptionName(section);
+    if ((selectedOptionName ?? '').isEmpty) {
+      return;
+    }
+    final key = _selectionAnchorKey(section.key, selectedOptionName!);
+    final targetContext = key.currentContext;
+    if (targetContext == null) {
+      return;
+    }
+    Scrollable.ensureVisible(
+      targetContext,
+      alignment: 0.2,
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  void _scheduleScrollToSectionSelection(_FilterSection section) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      _scrollToSectionSelection(section);
+    });
   }
 
   Future<void> _loadAttributes() async {
@@ -716,10 +763,12 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
     required bool selected,
     required ValueChanged<bool> onSelected,
     bool fullWidth = false,
+    Key? chipKey,
   }) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final chip = Material(
+      key: chipKey,
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
@@ -796,6 +845,7 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
   }
 
   Widget _buildOptionGrid({
+    required String sectionKey,
     required List<_AttributeOption> options,
     required bool Function(_AttributeOption option) isSelected,
     required ValueChanged<_AttributeOption> onSelected,
@@ -809,6 +859,7 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
           selected: isSelected(option),
           onSelected: (_) => onSelected(option),
           fullWidth: true,
+          chipKey: _selectionAnchorKey(sectionKey, option.name),
         );
       },
     );
@@ -1003,12 +1054,14 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
             borderRadius: BorderRadius.circular(8),
             onTap: () {
               if (index == _currentSectionIndex) {
+                _scheduleScrollToSectionSelection(section);
                 return;
               }
               setState(() {
                 _slideDirection = index < _currentSectionIndex ? -1 : 1;
                 _currentSectionIndex = index;
               });
+              _scheduleScrollToSectionSelection(section);
             },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
@@ -1466,14 +1519,22 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
           ),
           const SizedBox(height: 10),
           ...group.heroSections.map(
-            (section) => _buildHeroSection(section, selectedHero),
+            (section) => _buildHeroSection(
+              section,
+              selectedHero,
+              sectionKey: 'group:${group.key}',
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildHeroSection(_HeroSection section, String? selectedHero) {
+  Widget _buildHeroSection(
+    _HeroSection section,
+    String? selectedHero, {
+    required String sectionKey,
+  }) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     return Padding(
@@ -1507,7 +1568,10 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
                 itemBuilder: (context, index) {
                   final hero = section.heroes[index];
                   final selected = selectedHero == hero.name;
-                  return _buildHeroTile(hero, selected: selected);
+                  return KeyedSubtree(
+                    key: _selectionAnchorKey(sectionKey, hero.name),
+                    child: _buildHeroTile(hero, selected: selected),
+                  );
                 },
               );
             },
@@ -1635,6 +1699,7 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
     if (group.isHeroGroup) {
       return _buildHeroGroupSection(group);
     }
+    final sectionKey = 'group:${group.key}';
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Column(
@@ -1646,6 +1711,7 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
             _buildSubOptionGroup(group)
           else
             _buildOptionGrid(
+              sectionKey: sectionKey,
               options: group.options,
               isSelected: (option) => _isGroupSelected(group.key, option),
               onSelected: (option) => _selectOption(group.key, option),
@@ -1656,6 +1722,7 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
   }
 
   Widget _buildSubOptionGroup(_AttributeGroup group) {
+    final sectionKey = 'group:${group.key}';
     final unlimitedLabel = 'app.common.unlimited'.tr;
     final selected = _selectedItemName;
     final directOptions = group.options
@@ -1670,6 +1737,7 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
         _buildChip(
           unlimitedLabel,
           selected: selected == null,
+          chipKey: _selectionAnchorKey(sectionKey, 'unlimited'),
           onSelected: (_) => _selectSubOption(
             group,
             _AttributeOption(
@@ -1682,6 +1750,7 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
         if (directOptions.isNotEmpty) ...[
           const SizedBox(height: 5),
           _buildOptionGrid(
+            sectionKey: sectionKey,
             options: directOptions,
             isSelected: (option) => selected == option.name,
             onSelected: (option) => _selectSubOption(group, option),
@@ -1703,6 +1772,7 @@ class _MarketFilterSheetState extends State<MarketFilterSheet> {
                   ),
                   const SizedBox(height: 5),
                   _buildOptionGrid(
+                    sectionKey: sectionKey,
                     options: option.subOptions,
                     isSelected: (sub) => selected == sub.name,
                     onSelected: (sub) => _selectSubOption(group, sub),
