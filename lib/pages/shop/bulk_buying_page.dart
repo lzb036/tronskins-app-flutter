@@ -683,11 +683,12 @@ class _BulkBuyingPageState extends State<BulkBuyingPage> {
   Widget _buildInputShell(BuildContext context, {required Widget child}) {
     final colors = Theme.of(context).colorScheme;
     return Container(
-      height: 40,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      height: 44,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
       decoration: BoxDecoration(
-        color: colors.surfaceContainerHighest.withValues(alpha: 0.32),
-        borderRadius: BorderRadius.circular(10),
+        color: colors.surfaceContainerHighest.withValues(alpha: 0.30),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: colors.outline.withValues(alpha: 0.10)),
       ),
       child: Center(child: child),
     );
@@ -856,27 +857,28 @@ class _BulkBuyingPageState extends State<BulkBuyingPage> {
                 padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
                 child: Row(
                   children: [
-                    SizedBox(
-                      width: 96,
-                      child: Text(
-                        'app.market.detail.bulk_buying.price_highest'.tr,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodyMedium,
-                      ),
-                    ),
                     Expanded(
                       child: _buildInputShell(
                         context,
                         child: TextField(
                           controller: _priceController,
                           focusNode: _priceFocusNode,
+                          style: theme.textTheme.bodyLarge?.copyWith(
+                            fontSize: 15,
+                            height: 1.15,
+                          ),
                           keyboardType: const TextInputType.numberWithOptions(
                             decimal: true,
                           ),
                           decoration: InputDecoration(
                             isDense: true,
-                            hintText: 'app.trade.buy.price_placeholder'.tr,
+                            hintText: 'app.trade.purchase.placeholder_price'.tr,
+                            hintStyle: theme.textTheme.bodyLarge?.copyWith(
+                              fontSize: 15,
+                              color: colors.onSurfaceVariant.withValues(
+                                alpha: 0.78,
+                              ),
+                            ),
                             border: InputBorder.none,
                             contentPadding: EdgeInsets.zero,
                           ),
@@ -897,61 +899,74 @@ class _BulkBuyingPageState extends State<BulkBuyingPage> {
                 padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
                 child: Row(
                   children: [
-                    SizedBox(
-                      width: 96,
-                      child: Text(
-                        'app.trade.buy.quantity'.tr,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodyMedium,
-                      ),
-                    ),
                     Expanded(
-                      child: _buildInputShell(
-                        context,
-                        child: TextField(
-                          controller: _numController,
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
-                            isDense: true,
-                            hintText: 'app.trade.purchase.num_placeholder'.tr,
-                            border: InputBorder.none,
-                            contentPadding: EdgeInsets.zero,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildInputShell(
+                            context,
+                            child: TextField(
+                              controller: _numController,
+                              keyboardType: TextInputType.number,
+                              style: theme.textTheme.bodyLarge?.copyWith(
+                                fontSize: 15,
+                                height: 1.15,
+                              ),
+                              decoration: InputDecoration(
+                                isDense: true,
+                                hintText:
+                                    'app.trade.purchase.placeholder_num'.tr,
+                                hintStyle: theme.textTheme.bodyLarge?.copyWith(
+                                  fontSize: 15,
+                                  color: colors.onSurfaceVariant.withValues(
+                                    alpha: 0.78,
+                                  ),
+                                ),
+                                border: InputBorder.none,
+                                contentPadding: EdgeInsets.zero,
+                              ),
+                              onChanged: _sanitizeNum,
+                            ),
                           ),
-                          onChanged: _sanitizeNum,
-                        ),
+                          const SizedBox(height: 8),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: _isLoadingMatches
+                                ? const SizedBox(
+                                    width: 14,
+                                    height: 14,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : Container(
+                                    constraints: const BoxConstraints(
+                                      maxWidth: 160,
+                                    ),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 5,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: colors.surfaceContainerHighest
+                                          .withValues(alpha: 0.42),
+                                      borderRadius: BorderRadius.circular(999),
+                                    ),
+                                    child: Text(
+                                      '${_matchedItems.length} ${'app.market.detail.bulk_buying.match'.tr}',
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      textAlign: TextAlign.right,
+                                      style: theme.textTheme.bodySmall
+                                          ?.copyWith(
+                                            color: colors.onSurfaceVariant,
+                                          ),
+                                    ),
+                                  ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    if (_isLoadingMatches)
-                      const SizedBox(
-                        width: 14,
-                        height: 14,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    else
-                      Container(
-                        constraints: const BoxConstraints(maxWidth: 136),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colors.surfaceContainerHighest.withValues(
-                            alpha: 0.4,
-                          ),
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Text(
-                          '${_matchedItems.length}${'app.market.detail.bulk_buying.match'.tr}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.right,
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: colors.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
                   ],
                 ),
               ),
