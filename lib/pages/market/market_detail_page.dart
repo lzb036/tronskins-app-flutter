@@ -22,6 +22,7 @@ import 'package:tronskins_app/controllers/market/market_detail_controller.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
 import 'package:tronskins_app/common/utils/app_snackbar.dart';
 import 'package:tronskins_app/common/widgets/back_to_top_overlay.dart';
+import 'package:tronskins_app/common/widgets/steam_style_confirm_dialog.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
 
 class MarketDetailPage extends StatefulWidget {
@@ -3347,24 +3348,15 @@ class _MarketDetailPageState extends State<MarketDetailPage>
       return;
     }
     final currency = Get.find<CurrencyController>();
-    final confirmed = await Get.dialog<bool>(
-      AlertDialog(
-        title: Text('${'app.trade.buy.pay_text'.tr} ${currency.format(price)}'),
-        content: Text(
-          '${'app.trade.buy.pay_text_2'.tr} ${price.floor()}\n'
-          '${'app.trade.buy.pay_text_3'.tr}',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(result: false),
-            child: Text('app.common.cancel'.tr),
-          ),
-          TextButton(
-            onPressed: () => Get.back(result: true),
-            child: Text('app.common.confirm'.tr),
-          ),
-        ],
-      ),
+    final amountText = currency.format(price);
+    final confirmed = await showSteamStyleAmountConfirmDialog(
+      context,
+      title: 'app.trade.buy.pay_text'.tr,
+      amount: amountText,
+      message:
+          '${'app.trade.buy.pay_text_2'.tr} ${price.floor()}\n${'app.trade.buy.pay_text_3'.tr}',
+      confirmText: 'app.common.confirm'.tr,
+      cancelText: 'app.common.cancel'.tr,
     );
     if (confirmed != true) {
       return;
