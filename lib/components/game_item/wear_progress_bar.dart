@@ -8,10 +8,11 @@ class WearProgressBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final wear = paintWear.clamp(0.0, 0.8);
-    final barHeight = (height * 0.45).clamp(4.0, 10.0);
-    final markerWidth = (height * 0.55).clamp(8.0, 12.0);
-    final markerHeight = (height * 0.35).clamp(4.0, 7.0);
+    final barHeight = (height * 0.45).clamp(4.0, 10.0).toDouble();
+    final markerWidth = (height * 0.46).clamp(7.0, 10.0).toDouble();
+    final markerHeight = (height * 0.66).clamp(8.0, 11.0).toDouble();
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = constraints.maxWidth;
@@ -19,14 +20,12 @@ class WearProgressBar extends StatelessWidget {
         final indicatorLeft = ((wear * width) - (markerWidth / 2))
             .clamp(0.0, maxLeft)
             .toDouble();
-        final barTop = ((height - barHeight) / 2).clamp(
-          markerHeight - 1,
-          height - barHeight,
-        );
-        final markerTop = (barTop - markerHeight + (markerHeight * 0.4)).clamp(
-          0.0,
-          height - markerHeight,
-        );
+        final barTop = ((height - barHeight) / 2)
+            .clamp(0.0, height - barHeight)
+            .toDouble();
+        final markerTop = (barTop - (markerHeight * 0.42))
+            .clamp(0.0, height - markerHeight)
+            .toDouble();
         return SizedBox(
           height: height,
           child: Stack(
@@ -85,7 +84,9 @@ class WearProgressBar extends StatelessWidget {
                 child: CustomPaint(
                   size: Size(markerWidth, markerHeight),
                   painter: _WearMarkerPainter(
-                    color: Theme.of(context).colorScheme.onSurface,
+                    fillColor: colorScheme.surface,
+                    strokeColor: colorScheme.onSurface,
+                    highlightColor: colorScheme.onSurfaceVariant,
                   ),
                 ),
               ),
@@ -98,24 +99,80 @@ class WearProgressBar extends StatelessWidget {
 }
 
 class _WearMarkerPainter extends CustomPainter {
-  const _WearMarkerPainter({required this.color});
+  const _WearMarkerPainter({
+    required this.fillColor,
+    required this.strokeColor,
+    required this.highlightColor,
+  });
 
-  final Color color;
+  final Color fillColor;
+  final Color strokeColor;
+  final Color highlightColor;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = color;
-    final path = Path()
-      ..moveTo(0, 0)
-      ..lineTo(size.width, 0)
+    final tipHeight = (size.height * 0.34)
+        .clamp(2.0, size.height * 0.5)
+        .toDouble();
+    final bodyHeight = size.height - tipHeight;
+    final bodyRadius = Radius.circular(
+      (size.width * 0.26).clamp(1.8, 3.4).toDouble(),
+    );
+    final bodyRect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(0, 0, size.width, bodyHeight),
+      bodyRadius,
+    );
+
+    final tipPath = Path()
+      ..moveTo(size.width * 0.28, bodyHeight - 0.25)
+      ..lineTo(size.width * 0.72, bodyHeight - 0.25)
       ..lineTo(size.width / 2, size.height)
       ..close();
-    canvas.drawPath(path, paint);
+    final bodyPath = Path()..addRRect(bodyRect);
+    final markerPath = Path.combine(PathOperation.union, bodyPath, tipPath);
+
+    canvas.drawShadow(
+      markerPath,
+      Colors.black.withValues(alpha: 0.20),
+      size.width * 0.16,
+      true,
+    );
+
+    final fillPaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          fillColor.withValues(alpha: 0.98),
+          fillColor.withValues(alpha: 0.86),
+        ],
+      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+    canvas.drawPath(markerPath, fillPaint);
+
+    final strokeWidth = (size.width * 0.10).clamp(0.8, 1.2).toDouble();
+    final strokePaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..color = strokeColor.withValues(alpha: 0.46);
+    canvas.drawPath(markerPath, strokePaint);
+
+    final highlightPaint = Paint()
+      ..strokeWidth = (strokeWidth * 0.9).clamp(0.7, 1.0).toDouble()
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..color = highlightColor.withValues(alpha: 0.26);
+    canvas.drawLine(
+      Offset(size.width * 0.26, bodyHeight * 0.36),
+      Offset(size.width * 0.74, bodyHeight * 0.36),
+      highlightPaint,
+    );
   }
 
   @override
   bool shouldRepaint(covariant _WearMarkerPainter oldDelegate) {
-    return oldDelegate.color != color;
+    return oldDelegate.fillColor != fillColor ||
+        oldDelegate.strokeColor != strokeColor ||
+        oldDelegate.highlightColor != highlightColor;
   }
 }
 
