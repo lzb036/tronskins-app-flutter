@@ -131,6 +131,7 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
   bool _attributeGroupsLoading = false;
   bool _hasScheduledAttributeLoad = false;
   bool _isFetchingAttributeGroups = false;
+  final Map<String, GlobalKey> _selectionAnchorKeys = {};
 
   @override
   void initState() {
@@ -328,6 +329,65 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
     });
   }
 
+  GlobalKey _selectionAnchorKey(String sectionKey, String optionName) {
+    final key = '$sectionKey::$optionName';
+    return _selectionAnchorKeys.putIfAbsent(key, GlobalKey.new);
+  }
+
+  String? _selectedAnchorOptionName(_OrderFilterSection section) {
+    switch (section.type) {
+      case _OrderFilterSectionType.attribute:
+      case _OrderFilterSectionType.price:
+      case _OrderFilterSectionType.date:
+        return null;
+      case _OrderFilterSectionType.sort:
+        return _sortField.isEmpty ? null : _sortField;
+      case _OrderFilterSectionType.status:
+        if (_selectedStatusIndex < 0 ||
+            _selectedStatusIndex >= widget.statusOptions.length) {
+          return null;
+        }
+        return 'status:$_selectedStatusIndex';
+      case _OrderFilterSectionType.attributeGroup:
+        final key = section.groupKey;
+        if (key == null) {
+          return null;
+        }
+        if (key == 'type') {
+          return (_attributeItemName ?? '').isEmpty ? null : _attributeItemName;
+        }
+        final value = _attributeTags[key]?.toString() ?? '';
+        return value.isEmpty ? null : value;
+    }
+  }
+
+  void _scrollToSectionSelection(_OrderFilterSection section) {
+    final selectedOptionName = _selectedAnchorOptionName(section);
+    if ((selectedOptionName ?? '').isEmpty) {
+      return;
+    }
+    final key = _selectionAnchorKey(section.key, selectedOptionName!);
+    final targetContext = key.currentContext;
+    if (targetContext == null) {
+      return;
+    }
+    Scrollable.ensureVisible(
+      targetContext,
+      alignment: 0.2,
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  void _scheduleScrollToSectionSelection(_OrderFilterSection section) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      _scrollToSectionSelection(section);
+    });
+  }
+
   void _apply() {
     final min = double.tryParse(_minController.text.trim());
     final max = double.tryParse(_maxController.text.trim());
@@ -501,6 +561,7 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
         ? (_attributeItemName ?? '')
         : (_attributeTags[groupValue.key]?.toString() ?? '');
     final hasValue = _hasAttributeValue(groupValue.key);
+    final sectionKey = section.key;
     final optionEntries = groupValue.optionLabels.entries
         .where((entry) => entry.key.isNotEmpty && entry.value.isNotEmpty)
         .toList(growable: false);
@@ -526,16 +587,22 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
           spacing: 8,
           runSpacing: 8,
           children: [
-            ChoiceChip(
-              label: Text('app.market.filter.all'.tr),
-              selected: selectedValue.isEmpty,
-              onSelected: (_) => selectValue(null),
+            KeyedSubtree(
+              key: _selectionAnchorKey(sectionKey, 'all'),
+              child: ChoiceChip(
+                label: Text('app.market.filter.all'.tr),
+                selected: selectedValue.isEmpty,
+                onSelected: (_) => selectValue(null),
+              ),
             ),
             ...optionEntries.map((entry) {
-              return ChoiceChip(
-                label: Text(entry.value),
-                selected: selectedValue == entry.key,
-                onSelected: (_) => selectValue(entry.key),
+              return KeyedSubtree(
+                key: _selectionAnchorKey(sectionKey, entry.key),
+                child: ChoiceChip(
+                  label: Text(entry.value),
+                  selected: selectedValue == entry.key,
+                  onSelected: (_) => selectValue(entry.key),
+                ),
               );
             }),
           ],
@@ -561,7 +628,7 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
     );
   }
 
-  Widget _buildStatusSection() {
+  Widget _buildStatusSection(_OrderFilterSection section) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -573,14 +640,17 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
           children: List.generate(widget.statusOptions.length, (index) {
             final option = widget.statusOptions[index];
             final selected = _selectedStatusIndex == index;
-            return FilterChip(
-              label: Text(option.labelKey.tr),
-              selected: selected,
-              onSelected: (value) {
-                setState(() {
-                  _selectedStatusIndex = value ? index : -1;
-                });
-              },
+            return KeyedSubtree(
+              key: _selectionAnchorKey(section.key, 'status:$index'),
+              child: FilterChip(
+                label: Text(option.labelKey.tr),
+                selected: selected,
+                onSelected: (value) {
+                  setState(() {
+                    _selectedStatusIndex = value ? index : -1;
+                  });
+                },
+              ),
             );
           }),
         ),
@@ -729,7 +799,7 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
     );
   }
 
-  Widget _buildSortSection() {
+  Widget _buildSortSection(_OrderFilterSection section) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -741,11 +811,14 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
             runSpacing: 8,
             children: widget.sortOptions
                 .map((option) {
-                  return ChoiceChip(
-                    label: Text(option.labelKey.tr),
-                    selected: _sortField == option.field,
-                    onSelected: (_) =>
-                        setState(() => _sortField = option.field),
+                  return KeyedSubtree(
+                    key: _selectionAnchorKey(section.key, option.field),
+                    child: ChoiceChip(
+                      label: Text(option.labelKey.tr),
+                      selected: _sortField == option.field,
+                      onSelected: (_) =>
+                          setState(() => _sortField = option.field),
+                    ),
                   );
                 })
                 .toList(growable: false),
@@ -781,11 +854,85 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
       case _OrderFilterSectionType.price:
         return _buildPriceSection();
       case _OrderFilterSectionType.status:
-        return _buildStatusSection();
+        return _buildStatusSection(section);
       case _OrderFilterSectionType.date:
         return _buildDateSection();
       case _OrderFilterSectionType.sort:
-        return _buildSortSection();
+        return _buildSortSection(section);
+    }
+  }
+
+  String? _sectionSummary(_OrderFilterSection section) {
+    switch (section.type) {
+      case _OrderFilterSectionType.attribute:
+        return null;
+      case _OrderFilterSectionType.attributeGroup:
+        final key = section.groupKey;
+        if (key == null) {
+          return null;
+        }
+        final selectedValue = key == 'type'
+            ? (_attributeItemName ?? '')
+            : (_attributeTags[key]?.toString() ?? '');
+        if (selectedValue.isEmpty) {
+          return null;
+        }
+        MarketFilterGroupMeta? group;
+        for (final item in _attributeGroups) {
+          if (item.key == key) {
+            group = item;
+            break;
+          }
+        }
+        return group?.labelForValue(selectedValue) ?? selectedValue;
+      case _OrderFilterSectionType.price:
+        final minText = _minController.text.trim();
+        final maxText = _maxController.text.trim();
+        if (minText.isEmpty && maxText.isEmpty) {
+          return null;
+        }
+        if (minText.isNotEmpty && maxText.isNotEmpty) {
+          return '$minText-$maxText';
+        }
+        if (minText.isNotEmpty) {
+          return '>=$minText';
+        }
+        return '<=$maxText';
+      case _OrderFilterSectionType.status:
+        if (_selectedStatusIndex < 0 ||
+            _selectedStatusIndex >= widget.statusOptions.length) {
+          return null;
+        }
+        return widget.statusOptions[_selectedStatusIndex].labelKey.tr;
+      case _OrderFilterSectionType.date:
+        if (_startDate == null && _endDate == null) {
+          return null;
+        }
+        final startText = _startDate == null
+            ? null
+            : '${_startDate!.month}/${_startDate!.day}';
+        final endText = _endDate == null
+            ? null
+            : '${_endDate!.month}/${_endDate!.day}';
+        if (startText != null && endText != null) {
+          return '$startText-$endText';
+        }
+        if (startText != null) {
+          return '>=$startText';
+        }
+        return '<=$endText';
+      case _OrderFilterSectionType.sort:
+        if (_sortField.isEmpty) {
+          return null;
+        }
+        var label = _sortField;
+        for (final option in widget.sortOptions) {
+          if (option.field == _sortField) {
+            label = option.labelKey.tr;
+            break;
+          }
+        }
+        return '$label ${_sortAsc ? '↑' : '↓'}';
     }
   }
 
@@ -796,41 +943,67 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
       itemBuilder: (context, index) {
         final section = sections[index];
         final selected = index == _currentSectionIndex;
+        final summary = _sectionSummary(section);
         return Padding(
-          padding: const EdgeInsets.only(bottom: 6),
+          padding: const EdgeInsets.only(bottom: 5),
           child: InkWell(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(8),
             onTap: () {
               if (index == _currentSectionIndex) {
+                _scheduleScrollToSectionSelection(section);
                 return;
               }
               setState(() {
                 _currentSectionIndex = index;
               });
+              _scheduleScrollToSectionSelection(section);
             },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
               decoration: BoxDecoration(
                 color: selected
                     ? colors.primary.withValues(alpha: 0.16)
                     : colors.surfaceContainerHighest.withValues(alpha: 0.65),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(8),
                 border: Border.all(
                   color: selected
                       ? colors.primary.withValues(alpha: 0.45)
                       : colors.outline.withValues(alpha: 0.15),
                 ),
               ),
-              child: Text(
-                section.labelKey.tr,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: selected ? colors.primary : colors.onSurfaceVariant,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    section.labelKey.tr,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: selected
+                          ? colors.primary
+                          : colors.onSurfaceVariant,
+                      fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                    ),
+                  ),
+                  if (summary != null) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      summary,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: selected
+                            ? colors.primary.withValues(alpha: 0.86)
+                            : colors.onSurfaceVariant.withValues(alpha: 0.82),
+                        fontWeight: FontWeight.w500,
+                        height: 1.15,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
           ),
@@ -893,11 +1066,11 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
                         ),
                         const SizedBox(width: 10),
                         Container(
-                          width: 96,
-                          padding: const EdgeInsets.all(6),
+                          width: 104,
+                          padding: const EdgeInsets.all(5),
                           decoration: BoxDecoration(
                             color: colors.surface,
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(10),
                             border: Border.all(
                               color: colors.outline.withValues(alpha: 0.15),
                             ),
@@ -971,4 +1144,11 @@ class _OrderFilterSection {
   final _OrderFilterSectionType type;
   final String labelKey;
   final String? groupKey;
+
+  String get key {
+    if (type == _OrderFilterSectionType.attributeGroup && groupKey != null) {
+      return 'group:$groupKey';
+    }
+    return labelKey;
+  }
 }
