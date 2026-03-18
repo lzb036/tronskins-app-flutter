@@ -1012,7 +1012,6 @@ class _MyPurchasePageState extends State<MyPurchasePage>
                                     ),
                               ),
                             ),
-                            _buildStatusBadge(order),
                           ],
                         ),
                         const SizedBox(height: 10),
