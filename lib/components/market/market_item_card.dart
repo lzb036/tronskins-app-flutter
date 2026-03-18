@@ -54,8 +54,8 @@ class MarketItemCard extends StatelessWidget {
                   ),
                   if (showQualityRibbon && quality != null)
                     Positioned(
-                      right: -32,
-                      top: 12,
+                      right: -28,
+                      top: 8,
                       child: QualityRibbon(quality: quality),
                     ),
                 ],

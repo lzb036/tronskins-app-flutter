@@ -22,6 +22,7 @@ class QualityRibbon extends StatelessWidget {
             fontSize: 11,
             fontWeight: FontWeight.w600,
           ),
+          textAlign: TextAlign.center,
         ),
       ),
     );

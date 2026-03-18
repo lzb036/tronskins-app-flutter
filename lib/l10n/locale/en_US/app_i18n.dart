@@ -505,7 +505,7 @@ final Map<String, String> en_US = {
   "app.trade.onSale.nums": "Nums",
   "app.trade.buy.text": "Buy",
   "app.trade.buy.quantity": "Buy Quantity",
-  "app.trade.buy.price_placeholder": "Please enter the purchase unit price",
+  "app.trade.buy.price_placeholder": "Please enter the highest unit price",
   "app.trade.buy.pay_title": "Confirm Payment",
   "app.trade.buy.pay_text": "You need to pay:",
   "app.trade.buy.pay_text_2":

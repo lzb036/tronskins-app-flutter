@@ -872,7 +872,7 @@ class _BulkBuyingPageState extends State<BulkBuyingPage> {
                           ),
                           decoration: InputDecoration(
                             isDense: true,
-                            hintText: 'app.trade.purchase.placeholder_price'.tr,
+                            hintText: 'app.trade.buy.price_placeholder'.tr,
                             hintStyle: theme.textTheme.bodyLarge?.copyWith(
                               fontSize: 15,
                               color: colors.onSurfaceVariant.withValues(
@@ -894,7 +894,7 @@ class _BulkBuyingPageState extends State<BulkBuyingPage> {
             ),
             _buildRowContainer(
               context,
-              withTopGap: false,
+              withTopGap: true,
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
                 child: Row(

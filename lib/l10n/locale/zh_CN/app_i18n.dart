@@ -417,7 +417,7 @@ final Map<String, String> zh_CN = {
   "app.trade.onSale.nums": "件在售",
   "app.trade.buy.text": "购买",
   "app.trade.buy.quantity": "购买数量",
-  "app.trade.buy.price_placeholder": "请输入购买单价",
+  "app.trade.buy.price_placeholder": "请输入最高单价",
   "app.trade.buy.pay_title": "确认支付",
   "app.trade.buy.pay_text": "你需要支付：",
   "app.trade.buy.pay_text_2": "交易完成后，你将获得积分：",

@@ -420,7 +420,7 @@ final Map<String, String> zh_TW = {
   "app.trade.onSale.nums": "數位",
   "app.trade.buy.text": "買",
   "app.trade.buy.quantity": "購買數量",
-  "app.trade.buy.price_placeholder": "請輸入購買單價",
+  "app.trade.buy.price_placeholder": "請輸入最高單價",
   "app.trade.buy.pay_title": "確認支付",
   "app.trade.buy.pay_text": "您需要支付：",
   "app.trade.buy.pay_text_2": "交易完成後，您將獲得積分：",
