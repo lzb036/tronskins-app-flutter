@@ -20,6 +20,7 @@ class _SteamSettingPageState extends State<SteamSettingPage> {
   final TextEditingController tradeUrlController = TextEditingController();
   final TextEditingController apiKeyController = TextEditingController();
   late final Worker _configWorker;
+  bool _sessionPromptVisible = false;
 
   @override
   void initState() {
@@ -38,8 +39,8 @@ class _SteamSettingPageState extends State<SteamSettingPage> {
     });
 
     // Check for Steam ID mismatch argument
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      controller.loadSteamConfig();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _loadPageState();
       final args = Get.arguments;
       if (args is Map<String, dynamic> && args['showSteamIdNotMatch'] == true) {
         _showSteamIdMismatchDialog();
@@ -67,8 +68,46 @@ class _SteamSettingPageState extends State<SteamSettingPage> {
   Future<void> _toSteamSession() async {
     final result = await Get.toNamed(Routers.STEAM_SESSION);
     if (result == true) {
-      await controller.loadSteamConfig();
+      await _loadPageState(promptSessionExpired: false);
     }
+  }
+
+  Future<void> _loadPageState({bool promptSessionExpired = true}) async {
+    await controller.loadSteamConfig();
+    if (!mounted || !promptSessionExpired) {
+      return;
+    }
+    await _maybeShowSessionExpiredDialog();
+  }
+
+  Future<void> _maybeShowSessionExpiredDialog() async {
+    if (_sessionPromptVisible ||
+        !controller.hasSteamBound ||
+        controller.sessionValid.value) {
+      return;
+    }
+
+    _sessionPromptVisible = true;
+    await Get.dialog<void>(
+      AlertDialog(
+        title: Text('app.system.tips.title'.tr),
+        content: Text('app.steam.session.expired'.tr),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: Text('app.common.cancel'.tr),
+          ),
+          TextButton(
+            onPressed: () {
+              Get.back();
+              _toSteamSession();
+            },
+            child: Text('app.common.confirm'.tr),
+          ),
+        ],
+      ),
+    );
+    _sessionPromptVisible = false;
   }
 
   Future<void> _openTradeUrlPage(String steamId) async {

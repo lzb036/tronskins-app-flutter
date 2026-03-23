@@ -5,88 +5,77 @@ import 'package:get/get.dart';
 import 'package:tronskins_app/api/steam.dart';
 import 'package:tronskins_app/api/steam_auth.dart';
 import 'package:tronskins_app/common/http/model/base_response.dart';
-import 'package:tronskins_app/common/storage/steam_storage.dart';
 
 class SteamSessionController extends GetxController {
   SteamSessionController({
     ApiSteamServer? steamApi,
     SteamAuthClient? authClient,
+    Duration? pollInterval,
+    int? maxPollAttempts,
   }) : _steamApi = steamApi ?? ApiSteamServer(),
-       _authClient = authClient ?? SteamAuthClient();
+       _authClient = authClient ?? SteamAuthClient(),
+       _pollInterval = pollInterval ?? const Duration(seconds: 5),
+       _maxPollAttempts = maxPollAttempts ?? 30;
 
   final ApiSteamServer _steamApi;
   final SteamAuthClient _authClient;
+  final Duration _pollInterval;
+  final int _maxPollAttempts;
 
   final accountController = TextEditingController();
   final passwordController = TextEditingController();
   final codeController = TextEditingController();
 
   final RxBool isLoading = false.obs;
-  final RxBool isAwaitingCode = false.obs;
+  final RxBool isCodeSubmitting = false.obs;
+  final RxBool isAwaitingVerification = false.obs;
+  final RxBool isCodeDialogVisible = false.obs;
+  final RxBool verificationSucceeded = false.obs;
   final RxString errorMessage = ''.obs;
 
   String? _clientId;
   String? _requestId;
   String? _steamId;
   Future<bool>? _pollingFuture;
-  int _pollGeneration = 0;
-
-  @override
-  void onInit() {
-    super.onInit();
-    _loadStoredCredentials();
-  }
-
-  Future<void> _loadStoredCredentials() async {
-    final storedAccount = SteamStorage.getAccount();
-    final storedPassword = await SteamStorage.getPassword();
-    if (storedAccount != null && storedAccount.isNotEmpty) {
-      accountController.text = storedAccount;
-    }
-    if (storedPassword != null && storedPassword.isNotEmpty) {
-      passwordController.text = storedPassword;
-    }
-  }
+  Future<bool>? _tokenSaveFuture;
+  int _sessionGeneration = 0;
 
   Future<void> startLogin() async {
-    if (isLoading.value) {
+    if (isLoading.value || isCodeSubmitting.value) {
       return;
     }
+
+    if (isAwaitingVerification.value) {
+      isCodeDialogVisible.value = true;
+      return;
+    }
+
     final account = accountController.text.trim();
     final password = passwordController.text;
-    _logEvent('startLogin.begin', {
-      'accountLen': account.length,
-      'passwordLen': password.length,
-    });
     if (account.isEmpty || password.isEmpty) {
-      _logEvent('startLogin.invalidInput', {
-        'accountEmpty': account.isEmpty,
-        'passwordEmpty': password.isEmpty,
-      });
       errorMessage.value = account.isEmpty
           ? 'app.steam.session.message.username_error'
           : 'app.user.login.message.password_error';
       return;
     }
 
-    _resetPollingContext();
-    isLoading.value = true;
+    final generation = _replaceSessionState();
+    verificationSucceeded.value = false;
     errorMessage.value = '';
-    isAwaitingCode.value = false;
+    isLoading.value = true;
+
     try {
       final keyRes = await _authClient.getPasswordKey(account);
-      final keyData = keyRes['response'] is Map
-          ? Map<String, dynamic>.from(keyRes['response'] as Map)
-          : <String, dynamic>{};
-      final publicKeyMod = keyData['publickey_mod']?.toString() ?? '';
-      final publicKeyExp = keyData['publickey_exp']?.toString() ?? '';
-      final timestamp = keyData['timestamp']?.toString() ?? '';
-      _logEvent('startLogin.rsaKey', {
-        'responseKeys': _mapKeys(keyData),
-        'hasPublicKeyMod': publicKeyMod.isNotEmpty,
-        'hasPublicKeyExp': publicKeyExp.isNotEmpty,
-        'hasTimestamp': timestamp.isNotEmpty,
-      });
+      final keyData = _responseData(keyRes);
+      final publicKeyMod = _readString(
+        _firstNonNull([keyData['publickey_mod'], keyRes['publickey_mod']]),
+      );
+      final publicKeyExp = _readString(
+        _firstNonNull([keyData['publickey_exp'], keyRes['publickey_exp']]),
+      );
+      final timestamp = _readString(
+        _firstNonNull([keyData['timestamp'], keyRes['timestamp']]),
+      );
 
       if (publicKeyMod.isEmpty || publicKeyExp.isEmpty || timestamp.isEmpty) {
         errorMessage.value = 'app.user.login.message.error';
@@ -99,157 +88,126 @@ class SteamSessionController extends GetxController {
         publicKeyMod: publicKeyMod,
         publicKeyExp: publicKeyExp,
       );
-      _logEvent('startLogin.decryptPassword', {
-        'success': encryptRes.success,
-        'hasEncryptedPassword':
-            (encryptRes.datas != null && encryptRes.datas!.isNotEmpty),
-      });
-      if (!encryptRes.success || encryptRes.datas == null) {
+      final encryptedPassword = _readString(encryptRes.datas);
+      if (!encryptRes.success || encryptedPassword.isEmpty) {
         errorMessage.value = 'app.user.login.message.error';
         return;
       }
 
       final sessionRes = await _authClient.beginAuthSession({
         'persistence': '1',
-        'encrypted_password': encryptRes.datas!,
+        'encrypted_password': encryptedPassword,
         'account_name': account,
         'encryption_timestamp': timestamp,
       });
-      final sessionData = sessionRes['response'] is Map
-          ? Map<String, dynamic>.from(sessionRes['response'] as Map)
-          : <String, dynamic>{};
+      final sessionData = _responseData(sessionRes);
 
-      _clientId = sessionData['client_id']?.toString();
-      _requestId = sessionData['request_id']?.toString();
-      _steamId = sessionData['steamid']?.toString();
-      _logEvent('startLogin.beginAuthSession', {
-        'responseKeys': _mapKeys(sessionData),
-        'hasClientId': _clientId != null && _clientId!.isNotEmpty,
-        'hasRequestId': _requestId != null && _requestId!.isNotEmpty,
-        'hasSteamId': _steamId != null && _steamId!.isNotEmpty,
-        'clientId': _maskId(_clientId),
-        'requestId': _maskId(_requestId),
-        'steamId': _maskId(_steamId),
-      });
+      _clientId = _readString(
+        _firstNonNull([sessionData['client_id'], sessionRes['client_id']]),
+      );
+      _requestId = _readString(
+        _firstNonNull([sessionData['request_id'], sessionRes['request_id']]),
+      );
+      _steamId = _readString(
+        _firstNonNull([sessionData['steamid'], sessionRes['steamid']]),
+      );
 
-      if (_clientId == null || _requestId == null || _steamId == null) {
+      if (_clientId!.isEmpty || _requestId!.isEmpty || _steamId!.isEmpty) {
         errorMessage.value = 'app.user.login.message.error';
         return;
       }
 
-      isAwaitingCode.value = true;
-      unawaited(_startPollingIfNeeded());
-    } catch (e) {
-      _logEvent('startLogin.error', {
-        'errorType': e.runtimeType.toString(),
-        'error': e.toString(),
-      });
+      isAwaitingVerification.value = true;
+      isCodeDialogVisible.value = true;
+      _startPollingIfNeeded(generation);
+    } catch (_) {
       errorMessage.value = 'app.user.login.message.error';
     } finally {
       isLoading.value = false;
-      _logEvent('startLogin.end', {
-        'isAwaitingCode': isAwaitingCode.value,
-        'hasError': errorMessage.value.isNotEmpty,
-      });
     }
   }
 
-  Future<bool> submitCodeAndRefresh() async {
-    if (_clientId == null || _steamId == null || _requestId == null) {
-      errorMessage.value = 'app.user.login.message.error';
-      return false;
+  void showCodeDialog() {
+    if (!isAwaitingVerification.value) {
+      return;
     }
+    isCodeDialogVisible.value = true;
+  }
+
+  void hideCodeDialog() {
+    isCodeDialogVisible.value = false;
+  }
+
+  Future<void> submitCode() async {
+    if (isCodeSubmitting.value || isLoading.value) {
+      return;
+    }
+
+    final generation = _sessionGeneration;
+    final clientId = _clientId;
+    final steamId = _steamId;
+    if (!isAwaitingVerification.value ||
+        clientId == null ||
+        steamId == null ||
+        clientId.isEmpty ||
+        steamId.isEmpty) {
+      errorMessage.value = 'app.user.login.message.error';
+      return;
+    }
+
     final code = codeController.text.trim().toUpperCase();
     if (!RegExp(r'^[A-Z0-9]{5}$').hasMatch(code)) {
-      _logEvent('submitCode.invalidInput', {'codeLen': code.length});
-      errorMessage.value = 'app.user.login.message.error';
-      return false;
+      errorMessage.value = code.isEmpty
+          ? 'app.user.login.message.code_error'
+          : 'app.user.login.message.code_length_error';
+      return;
     }
-    _logEvent('submitCode.begin', {
-      'codeLen': code.length,
-      'clientId': _maskId(_clientId),
-      'requestId': _maskId(_requestId),
-      'steamId': _maskId(_steamId),
-    });
 
-    isLoading.value = true;
+    isCodeSubmitting.value = true;
     errorMessage.value = '';
+
     try {
       final authRes = await _authClient.updateAuthSessionWithSteamGuardCode({
-        'client_id': _clientId!,
-        'steamid': _steamId!,
+        'client_id': clientId,
+        'steamid': steamId,
         'code_type': '3',
         'code': code,
       });
-      final authData = authRes['response'] is Map
-          ? Map<String, dynamic>.from(authRes['response'] as Map)
-          : <String, dynamic>{};
-      final result = authData['eresult'];
-      final refreshToken = authData['refresh_token']?.toString();
-      final agreementSessionUrl =
-          authData['agreement_session_url']?.toString() ?? '';
-      _logEvent('submitCode.updateAuthSession', {
-        'topLevelKeys': _mapKeys(authRes),
-        'responseKeys': _mapKeys(authData),
-        'eresult': result,
-        'hasRefreshToken': refreshToken != null && refreshToken.isNotEmpty,
-        'refreshTokenLen': refreshToken?.length ?? 0,
-        'hasAgreementSessionUrl': agreementSessionUrl.isNotEmpty,
-      });
+      if (generation != _sessionGeneration) {
+        return;
+      }
+
+      final authData = _responseData(authRes);
+      final refreshToken = _readString(
+        _firstNonNull([authData['refresh_token'], authRes['refresh_token']]),
+      );
+      final result = _firstNonNull([authData['eresult'], authRes['eresult']]);
+
+      if (refreshToken.isNotEmpty) {
+        await _consumeRefreshToken(refreshToken, generation: generation);
+        return;
+      }
 
       if (_isSteamResultError(result)) {
-        _logEvent('submitCode.updateAuthSession.reject', {'eresult': result});
+        codeController.clear();
         errorMessage.value = 'app.user.login.message.error';
-        return false;
+        return;
       }
 
-      if (refreshToken != null && refreshToken.isNotEmpty) {
-        _logEvent('submitCode.useDirectRefreshToken', {
-          'refreshTokenLen': refreshToken.length,
-        });
-        return await _applyRefreshToken(refreshToken);
-      }
-
-      if (agreementSessionUrl.isNotEmpty) {
-        _logEvent('submitCode.requireAgreementSession', {
-          'agreementSessionUrlLen': agreementSessionUrl.length,
-        });
-        errorMessage.value = 'app.user.login.message.error';
-        return false;
-      }
-
-      _logEvent('submitCode.startPolling', {
-        'reason': 'await_existing_polling',
-      });
-      final polling = _pollingFuture;
-      if (polling == null) {
-        _logEvent('submitCode.pollMissing', {'reason': 'polling_not_started'});
-        errorMessage.value = 'app.user.login.message.error';
-        return false;
-      }
-      return await polling;
-    } catch (e) {
-      _logEvent('submitCode.error', {
-        'errorType': e.runtimeType.toString(),
-        'error': e.toString(),
-      });
+      // Old project behavior keeps polling running after code submission.
+    } catch (_) {
+      codeController.clear();
       errorMessage.value = 'app.user.login.message.error';
-      return false;
     } finally {
-      isLoading.value = false;
-      _logEvent('submitCode.end', {
-        'isAwaitingCode': isAwaitingCode.value,
-        'hasError': errorMessage.value.isNotEmpty,
-      });
+      isCodeSubmitting.value = false;
     }
   }
 
-  Future<bool> _startPollingIfNeeded() {
+  Future<bool> _startPollingIfNeeded(int generation) {
     final existing = _pollingFuture;
     if (existing != null) {
       return existing;
     }
-    final generation = _pollGeneration;
     final future = _pollForToken(generation);
     _pollingFuture = future;
     future.whenComplete(() {
@@ -260,141 +218,197 @@ class SteamSessionController extends GetxController {
     return future;
   }
 
-  void _resetPollingContext() {
-    _pollGeneration += 1;
-    _pollingFuture = null;
-  }
-
   Future<bool> _pollForToken(int generation) async {
     final clientId = _clientId;
     final requestId = _requestId;
-    final steamId = _steamId;
-    if (clientId == null || requestId == null || steamId == null) {
-      errorMessage.value = 'app.user.login.message.error';
+    if (clientId == null ||
+        requestId == null ||
+        clientId.isEmpty ||
+        requestId.isEmpty) {
+      _failVerification(
+        clearCredentials: false,
+        message: 'app.user.login.message.error',
+      );
       return false;
     }
 
-    const maxAttempts = 30;
-    for (var attempt = 0; attempt < maxAttempts; attempt += 1) {
-      if (generation != _pollGeneration) {
-        _logEvent('poll.cancelled', {
-          'attempt': attempt + 1,
-          'reason': 'generation_changed',
-        });
+    for (var attempt = 0; attempt < _maxPollAttempts; attempt += 1) {
+      if (generation != _sessionGeneration) {
         return false;
       }
+
       try {
         final pollRes = await _authClient.pollAuthSessionStatus({
           'client_id': clientId,
           'request_id': requestId,
         });
-        final pollData = pollRes['response'] is Map
-            ? Map<String, dynamic>.from(pollRes['response'] as Map)
-            : <String, dynamic>{};
+        if (generation != _sessionGeneration) {
+          return false;
+        }
 
-        final refreshToken = pollData['refresh_token']?.toString();
-        final result = pollData['eresult'];
-        _logEvent('poll.status', {
-          'attempt': attempt + 1,
-          'maxAttempts': maxAttempts,
-          'topLevelKeys': _mapKeys(pollRes),
-          'responseKeys': _mapKeys(pollData),
-          'eresult': result,
-          'hadRemoteInteraction': pollData['had_remote_interaction'],
-          'hasRefreshToken': refreshToken != null && refreshToken.isNotEmpty,
-          'refreshTokenLen': refreshToken?.length ?? 0,
-        });
+        final pollData = _responseData(pollRes);
+        final refreshToken = _readString(
+          _firstNonNull([pollData['refresh_token'], pollRes['refresh_token']]),
+        );
+        final result = _firstNonNull([pollData['eresult'], pollRes['eresult']]);
 
-        if (refreshToken != null && refreshToken.isNotEmpty) {
-          if (generation != _pollGeneration) {
-            return false;
-          }
-          return await _applyRefreshToken(refreshToken);
+        if (refreshToken.isNotEmpty) {
+          return await _consumeRefreshToken(
+            refreshToken,
+            generation: generation,
+          );
         }
 
         if (_isSteamResultError(result)) {
-          _logEvent('poll.reject', {'attempt': attempt + 1, 'eresult': result});
-          errorMessage.value = 'app.user.login.message.error';
+          _failVerification(
+            clearCredentials: false,
+            message: 'app.user.login.message.error',
+          );
           return false;
         }
       } catch (_) {
-        _logEvent('poll.error', {'attempt': attempt + 1});
-        errorMessage.value = 'app.user.login.message.error';
+        _failVerification(
+          clearCredentials: false,
+          message: 'app.user.login.message.error',
+        );
         return false;
       }
 
-      if (generation != _pollGeneration) {
-        return false;
-      }
-      await Future.delayed(const Duration(seconds: 5));
+      await Future<void>.delayed(_pollInterval);
     }
 
-    _logEvent('poll.timeout', {'attempts': maxAttempts});
-    errorMessage.value = 'app.user.login.message.error';
-    return false;
-  }
-
-  Future<bool> _applyRefreshToken(String refreshToken) async {
-    final steamId = _steamId;
-    if (steamId == null || steamId.isEmpty) {
-      _logEvent('tokenFresh.invalidSteamId', {'steamId': _maskId(steamId)});
-      errorMessage.value = 'app.user.login.message.error';
+    if (generation != _sessionGeneration) {
       return false;
     }
 
-    _logEvent('tokenFresh.begin', {
-      'steamId': _maskId(steamId),
-      'refreshTokenLen': refreshToken.length,
+    _failVerification(
+      clearCredentials: false,
+      message: 'app.user.login.message.error',
+    );
+    return false;
+  }
+
+  Future<bool> _consumeRefreshToken(
+    String refreshToken, {
+    required int generation,
+  }) {
+    final existing = _tokenSaveFuture;
+    if (existing != null) {
+      return existing;
+    }
+
+    final future = _applyRefreshToken(refreshToken, generation: generation);
+    _tokenSaveFuture = future;
+    future.whenComplete(() {
+      if (identical(_tokenSaveFuture, future)) {
+        _tokenSaveFuture = null;
+      }
     });
+    return future;
+  }
+
+  Future<bool> _applyRefreshToken(
+    String refreshToken, {
+    required int generation,
+  }) async {
+    if (generation != _sessionGeneration) {
+      return false;
+    }
+
+    final steamId = _steamId;
+    if (steamId == null || steamId.isEmpty) {
+      _failVerification(
+        clearCredentials: false,
+        message: 'app.user.login.message.error',
+      );
+      return false;
+    }
 
     final res = await _steamApi.steamTokenFresh(
       steamId: steamId,
       freshToken: refreshToken,
     );
-    _logEvent('tokenFresh.response', {
-      'success': res.success,
-      'code': res.code,
-      'message': res.message,
-      'hasDatas': res.datas != null,
-    });
-    if (!res.success) {
-      final failureMessage = _resolveTokenFreshFailureMessage(res);
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        failureMessage,
-        titleText: const SizedBox.shrink(),
-      );
-      accountController.clear();
-      passwordController.clear();
-      codeController.clear();
-      isAwaitingCode.value = false;
-      _resetPollingContext();
-      errorMessage.value = '';
+    if (generation != _sessionGeneration) {
       return false;
     }
 
-    await SteamStorage.setAccount(accountController.text.trim());
-    await SteamStorage.setPassword(passwordController.text);
-    codeController.clear();
-    isAwaitingCode.value = false;
-    _resetPollingContext();
-    _logEvent('tokenFresh.success', {
-      'storedAccountLen': accountController.text.trim().length,
-    });
+    if (!res.success) {
+      _failVerification(
+        clearCredentials: true,
+        message: _resolveTokenFreshFailureMessage(res),
+      );
+      return false;
+    }
+
+    _replaceSessionState(clearCredentials: true);
+    errorMessage.value = '';
+    verificationSucceeded.value = true;
     return true;
   }
 
+  int _replaceSessionState({bool clearCredentials = false}) {
+    _sessionGeneration += 1;
+    _clientId = null;
+    _requestId = null;
+    _steamId = null;
+    _pollingFuture = null;
+    _tokenSaveFuture = null;
+    isAwaitingVerification.value = false;
+    isCodeDialogVisible.value = false;
+    isCodeSubmitting.value = false;
+    codeController.clear();
+    if (clearCredentials) {
+      accountController.clear();
+      passwordController.clear();
+    }
+    return _sessionGeneration;
+  }
+
+  void _failVerification({
+    required bool clearCredentials,
+    required String message,
+  }) {
+    _replaceSessionState(clearCredentials: clearCredentials);
+    verificationSucceeded.value = false;
+    errorMessage.value = message;
+  }
+
   String _resolveTokenFreshFailureMessage(BaseHttpResponse<dynamic> res) {
-    final datasText = res.datas?.toString().trim() ?? '';
-    final messageText = res.message.trim();
+    final datasText = _readString(res.datas);
+    final messageText = _readString(res.message);
     final raw = datasText.isNotEmpty ? datasText : messageText;
     if (raw.toLowerCase() == 'unbind steam') {
-      return 'app.steam.message.unbind'.tr;
+      return 'app.steam.message.unbind';
     }
     if (raw.isNotEmpty) {
       return raw;
     }
-    return 'Failed';
+    return 'app.user.login.message.error';
+  }
+
+  Map<String, dynamic> _responseData(Map<String, dynamic> payload) {
+    final response = payload['response'];
+    if (response is Map<String, dynamic>) {
+      return response;
+    }
+    if (response is Map) {
+      return Map<String, dynamic>.from(response);
+    }
+    return const <String, dynamic>{};
+  }
+
+  dynamic _firstNonNull(Iterable<dynamic> values) {
+    for (final value in values) {
+      if (value != null) {
+        return value;
+      }
+    }
+    return null;
+  }
+
+  String _readString(dynamic value) {
+    final text = value?.toString() ?? '';
+    return text.trim();
   }
 
   bool _isSteamResultError(dynamic result) {
@@ -408,30 +422,9 @@ class SteamSessionController extends GetxController {
     return value != 0 && value != 1;
   }
 
-  void _logEvent(String stage, Map<String, dynamic> payload) {
-    // Steam 登录调试日志暂时关闭。
-  }
-
-  String _mapKeys(Map<String, dynamic> data) {
-    if (data.isEmpty) {
-      return '[]';
-    }
-    return '[${data.keys.join('|')}]';
-  }
-
-  String _maskId(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'empty';
-    }
-    if (value.length <= 4) {
-      return '${value[0]}***(${value.length})';
-    }
-    return '${value.substring(0, 2)}***${value.substring(value.length - 2)}(${value.length})';
-  }
-
   @override
   void onClose() {
-    _resetPollingContext();
+    _replaceSessionState(clearCredentials: false);
     accountController.dispose();
     passwordController.dispose();
     codeController.dispose();
