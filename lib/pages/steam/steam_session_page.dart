@@ -28,6 +28,14 @@ class _SteamSessionPageState extends State<SteamSessionPage> {
   String get _codeHelper =>
       _isChinese ? '请填写最新的 5 位验证码' : 'Use the latest 5-digit code';
 
+  String get _submittingCodeLabel => _isChinese ? '确认中...' : 'Confirming...';
+
+  String get _waitingForSteamLabel => _isChinese ? '等待确认...' : 'Waiting...';
+
+  String get _waitingForSteamHelper => _isChinese
+      ? '正在等待 Steam 返回验证结果，请稍候'
+      : 'Waiting for Steam to finish verification.';
+
   String get _loadingLabel => _isChinese ? '登录中...' : 'Logging in...';
 
   @override
@@ -154,9 +162,12 @@ class _SteamSessionPageState extends State<SteamSessionPage> {
                       valueListenable: controller.codeController,
                       builder: (context, value, child) {
                         final codeValue = value.text.trim();
-                        final canSubmit =
-                            codeValue.length == 5 &&
-                            !controller.isCodeSubmitting.value;
+                        final isSubmittingCode =
+                            controller.isCodeSubmitting.value;
+                        final isWaitingForResult =
+                            controller.isWaitingForVerificationResult.value;
+                        final isBusy = isSubmittingCode || isWaitingForResult;
+                        final canSubmit = codeValue.length == 5 && !isBusy;
                         return Column(
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -204,7 +215,7 @@ class _SteamSessionPageState extends State<SteamSessionPage> {
                             const SizedBox(height: 18),
                             TextField(
                               controller: controller.codeController,
-                              enabled: !controller.isCodeSubmitting.value,
+                              enabled: !isBusy,
                               keyboardType: TextInputType.text,
                               textCapitalization: TextCapitalization.characters,
                               maxLength: 5,
@@ -267,14 +278,18 @@ class _SteamSessionPageState extends State<SteamSessionPage> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Icon(
-                                    Icons.info_outline_rounded,
+                                    isWaitingForResult
+                                        ? Icons.hourglass_top_rounded
+                                        : Icons.info_outline_rounded,
                                     size: 18,
                                     color: colorScheme.primary,
                                   ),
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
-                                      _codeHelper,
+                                      isWaitingForResult
+                                          ? _waitingForSteamHelper
+                                          : _codeHelper,
                                       style: textTheme.bodySmall?.copyWith(
                                         color: colorScheme.onSurfaceVariant,
                                         height: 1.4,
@@ -289,7 +304,7 @@ class _SteamSessionPageState extends State<SteamSessionPage> {
                               children: [
                                 Expanded(
                                   child: OutlinedButton(
-                                    onPressed: controller.isCodeSubmitting.value
+                                    onPressed: isBusy
                                         ? null
                                         : controller.hideCodeDialog,
                                     child: Text('app.common.cancel'.tr),
@@ -303,13 +318,27 @@ class _SteamSessionPageState extends State<SteamSessionPage> {
                                             await controller.submitCode();
                                           }
                                         : null,
-                                    child: controller.isCodeSubmitting.value
-                                        ? const SizedBox(
-                                            width: 18,
-                                            height: 18,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                            ),
+                                    child: isBusy
+                                        ? Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              const SizedBox(
+                                                width: 18,
+                                                height: 18,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                    ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                isWaitingForResult
+                                                    ? _waitingForSteamLabel
+                                                    : _submittingCodeLabel,
+                                              ),
+                                            ],
                                           )
                                         : Text('app.common.confirm'.tr),
                                   ),

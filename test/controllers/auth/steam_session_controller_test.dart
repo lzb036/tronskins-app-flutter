@@ -72,6 +72,45 @@ void main() {
       },
     );
 
+    test(
+      'submitCode keeps waiting state until polling returns refresh token',
+      () async {
+        final steamApi = _FakeSteamApi();
+        final authClient = _FakeSteamAuthClient()
+          ..pollResponses.addAll([
+            {'response': <String, dynamic>{}},
+            {
+              'response': {'refresh_token': 'refresh-from-delayed-poll'},
+            },
+          ]);
+        final controller = SteamSessionController(
+          steamApi: steamApi,
+          authClient: authClient,
+          pollInterval: const Duration(milliseconds: 30),
+          maxPollAttempts: 3,
+        );
+
+        controller.accountController.text = 'steam-user';
+        controller.passwordController.text = 'steam-pass';
+        await controller.startLogin();
+
+        controller.codeController.text = 'ABC12';
+        await controller.submitCode();
+
+        expect(controller.isCodeSubmitting.value, isFalse);
+        expect(controller.isWaitingForVerificationResult.value, isTrue);
+        expect(controller.verificationSucceeded.value, isFalse);
+
+        await Future<void>.delayed(const Duration(milliseconds: 45));
+
+        expect(controller.verificationSucceeded.value, isTrue);
+        expect(controller.isWaitingForVerificationResult.value, isFalse);
+        expect(steamApi.lastFreshToken, 'refresh-from-delayed-poll');
+
+        controller.onClose();
+      },
+    );
+
     test('polling can complete verification without code submission', () async {
       final steamApi = _FakeSteamApi();
       final authClient = _FakeSteamAuthClient()

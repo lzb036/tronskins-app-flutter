@@ -28,6 +28,7 @@ class SteamSessionController extends GetxController {
 
   final RxBool isLoading = false.obs;
   final RxBool isCodeSubmitting = false.obs;
+  final RxBool isWaitingForVerificationResult = false.obs;
   final RxBool isAwaitingVerification = false.obs;
   final RxBool isCodeDialogVisible = false.obs;
   final RxBool verificationSucceeded = false.obs;
@@ -139,7 +140,9 @@ class SteamSessionController extends GetxController {
   }
 
   Future<void> submitCode() async {
-    if (isCodeSubmitting.value || isLoading.value) {
+    if (isCodeSubmitting.value ||
+        isLoading.value ||
+        isWaitingForVerificationResult.value) {
       return;
     }
 
@@ -164,6 +167,7 @@ class SteamSessionController extends GetxController {
     }
 
     isCodeSubmitting.value = true;
+    isWaitingForVerificationResult.value = false;
     errorMessage.value = '';
 
     try {
@@ -195,7 +199,9 @@ class SteamSessionController extends GetxController {
       }
 
       // Old project behavior keeps polling running after code submission.
+      isWaitingForVerificationResult.value = true;
     } catch (_) {
+      isWaitingForVerificationResult.value = false;
       codeController.clear();
       errorMessage.value = 'app.user.login.message.error';
     } finally {
@@ -354,6 +360,7 @@ class SteamSessionController extends GetxController {
     _pollingFuture = null;
     _tokenSaveFuture = null;
     isAwaitingVerification.value = false;
+    isWaitingForVerificationResult.value = false;
     isCodeDialogVisible.value = false;
     isCodeSubmitting.value = false;
     codeController.clear();
