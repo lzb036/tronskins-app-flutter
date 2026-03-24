@@ -66,341 +66,355 @@ class _LoginScreenState extends State<LoginScreen>
 
   @override
   Widget build(BuildContext context) {
-    // 根据系统或应用设置判断深色模式
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    // 高级感配色方案
-    final backgroundColor = isDark
-        ? const Color(0xFF0F1115)
-        : const Color(0xFFF5F7FA);
-    final primaryColor = const Color(0xFF007AFF);
-    final textColor = isDark ? Colors.white : const Color(0xFF1D1D1F);
-    final subTextColor = isDark
-        ? const Color(0xFF86868B)
-        : const Color(0xFF8E8E93);
-    final inputFillColor = isDark
-        ? const Color(0xFF2C2E34)
-        : const Color(0xFFF2F2F7);
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final backgroundColor = Color.alphaBlend(
+      colors.primary.withValues(alpha: isDark ? 0.08 : 0.05),
+      colors.surface,
+    );
+    final headerGlowColor = Color.alphaBlend(
+      colors.primary.withValues(alpha: isDark ? 0.18 : 0.10),
+      backgroundColor,
+    );
+    final primaryColor = colors.primary;
+    final accentColor = colors.secondary;
+    final textColor = colors.onSurface;
+    final subTextColor = colors.onSurfaceVariant;
+    final inputFillColor = colors.surfaceContainerHighest.withValues(
+      alpha: isDark ? 0.44 : 0.76,
+    );
+    final steamButtonBackground = isDark
+        ? colors.surfaceContainerHighest.withValues(alpha: 0.40)
+        : colors.surface.withValues(alpha: 0.92);
+    final steamButtonBorder = colors.primary.withValues(
+      alpha: isDark ? 0.18 : 0.28,
+    );
     final isSubmitting = _isLoading || _isAutoSubmittingTwoFactor;
 
     return Scaffold(
       backgroundColor: backgroundColor,
       resizeToAvoidBottomInset: true, // 确保键盘弹出时页面调整
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: IntrinsicHeight(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      const SizedBox(height: 16),
-                      // 自定义返回按钮
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: IconButton(
-                          icon: Icon(
-                            Icons.arrow_back_ios_new,
-                            color: textColor,
-                            size: 20,
-                          ),
-                          onPressed: () => Get.back(),
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                        ),
-                      ),
-
-                      const Spacer(flex: 2), // 弹性间距
-
-                      FadeTransition(
-                        opacity: _titleFade,
-                        child: SlideTransition(
-                          position: _titleSlide,
-                          child: Column(
-                            children: [
-                              ShaderMask(
-                                shaderCallback: (bounds) => LinearGradient(
-                                  colors: [
-                                    primaryColor,
-                                    const Color(0xFF5AC8FA),
-                                  ],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ).createShader(bounds),
-                                child: Text(
-                                  'app.user.login.tronskins'.tr,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 1.2,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                            ],
-                          ),
-                        ),
-                      ),
-
-                      const Spacer(flex: 3), // 弹性间距，使标题略微偏上
-                      // 表单区域
-                      Column(
-                        children: [
-                          SizedBox(
-                            width: double.infinity,
-                            child: _buildModernInputField(
-                              hint: 'app.user.login.email_placeholder'.tr,
-                              keyboardType: TextInputType.emailAddress,
-                              prefixIcon: Icons.email_outlined,
-                              fillColor: inputFillColor,
-                              textColor: textColor,
-                              hintColor: subTextColor,
-                              onChanged: (v) {
-                                final wasTouched = _emailTouched;
-                                _markTouched(email: true);
-                                controller.username.value = v.trim();
-                                if (wasTouched && mounted) {
-                                  setState(() {});
-                                }
-                              },
-                              error: _emailTouched
-                                  ? _emailErrorText(controller.username.value)
-                                  : null,
-                            ),
-                          ),
-                          const SizedBox(height: 26),
-                          SizedBox(
-                            width: double.infinity,
-                            child: _buildModernInputField(
-                              hint: 'app.user.login.password_placeholder'.tr,
-                              obscureText: true,
-                              prefixIcon: Icons.lock_outline,
-                              fillColor: inputFillColor,
-                              textColor: textColor,
-                              hintColor: subTextColor,
-                              onChanged: (v) {
-                                final wasTouched = _passwordTouched;
-                                _markTouched(password: true);
-                                controller.password.value = v;
-                                if (wasTouched && mounted) {
-                                  setState(() {});
-                                }
-                              },
-                              error: _passwordTouched
-                                  ? _passwordErrorText(
-                                      controller.password.value,
-                                    )
-                                  : null,
-                            ),
-                          ),
-                          Obx(() {
-                            if (!controller.isVerificationRequired) {
-                              return const SizedBox.shrink();
-                            }
-                            if (_isAutoSubmittingTwoFactor &&
-                                controller.isTwoFactorAuth.value) {
-                              return const SizedBox.shrink();
-                            }
-
-                            final isEmail =
-                                controller.isEmailVerification.value;
-                            final hint = isEmail
-                                ? 'app.user.login.enter_captcha'.tr
-                                : 'app.user.login.enter_2fa_captcha'.tr;
-
-                            return Column(
-                              children: [
-                                const SizedBox(height: 16),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: _buildModernInputField(
-                                    hint: hint,
-                                    keyboardType: TextInputType.number,
-                                    prefixIcon: Icons.security_outlined,
-                                    maxLength: 6,
-                                    fillColor: inputFillColor,
-                                    textColor: textColor,
-                                    hintColor: subTextColor,
-                                    inputFormatters: [
-                                      FilteringTextInputFormatter.digitsOnly,
-                                    ],
-                                    onChanged: (v) {
-                                      final wasTouched = _codeTouched;
-                                      _markTouched(code: true);
-                                      controller.code.value = v.trim();
-                                      if (wasTouched && mounted) {
-                                        setState(() {});
-                                      }
-                                    },
-                                    suffix: isEmail
-                                        ? _buildResendButton()
-                                        : null,
-                                    error: _codeTouched
-                                        ? _codeErrorText(
-                                            controller.code.value,
-                                            isEmailVerification: isEmail,
-                                          )
-                                        : null,
-                                  ),
-                                ),
-                              ],
-                            );
-                          }),
-                        ],
-                      ),
-
-                      const Spacer(flex: 3), // 弹性间距
-                      // 登录按钮
-                      ScaleButton(
-                        key: const ValueKey('login_btn'),
-                        onPressed: isSubmitting ? null : _handleLogin,
-                        child: SizedBox(
-                          width: double.infinity,
-                          height: 54, // 微调高度
-                          child: ElevatedButton(
-                            onPressed: null, // 事件由 ScaleButton 处理
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: primaryColor,
-                              disabledBackgroundColor: primaryColor,
-                              disabledForegroundColor: Colors.white,
-                              shadowColor: primaryColor.withValues(alpha: 0.4),
-                              elevation: 8,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                            ),
-                            child: isSubmitting
-                                ? const SizedBox(
-                                    height: 24,
-                                    width: 24,
-                                    child: CircularProgressIndicator(
-                                      color: Colors.white,
-                                      strokeWidth: 2.5,
-                                    ),
-                                  )
-                                : Text(
-                                    'app.user.login.title'.tr,
-                                    style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white,
-                                      letterSpacing: 1,
-                                    ),
-                                  ),
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 26),
-
-                      // Steam 登录
-                      ScaleButton(
-                        key: const ValueKey('steam_btn'),
-                        onPressed: () => Get.toNamed(Routers.STEAM_LOGIN),
-                        child: SizedBox(
-                          width: double.infinity,
-                          height: 54,
-                          child: OutlinedButton.icon(
-                            onPressed: null, // 事件由 ScaleButton 处理
+      body: DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [headerGlowColor, backgroundColor],
+          ),
+        ),
+        child: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: IntrinsicHeight(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        const SizedBox(height: 16),
+                        // 自定义返回按钮
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: IconButton(
                             icon: Icon(
-                              Icons.sports_esports,
-                              size: 24,
-                              color: isDark
-                                  ? Colors.white
-                                  : const Color(0xFF171A21),
+                              Icons.arrow_back_ios_new,
+                              color: textColor,
+                              size: 20,
                             ),
-                            label: Text(
-                              'app.steam.login.title'.tr,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: isDark
-                                    ? Colors.white
-                                    : const Color(0xFF171A21),
-                              ),
-                            ),
-                            style: ButtonStyle(
-                              backgroundColor: WidgetStatePropertyAll(
-                                isDark
-                                    ? const Color(0xFF2C2E34)
-                                    : Colors.transparent,
-                              ),
-                              foregroundColor: WidgetStatePropertyAll(
-                                isDark ? Colors.white : const Color(0xFF171A21),
-                              ),
-                              side: WidgetStatePropertyAll(
-                                BorderSide(
-                                  color: isDark
-                                      ? Colors.transparent
-                                      : const Color(0xFF171A21),
-                                  width: 1.5,
+                            onPressed: () => Get.back(),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                        ),
+
+                        const Spacer(flex: 2), // 弹性间距
+
+                        FadeTransition(
+                          opacity: _titleFade,
+                          child: SlideTransition(
+                            position: _titleSlide,
+                            child: Column(
+                              children: [
+                                ShaderMask(
+                                  shaderCallback: (bounds) => LinearGradient(
+                                    colors: [
+                                      primaryColor,
+                                      accentColor.withValues(
+                                        alpha: isDark ? 0.85 : 0.92,
+                                      ),
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ).createShader(bounds),
+                                  child: Text(
+                                    'app.user.login.tronskins'.tr,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 28,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 1.2,
+                                    ),
+                                  ),
                                 ),
+                                const SizedBox(height: 6),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                        const Spacer(flex: 3), // 弹性间距，使标题略微偏上
+                        // 表单区域
+                        Column(
+                          children: [
+                            SizedBox(
+                              width: double.infinity,
+                              child: _buildModernInputField(
+                                hint: 'app.user.login.email_placeholder'.tr,
+                                keyboardType: TextInputType.emailAddress,
+                                prefixIcon: Icons.email_outlined,
+                                fillColor: inputFillColor,
+                                textColor: textColor,
+                                hintColor: subTextColor,
+                                onChanged: (v) {
+                                  final wasTouched = _emailTouched;
+                                  _markTouched(email: true);
+                                  controller.username.value = v.trim();
+                                  if (wasTouched && mounted) {
+                                    setState(() {});
+                                  }
+                                },
+                                error: _emailTouched
+                                    ? _emailErrorText(controller.username.value)
+                                    : null,
                               ),
-                              shape: WidgetStatePropertyAll(
-                                RoundedRectangleBorder(
+                            ),
+                            const SizedBox(height: 26),
+                            SizedBox(
+                              width: double.infinity,
+                              child: _buildModernInputField(
+                                hint: 'app.user.login.password_placeholder'.tr,
+                                obscureText: true,
+                                prefixIcon: Icons.lock_outline,
+                                fillColor: inputFillColor,
+                                textColor: textColor,
+                                hintColor: subTextColor,
+                                onChanged: (v) {
+                                  final wasTouched = _passwordTouched;
+                                  _markTouched(password: true);
+                                  controller.password.value = v;
+                                  if (wasTouched && mounted) {
+                                    setState(() {});
+                                  }
+                                },
+                                error: _passwordTouched
+                                    ? _passwordErrorText(
+                                        controller.password.value,
+                                      )
+                                    : null,
+                              ),
+                            ),
+                            Obx(() {
+                              if (!controller.isVerificationRequired) {
+                                return const SizedBox.shrink();
+                              }
+                              if (_isAutoSubmittingTwoFactor &&
+                                  controller.isTwoFactorAuth.value) {
+                                return const SizedBox.shrink();
+                              }
+
+                              final isEmail =
+                                  controller.isEmailVerification.value;
+                              final hint = isEmail
+                                  ? 'app.user.login.enter_captcha'.tr
+                                  : 'app.user.login.enter_2fa_captcha'.tr;
+
+                              return Column(
+                                children: [
+                                  const SizedBox(height: 16),
+                                  SizedBox(
+                                    width: double.infinity,
+                                    child: _buildModernInputField(
+                                      hint: hint,
+                                      keyboardType: TextInputType.number,
+                                      prefixIcon: Icons.security_outlined,
+                                      maxLength: 6,
+                                      fillColor: inputFillColor,
+                                      textColor: textColor,
+                                      hintColor: subTextColor,
+                                      inputFormatters: [
+                                        FilteringTextInputFormatter.digitsOnly,
+                                      ],
+                                      onChanged: (v) {
+                                        final wasTouched = _codeTouched;
+                                        _markTouched(code: true);
+                                        controller.code.value = v.trim();
+                                        if (wasTouched && mounted) {
+                                          setState(() {});
+                                        }
+                                      },
+                                      suffix: isEmail
+                                          ? _buildResendButton()
+                                          : null,
+                                      error: _codeTouched
+                                          ? _codeErrorText(
+                                              controller.code.value,
+                                              isEmailVerification: isEmail,
+                                            )
+                                          : null,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }),
+                          ],
+                        ),
+
+                        const Spacer(flex: 3), // 弹性间距
+                        // 登录按钮
+                        ScaleButton(
+                          key: const ValueKey('login_btn'),
+                          onPressed: isSubmitting ? null : _handleLogin,
+                          child: SizedBox(
+                            width: double.infinity,
+                            height: 54, // 微调高度
+                            child: ElevatedButton(
+                              onPressed: null, // 事件由 ScaleButton 处理
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: primaryColor,
+                                disabledBackgroundColor: primaryColor,
+                                disabledForegroundColor: Colors.white,
+                                shadowColor: primaryColor.withValues(
+                                  alpha: isDark ? 0.24 : 0.34,
+                                ),
+                                elevation: 8,
+                                shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16),
                                 ),
                               ),
-                              overlayColor: const WidgetStatePropertyAll(
-                                Colors.transparent,
+                              child: isSubmitting
+                                  ? const SizedBox(
+                                      height: 24,
+                                      width: 24,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2.5,
+                                      ),
+                                    )
+                                  : Text(
+                                      'app.user.login.title'.tr,
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                        letterSpacing: 1,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 26),
+
+                        // Steam 登录
+                        ScaleButton(
+                          key: const ValueKey('steam_btn'),
+                          onPressed: () => Get.toNamed(Routers.STEAM_LOGIN),
+                          child: SizedBox(
+                            width: double.infinity,
+                            height: 54,
+                            child: OutlinedButton.icon(
+                              onPressed: null, // 事件由 ScaleButton 处理
+                              icon: Icon(
+                                Icons.sports_esports,
+                                size: 24,
+                                color: primaryColor,
+                              ),
+                              label: Text(
+                                'app.steam.login.title'.tr,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: textColor,
+                                ),
+                              ),
+                              style: ButtonStyle(
+                                backgroundColor: WidgetStatePropertyAll(
+                                  steamButtonBackground,
+                                ),
+                                foregroundColor: WidgetStatePropertyAll(
+                                  textColor,
+                                ),
+                                side: WidgetStatePropertyAll(
+                                  BorderSide(
+                                    color: steamButtonBorder,
+                                    width: 1.4,
+                                  ),
+                                ),
+                                shape: WidgetStatePropertyAll(
+                                  RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                ),
+                                overlayColor: const WidgetStatePropertyAll(
+                                  Colors.transparent,
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
 
-                      const Spacer(flex: 2), // 弹性间距
-                      // 底部功能链接
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 24.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            TextButton(
-                              onPressed: () =>
-                                  Get.toNamed(Routers.FORGET_PASSWORD),
-                              child: Text(
-                                'app.user.login.forget_password'.tr,
-                                style: TextStyle(
-                                  color: subTextColor,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
+                        const Spacer(flex: 2), // 弹性间距
+                        // 底部功能链接
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 24.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              TextButton(
+                                onPressed: () =>
+                                    Get.toNamed(Routers.FORGET_PASSWORD),
+                                child: Text(
+                                  'app.user.login.forget_password'.tr,
+                                  style: TextStyle(
+                                    color: subTextColor,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
                               ),
-                            ),
-                            Container(
-                              width: 1,
-                              height: 12,
-                              color: subTextColor.withValues(alpha: 0.3),
-                              margin: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                              ),
-                            ),
-                            TextButton(
-                              onPressed: () =>
-                                  Get.toNamed(Routers.TOKEN_RECOVERY),
-                              child: Text(
-                                'app.user.login.token_loss'.tr,
-                                style: TextStyle(
-                                  color: subTextColor,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w500,
+                              Container(
+                                width: 1,
+                                height: 12,
+                                color: subTextColor.withValues(alpha: 0.3),
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 16,
                                 ),
                               ),
-                            ),
-                          ],
+                              TextButton(
+                                onPressed: () =>
+                                    Get.toNamed(Routers.TOKEN_RECOVERY),
+                                child: Text(
+                                  'app.user.login.token_loss'.tr,
+                                  style: TextStyle(
+                                    color: subTextColor,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
-            );
-          },
+              );
+            },
+          ),
         ),
       ),
     );
@@ -556,9 +570,13 @@ class _LoginScreenState extends State<LoginScreen>
           onPressed: isActive || _isLoading ? null : _sendEmailCode,
           style: TextButton.styleFrom(
             foregroundColor: isActive
-                ? const Color(0xFFC7C7CC)
-                : const Color(0xFF007AFF),
-            disabledForegroundColor: const Color(0xFFC7C7CC),
+                ? Theme.of(
+                    context,
+                  ).colorScheme.onSurfaceVariant.withValues(alpha: 0.56)
+                : Theme.of(context).colorScheme.primary,
+            disabledForegroundColor: Theme.of(
+              context,
+            ).colorScheme.onSurfaceVariant.withValues(alpha: 0.56),
             padding: const EdgeInsets.symmetric(horizontal: 12),
             minimumSize: const Size(0, 0),
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,

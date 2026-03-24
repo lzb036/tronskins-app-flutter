@@ -39,6 +39,9 @@ class AuthFloatingInputField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final primaryColor = colorScheme.primary;
+    final errorColor = colorScheme.error;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -52,12 +55,12 @@ class AuthFloatingInputField extends StatelessWidget {
           onChanged: onChanged,
           onSubmitted: onSubmitted,
           style: TextStyle(color: textColor, fontSize: 16),
-          cursorColor: const Color(0xFF007AFF),
+          cursorColor: primaryColor,
           decoration: InputDecoration(
             labelText: label,
             labelStyle: TextStyle(color: hintColor, fontSize: 15),
-            floatingLabelStyle: const TextStyle(
-              color: Color(0xFF007AFF),
+            floatingLabelStyle: TextStyle(
+              color: primaryColor,
               fontSize: 13,
               fontWeight: FontWeight.w600,
             ),
@@ -86,10 +89,7 @@ class AuthFloatingInputField extends StatelessWidget {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(
-                color: Color(0xFF007AFF),
-                width: 1.5,
-              ),
+              borderSide: BorderSide(color: primaryColor, width: 1.5),
             ),
           ),
         ),
@@ -98,20 +98,13 @@ class AuthFloatingInputField extends StatelessWidget {
             padding: const EdgeInsets.only(left: 12, top: 8),
             child: Row(
               children: [
-                const Icon(
-                  Icons.error_outline,
-                  size: 14,
-                  color: Colors.redAccent,
-                ),
+                Icon(Icons.error_outline, size: 14, color: errorColor),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
                     error!,
                     softWrap: true,
-                    style: const TextStyle(
-                      color: Colors.redAccent,
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: errorColor, fontSize: 12),
                   ),
                 ),
               ],
