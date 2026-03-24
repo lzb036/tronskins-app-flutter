@@ -20,6 +20,7 @@ class SteamController extends GetxController {
 
   String _initialTradeUrl = '';
   String _initialApiKey = '';
+  Future<void>? _loadFuture;
 
   bool get hasSteamBound => config.value?.steamId?.isNotEmpty == true;
   bool get hasChanges =>
@@ -33,9 +34,22 @@ class SteamController extends GetxController {
   }
 
   Future<void> loadSteamConfig({bool refreshUser = true}) async {
-    if (isLoading.value) {
-      return;
+    final existing = _loadFuture;
+    if (existing != null) {
+      return existing;
     }
+
+    final future = _doLoadSteamConfig();
+    _loadFuture = future;
+    future.whenComplete(() {
+      if (identical(_loadFuture, future)) {
+        _loadFuture = null;
+      }
+    });
+    return future;
+  }
+
+  Future<void> _doLoadSteamConfig() async {
     isLoading.value = true;
     try {
       final res = await _userApi.getUserApi();

@@ -21,6 +21,8 @@ class _SteamSettingPageState extends State<SteamSettingPage> {
   final TextEditingController apiKeyController = TextEditingController();
   late final Worker _configWorker;
   bool _sessionPromptVisible = false;
+  bool _didResolveInitialUnboundDialog = false;
+  bool _isShowingInitialUnboundDialog = false;
 
   @override
   void initState() {
@@ -66,18 +68,95 @@ class _SteamSettingPageState extends State<SteamSettingPage> {
   }
 
   Future<void> _toSteamSession() async {
-    final result = await Get.toNamed(Routers.STEAM_SESSION);
+    final result = await Get.toNamed(
+      Routers.STEAM_SESSION,
+      arguments: {'steamId': controller.config.value?.steamId ?? ''},
+    );
+
+    if (result is Map) {
+      final resultMap = Map<String, dynamic>.from(result);
+      if (resultMap['verified'] == true) {
+        controller.sessionValid.value = true;
+        await _loadPageState(promptSessionExpired: false);
+        return;
+      }
+
+      if (resultMap['showSteamIdNotMatch'] == true) {
+        await controller.loadSteamConfig();
+        if (!mounted) {
+          return;
+        }
+        _showSteamIdMismatchDialog();
+        return;
+      }
+    }
+
     if (result == true) {
+      controller.sessionValid.value = true;
       await _loadPageState(promptSessionExpired: false);
     }
   }
 
   Future<void> _loadPageState({bool promptSessionExpired = true}) async {
     await controller.loadSteamConfig();
+    if (!mounted) {
+      return;
+    }
+
+    await _maybeShowInitialUnboundDialog();
     if (!mounted || !promptSessionExpired) {
       return;
     }
+
     await _maybeShowSessionExpiredDialog();
+  }
+
+  Future<void> _maybeShowInitialUnboundDialog() async {
+    if (!mounted ||
+        _didResolveInitialUnboundDialog ||
+        _isShowingInitialUnboundDialog) {
+      return;
+    }
+
+    if (controller.hasSteamBound) {
+      _didResolveInitialUnboundDialog = true;
+      return;
+    }
+
+    _isShowingInitialUnboundDialog = true;
+    await _showInitialUnboundDialog();
+    _isShowingInitialUnboundDialog = false;
+    _didResolveInitialUnboundDialog = true;
+  }
+
+  Future<void> _showInitialUnboundDialog() async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => _SteamUnboundDialog(
+        message: _steamUnboundDialogMessage,
+        onConfirm: () => Navigator.of(dialogContext).pop(),
+      ),
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    Navigator.of(context).maybePop();
+  }
+
+  String get _steamUnboundDialogMessage {
+    final language = (Get.locale?.languageCode ?? '').toLowerCase();
+    final country = (Get.locale?.countryCode ?? '').toUpperCase();
+    if (language == 'zh' && country == 'TW') {
+      return '當前尚未綁定 Steam，請先前往 TronSkins 官方網站完成綁定。';
+    }
+    if (language == 'zh') {
+      return '当前尚未绑定 Steam，请先前往 TronSkins 官网完成绑定。';
+    }
+    return 'Steam is not bound yet. Please go to the TronSkins official '
+        'website and bind it first.';
   }
 
   Future<void> _maybeShowSessionExpiredDialog() async {
@@ -716,6 +795,105 @@ class _SteamSettingPageState extends State<SteamSettingPage> {
             ),
           );
         }),
+      ),
+    );
+  }
+}
+
+class _SteamUnboundDialog extends StatelessWidget {
+  const _SteamUnboundDialog({required this.message, required this.onConfirm});
+
+  final String message;
+  final VoidCallback onConfirm;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final borderColor = colors.primary.withValues(alpha: isDark ? 0.24 : 0.12);
+    final iconBackground = colors.primary.withValues(
+      alpha: isDark ? 0.22 : 0.1,
+    );
+    final dialogColor = colors.primaryContainer.withValues(
+      alpha: isDark ? 0.38 : 0.9,
+    );
+    final titleStyle = theme.textTheme.titleSmall?.copyWith(
+      fontWeight: FontWeight.w700,
+      color: colors.onPrimaryContainer,
+    );
+    final bodyStyle = theme.textTheme.bodySmall?.copyWith(
+      height: 1.4,
+      color: colors.onPrimaryContainer.withValues(alpha: 0.88),
+    );
+
+    return Dialog(
+      alignment: Alignment.center,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20),
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 360),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: dialogColor,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: borderColor),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.1),
+                blurRadius: 24,
+                offset: const Offset(0, 12),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: iconBackground,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.public_rounded,
+                        color: colors.onPrimaryContainer,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('app.system.tips.warm'.tr, style: titleStyle),
+                          const SizedBox(height: 4),
+                          Text(message, style: bodyStyle),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: onConfirm,
+                    child: Text('app.common.confirm'.tr),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

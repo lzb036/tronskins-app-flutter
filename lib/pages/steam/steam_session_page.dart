@@ -1,7 +1,14 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:get/get.dart';
-import 'package:tronskins_app/controllers/auth/steam_session_controller.dart';
+import 'package:tronskins_app/api/steam.dart';
+import 'package:tronskins_app/common/http/model/base_response.dart';
+import 'package:tronskins_app/controllers/auth/steam_controller.dart';
+import 'package:tronskins_app/controllers/user/user_controller.dart';
+import 'package:tronskins_app/pages/steam/steam_session_injection.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 class SteamSessionPage extends StatefulWidget {
   const SteamSessionPage({super.key});
@@ -11,542 +18,607 @@ class SteamSessionPage extends StatefulWidget {
 }
 
 class _SteamSessionPageState extends State<SteamSessionPage> {
-  late final SteamSessionController controller;
-  late final Worker _successWorker;
+  static const String _bridgeChannelName = 'TronSteamSession';
+  static const String _titleSteamIdSeparator = '&steamId=';
+
+  final ApiSteamServer _steamApi = ApiSteamServer();
+
+  late final WebViewController _controller;
+  Timer? _titlePoller;
+
+  bool _isPageLoading = true;
+  bool _isSavingToken = false;
+  bool _observerInjected = false;
+  bool _hasHandledToken = false;
+  bool _hasPendingTokenPayload = false;
+  bool _isReadingTitle = false;
+  bool _hasTriedFreshStart = false;
+
+  late final String _boundSteamId;
+
+  String get _sessionUrl =>
+      'https://steamcommunity.com/login/home/?l=${_steamLanguageCode()}';
 
   bool get _isChinese =>
       (Get.locale?.languageCode ?? '').toLowerCase().startsWith('zh');
 
-  String get _usernameLabel => _isChinese ? '用户名' : 'Username';
-
-  String get _passwordLabel => _isChinese ? '密码' : 'Password';
-
-  String get _codeLabel => _isChinese ? '验证码' : 'Code';
-
-  String get _codeHint => _isChinese ? '输入 5 位验证码' : 'Enter 5-digit code';
-
-  String get _codeHelper =>
-      _isChinese ? '请填写最新的 5 位验证码' : 'Use the latest 5-digit code';
-
-  String get _submittingCodeLabel => _isChinese ? '确认中...' : 'Confirming...';
-
-  String get _waitingForSteamLabel => _isChinese ? '等待确认...' : 'Waiting...';
-
-  String get _waitingForSteamHelper => _isChinese
-      ? '正在等待 Steam 返回验证结果，请稍候'
-      : 'Waiting for Steam to finish verification.';
-
-  String get _loadingLabel => _isChinese ? '登录中...' : 'Logging in...';
+  String get _savingTokenLabel =>
+      _isChinese ? '正在更新 Steam 会话...' : 'Updating Steam session...';
 
   @override
   void initState() {
     super.initState();
-    controller = Get.put(SteamSessionController());
-    _successWorker = ever<bool>(controller.verificationSucceeded, (success) {
-      if (!success || !mounted) {
-        return;
-      }
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) {
-          return;
-        }
-        Get.back(result: true);
-        Get.snackbar(
-          'app.system.tips.title'.tr,
-          'app.steam.message.verify_success'.tr,
-          snackPosition: SnackPosition.TOP,
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
-          titleText: const SizedBox.shrink(),
-        );
-      });
-    });
+    _boundSteamId = _resolveBoundSteamId();
+    _controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..addJavaScriptChannel(
+        _bridgeChannelName,
+        onMessageReceived: (message) {
+          _handleBridgeMessage(message.message);
+        },
+      )
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onPageStarted: (_) {
+            _observerInjected = false;
+            if (mounted) {
+              setState(() => _isPageLoading = true);
+            }
+          },
+          onPageFinished: (_) async {
+            final restarted = await _ensureFreshStartIfNeeded();
+            if (restarted) {
+              return;
+            }
+
+            await _injectObserver();
+            _startTitlePolling();
+            await _readRefreshTokenFromTitle();
+            if (mounted) {
+              setState(() => _isPageLoading = false);
+            }
+          },
+          onWebResourceError: (_) {
+            if (mounted) {
+              setState(() => _isPageLoading = false);
+            }
+          },
+          onNavigationRequest: (request) {
+            if ((_hasPendingTokenPayload ||
+                    _isSavingToken ||
+                    _hasHandledToken) &&
+                _isSteamPostLoginUrl(request.url)) {
+              return NavigationDecision.prevent;
+            }
+            return NavigationDecision.navigate;
+          },
+        ),
+      )
+      ..loadRequest(Uri.parse(_sessionUrl));
   }
 
   @override
   void dispose() {
-    _successWorker.dispose();
-    if (Get.isRegistered<SteamSessionController>()) {
-      Get.delete<SteamSessionController>();
-    }
+    _titlePoller?.cancel();
     super.dispose();
   }
 
-  Widget _buildTipRow(BuildContext context, String text) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(top: 2),
-          child: Icon(
-            Icons.check_circle_outline_rounded,
-            size: 16,
-            color: colorScheme.primary,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            text,
-            style: textTheme.bodySmall?.copyWith(
-              color: colorScheme.onSurfaceVariant,
-              height: 1.4,
-            ),
-          ),
-        ),
-      ],
+  String _resolveBoundSteamId() {
+    final args = Get.arguments;
+    if (args is String) {
+      return args.trim();
+    }
+    if (args is Map) {
+      final steamId = args['steamId'];
+      if (steamId != null) {
+        return steamId.toString().trim();
+      }
+    }
+    if (Get.isRegistered<SteamController>()) {
+      final config = Get.find<SteamController>().config.value;
+      return (config?.steamId ?? '').trim();
+    }
+    if (Get.isRegistered<UserController>()) {
+      final steamId = Get.find<UserController>().user.value?.config?.steamId;
+      return (steamId ?? '').trim();
+    }
+    return '';
+  }
+
+  String _steamLanguageCode() {
+    final locale = Get.locale;
+    final language = (locale?.languageCode ?? '').toLowerCase();
+    final country = (locale?.countryCode ?? '').toUpperCase();
+
+    if (language == 'zh' && country == 'TW') {
+      return 'tchinese';
+    }
+
+    switch (language) {
+      case 'zh':
+        return 'schinese';
+      case 'ja':
+        return 'japanese';
+      case 'ko':
+        return 'koreana';
+      case 'fr':
+        return 'french';
+      case 'de':
+        return 'german';
+      case 'id':
+        return 'indonesian';
+      case 'it':
+        return 'italian';
+      case 'pl':
+        return 'polish';
+      case 'pt':
+        return 'portuguese';
+      case 'ru':
+        return 'russian';
+      case 'es':
+        return 'spanish';
+      case 'th':
+        return 'thai';
+      case 'tr':
+        return 'turkish';
+      case 'vi':
+        return 'vietnamese';
+      default:
+        return 'english';
+    }
+  }
+
+  void _startTitlePolling() {
+    if (_titlePoller != null) {
+      return;
+    }
+
+    _titlePoller = Timer.periodic(const Duration(seconds: 1), (_) {
+      _readRefreshTokenFromTitle();
+    });
+  }
+
+  Future<bool> _ensureFreshStartIfNeeded() async {
+    if (_hasTriedFreshStart) {
+      return false;
+    }
+    _hasTriedFreshStart = true;
+
+    try {
+      final result = await _controller.runJavaScriptReturningResult('''
+(() => {
+  const href = window.location.href || '';
+  const hasLoggedInMarker = !!(
+    (typeof window.g_steamID !== 'undefined' &&
+      window.g_steamID &&
+      window.g_steamID !== false) ||
+    document.querySelector('[data-miniprofile]') ||
+    document.querySelector('.persona_name_text_content') ||
+    href.indexOf('/profiles/') !== -1 ||
+    href.indexOf('/id/') !== -1
+  );
+  return hasLoggedInMarker && typeof window.Logout === 'function'
+    ? 'logout'
+    : 'continue';
+})();
+''');
+
+      if (_normalizeJsString(result) != 'logout') {
+        return false;
+      }
+
+      final sessionUrl = jsonEncode(_sessionUrl);
+      await _controller.runJavaScript('''
+(() => {
+  try {
+    window.Logout();
+  } catch (error) {}
+  setTimeout(function() {
+    try {
+      window.location.href = $sessionUrl;
+    } catch (error) {}
+  }, 1200);
+})();
+''');
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  String _normalizeJsString(dynamic value) {
+    final raw = value?.toString().trim() ?? '';
+    if (raw.isEmpty) {
+      return '';
+    }
+    if (raw.startsWith('"') && raw.endsWith('"')) {
+      try {
+        final decoded = jsonDecode(raw);
+        if (decoded is String) {
+          return decoded.trim();
+        }
+      } catch (_) {}
+    }
+    return raw;
+  }
+
+  bool _isSteamPostLoginUrl(String? url) {
+    final rawUrl = url?.trim().toLowerCase() ?? '';
+    if (rawUrl.isEmpty) {
+      return false;
+    }
+
+    return rawUrl.contains('steamcommunity.com/my') ||
+        rawUrl.contains('steamcommunity.com/profiles/') ||
+        rawUrl.contains('steamcommunity.com/id/');
+  }
+
+  Future<void> _injectObserver() async {
+    if (_observerInjected) {
+      return;
+    }
+
+    try {
+      await _controller.runJavaScript(steamSessionInjectionScript);
+      _observerInjected = true;
+    } catch (_) {}
+  }
+
+  Future<void> _handleBridgeMessage(String rawMessage) async {
+    if (_hasHandledToken || _isSavingToken || rawMessage.trim().isEmpty) {
+      return;
+    }
+
+    final payload = _extractTokenPayloadFromBridge(rawMessage);
+    if (payload == null) {
+      return;
+    }
+
+    _hasPendingTokenPayload = true;
+    await _saveToken(
+      refreshToken: payload['refreshToken'] ?? '',
+      loginSteamId: payload['steamId'] ?? '',
     );
   }
 
-  Widget _buildErrorBox(BuildContext context, String text) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: colorScheme.errorContainer.withValues(alpha: 0.65),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.error_outline, color: colorScheme.onErrorContainer),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text.tr,
-              style: textTheme.bodyMedium?.copyWith(
-                color: colorScheme.onErrorContainer,
-              ),
-            ),
-          ),
-        ],
-      ),
+  Future<void> _readRefreshTokenFromTitle() async {
+    if (_isReadingTitle || _hasHandledToken || !mounted) {
+      return;
+    }
+
+    _isReadingTitle = true;
+    try {
+      final title = await _controller.getTitle();
+      final payload = _extractTokenPayloadFromTitle(title);
+      if (payload == null) {
+        return;
+      }
+
+      await _saveToken(
+        refreshToken: payload['refreshToken'] ?? '',
+        loginSteamId: payload['steamId'] ?? '',
+      );
+    } catch (_) {
+    } finally {
+      _isReadingTitle = false;
+    }
+  }
+
+  Map<String, String>? _extractTokenPayloadFromTitle(String? title) {
+    final rawTitle = title?.trim() ?? '';
+    if (rawTitle.isEmpty || !rawTitle.startsWith('ey')) {
+      return null;
+    }
+
+    var refreshToken = rawTitle;
+    var steamId = '';
+    final separatorIndex = rawTitle.indexOf(_titleSteamIdSeparator);
+    if (separatorIndex >= 0) {
+      refreshToken = rawTitle.substring(0, separatorIndex).trim();
+      steamId = rawTitle
+          .substring(separatorIndex + _titleSteamIdSeparator.length)
+          .trim();
+    }
+
+    if (refreshToken.isEmpty) {
+      return null;
+    }
+
+    return <String, String>{'refreshToken': refreshToken, 'steamId': steamId};
+  }
+
+  Map<String, String>? _extractTokenPayloadFromBridge(String rawMessage) {
+    final raw = rawMessage.trim();
+    if (raw.isEmpty) {
+      return null;
+    }
+
+    try {
+      final decoded = jsonDecode(raw);
+      if (decoded is Map) {
+        final refreshToken = _readText(decoded['refreshToken']);
+        if (refreshToken.isEmpty) {
+          return null;
+        }
+        return <String, String>{
+          'refreshToken': refreshToken,
+          'steamId': _readText(decoded['steamId']),
+        };
+      }
+    } catch (_) {}
+
+    return _extractTokenPayloadFromTitle(raw);
+  }
+
+  Future<void> _saveToken({
+    required String refreshToken,
+    required String loginSteamId,
+  }) async {
+    if (_hasHandledToken || _isSavingToken) {
+      return;
+    }
+
+    if (_boundSteamId.isEmpty) {
+      _hasPendingTokenPayload = false;
+      _showError('app.steam.message.unbind'.tr);
+      return;
+    }
+
+    if (loginSteamId.isNotEmpty && loginSteamId != _boundSteamId) {
+      _hasHandledToken = true;
+      _titlePoller?.cancel();
+      _titlePoller = null;
+      Get.back(
+        result: {
+          'showSteamIdNotMatch': true,
+          'steamId': _boundSteamId,
+          'loginSteamId': loginSteamId,
+        },
+      );
+      return;
+    }
+
+    if (mounted) {
+      setState(() => _isSavingToken = true);
+    }
+    _hasHandledToken = true;
+    _logMaskedRefreshToken(
+      refreshToken: refreshToken,
+      loginSteamId: loginSteamId,
+    );
+
+    try {
+      final result = await _steamApi.steamTokenFresh(
+        steamId: _boundSteamId,
+        freshToken: refreshToken,
+      );
+      if (!mounted) {
+        return;
+      }
+
+      if (!result.success) {
+        _hasHandledToken = false;
+        _hasPendingTokenPayload = false;
+        _showError(_resolveTokenFreshFailureMessage(result));
+        return;
+      }
+
+      if (Get.isRegistered<SteamController>()) {
+        final steamController = Get.find<SteamController>();
+        steamController.sessionValid.value = true;
+        await steamController.loadSteamConfig();
+      }
+      if (!mounted) {
+        return;
+      }
+
+      _titlePoller?.cancel();
+      _titlePoller = null;
+      Get.back(
+        result: {
+          'verified': true,
+          'sessionValid': true,
+          'steamId': _boundSteamId,
+          'loginSteamId': loginSteamId.isNotEmpty
+              ? loginSteamId
+              : _boundSteamId,
+          'refreshToken': refreshToken,
+          'serverData': result.datas,
+        },
+      );
+      Get.snackbar(
+        'app.system.tips.title'.tr,
+        'app.steam.message.verify_success'.tr,
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+        titleText: const SizedBox.shrink(),
+      );
+    } catch (_) {
+      _hasHandledToken = false;
+      _hasPendingTokenPayload = false;
+      _showError('app.user.login.message.error'.tr);
+    } finally {
+      if (mounted) {
+        setState(() => _isSavingToken = false);
+      }
+    }
+  }
+
+  String _resolveTokenFreshFailureMessage(BaseHttpResponse<dynamic> result) {
+    final dataText = _readText(result.datas);
+    final messageText = _readText(result.message);
+    final raw = dataText.isNotEmpty ? dataText : messageText;
+    if (raw.toLowerCase() == 'unbind steam') {
+      return 'app.steam.message.unbind'.tr;
+    }
+    if (raw.isNotEmpty) {
+      return raw;
+    }
+    return 'app.user.login.message.error'.tr;
+  }
+
+  String _readText(dynamic value) => value?.toString().trim() ?? '';
+
+  void _logMaskedRefreshToken({
+    required String refreshToken,
+    required String loginSteamId,
+  }) {
+    final normalizedToken = refreshToken.trim();
+    final maskedPrefix = normalizedToken.length <= 12
+        ? normalizedToken
+        : normalizedToken.substring(0, 12);
+    final resolvedSteamId = loginSteamId.isNotEmpty
+        ? loginSteamId
+        : _boundSteamId;
+
+    debugPrint(
+      '[STEAM][TOKEN_CAPTURED] steamId=$resolvedSteamId '
+      'tokenLength=${normalizedToken.length} tokenPrefix=$maskedPrefix',
     );
   }
 
-  Widget _buildVerificationOverlay(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-    return Positioned.fill(
-      child: Stack(
-        children: [
-          const ModalBarrier(
-            dismissible: false,
-            color: Color.fromRGBO(0, 0, 0, 0.35),
-          ),
-          Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Material(
-                color: Colors.transparent,
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 20),
-                  decoration: BoxDecoration(
-                    color: colorScheme.surface,
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.12),
-                        blurRadius: 24,
-                        offset: const Offset(0, 14),
-                      ),
-                    ],
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
-                    child: ValueListenableBuilder<TextEditingValue>(
-                      valueListenable: controller.codeController,
-                      builder: (context, value, child) {
-                        final codeValue = value.text.trim();
-                        final isSubmittingCode =
-                            controller.isCodeSubmitting.value;
-                        final isWaitingForResult =
-                            controller.isWaitingForVerificationResult.value;
-                        final isBusy = isSubmittingCode || isWaitingForResult;
-                        final canSubmit = codeValue.length == 5 && !isBusy;
-                        return Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  width: 44,
-                                  height: 44,
-                                  decoration: BoxDecoration(
-                                    color: colorScheme.primaryContainer,
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                  child: Icon(
-                                    Icons.security_rounded,
-                                    color: colorScheme.onPrimaryContainer,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        _codeLabel,
-                                        style: textTheme.titleMedium?.copyWith(
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        'app.steam.verify.title'.tr,
-                                        style: textTheme.bodyMedium?.copyWith(
-                                          color: colorScheme.onSurfaceVariant,
-                                          height: 1.4,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 18),
-                            TextField(
-                              controller: controller.codeController,
-                              enabled: !isBusy,
-                              keyboardType: TextInputType.text,
-                              textCapitalization: TextCapitalization.characters,
-                              maxLength: 5,
-                              inputFormatters: [
-                                FilteringTextInputFormatter.allow(
-                                  RegExp(r'[a-zA-Z0-9]'),
-                                ),
-                                LengthLimitingTextInputFormatter(5),
-                              ],
-                              onChanged: (nextValue) {
-                                final uppercase = nextValue.toUpperCase();
-                                if (uppercase == nextValue) {
-                                  return;
-                                }
-                                controller.codeController.value =
-                                    TextEditingValue(
-                                      text: uppercase,
-                                      selection: TextSelection.collapsed(
-                                        offset: uppercase.length,
-                                      ),
-                                    );
-                              },
-                              decoration: InputDecoration(
-                                hintText: _codeHint,
-                                prefixIcon: const Icon(Icons.key_rounded),
-                                suffixText: '${codeValue.length}/5',
-                                suffixStyle: textTheme.bodySmall?.copyWith(
-                                  color: colorScheme.onSurfaceVariant,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                filled: true,
-                                fillColor: colorScheme.surfaceContainerHighest
-                                    .withValues(alpha: 0.25),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 18,
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                counterText: '',
-                              ),
-                            ),
-                            if (controller.errorMessage.value.isNotEmpty) ...[
-                              const SizedBox(height: 10),
-                              _buildErrorBox(
-                                context,
-                                controller.errorMessage.value,
-                              ),
-                            ],
-                            const SizedBox(height: 12),
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: colorScheme.surfaceContainerHighest
-                                    .withValues(alpha: 0.35),
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Icon(
-                                    isWaitingForResult
-                                        ? Icons.hourglass_top_rounded
-                                        : Icons.info_outline_rounded,
-                                    size: 18,
-                                    color: colorScheme.primary,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      isWaitingForResult
-                                          ? _waitingForSteamHelper
-                                          : _codeHelper,
-                                      style: textTheme.bodySmall?.copyWith(
-                                        color: colorScheme.onSurfaceVariant,
-                                        height: 1.4,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 18),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: OutlinedButton(
-                                    onPressed: isBusy
-                                        ? null
-                                        : controller.hideCodeDialog,
-                                    child: Text('app.common.cancel'.tr),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: FilledButton(
-                                    onPressed: canSubmit
-                                        ? () async {
-                                            await controller.submitCode();
-                                          }
-                                        : null,
-                                    child: isBusy
-                                        ? Row(
-                                            mainAxisSize: MainAxisSize.min,
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              const SizedBox(
-                                                width: 18,
-                                                height: 18,
-                                                child:
-                                                    CircularProgressIndicator(
-                                                      strokeWidth: 2,
-                                                    ),
-                                              ),
-                                              const SizedBox(width: 8),
-                                              Text(
-                                                isWaitingForResult
-                                                    ? _waitingForSteamLabel
-                                                    : _submittingCodeLabel,
-                                              ),
-                                            ],
-                                          )
-                                        : Text('app.common.confirm'.tr),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+  void _showError(String message) {
+    Get.snackbar(
+      'app.system.tips.title'.tr,
+      message,
+      backgroundColor: Colors.red,
+      colorText: Colors.white,
+      titleText: const SizedBox.shrink(),
     );
+  }
+
+  Future<void> _reload() async {
+    _titlePoller?.cancel();
+    _titlePoller = null;
+    if (mounted) {
+      setState(() {
+        _observerInjected = false;
+        _hasHandledToken = false;
+        _hasPendingTokenPayload = false;
+        _hasTriedFreshStart = false;
+        _isPageLoading = true;
+      });
+    }
+    await _controller.loadRequest(Uri.parse(_sessionUrl));
   }
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-    final cardShape = RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(20),
-    );
-    final inputBorder = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(14),
-      borderSide: BorderSide(color: colorScheme.outlineVariant),
-    );
-
     return Scaffold(
-      appBar: AppBar(title: Text('app.steam.verification'.tr)),
-      body: Obx(() {
-        final isStarting = controller.isLoading.value;
-        final isAwaitingVerification = controller.isAwaitingVerification.value;
-        final showCodeDialog = controller.isCodeDialogVisible.value;
-        final hasError = controller.errorMessage.value.isNotEmpty;
-        final fieldsEnabled = !isStarting && !isAwaitingVerification;
-
-        return Stack(
-          children: [
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),
-                    colorScheme.surface,
-                  ],
-                ),
-              ),
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                children: [
-                  Card(
-                    elevation: 0,
-                    shape: cardShape,
-                    color: colorScheme.surface,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              CircleAvatar(
-                                radius: 20,
-                                backgroundColor: colorScheme.primaryContainer,
-                                child: Icon(
-                                  Icons.verified_user_rounded,
-                                  color: colorScheme.onPrimaryContainer,
-                                ),
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  'app.steam.verification'.tr,
-                                  style: textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 14),
-                          TextField(
-                            controller: controller.accountController,
-                            enabled: fieldsEnabled,
-                            keyboardType: TextInputType.text,
-                            decoration: InputDecoration(
-                              labelText: _usernameLabel,
-                              prefixIcon: const Icon(
-                                Icons.person_outline_rounded,
-                              ),
-                              filled: true,
-                              fillColor: colorScheme.surfaceContainerHighest
-                                  .withValues(alpha: 0.25),
-                              border: inputBorder,
-                              enabledBorder: inputBorder,
-                              focusedBorder: inputBorder.copyWith(
-                                borderSide: BorderSide(
-                                  color: colorScheme.primary,
-                                  width: 1.4,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          TextField(
-                            controller: controller.passwordController,
-                            enabled: fieldsEnabled,
-                            obscureText: true,
-                            decoration: InputDecoration(
-                              labelText: _passwordLabel,
-                              prefixIcon: const Icon(
-                                Icons.lock_outline_rounded,
-                              ),
-                              filled: true,
-                              fillColor: colorScheme.surfaceContainerHighest
-                                  .withValues(alpha: 0.25),
-                              border: inputBorder,
-                              enabledBorder: inputBorder,
-                              focusedBorder: inputBorder.copyWith(
-                                borderSide: BorderSide(
-                                  color: colorScheme.primary,
-                                  width: 1.4,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF171A21),
+        title: Text(
+          'app.steam.verification'.tr,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      body: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+            color: Colors.white,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '1.${'app.steam.message.load_error'.tr}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF1C1C1E),
                   ),
-                  if (hasError) ...[
-                    const SizedBox(height: 12),
-                    _buildErrorBox(context, controller.errorMessage.value),
-                  ],
-                  const SizedBox(height: 14),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton(
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '2.${'app.steam.message.load_error_2'.tr}',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF1C1C1E),
                         ),
                       ),
-                      onPressed: controller.isCodeSubmitting.value
-                          ? null
-                          : () async {
-                              await controller.startLogin();
-                            },
-                      child: isStarting
-                          ? Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Text(_loadingLabel),
-                              ],
-                            )
-                          : Text('app.user.login.title'.tr),
                     ),
-                  ),
-                  if (isAwaitingVerification && !showCodeDialog) ...[
-                    const SizedBox(height: 10),
-                    OutlinedButton.icon(
-                      onPressed: controller.showCodeDialog,
-                      icon: const Icon(Icons.security_rounded),
-                      label: Text('app.steam.verification'.tr),
+                    const SizedBox(width: 12),
+                    TextButton(
+                      onPressed: _reload,
+                      style: TextButton.styleFrom(
+                        foregroundColor: const Color(0xFF171A21),
+                        backgroundColor: const Color(0xFFE9EDF3),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        minimumSize: const Size(0, 0),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      child: Text(
+                        'app.common.refresh'.tr,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ],
-                  const SizedBox(height: 12),
-                  Card(
-                    elevation: 0,
-                    shape: cardShape,
-                    color: colorScheme.surface,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        children: [
-                          _buildTipRow(context, 'app.steam.session.tips_1'.tr),
-                          const SizedBox(height: 8),
-                          _buildTipRow(context, 'app.steam.session.tips_2'.tr),
-                          const SizedBox(height: 8),
-                          _buildTipRow(context, 'app.steam.session.tips_3'.tr),
-                        ],
-                      ),
+                ),
+                if (_boundSteamId.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'STEAM ID: $_boundSteamId',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF6B7280),
                     ),
                   ),
                 ],
-              ),
+              ],
             ),
-            if (showCodeDialog) _buildVerificationOverlay(context),
-          ],
-        );
-      }),
+          ),
+          Expanded(
+            child: Stack(
+              children: [
+                WebViewWidget(controller: _controller),
+                if (_isPageLoading)
+                  const LinearProgressIndicator(
+                    minHeight: 2,
+                    color: Color(0xFF74BCFF),
+                  ),
+                if (_isSavingToken)
+                  Container(
+                    color: Colors.black12,
+                    child: Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const CircularProgressIndicator(
+                            color: Color(0xFF171A21),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            _savingTokenLabel,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF171A21),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
