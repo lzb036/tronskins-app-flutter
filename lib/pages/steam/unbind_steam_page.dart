@@ -18,6 +18,7 @@ class _UnbindSteamPageState extends State<UnbindSteamPage> {
   final ApiSteamServer _steamApi = ApiSteamServer();
   late final WebViewController _controller;
   bool _isPageLoading = true;
+  bool _tokenLoadFailed = false;
   String? _token;
 
   String get _unbindUrl =>
@@ -110,14 +111,31 @@ class _UnbindSteamPageState extends State<UnbindSteamPage> {
   }
 
   Future<void> _loadToken() async {
+    if (mounted) {
+      setState(() {
+        _isPageLoading = true;
+        _tokenLoadFailed = false;
+      });
+    }
+
     final res = await _steamApi.getTemporaryToken();
     if (res.success && res.datas != null && res.datas!.isNotEmpty) {
-      _token = res.datas;
+      if (mounted) {
+        setState(() {
+          _token = res.datas;
+          _tokenLoadFailed = false;
+        });
+      } else {
+        _token = res.datas;
+      }
       await _controller.loadRequest(Uri.parse(_unbindUrl));
       return;
     }
     if (mounted) {
-      setState(() => _isPageLoading = false);
+      setState(() {
+        _tokenLoadFailed = true;
+        _isPageLoading = false;
+      });
     }
   }
 
@@ -175,8 +193,10 @@ class _UnbindSteamPageState extends State<UnbindSteamPage> {
               children: [
                 if (_token != null && _token!.isNotEmpty)
                   WebViewWidget(controller: _controller)
+                else if (_tokenLoadFailed)
+                  Center(child: Text('app.user.login.message.error'.tr))
                 else
-                  Center(child: Text('app.user.login.message.error'.tr)),
+                  const SizedBox.shrink(),
                 if (_isPageLoading) const LinearProgressIndicator(minHeight: 2),
               ],
             ),
