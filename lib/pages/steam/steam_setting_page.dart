@@ -28,6 +28,11 @@ class _SteamSettingPageState extends State<SteamSettingPage> {
   bool _didResolveInitialUnboundDialog = false;
   bool _isShowingInitialUnboundDialog = false;
 
+  bool get _returnToInventoryAfterUnbind {
+    final args = Get.arguments;
+    return args is Map && args['fromInventorySessionExpired'] == true;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -272,7 +277,10 @@ class _SteamSettingPageState extends State<SteamSettingPage> {
           TextButton(
             onPressed: () {
               Get.back();
-              Get.toNamed(Routers.STEAM_UNBIND);
+              Get.toNamed(
+                Routers.STEAM_UNBIND,
+                arguments: {'returnToInventory': _returnToInventoryAfterUnbind},
+              );
             },
             child: Text('app.common.confirm'.tr),
           ),

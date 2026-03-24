@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:tronskins_app/common/http/http_helper.dart';
 import 'package:tronskins_app/common/utils/app_snackbar.dart';
 import 'package:tronskins_app/common/widgets/login_required_prompt.dart';
 import 'package:tronskins_app/controllers/shop/shop_controller.dart';
@@ -73,6 +74,31 @@ class _ShopSettingPageState extends State<ShopSettingPage> {
       ? 'app.user.shop.message.auto_offline_on_failed'
       : 'app.user.shop.message.auto_offline_off_failed';
 
+  String _resolveShopActionError({
+    String? responseMessage,
+    dynamic responseData,
+    required String fallbackKey,
+  }) {
+    final dataText = responseData?.toString().trim() ?? '';
+    if (dataText.isNotEmpty) {
+      return dataText;
+    }
+
+    final messageText = responseMessage?.trim() ?? '';
+    if (messageText.isNotEmpty) {
+      return messageText;
+    }
+
+    return fallbackKey.tr;
+  }
+
+  String _resolveExceptionError(Object error, String fallbackKey) {
+    if (error is HttpException && error.message.trim().isNotEmpty) {
+      return error.message.trim();
+    }
+    return fallbackKey.tr;
+  }
+
   Future<void> _handleShopOnlineChanged(bool value) async {
     if (_isSwitchingShopOnline) {
       return;
@@ -90,11 +116,19 @@ class _ShopSettingPageState extends State<ShopSettingPage> {
       if (res.success) {
         AppSnackbar.success(_shopOnlineSuccessKey(value).tr);
       } else {
-        AppSnackbar.error(_shopOnlineFailedKey(value).tr);
+        AppSnackbar.error(
+          _resolveShopActionError(
+            responseMessage: res.message,
+            responseData: res.datas,
+            fallbackKey: _shopOnlineFailedKey(value),
+          ),
+        );
         await controller.loadShop();
       }
-    } catch (_) {
-      AppSnackbar.error(_shopOnlineFailedKey(value).tr);
+    } catch (error) {
+      AppSnackbar.error(
+        _resolveExceptionError(error, _shopOnlineFailedKey(value)),
+      );
       await controller.loadShop();
     } finally {
       if (mounted) {
@@ -120,11 +154,19 @@ class _ShopSettingPageState extends State<ShopSettingPage> {
       if (res.success) {
         AppSnackbar.success(_autoOfflineSuccessKey(value).tr);
       } else {
-        AppSnackbar.error(_autoOfflineFailedKey(value).tr);
+        AppSnackbar.error(
+          _resolveShopActionError(
+            responseMessage: res.message,
+            responseData: res.datas,
+            fallbackKey: _autoOfflineFailedKey(value),
+          ),
+        );
         await controller.loadShop();
       }
-    } catch (_) {
-      AppSnackbar.error(_autoOfflineFailedKey(value).tr);
+    } catch (error) {
+      AppSnackbar.error(
+        _resolveExceptionError(error, _autoOfflineFailedKey(value)),
+      );
       await controller.loadShop();
     } finally {
       if (mounted) {

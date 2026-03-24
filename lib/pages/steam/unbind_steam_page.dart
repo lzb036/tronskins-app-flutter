@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:tronskins_app/api/steam.dart';
 import 'package:tronskins_app/common/http/http_helper.dart';
+import 'package:tronskins_app/controllers/navbar/nav_controller.dart';
 import 'package:tronskins_app/controllers/auth/steam_controller.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -21,6 +22,11 @@ class _UnbindSteamPageState extends State<UnbindSteamPage> {
 
   String get _unbindUrl =>
       '${HttpHelper.baseUrl}api/public/steam/auth/unbind/validate?token=$_token';
+
+  bool get _returnToInventory {
+    final args = Get.arguments;
+    return args is Map && args['returnToInventory'] == true;
+  }
 
   Future<void> _returnToUserSetting() async {
     if (Get.isRegistered<SteamController>()) {
@@ -42,6 +48,41 @@ class _UnbindSteamPageState extends State<UnbindSteamPage> {
     }
   }
 
+  Future<void> _returnToInventoryPage() async {
+    if (Get.isRegistered<SteamController>()) {
+      await Get.find<SteamController>().loadSteamConfig();
+    }
+
+    if (Get.isRegistered<NavController>()) {
+      Get.find<NavController>().switchTo(NavController.tabInventory);
+    }
+
+    var foundHome = false;
+    Get.until((route) {
+      final routeName = route.settings.name;
+      if (routeName == Routers.HOME) {
+        foundHome = true;
+        return true;
+      }
+      return route.isFirst;
+    });
+
+    if (!foundHome) {
+      await Get.offAllNamed(Routers.HOME);
+      if (Get.isRegistered<NavController>()) {
+        Get.find<NavController>().switchTo(NavController.tabInventory);
+      }
+    }
+  }
+
+  Future<void> _returnAfterUnbind() async {
+    if (_returnToInventory) {
+      await _returnToInventoryPage();
+      return;
+    }
+    await _returnToUserSetting();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -56,7 +97,7 @@ class _UnbindSteamPageState extends State<UnbindSteamPage> {
           },
           onPageFinished: (url) async {
             if (url.contains('/user-center/index.html')) {
-              await _returnToUserSetting();
+              await _returnAfterUnbind();
               return;
             }
             if (mounted) {

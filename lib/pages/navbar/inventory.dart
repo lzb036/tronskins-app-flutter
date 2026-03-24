@@ -156,7 +156,10 @@ class _InventoryPageState extends State<InventoryPage> {
           onCancel: () => Navigator.of(dialogContext).pop(),
           onVerify: () {
             Navigator.of(dialogContext).pop();
-            Get.toNamed(Routers.STEAM_SESSION);
+            Get.toNamed(
+              Routers.STEAM_SETTING,
+              arguments: {'fromInventorySessionExpired': true},
+            );
           },
         ),
       );
