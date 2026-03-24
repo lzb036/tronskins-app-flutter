@@ -22,6 +22,26 @@ class _UnbindSteamPageState extends State<UnbindSteamPage> {
   String get _unbindUrl =>
       '${HttpHelper.baseUrl}api/public/steam/auth/unbind/validate?token=$_token';
 
+  Future<void> _returnToUserSetting() async {
+    if (Get.isRegistered<SteamController>()) {
+      await Get.find<SteamController>().loadSteamConfig();
+    }
+
+    var foundUserSetting = false;
+    Get.until((route) {
+      final routeName = route.settings.name;
+      if (routeName == Routers.USER_SETTING) {
+        foundUserSetting = true;
+        return true;
+      }
+      return routeName == Routers.HOME;
+    });
+
+    if (!foundUserSetting && Get.currentRoute != Routers.USER_SETTING) {
+      await Get.toNamed(Routers.USER_SETTING);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -34,10 +54,9 @@ class _UnbindSteamPageState extends State<UnbindSteamPage> {
               setState(() => _isPageLoading = true);
             }
           },
-          onPageFinished: (url) {
+          onPageFinished: (url) async {
             if (url.contains('/user-center/index.html')) {
-              Get.find<SteamController>().loadSteamConfig();
-              Get.offNamed(Routers.STEAM_SETTING);
+              await _returnToUserSetting();
               return;
             }
             if (mounted) {

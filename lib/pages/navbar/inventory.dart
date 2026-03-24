@@ -10,7 +10,6 @@ import 'package:tronskins_app/components/game_item/inventory_item_card.dart';
 import 'package:tronskins_app/components/filter/filter_models.dart';
 import 'package:tronskins_app/components/filter/market_filter_sheet.dart';
 import 'package:tronskins_app/components/layout/list_end_tip.dart';
-import 'package:tronskins_app/controllers/auth/steam_controller.dart';
 import 'package:tronskins_app/controllers/inventory/inventory_controller.dart';
 import 'package:tronskins_app/controllers/navbar/nav_controller.dart';
 import 'package:tronskins_app/controllers/user/user_controller.dart';
@@ -58,36 +57,22 @@ class _InventoryPageState extends State<InventoryPage> {
     return _steamIdFromProfile().isNotEmpty;
   }
 
+  String get _steamUnboundDialogMessage {
+    final language = (Get.locale?.languageCode ?? '').toLowerCase();
+    final country = (Get.locale?.countryCode ?? '').toUpperCase();
+    if (language == 'zh' && country == 'TW') {
+      return '當前尚未綁定 Steam，請先前往 TronSkins 官方網站完成綁定。';
+    }
+    if (language == 'zh') {
+      return '当前尚未绑定 Steam，请先前往 TronSkins 官网完成绑定。';
+    }
+    return 'Steam is not bound yet. Please go to the TronSkins official '
+        'website and bind it first.';
+  }
+
   Future<void> _refreshInventoryAndPreloadIfNeeded() async {
     await controller.refreshIfStale();
     await controller.preloadStateBucketsIfNeeded();
-  }
-
-  Future<void> _toSteamBind() async {
-    try {
-      final tokenRes = await _steamApi.getTemporaryToken();
-      final token = tokenRes.datas;
-      if (!tokenRes.success || token == null || token.isEmpty) {
-        Get.snackbar(
-          'app.system.tips.title'.tr,
-          'app.user.login.message.error'.tr,
-
-          titleText: const SizedBox.shrink(),
-        );
-        return;
-      }
-      if (!Get.isRegistered<SteamController>()) {
-        Get.put(SteamController());
-      }
-      Get.toNamed(Routers.STEAM_BIND, arguments: token);
-    } catch (_) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.user.login.message.error'.tr,
-
-        titleText: const SizedBox.shrink(),
-      );
-    }
   }
 
   @override
@@ -144,23 +129,12 @@ class _InventoryPageState extends State<InventoryPage> {
       }
       if (!hasBoundSteam) {
         _steamSessionDialogShowing = true;
-        await Get.dialog<void>(
-          AlertDialog(
-            title: Text('app.system.tips.title'.tr),
-            content: Text('app.steam.message.unbind'.tr),
-            actions: [
-              TextButton(
-                onPressed: () => Get.back(),
-                child: Text('app.common.cancel'.tr),
-              ),
-              TextButton(
-                onPressed: () {
-                  Get.back();
-                  _toSteamBind();
-                },
-                child: Text('app.common.confirm'.tr),
-              ),
-            ],
+        await showDialog<void>(
+          context: context,
+          barrierDismissible: true,
+          builder: (dialogContext) => _InventorySteamUnboundDialog(
+            message: _steamUnboundDialogMessage,
+            onConfirm: () => Navigator.of(dialogContext).pop(),
           ),
         );
         return false;
@@ -1204,7 +1178,7 @@ class _InventoryPageState extends State<InventoryPage> {
     final isDark = theme.brightness == Brightness.dark;
     final fillColor = isDark
         ? Colors.white.withValues(alpha: 0.08)
-        : colors.surfaceVariant;
+        : colors.surfaceContainerHighest;
     final hintColor = isDark
         ? Colors.white38
         : colors.onSurface.withValues(alpha: 0.4);
@@ -1291,7 +1265,7 @@ class _InventoryPageState extends State<InventoryPage> {
     final isDark = theme.brightness == Brightness.dark;
     final baseColor = isDark
         ? Colors.white.withValues(alpha: 0.08)
-        : colors.surfaceVariant;
+        : colors.surfaceContainerHighest;
     final iconColor = colors.onSurfaceVariant;
     return Tooltip(
       message: tooltip,
@@ -1434,6 +1408,106 @@ class _InventorySteamSessionExpiredDialog extends StatelessWidget {
                       ),
                     ),
                   ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _InventorySteamUnboundDialog extends StatelessWidget {
+  const _InventorySteamUnboundDialog({
+    required this.message,
+    required this.onConfirm,
+  });
+
+  final String message;
+  final VoidCallback onConfirm;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final borderColor = colors.error.withValues(alpha: isDark ? 0.24 : 0.12);
+    final iconBackground = colors.error.withValues(alpha: isDark ? 0.24 : 0.10);
+    final dialogColor = colors.errorContainer.withValues(
+      alpha: isDark ? 0.44 : 0.92,
+    );
+    final titleStyle = theme.textTheme.titleSmall?.copyWith(
+      fontWeight: FontWeight.w700,
+      color: colors.onErrorContainer,
+    );
+    final bodyStyle = theme.textTheme.bodySmall?.copyWith(
+      height: 1.35,
+      color: colors.onErrorContainer.withValues(alpha: 0.86),
+    );
+
+    return Dialog(
+      alignment: Alignment.center,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20),
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 360),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: dialogColor,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: borderColor),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.10),
+                blurRadius: 24,
+                offset: const Offset(0, 12),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: iconBackground,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.settings,
+                        color: colors.onErrorContainer,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('app.system.tips.warm'.tr, style: titleStyle),
+                          const SizedBox(height: 4),
+                          Text(message, style: bodyStyle),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: onConfirm,
+                    child: Text('app.common.confirm'.tr),
+                  ),
                 ),
               ],
             ),
