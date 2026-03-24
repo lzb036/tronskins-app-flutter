@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:tronskins_app/common/utils/app_snackbar.dart';
+import 'package:tronskins_app/common/widgets/login_required_prompt.dart';
 import 'package:tronskins_app/controllers/shop/shop_controller.dart';
+import 'package:tronskins_app/controllers/user/user_controller.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
 
 class ShopSettingPage extends StatefulWidget {
@@ -15,13 +17,16 @@ class _ShopSettingPageState extends State<ShopSettingPage> {
   final ShopController controller = Get.isRegistered<ShopController>()
       ? Get.find<ShopController>()
       : Get.put(ShopController());
+  final UserController userController = Get.find<UserController>();
   bool _isSwitchingShopOnline = false;
   bool _isSwitchingAutoOffline = false;
 
   @override
   void initState() {
     super.initState();
-    controller.loadShop();
+    if (userController.isLoggedIn.value) {
+      controller.loadShop();
+    }
   }
 
   Future<bool> _confirmSwitch(String messageKey) async {
@@ -130,55 +135,60 @@ class _ShopSettingPageState extends State<ShopSettingPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('app.user.shop.setting'.tr)),
-      body: Obx(() {
-        final shop = controller.shop.value;
-        if (shop == null) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        final autoClose = shop.openAutoClose ?? false;
-        return ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Text('app.user.shop.notice'.tr),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Card(
-              child: Column(
-                children: [
-                  ListTile(
-                    title: Text('app.user.shop.name.label'.tr),
-                    subtitle: Text(shop.shopName ?? shop.name ?? '-'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => Get.toNamed(Routers.SHOP_RENAME),
-                  ),
-                  const Divider(height: 1),
-                  SwitchListTile(
-                    title: Text('app.user.shop.online_title'.tr),
-                    value: shop.isOnline ?? false,
-                    onChanged: _isSwitchingShopOnline
-                        ? null
-                        : _handleShopOnlineChanged,
-                  ),
-                  const Divider(height: 1),
-                  SwitchListTile(
-                    title: Text('app.user.shop.automatic_offline'.tr),
-                    value: autoClose,
-                    onChanged: _isSwitchingAutoOffline
-                        ? null
-                        : _handleAutoOfflineChanged,
-                  ),
-                ],
-              ),
-            ),
-          ],
-        );
-      }),
-    );
+    return Obx(() {
+      final loggedIn = userController.isLoggedIn.value;
+      return Scaffold(
+        appBar: AppBar(title: Text('app.user.shop.setting'.tr)),
+        body: !loggedIn
+            ? const LoginRequiredPrompt()
+            : Obx(() {
+                final shop = controller.shop.value;
+                if (shop == null) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final autoClose = shop.openAutoClose ?? false;
+                return ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Text('app.user.shop.notice'.tr),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Card(
+                      child: Column(
+                        children: [
+                          ListTile(
+                            title: Text('app.user.shop.name.label'.tr),
+                            subtitle: Text(shop.shopName ?? shop.name ?? '-'),
+                            trailing: const Icon(Icons.chevron_right),
+                            onTap: () => Get.toNamed(Routers.SHOP_RENAME),
+                          ),
+                          const Divider(height: 1),
+                          SwitchListTile(
+                            title: Text('app.user.shop.online_title'.tr),
+                            value: shop.isOnline ?? false,
+                            onChanged: _isSwitchingShopOnline
+                                ? null
+                                : _handleShopOnlineChanged,
+                          ),
+                          const Divider(height: 1),
+                          SwitchListTile(
+                            title: Text('app.user.shop.automatic_offline'.tr),
+                            value: autoClose,
+                            onChanged: _isSwitchingAutoOffline
+                                ? null
+                                : _handleAutoOfflineChanged,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              }),
+      );
+    });
   }
 }

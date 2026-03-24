@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:tronskins_app/api/user_profile.dart';
+import 'package:tronskins_app/common/widgets/login_required_prompt.dart';
 import 'package:tronskins_app/controllers/user/user_controller.dart';
 
 class EditNicknamePage extends StatefulWidget {
@@ -12,6 +13,7 @@ class EditNicknamePage extends StatefulWidget {
 
 class _EditNicknamePageState extends State<EditNicknamePage> {
   final ApiUserProfileServer _api = ApiUserProfileServer();
+  final UserController userController = Get.find<UserController>();
   final TextEditingController _controller = TextEditingController();
   bool _saving = false;
 
@@ -85,120 +87,128 @@ class _EditNicknamePageState extends State<EditNicknamePage> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
-    final cardBorder = colorScheme.outlineVariant.withOpacity(
-      isDark ? 0.5 : 0.7,
+    final cardBorder = colorScheme.outlineVariant.withValues(
+      alpha: isDark ? 0.5 : 0.7,
     );
     final inputFill = isDark
-        ? colorScheme.surfaceVariant.withOpacity(0.35)
-        : colorScheme.surfaceVariant.withOpacity(0.6);
+        ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.35)
+        : colorScheme.surfaceContainerHighest.withValues(alpha: 0.6);
 
-    return Scaffold(
-      appBar: AppBar(title: Text('app.user.setting.nickname_change'.tr)),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: colorScheme.surface,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: cardBorder),
-              boxShadow: isDark
-                  ? null
-                  : [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 18,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
-            ),
-            child: TextField(
-              controller: _controller,
-              textInputAction: TextInputAction.done,
-              onSubmitted: (_) => _submit(),
-              decoration: InputDecoration(
-                hintText: 'app.user.setting.nickname_placeholder'.tr,
-                filled: true,
-                fillColor: inputFill,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 14,
-                ),
-                prefixIcon: const Icon(Icons.person_outline),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: cardBorder),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                    color: colorScheme.primary,
-                    width: 1.4,
-                  ),
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: cardBorder),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: _saving ? null : _submit,
-              style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(48),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-              child: _saving
-                  ? Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              colorScheme.onPrimary,
-                            ),
+    return Obx(() {
+      final loggedIn = userController.isLoggedIn.value;
+      return Scaffold(
+        appBar: AppBar(title: Text('app.user.setting.nickname_change'.tr)),
+        body: loggedIn
+            ? ListView(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: cardBorder),
+                      boxShadow: isDark
+                          ? null
+                          : [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.05),
+                                blurRadius: 18,
+                                offset: const Offset(0, 10),
+                              ),
+                            ],
+                    ),
+                    child: TextField(
+                      controller: _controller,
+                      textInputAction: TextInputAction.done,
+                      onSubmitted: (_) => _submit(),
+                      decoration: InputDecoration(
+                        hintText: 'app.user.setting.nickname_placeholder'.tr,
+                        filled: true,
+                        fillColor: inputFill,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                        prefixIcon: const Icon(Icons.person_outline),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: cardBorder),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(
+                            color: colorScheme.primary,
+                            width: 1.4,
                           ),
                         ),
-                        const SizedBox(width: 10),
-                        Text('app.common.confirm'.tr),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: cardBorder),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: _saving ? null : _submit,
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(48),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: _saving
+                          ? Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      colorScheme.onPrimary,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Text('app.common.confirm'.tr),
+                              ],
+                            )
+                          : Text('app.common.confirm'.tr),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHighest.withValues(
+                        alpha: isDark ? 0.35 : 0.6,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _tipLine('1. ${'app.user.setting.nickname_tips_1'.tr}'),
+                        const SizedBox(height: 6),
+                        _tipLine('2. ${'app.user.setting.nickname_tips_2'.tr}'),
+                        const SizedBox(height: 6),
+                        _tipLine('3. ${'app.user.setting.nickname_tips_3'.tr}'),
                       ],
-                    )
-                  : Text('app.common.confirm'.tr),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceVariant.withOpacity(
-                isDark ? 0.35 : 0.6,
-              ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _tipLine('1. ${'app.user.setting.nickname_tips_1'.tr}'),
-                const SizedBox(height: 6),
-                _tipLine('2. ${'app.user.setting.nickname_tips_2'.tr}'),
-                const SizedBox(height: 6),
-                _tipLine('3. ${'app.user.setting.nickname_tips_3'.tr}'),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+                    ),
+                  ),
+                ],
+              )
+            : const LoginRequiredPrompt(),
+      );
+    });
   }
 
   Widget _tipLine(String text) {

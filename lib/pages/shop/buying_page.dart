@@ -4,17 +4,18 @@ import 'package:intl/intl.dart';
 import 'package:tronskins_app/api/model/shop/shop_models.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
 import 'package:tronskins_app/common/hooks/game/global_game_controller.dart';
-import 'package:tronskins_app/common/storage/user_storage.dart';
 import 'package:tronskins_app/common/widgets/back_to_top_overlay.dart';
+import 'package:tronskins_app/components/game/game_icon_button.dart';
+import 'package:tronskins_app/common/widgets/login_required_prompt.dart';
 import 'package:tronskins_app/components/filter/filter_models.dart';
 import 'package:tronskins_app/components/filter/market_filter_sheet.dart';
 import 'package:tronskins_app/components/filter/order_filter_sheet.dart';
 import 'package:tronskins_app/components/game/game_switch_menu.dart';
-import 'package:tronskins_app/components/game/game_icon_button.dart';
 import 'package:tronskins_app/components/game_item/game_item_image.dart';
 import 'package:tronskins_app/components/game_item/game_item_models.dart';
 import 'package:tronskins_app/components/layout/list_end_tip.dart';
 import 'package:tronskins_app/controllers/shop/buy_request_controller.dart';
+import 'package:tronskins_app/controllers/user/user_controller.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
 
 class BuyingPage extends StatefulWidget {
@@ -33,6 +34,7 @@ class _BuyingPageState extends State<BuyingPage>
       Get.isRegistered<BuyRequestController>()
       ? Get.find<BuyRequestController>()
       : Get.put(BuyRequestController());
+  final UserController userController = Get.find<UserController>();
   final GlobalGameController _globalGameController =
       GlobalGameController.ensureInstance();
 
@@ -44,6 +46,7 @@ class _BuyingPageState extends State<BuyingPage>
   final TextEditingController _mySearchController = TextEditingController();
   final TextEditingController _recordSearchController = TextEditingController();
   Worker? _gameWorker;
+  Worker? _loginWorker;
 
   @override
   void initState() {
@@ -65,8 +68,23 @@ class _BuyingPageState extends State<BuyingPage>
     _recordScroll.addListener(_handleRecordScroll);
     _mySearchController.addListener(_handleSearchTextChange);
     _recordSearchController.addListener(_handleSearchTextChange);
-    controller.refreshMyBuying();
-    controller.refreshBuyRecords();
+    if (userController.isLoggedIn.value) {
+      controller.refreshMyBuying();
+      controller.refreshBuyRecords();
+    }
+    _loginWorker = ever<bool>(userController.isLoggedIn, (loggedIn) {
+      if (loggedIn) {
+        controller.refreshPurchaseStatus();
+        controller.refreshMyBuying();
+        controller.refreshBuyRecords();
+      } else {
+        controller.myBuying.clear();
+        controller.buyRecords.clear();
+        controller.schemas.clear();
+        controller.totalMyBuying.value = 0;
+        controller.totalRecords.value = 0;
+      }
+    });
   }
 
   @override
@@ -82,6 +100,7 @@ class _BuyingPageState extends State<BuyingPage>
     _mySearchController.removeListener(_handleSearchTextChange);
     _recordSearchController.removeListener(_handleSearchTextChange);
     _gameWorker?.dispose();
+    _loginWorker?.dispose();
     _mySearchController.dispose();
     _recordSearchController.dispose();
     super.dispose();
@@ -1039,64 +1058,69 @@ class _BuyingPageState extends State<BuyingPage>
 
   @override
   Widget build(BuildContext context) {
-    final isLoggedIn = UserStorage.getUserInfo() != null;
     final colors = Theme.of(context).colorScheme;
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('app.user.menu.purchase'.tr),
-        actions: [
-          if (isLoggedIn)
-            Obx(() {
-              final isOnline = controller.purchaseOnline.value;
-              return _buildTopActionWithDot(
-                visible: true,
-                dotColor: isOnline
-                    ? const Color(0xFF22C55E)
-                    : colors.outlineVariant,
-                child: _buildTopIconAction(
-                  icon: Icons.settings,
-                  tooltip: 'app.trade.purchase.setting'.tr,
-                  onTap: () => Get.toNamed(Routers.PURCHASE_SETTING),
-                ),
-              );
-            }),
-          if (isLoggedIn) const SizedBox(width: 6),
-          Builder(
-            builder: (iconContext) {
-              return GameIconButton(
-                appId: _currentAppId,
-                size: 34,
-                onTap: () async {
-                  final selected = await showGameSwitchMenu(
-                    iconContext: iconContext,
-                    currentAppId: _currentAppId,
-                  );
-                  if (selected == null) {
-                    return;
-                  }
-                  await _switchGame(selected);
-                },
-              );
-            },
-          ),
-          const SizedBox(width: 6),
-        ],
-      ),
-      body: BackToTopScope(
-        enabled: false,
-        child: Column(
-          children: [
-            _buildSharedTopSection(),
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [_buildMyBuyingTab(), _buildRecordTab()],
-              ),
-            ),
-          ],
+    return Obx(() {
+      final isLoggedIn = userController.isLoggedIn.value;
+      return Scaffold(
+        appBar: AppBar(
+          title: Text('app.user.menu.purchase'.tr),
+          actions: isLoggedIn
+              ? [
+                  Obx(() {
+                    final isOnline = controller.purchaseOnline.value;
+                    return _buildTopActionWithDot(
+                      visible: true,
+                      dotColor: isOnline
+                          ? const Color(0xFF22C55E)
+                          : colors.outlineVariant,
+                      child: _buildTopIconAction(
+                        icon: Icons.settings,
+                        tooltip: 'app.trade.purchase.setting'.tr,
+                        onTap: () => Get.toNamed(Routers.PURCHASE_SETTING),
+                      ),
+                    );
+                  }),
+                  const SizedBox(width: 6),
+                  Builder(
+                    builder: (iconContext) {
+                      return GameIconButton(
+                        appId: _currentAppId,
+                        size: 34,
+                        onTap: () async {
+                          final selected = await showGameSwitchMenu(
+                            iconContext: iconContext,
+                            currentAppId: _currentAppId,
+                          );
+                          if (selected == null) {
+                            return;
+                          }
+                          await _switchGame(selected);
+                        },
+                      );
+                    },
+                  ),
+                  const SizedBox(width: 6),
+                ]
+              : const [],
         ),
-      ),
-    );
+        body: isLoggedIn
+            ? BackToTopScope(
+                enabled: false,
+                child: Column(
+                  children: [
+                    _buildSharedTopSection(),
+                    Expanded(
+                      child: TabBarView(
+                        controller: _tabController,
+                        children: [_buildMyBuyingTab(), _buildRecordTab()],
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            : const LoginRequiredPrompt(),
+      );
+    });
   }
 
   Widget _buildMyBuyingTab() {

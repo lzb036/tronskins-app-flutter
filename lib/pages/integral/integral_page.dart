@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:tronskins_app/api/model/wallet/wallet_models.dart';
 import 'package:tronskins_app/common/widgets/back_to_top_overlay.dart';
+import 'package:tronskins_app/common/widgets/login_required_prompt.dart';
+import 'package:tronskins_app/controllers/user/user_controller.dart';
 import 'package:tronskins_app/controllers/wallet/integral_controller.dart';
 import 'package:tronskins_app/pages/wallet/widgets/wallet_ui.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
@@ -17,12 +19,31 @@ class _IntegralPageState extends State<IntegralPage> {
   final IntegralController controller = Get.isRegistered<IntegralController>()
       ? Get.find<IntegralController>()
       : Get.put(IntegralController());
+  final UserController userController = Get.find<UserController>();
+  Worker? _loginWorker;
 
   @override
   void initState() {
     super.initState();
-    controller.refreshUser();
-    controller.loadCouponsList();
+    if (userController.isLoggedIn.value) {
+      controller.refreshUser();
+      controller.loadCouponsList();
+    }
+    _loginWorker = ever<bool>(userController.isLoggedIn, (loggedIn) {
+      if (loggedIn) {
+        controller.refreshUser();
+        controller.loadCouponsList();
+      } else {
+        controller.userInfo.value = null;
+        controller.couponItems.clear();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _loginWorker?.dispose();
+    super.dispose();
   }
 
   Future<void> _refreshPage() async {
@@ -52,102 +73,122 @@ class _IntegralPageState extends State<IntegralPage> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final isCompactTopBar = MediaQuery.sizeOf(context).width < 420;
-    return Scaffold(
-      backgroundColor: WalletUi.pageBackground(context),
-      appBar: AppBar(
-        centerTitle: false,
-        leadingWidth: 40,
-        titleSpacing: 4,
-        title: Text('app.user.integral.title'.tr, maxLines: 1, softWrap: false),
-        actions: [
-          Padding(
-            padding: EdgeInsets.only(right: isCompactTopBar ? 6 : 8),
-            child: isCompactTopBar
-                ? IconButton(
-                    onPressed: () =>
-                        Get.toNamed(Routers.WALLET_INTEGRAL_RECORD),
-                    icon: const Icon(Icons.receipt_long_outlined, size: 20),
-                    tooltip: 'app.user.wallet.integral_details'.tr,
-                    visualDensity: VisualDensity.compact,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints.tightFor(
-                      width: 40,
-                      height: 40,
-                    ),
-                  )
-                : TextButton.icon(
-                    onPressed: () =>
-                        Get.toNamed(Routers.WALLET_INTEGRAL_RECORD),
-                    icon: const Icon(Icons.receipt_long_outlined, size: 18),
-                    label: Text('app.user.wallet.integral_details'.tr),
-                    style: TextButton.styleFrom(
-                      foregroundColor: colorScheme.primary,
-                      minimumSize: Size.zero,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 6,
-                      ),
-                      visualDensity: VisualDensity.compact,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      textStyle: Theme.of(context).textTheme.labelMedium
-                          ?.copyWith(fontWeight: FontWeight.w700),
-                    ),
-                  ),
+    return Obx(() {
+      final loggedIn = userController.isLoggedIn.value;
+      return Scaffold(
+        backgroundColor: WalletUi.pageBackground(context),
+        appBar: AppBar(
+          centerTitle: false,
+          leadingWidth: 40,
+          titleSpacing: 4,
+          title: Text(
+            'app.user.integral.title'.tr,
+            maxLines: 1,
+            softWrap: false,
           ),
-        ],
-      ),
-      body: BackToTopScope(
-        enabled: false,
-        child: Obx(() {
-          final integral = controller.integralValue;
-          final coupons = controller.couponItems;
-          final isLoading = controller.isLoadingCoupons.value;
-          return RefreshIndicator(
-            onRefresh: _refreshPage,
-            child: ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-              children: [
-                _buildHeroCard(context, integral: integral),
-                const SizedBox(height: 16),
-                _buildDrawEntry(context),
-                const SizedBox(height: 20),
-                _buildSectionHeader(context, count: coupons.length),
-                const SizedBox(height: 12),
-                if (isLoading && coupons.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 40),
-                    child: Center(child: CircularProgressIndicator()),
-                  )
-                else if (coupons.isEmpty)
-                  _buildEmptyState(context)
-                else
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      const spacing = 12.0;
-                      final columns = constraints.maxWidth >= 340 ? 2 : 1;
-                      final itemWidth =
-                          (constraints.maxWidth - spacing * (columns - 1)) /
-                          columns;
-                      return Wrap(
-                        spacing: spacing,
-                        runSpacing: spacing,
-                        children: [
-                          for (final item in coupons)
-                            SizedBox(
-                              width: itemWidth,
-                              child: _buildCouponCard(context, item),
+          actions: loggedIn
+              ? [
+                  Padding(
+                    padding: EdgeInsets.only(right: isCompactTopBar ? 6 : 8),
+                    child: isCompactTopBar
+                        ? IconButton(
+                            onPressed: () =>
+                                Get.toNamed(Routers.WALLET_INTEGRAL_RECORD),
+                            icon: const Icon(
+                              Icons.receipt_long_outlined,
+                              size: 20,
                             ),
-                        ],
-                      );
-                    },
+                            tooltip: 'app.user.wallet.integral_details'.tr,
+                            visualDensity: VisualDensity.compact,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints.tightFor(
+                              width: 40,
+                              height: 40,
+                            ),
+                          )
+                        : TextButton.icon(
+                            onPressed: () =>
+                                Get.toNamed(Routers.WALLET_INTEGRAL_RECORD),
+                            icon: const Icon(
+                              Icons.receipt_long_outlined,
+                              size: 18,
+                            ),
+                            label: Text('app.user.wallet.integral_details'.tr),
+                            style: TextButton.styleFrom(
+                              foregroundColor: colorScheme.primary,
+                              minimumSize: Size.zero,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 6,
+                              ),
+                              visualDensity: VisualDensity.compact,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              textStyle: Theme.of(context).textTheme.labelMedium
+                                  ?.copyWith(fontWeight: FontWeight.w700),
+                            ),
+                          ),
                   ),
-              ],
-            ),
-          );
-        }),
-      ),
-    );
+                ]
+              : const [],
+        ),
+        body: loggedIn
+            ? BackToTopScope(
+                enabled: false,
+                child: Obx(() {
+                  final integral = controller.integralValue;
+                  final coupons = controller.couponItems;
+                  final isLoading = controller.isLoadingCoupons.value;
+                  return RefreshIndicator(
+                    onRefresh: _refreshPage,
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                      children: [
+                        _buildHeroCard(context, integral: integral),
+                        const SizedBox(height: 16),
+                        _buildDrawEntry(context),
+                        const SizedBox(height: 20),
+                        _buildSectionHeader(context, count: coupons.length),
+                        const SizedBox(height: 12),
+                        if (isLoading && coupons.isEmpty)
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 40),
+                            child: Center(child: CircularProgressIndicator()),
+                          )
+                        else if (coupons.isEmpty)
+                          _buildEmptyState(context)
+                        else
+                          LayoutBuilder(
+                            builder: (context, constraints) {
+                              const spacing = 12.0;
+                              final columns = constraints.maxWidth >= 340
+                                  ? 2
+                                  : 1;
+                              final itemWidth =
+                                  (constraints.maxWidth -
+                                      spacing * (columns - 1)) /
+                                  columns;
+                              return Wrap(
+                                spacing: spacing,
+                                runSpacing: spacing,
+                                children: [
+                                  for (final item in coupons)
+                                    SizedBox(
+                                      width: itemWidth,
+                                      child: _buildCouponCard(context, item),
+                                    ),
+                                ],
+                              );
+                            },
+                          ),
+                      ],
+                    ),
+                  );
+                }),
+              )
+            : const LoginRequiredPrompt(),
+      );
+    });
   }
 
   Widget _buildHeroCard(BuildContext context, {required int integral}) {

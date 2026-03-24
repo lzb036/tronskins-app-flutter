@@ -8,6 +8,7 @@ import 'package:tronskins_app/api/steam.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
 import 'package:tronskins_app/common/hooks/game/global_game_controller.dart';
 import 'package:tronskins_app/common/widgets/back_to_top_overlay.dart';
+import 'package:tronskins_app/common/widgets/login_required_prompt.dart';
 import 'package:tronskins_app/components/filter/filter_models.dart';
 import 'package:tronskins_app/components/filter/market_filter_sheet.dart';
 import 'package:tronskins_app/components/filter/order_filter_sheet.dart';
@@ -17,6 +18,7 @@ import 'package:tronskins_app/components/game_item/game_item_models.dart';
 import 'package:tronskins_app/components/game_item/wear_progress_bar.dart';
 import 'package:tronskins_app/components/layout/list_end_tip.dart';
 import 'package:tronskins_app/controllers/shop/shop_order_controller.dart';
+import 'package:tronskins_app/controllers/user/user_controller.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
 
 class MyPurchasePage extends StatefulWidget {
@@ -32,6 +34,7 @@ class _MyPurchasePageState extends State<MyPurchasePage>
   final ShopOrderController controller = Get.isRegistered<ShopOrderController>()
       ? Get.find<ShopOrderController>()
       : Get.put(ShopOrderController());
+  final UserController userController = Get.find<UserController>();
   final ApiSteamServer _steamApi = ApiSteamServer();
   final GlobalGameController _globalGameController =
       GlobalGameController.ensureInstance();
@@ -45,6 +48,7 @@ class _MyPurchasePageState extends State<MyPurchasePage>
       TextEditingController();
   final TextEditingController _recordSearchController = TextEditingController();
   Worker? _gameWorker;
+  Worker? _loginWorker;
   void _handleSearchTextChange() {
     if (mounted) {
       setState(() {});
@@ -99,8 +103,21 @@ class _MyPurchasePageState extends State<MyPurchasePage>
     _recordScroll.addListener(_handleRecordScroll);
     _receiptSearchController.addListener(_handleSearchTextChange);
     _recordSearchController.addListener(_handleSearchTextChange);
-    controller.refreshWaitingReceipts();
-    controller.refreshBuyRecords();
+    if (userController.isLoggedIn.value) {
+      controller.refreshWaitingReceipts();
+      controller.refreshBuyRecords();
+    }
+    _loginWorker = ever<bool>(userController.isLoggedIn, (loggedIn) {
+      if (loggedIn) {
+        controller.refreshWaitingReceipts();
+        controller.refreshBuyRecords();
+      } else {
+        controller.waitingReceipts.clear();
+        controller.buyRecords.clear();
+        controller.schemas.clear();
+        controller.users.clear();
+      }
+    });
   }
 
   @override
@@ -116,6 +133,7 @@ class _MyPurchasePageState extends State<MyPurchasePage>
     _receiptSearchController.removeListener(_handleSearchTextChange);
     _recordSearchController.removeListener(_handleSearchTextChange);
     _gameWorker?.dispose();
+    _loginWorker?.dispose();
     _receiptSearchController.dispose();
     _recordSearchController.dispose();
     super.dispose();
@@ -885,54 +903,61 @@ class _MyPurchasePageState extends State<MyPurchasePage>
   @override
   Widget build(BuildContext context) {
     final currency = Get.find<CurrencyController>();
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('app.user.menu.buy'.tr),
-        actions: [
-          Builder(
-            builder: (iconContext) {
-              return IconButton(
-                icon: Image.asset(
-                  'assets/images/game/icon/$_currentAppId.png',
-                  width: 40,
-                  height: 40,
-                  errorBuilder: (context, error, stackTrace) {
-                    return const Icon(Icons.videogame_asset);
-                  },
-                ),
-                onPressed: () async {
-                  final selected = await showGameSwitchMenu(
-                    iconContext: iconContext,
-                    currentAppId: _currentAppId,
-                  );
-                  if (selected == null) {
-                    return;
-                  }
-                  await _switchGame(selected);
-                },
-              );
-            },
-          ),
-        ],
-      ),
-      body: BackToTopScope(
-        enabled: false,
-        child: Column(
-          children: [
-            _buildSharedTopSection(),
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildWaitingReceipts(currency),
-                  _buildBuyRecords(currency),
-                ],
-              ),
-            ),
-          ],
+    return Obx(() {
+      final isLoggedIn = userController.isLoggedIn.value;
+      return Scaffold(
+        appBar: AppBar(
+          title: Text('app.user.menu.buy'.tr),
+          actions: isLoggedIn
+              ? [
+                  Builder(
+                    builder: (iconContext) {
+                      return IconButton(
+                        icon: Image.asset(
+                          'assets/images/game/icon/$_currentAppId.png',
+                          width: 40,
+                          height: 40,
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Icon(Icons.videogame_asset);
+                          },
+                        ),
+                        onPressed: () async {
+                          final selected = await showGameSwitchMenu(
+                            iconContext: iconContext,
+                            currentAppId: _currentAppId,
+                          );
+                          if (selected == null) {
+                            return;
+                          }
+                          await _switchGame(selected);
+                        },
+                      );
+                    },
+                  ),
+                ]
+              : const [],
         ),
-      ),
-    );
+        body: isLoggedIn
+            ? BackToTopScope(
+                enabled: false,
+                child: Column(
+                  children: [
+                    _buildSharedTopSection(),
+                    Expanded(
+                      child: TabBarView(
+                        controller: _tabController,
+                        children: [
+                          _buildWaitingReceipts(currency),
+                          _buildBuyRecords(currency),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            : const LoginRequiredPrompt(),
+      );
+    });
   }
 
   Widget _buildWaitingReceipts(CurrencyController currency) {

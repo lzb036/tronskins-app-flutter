@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 import 'package:tronskins_app/api/user_profile.dart';
 import 'package:tronskins_app/common/storage/app_cache.dart';
 import 'package:tronskins_app/common/storage/user_storage.dart';
+import 'package:tronskins_app/common/widgets/login_required_prompt.dart';
 import 'package:tronskins_app/controllers/user/user_controller.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
 
@@ -15,6 +16,7 @@ class EditPasswordPage extends StatefulWidget {
 
 class _EditPasswordPageState extends State<EditPasswordPage> {
   final ApiUserProfileServer _api = ApiUserProfileServer();
+  final UserController userController = Get.find<UserController>();
   final TextEditingController _oldController = TextEditingController();
   final TextEditingController _newController = TextEditingController();
   final TextEditingController _repeatController = TextEditingController();
@@ -119,137 +121,147 @@ class _EditPasswordPageState extends State<EditPasswordPage> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
-    final cardBorder = colorScheme.outlineVariant.withOpacity(
-      isDark ? 0.5 : 0.7,
+    final cardBorder = colorScheme.outlineVariant.withValues(
+      alpha: isDark ? 0.5 : 0.7,
     );
     final inputFill = isDark
-        ? colorScheme.surfaceVariant.withOpacity(0.35)
-        : colorScheme.surfaceVariant.withOpacity(0.6);
+        ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.35)
+        : colorScheme.surfaceContainerHighest.withValues(alpha: 0.6);
 
-    return Scaffold(
-      appBar: AppBar(title: Text('app.user.setting.password_change'.tr)),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: colorScheme.surface,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: cardBorder),
-              boxShadow: isDark
-                  ? null
-                  : [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 18,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
-            ),
-            child: Column(
-              children: [
-                _buildPasswordField(
-                  controller: _oldController,
-                  label: 'app.user.setting.password_enter_old_word'.tr,
-                  visible: _showOld,
-                  onToggle: () => setState(() => _showOld = !_showOld),
-                  fillColor: inputFill,
-                  borderColor: cardBorder,
-                  focusColor: colorScheme.primary,
-                  textInputAction: TextInputAction.next,
-                ),
-                const SizedBox(height: 12),
-                _buildPasswordField(
-                  controller: _newController,
-                  label: 'app.user.setting.password_enter_new_word'.tr,
-                  visible: _showNew,
-                  onToggle: () => setState(() => _showNew = !_showNew),
-                  fillColor: inputFill,
-                  borderColor: cardBorder,
-                  focusColor: colorScheme.primary,
-                  textInputAction: TextInputAction.next,
-                ),
-                const SizedBox(height: 12),
-                _buildPasswordField(
-                  controller: _repeatController,
-                  label: 'app.user.setting.password_enter_confirm_word'.tr,
-                  visible: _showRepeat,
-                  onToggle: () => setState(() => _showRepeat = !_showRepeat),
-                  fillColor: inputFill,
-                  borderColor: cardBorder,
-                  focusColor: colorScheme.primary,
-                  textInputAction: TextInputAction.done,
-                  onSubmitted: _submit,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: _saving ? null : _submit,
-              style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(48),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-              ),
-              child: _saving
-                  ? Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+    return Obx(() {
+      final loggedIn = userController.isLoggedIn.value;
+      return Scaffold(
+        appBar: AppBar(title: Text('app.user.setting.password_change'.tr)),
+        body: loggedIn
+            ? ListView(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: cardBorder),
+                      boxShadow: isDark
+                          ? null
+                          : [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.05),
+                                blurRadius: 18,
+                                offset: const Offset(0, 10),
+                              ),
+                            ],
+                    ),
+                    child: Column(
                       children: [
-                        SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              colorScheme.onPrimary,
+                        _buildPasswordField(
+                          controller: _oldController,
+                          label: 'app.user.setting.password_enter_old_word'.tr,
+                          visible: _showOld,
+                          onToggle: () => setState(() => _showOld = !_showOld),
+                          fillColor: inputFill,
+                          borderColor: cardBorder,
+                          focusColor: colorScheme.primary,
+                          textInputAction: TextInputAction.next,
+                        ),
+                        const SizedBox(height: 12),
+                        _buildPasswordField(
+                          controller: _newController,
+                          label: 'app.user.setting.password_enter_new_word'.tr,
+                          visible: _showNew,
+                          onToggle: () => setState(() => _showNew = !_showNew),
+                          fillColor: inputFill,
+                          borderColor: cardBorder,
+                          focusColor: colorScheme.primary,
+                          textInputAction: TextInputAction.next,
+                        ),
+                        const SizedBox(height: 12),
+                        _buildPasswordField(
+                          controller: _repeatController,
+                          label:
+                              'app.user.setting.password_enter_confirm_word'.tr,
+                          visible: _showRepeat,
+                          onToggle: () =>
+                              setState(() => _showRepeat = !_showRepeat),
+                          fillColor: inputFill,
+                          borderColor: cardBorder,
+                          focusColor: colorScheme.primary,
+                          textInputAction: TextInputAction.done,
+                          onSubmitted: _submit,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: _saving ? null : _submit,
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(48),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: _saving
+                          ? Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      colorScheme.onPrimary,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Text('app.common.confirm'.tr),
+                              ],
+                            )
+                          : Text('app.common.confirm'.tr),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                    decoration: BoxDecoration(
+                      color: colorScheme.surfaceContainerHighest.withValues(
+                        alpha: isDark ? 0.35 : 0.6,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          size: 18,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'app.user.setting.password_format_tip'.tr,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colorScheme.onSurfaceVariant,
+                              height: 1.4,
                             ),
                           ),
                         ),
-                        const SizedBox(width: 10),
-                        Text('app.common.confirm'.tr),
                       ],
-                    )
-                  : Text('app.common.confirm'.tr),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceVariant.withOpacity(
-                isDark ? 0.35 : 0.6,
-              ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  Icons.info_outline,
-                  size: 18,
-                  color: colorScheme.onSurfaceVariant,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'app.user.setting.password_format_tip'.tr,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                      height: 1.4,
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
+                ],
+              )
+            : const LoginRequiredPrompt(),
+      );
+    });
   }
 
   Widget _buildPasswordField({

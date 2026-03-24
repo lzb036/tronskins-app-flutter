@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:tronskins_app/common/widgets/back_to_top_overlay.dart';
+import 'package:tronskins_app/common/widgets/login_required_prompt.dart';
+import 'package:tronskins_app/controllers/user/user_controller.dart';
 import 'package:tronskins_app/controllers/wallet/coupon_controller.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
 
@@ -17,18 +19,30 @@ class _CouponPageState extends State<CouponPage>
   final CouponController controller = Get.isRegistered<CouponController>()
       ? Get.find<CouponController>()
       : Get.put(CouponController());
+  final UserController userController = Get.find<UserController>();
 
   late final TabController _tabController;
+  Worker? _loginWorker;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    controller.loadCoupons();
+    if (userController.isLoggedIn.value) {
+      controller.loadCoupons();
+    }
+    _loginWorker = ever<bool>(userController.isLoggedIn, (loggedIn) {
+      if (loggedIn) {
+        controller.loadCoupons();
+      } else {
+        controller.coupons.clear();
+      }
+    });
   }
 
   @override
   void dispose() {
+    _loginWorker?.dispose();
     _tabController.dispose();
     super.dispose();
   }
@@ -77,22 +91,29 @@ class _CouponPageState extends State<CouponPage>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('app.user.coupon.title'.tr),
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: [
-            Tab(text: 'app.user.equity.title'.tr),
-            Tab(text: 'app.user.coupon.title'.tr),
-          ],
+    return Obx(() {
+      final loggedIn = userController.isLoggedIn.value;
+      return Scaffold(
+        appBar: AppBar(
+          title: Text('app.user.coupon.title'.tr),
+          bottom: loggedIn
+              ? TabBar(
+                  controller: _tabController,
+                  tabs: [
+                    Tab(text: 'app.user.equity.title'.tr),
+                    Tab(text: 'app.user.coupon.title'.tr),
+                  ],
+                )
+              : null,
         ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [_buildInterestTab(), _buildCouponTab()],
-      ),
-    );
+        body: loggedIn
+            ? TabBarView(
+                controller: _tabController,
+                children: [_buildInterestTab(), _buildCouponTab()],
+              )
+            : const LoginRequiredPrompt(),
+      );
+    });
   }
 
   Widget _buildInterestTab() {

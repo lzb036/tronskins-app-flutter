@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:tronskins_app/common/widgets/login_required_prompt.dart';
 import 'package:tronskins_app/components/layout/list_end_tip.dart';
 import 'package:tronskins_app/controllers/help/feedback_controller.dart';
 import 'package:tronskins_app/controllers/user/user_controller.dart';
@@ -101,30 +102,7 @@ class _FeedbackListPageState extends State<FeedbackListPage> {
   }
 
   Widget _buildLoginPrompt() {
-    return Center(
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 24),
-        padding: const EdgeInsets.all(24),
-        decoration: HelpUi.cardDecoration(context),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.lock_outline_rounded,
-              size: 30,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            const SizedBox(height: 12),
-            Text('app.system.message.nologin'.tr),
-            const SizedBox(height: 12),
-            FilledButton(
-              onPressed: () => Get.toNamed(Routers.LOGIN),
-              child: Text('app.user.login.nologin'.tr),
-            ),
-          ],
-        ),
-      ),
-    );
+    return const LoginRequiredPrompt();
   }
 
   Widget _buildFeedbackList(BuildContext context) {
