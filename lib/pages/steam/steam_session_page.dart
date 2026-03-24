@@ -22,6 +22,7 @@ class _SteamSessionPageState extends State<SteamSessionPage> {
   static const String _titleSteamIdSeparator = '&steamId=';
 
   final ApiSteamServer _steamApi = ApiSteamServer();
+  final WebViewCookieManager _cookieManager = WebViewCookieManager();
 
   late final WebViewController _controller;
   Timer? _titlePoller;
@@ -93,8 +94,8 @@ class _SteamSessionPageState extends State<SteamSessionPage> {
             return NavigationDecision.navigate;
           },
         ),
-      )
-      ..loadRequest(Uri.parse(_sessionUrl));
+      );
+    Future.microtask(_startFreshSession);
   }
 
   @override
@@ -251,6 +252,42 @@ class _SteamSessionPageState extends State<SteamSessionPage> {
     return rawUrl.contains('steamcommunity.com/my') ||
         rawUrl.contains('steamcommunity.com/profiles/') ||
         rawUrl.contains('steamcommunity.com/id/');
+  }
+
+  Future<void> _startFreshSession() async {
+    _titlePoller?.cancel();
+    _titlePoller = null;
+
+    if (mounted) {
+      setState(() {
+        _observerInjected = false;
+        _hasHandledToken = false;
+        _hasPendingTokenPayload = false;
+        _hasTriedFreshStart = false;
+        _isSavingToken = false;
+        _isPageLoading = true;
+      });
+    }
+
+    try {
+      await _cookieManager.clearCookies();
+    } catch (_) {}
+
+    try {
+      await _controller.clearLocalStorage();
+    } catch (_) {}
+
+    try {
+      await _controller.clearCache();
+    } catch (_) {}
+
+    try {
+      await _controller.loadRequest(Uri.parse(_sessionUrl));
+    } catch (_) {
+      if (mounted) {
+        setState(() => _isPageLoading = false);
+      }
+    }
   }
 
   Future<void> _injectObserver() async {
@@ -488,18 +525,7 @@ class _SteamSessionPageState extends State<SteamSessionPage> {
   }
 
   Future<void> _reload() async {
-    _titlePoller?.cancel();
-    _titlePoller = null;
-    if (mounted) {
-      setState(() {
-        _observerInjected = false;
-        _hasHandledToken = false;
-        _hasPendingTokenPayload = false;
-        _hasTriedFreshStart = false;
-        _isPageLoading = true;
-      });
-    }
-    await _controller.loadRequest(Uri.parse(_sessionUrl));
+    await _startFreshSession();
   }
 
   @override
