@@ -267,22 +267,25 @@ class _MyCollectionPageState extends State<MyCollectionPage>
         child: Scaffold(
           appBar: AppBar(
             title: Text('app.user.menu.collection'.tr),
-            actions: [
-              Builder(
-                builder: (iconContext) => IconButton(
-                  onPressed: () => _showGameMenu(iconContext),
-                  icon: ClipRRect(
-                    borderRadius: BorderRadius.circular(999),
-                    child: Image.asset(
-                      'assets/images/game/icon/$_appId.png',
-                      width: 24,
-                      height: 24,
-                      errorBuilder: (context, _, __) => const Icon(Icons.games),
+            actions: loggedIn
+                ? [
+                    Builder(
+                      builder: (iconContext) => IconButton(
+                        onPressed: () => _showGameMenu(iconContext),
+                        icon: ClipRRect(
+                          borderRadius: BorderRadius.circular(999),
+                          child: Image.asset(
+                            'assets/images/game/icon/$_appId.png',
+                            width: 24,
+                            height: 24,
+                            errorBuilder: (context, _, __) =>
+                                const Icon(Icons.games),
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              ),
-            ],
+                  ]
+                : const [],
           ),
           body: loggedIn
               ? Column(

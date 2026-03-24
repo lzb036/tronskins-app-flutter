@@ -10,6 +10,7 @@ import 'package:tronskins_app/common/http/interceptors/auth_interceptor.dart';
 import 'package:tronskins_app/common/security/sm2_helper.dart';
 import 'package:tronskins_app/common/storage/server_storage.dart';
 import 'package:tronskins_app/common/storage/twofa_storage.dart';
+import 'package:tronskins_app/common/widgets/auth_floating_input_field.dart';
 import 'package:tronskins_app/common/widgets/scale_button.dart';
 import 'package:tronskins_app/controllers/auth/login_controller.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
@@ -527,76 +528,19 @@ class _LoginScreenState extends State<LoginScreen>
     List<TextInputFormatter>? inputFormatters,
     Widget? suffix,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        TextField(
-          obscureText: obscureText,
-          keyboardType: keyboardType ?? TextInputType.text,
-          maxLength: maxLength,
-          inputFormatters: inputFormatters,
-          onChanged: onChanged,
-          style: TextStyle(color: textColor, fontSize: 16),
-          cursorColor: const Color(0xFF007AFF),
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: TextStyle(color: hintColor, fontSize: 15),
-            filled: true,
-            fillColor: fillColor,
-            prefixIcon: prefixIcon != null
-                ? Icon(prefixIcon, color: hintColor, size: 22)
-                : null,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 20,
-              vertical: 20,
-            ),
-            suffixIcon: suffix,
-            suffixIconConstraints: suffix != null
-                ? const BoxConstraints(minHeight: 32, minWidth: 32)
-                : null,
-            counterText: maxLength != null ? '' : null,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide.none,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide.none,
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(
-                color: Color(0xFF007AFF),
-                width: 1.5,
-              ),
-            ),
-          ),
-        ),
-        if (error != null)
-          Padding(
-            padding: const EdgeInsets.only(left: 12, top: 8),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.error_outline,
-                  size: 14,
-                  color: Colors.redAccent,
-                ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Text(
-                    error,
-                    softWrap: true,
-                    style: const TextStyle(
-                      color: Colors.redAccent,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-      ],
+    return AuthFloatingInputField(
+      label: hint,
+      fillColor: fillColor,
+      textColor: textColor,
+      hintColor: hintColor,
+      prefixIcon: prefixIcon,
+      obscureText: obscureText,
+      onChanged: onChanged,
+      error: error,
+      keyboardType: keyboardType,
+      maxLength: maxLength,
+      inputFormatters: inputFormatters,
+      suffix: suffix,
     );
   }
 
