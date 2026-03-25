@@ -513,10 +513,6 @@ class _SteamSessionPageState extends State<SteamSessionPage> {
     AppSnackbar.error(message);
   }
 
-  Future<void> _reload() async {
-    await _startFreshSession();
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -532,106 +528,35 @@ class _SteamSessionPageState extends State<SteamSessionPage> {
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: Column(
+      body: Stack(
         children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-            color: Colors.white,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '1.${'app.steam.message.load_error'.tr}',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF1C1C1E),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          WebViewWidget(controller: _controller),
+          if (_isPageLoading)
+            const LinearProgressIndicator(
+              minHeight: 2,
+              color: Color(0xFF74BCFF),
+            ),
+          if (_isSavingToken)
+            Container(
+              color: Colors.black12,
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Expanded(
-                      child: Text(
-                        '2.${'app.steam.message.load_error_2'.tr}',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF1C1C1E),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    TextButton(
-                      onPressed: _reload,
-                      style: TextButton.styleFrom(
-                        foregroundColor: const Color(0xFF171A21),
-                        backgroundColor: const Color(0xFFE9EDF3),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        minimumSize: const Size(0, 0),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      child: Text(
-                        'app.common.refresh'.tr,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
+                    const CircularProgressIndicator(color: Color(0xFF171A21)),
+                    const SizedBox(height: 12),
+                    Text(
+                      _savingTokenLabel,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF171A21),
                       ),
                     ),
                   ],
                 ),
-                if (_boundSteamId.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    'STEAM ID: $_boundSteamId',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF6B7280),
-                    ),
-                  ),
-                ],
-              ],
+              ),
             ),
-          ),
-          Expanded(
-            child: Stack(
-              children: [
-                WebViewWidget(controller: _controller),
-                if (_isPageLoading)
-                  const LinearProgressIndicator(
-                    minHeight: 2,
-                    color: Color(0xFF74BCFF),
-                  ),
-                if (_isSavingToken)
-                  Container(
-                    color: Colors.black12,
-                    child: Center(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const CircularProgressIndicator(
-                            color: Color(0xFF171A21),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            _savingTokenLabel,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xFF171A21),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
         ],
       ),
     );

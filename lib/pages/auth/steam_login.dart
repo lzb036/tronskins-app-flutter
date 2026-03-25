@@ -201,19 +201,6 @@ class _SteamLoginPageState extends State<SteamLoginPage> {
     return null;
   }
 
-  Future<void> _reload() async {
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      _isPageLoading = true;
-      _lastCallback = null;
-      _pendingCallback = null;
-    });
-    await _controller.loadRequest(Uri.parse(_loginUrl));
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -229,81 +216,21 @@ class _SteamLoginPageState extends State<SteamLoginPage> {
         ),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: Column(
+      body: Stack(
         children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-            color: Colors.white,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '1.${'app.steam.message.load_error'.tr}',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Color(0xFF1C1C1E),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        '2.${'app.steam.message.load_error_2'.tr}',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF1C1C1E),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    TextButton(
-                      onPressed: _reload,
-                      style: TextButton.styleFrom(
-                        foregroundColor: const Color(0xFF171A21),
-                        backgroundColor: const Color(0xFFE9EDF3),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        minimumSize: const Size(0, 0),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                      child: Text(
-                        'app.common.refresh'.tr,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+          WebViewWidget(controller: _controller),
+          if (_isPageLoading)
+            const LinearProgressIndicator(
+              minHeight: 2,
+              color: Color(0xFF74BCFF),
             ),
-          ),
-          Expanded(
-            child: Stack(
-              children: [
-                WebViewWidget(controller: _controller),
-                if (_isPageLoading)
-                  const LinearProgressIndicator(
-                    minHeight: 2,
-                    color: Color(0xFF74BCFF),
-                  ),
-                if (_isSubmitting)
-                  Container(
-                    color: Colors.black12,
-                    child: const Center(
-                      child: CircularProgressIndicator(
-                        color: Color(0xFF171A21),
-                      ),
-                    ),
-                  ),
-              ],
+          if (_isSubmitting)
+            Container(
+              color: Colors.black12,
+              child: const Center(
+                child: CircularProgressIndicator(color: Color(0xFF171A21)),
+              ),
             ),
-          ),
         ],
       ),
     );
