@@ -286,22 +286,12 @@ class _TwoFaTokenPageState extends State<TwoFaTokenPage> {
       await controller.refreshStatus();
     }
     if (controller.isBound.value != true) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.user.guard.open_2fa_first'.tr,
-
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.info('app.user.guard.open_2fa_first'.tr);
       return;
     }
     final emailValue = controller.email.value ?? '';
     if (emailValue.isEmpty) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.user.guard.open_2fa_first'.tr,
-
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.info('app.user.guard.open_2fa_first'.tr);
       return;
     }
     if (!mounted) {

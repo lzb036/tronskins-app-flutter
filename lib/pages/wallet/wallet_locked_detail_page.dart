@@ -5,6 +5,7 @@ import 'package:tronskins_app/api/shop_product.dart';
 import 'package:tronskins_app/api/steam.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
 import 'package:tronskins_app/common/storage/game_storage.dart';
+import 'package:tronskins_app/common/utils/app_snackbar.dart';
 import 'package:tronskins_app/common/widgets/back_to_top_overlay.dart';
 import 'package:tronskins_app/controllers/wallet/wallet_controller.dart';
 import 'package:tronskins_app/api/model/wallet/wallet_models.dart';
@@ -63,12 +64,7 @@ class _WalletLockedDetailPageState extends State<WalletLockedDetailPage> {
       return;
     }
     await Clipboard.setData(ClipboardData(text: text));
-    Get.snackbar(
-      'app.system.tips.title'.tr,
-      'app.system.message.copy_success'.tr,
-
-      titleText: const SizedBox.shrink(),
-    );
+    AppSnackbar.success('app.system.message.copy_success'.tr);
   }
 
   void _showTopSnack(
@@ -76,23 +72,15 @@ class _WalletLockedDetailPageState extends State<WalletLockedDetailPage> {
     bool isError = false,
     bool isSuccess = false,
   }) {
-    final backgroundColor = isSuccess
-        ? Colors.green
-        : isError
-        ? Colors.red
-        : Theme.of(context).colorScheme.primary;
-    final colorText = (isSuccess || isError)
-        ? Colors.white
-        : Theme.of(context).colorScheme.onPrimary;
-    Get.snackbar(
-      'app.system.tips.title'.tr,
-      message,
-      backgroundColor: backgroundColor,
-      colorText: colorText,
-      snackPosition: SnackPosition.TOP,
-
-      titleText: const SizedBox.shrink(),
-    );
+    if (isSuccess) {
+      AppSnackbar.success(message);
+      return;
+    }
+    if (isError) {
+      AppSnackbar.error(message);
+      return;
+    }
+    AppSnackbar.info(message);
   }
 
   String _currentUserId() {

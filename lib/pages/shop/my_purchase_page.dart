@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:tronskins_app/common/utils/app_snackbar.dart';
 import 'package:intl/intl.dart';
 import 'package:tronskins_app/api/model/shop/shop_models.dart';
 import 'package:tronskins_app/api/steam.dart';
@@ -302,11 +303,7 @@ class _MyPurchasePageState extends State<MyPurchasePage>
           arguments: {'tradeOfferId': tradeOfferId},
         );
       } else {
-        Get.snackbar(
-          'app.system.tips.title'.tr,
-          'app.trade.filter.failed'.tr,
-          titleText: const SizedBox.shrink(),
-        );
+        AppSnackbar.error('app.trade.filter.failed'.tr);
       }
       return;
     }
@@ -331,17 +328,9 @@ class _MyPurchasePageState extends State<MyPurchasePage>
     }
     try {
       await controller.acceptTradeOffer(id);
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.system.message.success'.tr,
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.success('app.system.message.success'.tr);
     } catch (_) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.trade.filter.failed'.tr,
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.error('app.trade.filter.failed'.tr);
     }
   }
 

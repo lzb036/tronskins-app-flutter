@@ -122,11 +122,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
   Future<void> _openBuying() async {
     final user = UserStorage.getUserInfo();
     if (user == null) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.system.message.nologin'.tr,
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.info('app.system.message.nologin'.tr);
       return;
     }
     final uuid = user.uuid ?? user.shop?.uuid;
@@ -135,12 +131,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
         final res = await _shopServer.getUserShopInfo(params: {'uuid': uuid});
         if (res.success && res.datas != null) {
           if (res.datas?['signWanted'] != true) {
-            Get.snackbar(
-              'app.system.tips.title'.tr,
-              'app.trade.purchase.offline_tips'.tr,
-
-              titleText: const SizedBox.shrink(),
-            );
+            AppSnackbar.info('app.trade.purchase.offline_tips'.tr);
             return;
           }
         }
@@ -162,11 +153,7 @@ class _MarketDetailPageState extends State<MarketDetailPage>
   Future<void> _openBulkBuying() async {
     final user = UserStorage.getUserInfo();
     if (user == null) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.system.message.nologin'.tr,
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.info('app.system.message.nologin'.tr);
       return;
     }
     final schemaId = controller.schemaId;
@@ -2932,11 +2919,8 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                                     ? () async {
                                         final user = UserStorage.getUserInfo();
                                         if (user == null) {
-                                          Get.snackbar(
-                                            'app.system.tips.title'.tr,
+                                          AppSnackbar.info(
                                             'app.system.message.nologin'.tr,
-
-                                            titleText: const SizedBox.shrink(),
                                           );
                                           return;
                                         }
@@ -3052,28 +3036,19 @@ class _MarketDetailPageState extends State<MarketDetailPage>
                                       final res = await _shopProductApi
                                           .orderItemCancelBuy(id: id);
                                       if (res.success) {
-                                        Get.snackbar(
-                                          'app.system.tips.title'.tr,
+                                        AppSnackbar.success(
                                           'app.system.message.success'.tr,
-
-                                          titleText: const SizedBox.shrink(),
                                         );
                                       } else {
-                                        Get.snackbar(
-                                          'app.system.tips.title'.tr,
+                                        AppSnackbar.error(
                                           res.message.isNotEmpty
                                               ? res.message
                                               : 'app.trade.filter.failed'.tr,
-
-                                          titleText: const SizedBox.shrink(),
                                         );
                                       }
                                     } catch (_) {
-                                      Get.snackbar(
-                                        'app.system.tips.title'.tr,
+                                      AppSnackbar.error(
                                         'app.trade.filter.failed'.tr,
-
-                                        titleText: const SizedBox.shrink(),
                                       );
                                     }
                                     await controller.loadBuyRequests(
@@ -3329,22 +3304,14 @@ class _MarketDetailPageState extends State<MarketDetailPage>
     }
     final user = UserStorage.getUserInfo();
     if (user == null) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.system.message.nologin'.tr,
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.info('app.system.message.nologin'.tr);
       return;
     }
     final id = item.id?.toString();
     final price = item.price;
     final appId = item.appId ?? controller.appId;
     if (id == null || price == null) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.trade.filter.failed'.tr,
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.error('app.trade.filter.failed'.tr);
       return;
     }
     final currency = Get.find<CurrencyController>();

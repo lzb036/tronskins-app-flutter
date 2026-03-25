@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:tronskins_app/common/utils/app_snackbar.dart';
 import 'package:tronskins_app/components/notify/notify_bulletin_list.dart';
 import 'package:tronskins_app/components/notify/notify_trade_list.dart';
 import 'package:tronskins_app/controllers/user/notify_controller.dart';
@@ -61,11 +62,7 @@ class _UserMessageState extends State<UserMessage>
         ? await _controller.readAllTrade()
         : await _controller.readAllNotice();
     if (ok) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.system.notice.readall'.tr,
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.success('app.system.notice.readall'.tr);
     }
   }
 
@@ -90,11 +87,8 @@ class _UserMessageState extends State<UserMessage>
     if (confirm == true) {
       final message = await _controller.clearTrade();
       if (message != null) {
-        Get.snackbar(
-          'app.system.tips.title'.tr,
+        AppSnackbar.success(
           message.isNotEmpty ? message : 'app.system.message.success'.tr,
-
-          titleText: const SizedBox.shrink(),
         );
       }
     }

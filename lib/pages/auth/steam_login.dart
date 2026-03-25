@@ -4,6 +4,7 @@ import 'package:tronskins_app/api/loginServer.dart';
 import 'package:tronskins_app/common/device/device_id_helper.dart';
 import 'package:tronskins_app/common/http/http_helper.dart';
 import 'package:tronskins_app/common/http/interceptors/auth_interceptor.dart';
+import 'package:tronskins_app/common/utils/app_snackbar.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
@@ -169,14 +170,7 @@ class _SteamLoginPageState extends State<SteamLoginPage> {
       }
 
       Get.offAllNamed(Routers.HOME);
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.user.login.message.success'.tr,
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-
-        titleText: const SizedBox.shrink(),
-      );
+      _showSuccess('app.user.login.message.success'.tr);
     } catch (e) {
       _showError('app.user.login.message.error'.tr);
     } finally {
@@ -187,14 +181,11 @@ class _SteamLoginPageState extends State<SteamLoginPage> {
   }
 
   void _showError(String message) {
-    Get.snackbar(
-      'app.system.tips.title'.tr,
-      message,
-      backgroundColor: Colors.red,
-      colorText: Colors.white,
+    AppSnackbar.error(message);
+  }
 
-      titleText: const SizedBox.shrink(),
-    );
+  void _showSuccess(String message) {
+    AppSnackbar.success(message);
   }
 
   int? _toInt(dynamic value) {

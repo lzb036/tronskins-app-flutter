@@ -234,22 +234,14 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
     }
     final user = UserStorage.getUserInfo();
     if (user == null) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.system.message.nologin'.tr,
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.info('app.system.message.nologin'.tr);
       return;
     }
     final id = _item.id?.toString();
     final price = _item.price;
     final appId = _item.appId ?? _schema?.appId ?? 730;
     if (id == null || price == null) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.trade.filter.failed'.tr,
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.error('app.trade.filter.failed'.tr);
       return;
     }
     final currency = Get.find<CurrencyController>();

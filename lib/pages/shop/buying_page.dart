@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:tronskins_app/common/utils/app_snackbar.dart';
 import 'package:intl/intl.dart';
 import 'package:tronskins_app/api/model/shop/shop_models.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
@@ -177,12 +178,7 @@ class _BuyingPageState extends State<BuyingPage>
   }
 
   void _showOfflineTips() {
-    Get.snackbar(
-      'app.system.tips.title'.tr,
-      'app.trade.purchase.offline_tips'.tr,
-
-      titleText: const SizedBox.shrink(),
-    );
+    AppSnackbar.info('app.trade.purchase.offline_tips'.tr);
   }
 
   Future<void> _openBuyingPriceChange(
@@ -229,11 +225,7 @@ class _BuyingPageState extends State<BuyingPage>
     );
     if (confirm == true) {
       await controller.cancelBuy(id);
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.system.message.success'.tr,
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.success('app.system.message.success'.tr);
     }
   }
 

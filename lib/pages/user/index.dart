@@ -1,6 +1,7 @@
 // lib/pages/user/user_page.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:tronskins_app/common/utils/app_snackbar.dart';
 import 'package:tronskins_app/common/widgets/back_to_top_overlay.dart';
 import 'package:tronskins_app/components/user/setting/custom_animated_icon_button.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
@@ -344,11 +345,7 @@ class _TopRightButtons extends StatelessWidget {
   Future<void> _scanCode() async {
     final userCtrl = Get.find<UserController>();
     if (!userCtrl.isLoggedIn.value) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.system.message.nologin'.tr,
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.info('app.system.message.nologin'.tr);
       return;
     }
     await Get.to(() => const ScanLoginPage());

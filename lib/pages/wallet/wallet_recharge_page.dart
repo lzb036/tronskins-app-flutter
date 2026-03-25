@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
+import 'package:tronskins_app/common/utils/app_snackbar.dart';
 import 'package:tronskins_app/common/widgets/back_to_top_overlay.dart';
 import 'package:tronskins_app/controllers/wallet/wallet_controller.dart';
 import 'package:tronskins_app/pages/wallet/widgets/wallet_ui.dart';
@@ -122,23 +123,15 @@ class _WalletRechargePageState extends State<WalletRechargePage>
     bool isError = false,
     bool isSuccess = false,
   }) {
-    final backgroundColor = isSuccess
-        ? Colors.green
-        : isError
-        ? Colors.red
-        : Theme.of(context).colorScheme.primary;
-    final colorText = (isSuccess || isError)
-        ? Colors.white
-        : Theme.of(context).colorScheme.onPrimary;
-    Get.snackbar(
-      'app.system.tips.title'.tr,
-      message,
-      backgroundColor: backgroundColor,
-      colorText: colorText,
-      snackPosition: SnackPosition.TOP,
-
-      titleText: const SizedBox.shrink(),
-    );
+    if (isSuccess) {
+      AppSnackbar.success(message);
+      return;
+    }
+    if (isError) {
+      AppSnackbar.error(message);
+      return;
+    }
+    AppSnackbar.info(message);
   }
 
   String? _extractMessage(dynamic data) {

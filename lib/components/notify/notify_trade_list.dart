@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:get/get.dart';
+import 'package:tronskins_app/common/utils/app_snackbar.dart';
 import 'package:intl/intl.dart';
 import 'package:tronskins_app/api/model/notify/notify_models.dart';
 import 'package:tronskins_app/components/layout/list_end_tip.dart';
@@ -56,13 +57,7 @@ class _NotifyTradeListState extends State<NotifyTradeList> {
     if (item.status == 2) {
       return;
     }
-    Get.snackbar(
-      'app.system.tips.title'.tr,
-      message,
-      snackPosition: SnackPosition.TOP,
-
-      titleText: const SizedBox.shrink(),
-    );
+    AppSnackbar.info(message);
   }
 
   Future<void> _openDetail(TradeNotifyItem item) async {
@@ -95,12 +90,8 @@ class _NotifyTradeListState extends State<NotifyTradeList> {
         }
         return;
       }
-      Get.snackbar(
-        'app.system.tips.title'.tr,
+      AppSnackbar.success(
         message.isNotEmpty ? message : 'app.system.message.success'.tr,
-        snackPosition: SnackPosition.TOP,
-
-        titleText: const SizedBox.shrink(),
       );
     } catch (_) {
       final insertIndex = index.clamp(0, list.length);

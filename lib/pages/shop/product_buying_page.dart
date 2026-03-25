@@ -161,12 +161,7 @@ class _ProductBuyingPageState extends State<ProductBuyingPage> {
       _numController.selection = TextSelection.fromPosition(
         TextPosition(offset: _numController.text.length),
       );
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.market.detail.message.num_error'.tr,
-
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.error('app.market.detail.message.num_error'.tr);
     }
     final numValue = int.tryParse(_numController.text) ?? 0;
     if (numValue > 1000) {
@@ -512,60 +507,31 @@ class _ProductBuyingPageState extends State<ProductBuyingPage> {
     var shouldClosePage = false;
     final user = UserStorage.getUserInfo();
     if (user == null) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.system.message.nologin'.tr,
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.info('app.system.message.nologin'.tr);
       return;
     }
     FocusManager.instance.primaryFocus?.unfocus();
     if (!await _checkPurchaseOnline()) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.trade.purchase.offline_tips'.tr,
-
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.info('app.trade.purchase.offline_tips'.tr);
       return;
     }
 
     final price = double.tryParse(_priceController.text) ?? 0;
     final nums = int.tryParse(_numController.text) ?? 0;
     if (_remainNum == 0) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.trade.purchase.message.num_error'.tr,
-
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.error('app.trade.purchase.message.num_error'.tr);
       return;
     }
     if (price <= 0) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.market.filter.message.price_error'.tr,
-
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.error('app.market.filter.message.price_error'.tr);
       return;
     }
     if (nums <= 0) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.market.detail.message.num_error'.tr,
-
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.error('app.market.detail.message.num_error'.tr);
       return;
     }
     if (price < _purMinPrice) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.trade.purchase.message.balance_insufficient'.tr,
-
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.error('app.trade.purchase.message.balance_insufficient'.tr);
       return;
     }
     final sellMin = _schema?.sellMin ?? _minPrice;
@@ -669,11 +635,8 @@ class _ProductBuyingPageState extends State<ProductBuyingPage> {
         });
         return;
       } else {
-        Get.snackbar(
-          'app.system.tips.title'.tr,
+        AppSnackbar.error(
           res.message.isNotEmpty ? res.message : 'app.trade.filter.failed'.tr,
-
-          titleText: const SizedBox.shrink(),
         );
       }
     } finally {

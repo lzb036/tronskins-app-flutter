@@ -185,11 +185,7 @@ class _NotifyTradeDeliverSheetState extends State<NotifyTradeDeliverSheet> {
   Future<void> _submit() async {
     if (_submitting) return;
     if (_orders.isEmpty || _orders.first.id == null) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.trade.filter.failed'.tr,
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.error('app.trade.filter.failed'.tr);
       return;
     }
     setState(() => _submitting = true);
@@ -264,18 +260,11 @@ class _NotifyTradeDeliverSheetState extends State<NotifyTradeDeliverSheet> {
         );
         return;
       }
-      Get.snackbar(
-        'app.system.tips.title'.tr,
+      AppSnackbar.error(
         res.message.isNotEmpty ? res.message : 'app.trade.filter.failed'.tr,
-
-        titleText: const SizedBox.shrink(),
       );
     } catch (_) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.trade.filter.failed'.tr,
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.error('app.trade.filter.failed'.tr);
     } finally {
       if (mounted) {
         setState(() => _submitting = false);

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:tronskins_app/common/utils/app_snackbar.dart';
 import 'package:tronskins_app/controllers/shop/shop_controller.dart';
 
 class ShopRenamePage extends StatefulWidget {
@@ -32,23 +33,14 @@ class _ShopRenamePageState extends State<ShopRenamePage> {
   Future<void> _submit() async {
     final name = _nameController.text.trim();
     if (name.isEmpty) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.user.shop.name.change_placeholder'.tr,
-
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.error('app.user.shop.name.change_placeholder'.tr);
       return;
     }
     setState(() => _isSaving = true);
     try {
       await controller.changeShopName(name);
       Get.back();
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.system.message.success'.tr,
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.success('app.system.message.success'.tr);
     } finally {
       if (mounted) {
         setState(() => _isSaving = false);

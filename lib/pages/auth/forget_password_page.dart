@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:tronskins_app/api/loginServer.dart';
 import 'package:tronskins_app/common/http/model/base_response.dart';
+import 'package:tronskins_app/common/utils/app_snackbar.dart';
 import 'package:tronskins_app/common/widgets/auth_floating_input_field.dart';
 import 'package:tronskins_app/common/widgets/scale_button.dart';
 
@@ -76,27 +77,11 @@ class _ForgetPasswordPageState extends State<ForgetPasswordPage> {
   }
 
   void _showError(String message) {
-    Get.snackbar(
-      'app.system.tips.title'.tr,
-      message,
-      backgroundColor: Colors.red,
-      colorText: Colors.white,
-      snackPosition: SnackPosition.TOP,
-
-      titleText: const SizedBox.shrink(),
-    );
+    AppSnackbar.error(message);
   }
 
   void _showSuccess(String message) {
-    Get.snackbar(
-      'app.system.tips.title'.tr,
-      message,
-      backgroundColor: Colors.green,
-      colorText: Colors.white,
-      snackPosition: SnackPosition.TOP,
-
-      titleText: const SizedBox.shrink(),
-    );
+    AppSnackbar.success(message);
   }
 
   String? _emailErrorText(String value) {

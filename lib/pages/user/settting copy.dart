@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:tronskins_app/common/utils/app_snackbar.dart';
 import 'package:tronskins_app/common/hooks/locale/use_locale.dart';
 import 'package:tronskins_app/common/hooks/theme/use_theme.dart';
 
@@ -15,11 +16,7 @@ class UserSetting extends StatelessWidget {
     final locale = Locale(languageCode, countryCode);
     Get.updateLocale(locale);
     currentLocale.value = locale;
-    Get.snackbar(
-      'Language Changed',
-      'Switched to ${locale.toString()}',
-      titleText: const SizedBox.shrink(),
-    );
+    AppSnackbar.info('witched to ${locale.toString()}');
   }
 
   @override

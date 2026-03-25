@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:tronskins_app/common/utils/app_snackbar.dart';
 import 'package:tronskins_app/api/model/entity/user/user_info_entity.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
-import 'package:tronskins_app/common/storage/server_storage.dart';
 import 'package:tronskins_app/common/storage/twofa_storage.dart';
 import 'package:tronskins_app/controllers/wallet/wallet_controller.dart';
 import 'package:tronskins_app/pages/wallet/widgets/wallet_ui.dart';
@@ -76,12 +76,7 @@ class _WalletWithdrawPageState extends State<WalletWithdrawPage> {
     final parsed = double.tryParse(value);
     if (parsed == null) {
       if (showToast) {
-        Get.snackbar(
-          'app.system.tips.title'.tr,
-          'app.market.filter.message.price_error'.tr,
-
-          titleText: const SizedBox.shrink(),
-        );
+        AppSnackbar.error('app.market.filter.message.price_error'.tr);
       }
       return '';
     }
@@ -139,56 +134,34 @@ class _WalletWithdrawPageState extends State<WalletWithdrawPage> {
     final amountText = _amountController.text.trim();
     final amount = double.tryParse(amountText) ?? 0;
     if (amount <= 0) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.user.withdraw.message.enter_amount'.tr,
-
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.error('app.user.withdraw.message.enter_amount'.tr);
       return;
     }
     if (amount < 10) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.user.withdraw.message.amount_error'.tr,
-
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.error('app.user.withdraw.message.amount_error'.tr);
       return;
     }
     if (amount > 20000) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.user.withdraw.max_message'.tr,
-
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.error('app.user.withdraw.max_message'.tr);
       return;
     }
     final available = controller.userInfo.value?.fund?.available ?? 0;
     if (amount > available) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.user.withdraw.message.enter_amount'.tr,
-
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.error('app.user.withdraw.message.enter_amount'.tr);
       _amountController.text = available.toStringAsFixed(2);
       return;
     }
     final address = controller.selectedWithdrawAddress.value;
     if (address == null || (address.account ?? '').isEmpty) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.user.withdraw.enter_address'.tr,
-
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.error('app.user.withdraw.enter_address'.tr);
       return;
     }
     final user = controller.userInfo.value;
     final token = await _findCurrentUserToken(user);
-    if (user?.need2FA != true || user?.safeTokenStatus != true || token == null || token.secret.isEmpty) {
+    if (user?.need2FA != true ||
+        user?.safeTokenStatus != true ||
+        token == null ||
+        token.secret.isEmpty) {
       await _promptGuardSetup();
       return;
     }
@@ -204,12 +177,7 @@ class _WalletWithdrawPageState extends State<WalletWithdrawPage> {
     );
     if (success) {
       _amountController.clear();
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.user.withdraw.message.success'.tr,
-
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.success('app.user.withdraw.message.success'.tr);
     }
   }
 
@@ -227,10 +195,12 @@ class _WalletWithdrawPageState extends State<WalletWithdrawPage> {
 
     // 精确匹配：userId + appUse
     if (appUse.isNotEmpty) {
-      final exactMatch = tokens.firstWhereOrNull((token) =>
-          token.userId == userId &&
-          token.appUse == appUse &&
-          token.secret.isNotEmpty);
+      final exactMatch = tokens.firstWhereOrNull(
+        (token) =>
+            token.userId == userId &&
+            token.appUse == appUse &&
+            token.secret.isNotEmpty,
+      );
       if (exactMatch != null) {
         return exactMatch;
       }
@@ -370,12 +340,7 @@ class _WalletWithdrawPageState extends State<WalletWithdrawPage> {
     if (confirm == true) {
       final ok = await controller.removeWithdrawAddress(id);
       if (ok) {
-        Get.snackbar(
-          'app.system.tips.title'.tr,
-          'app.system.message.success'.tr,
-
-          titleText: const SizedBox.shrink(),
-        );
+        AppSnackbar.success('app.system.message.success'.tr);
       }
     }
   }
@@ -431,21 +396,13 @@ class _WalletWithdrawPageState extends State<WalletWithdrawPage> {
                     final name = _addressNameController.text.trim();
                     final account = _addressAccountController.text.trim();
                     if (name.isEmpty) {
-                      Get.snackbar(
-                        'app.system.tips.title'.tr,
+                      AppSnackbar.error(
                         'app.user.withdraw.message.name_empty'.tr,
-
-                        titleText: const SizedBox.shrink(),
                       );
                       return;
                     }
                     if (account.isEmpty) {
-                      Get.snackbar(
-                        'app.system.tips.title'.tr,
-                        'app.user.withdraw.enter_address'.tr,
-
-                        titleText: const SizedBox.shrink(),
-                      );
+                      AppSnackbar.error('app.user.withdraw.enter_address'.tr);
                       return;
                     }
                     final ok = await controller.addWithdrawAddress(
@@ -454,12 +411,7 @@ class _WalletWithdrawPageState extends State<WalletWithdrawPage> {
                     );
                     if (ok) {
                       Get.back();
-                      Get.snackbar(
-                        'app.system.tips.title'.tr,
-                        'app.system.message.success'.tr,
-
-                        titleText: const SizedBox.shrink(),
-                      );
+                      AppSnackbar.success('app.system.message.success'.tr);
                     }
                   },
                   child: Text('app.common.confirm'.tr),

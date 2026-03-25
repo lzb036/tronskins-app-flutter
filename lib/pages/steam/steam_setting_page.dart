@@ -290,14 +290,7 @@ class _SteamSettingPageState extends State<SteamSettingPage> {
   }
 
   void _showSnack(String message) {
-    Get.snackbar(
-      'app.system.tips.title'.tr,
-      message,
-      backgroundColor: Theme.of(context).colorScheme.primary,
-      colorText: Theme.of(context).colorScheme.onPrimary,
-
-      titleText: const SizedBox.shrink(),
-    );
+    AppSnackbar.info(message);
   }
 
   Future<void> _copySteamId(String steamId) async {

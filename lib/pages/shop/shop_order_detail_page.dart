@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:tronskins_app/common/utils/app_snackbar.dart';
 import 'package:intl/intl.dart';
 import 'package:tronskins_app/api/model/shop/shop_models.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
@@ -507,12 +508,7 @@ class ShopOrderDetailPage extends StatelessWidget {
 
   Future<void> _copyOrderId(String orderId) async {
     await Clipboard.setData(ClipboardData(text: orderId));
-    Get.snackbar(
-      'app.system.tips.title'.tr,
-      'app.system.message.copy_success'.tr,
-
-      titleText: const SizedBox.shrink(),
-    );
+    AppSnackbar.success('app.system.message.copy_success'.tr);
   }
 }
 

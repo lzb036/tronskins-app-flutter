@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:tronskins_app/common/utils/app_snackbar.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
 import 'package:tronskins_app/controllers/wallet/wallet_controller.dart';
 import 'package:tronskins_app/controllers/user/user_controller.dart';
@@ -33,11 +34,7 @@ class _WalletPageState extends State<WalletPage> {
     }
     final allow = await controller.checkRechargeEnable();
     if (allow == false) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.user.recharge.disable'.tr,
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.info('app.user.recharge.disable'.tr);
       return;
     }
     Get.toNamed(Routers.WALLET_RECHARGE);
@@ -46,11 +43,7 @@ class _WalletPageState extends State<WalletPage> {
   Future<void> _navigateWithdraw() async {
     final allow = await controller.checkWithdrawEnable();
     if (allow == false) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.user.withdraw.disable'.tr,
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.info('app.user.withdraw.disable'.tr);
       return;
     }
     Get.toNamed(Routers.WALLET_WITHDRAW);

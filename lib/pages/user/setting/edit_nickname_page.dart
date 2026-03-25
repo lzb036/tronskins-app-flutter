@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:tronskins_app/api/user_profile.dart';
+import 'package:tronskins_app/common/utils/app_snackbar.dart';
 import 'package:tronskins_app/common/widgets/login_required_prompt.dart';
 import 'package:tronskins_app/controllers/user/user_controller.dart';
 
@@ -18,27 +19,11 @@ class _EditNicknamePageState extends State<EditNicknamePage> {
   bool _saving = false;
 
   void _showSuccessSnack(String message) {
-    Get.snackbar(
-      'app.system.tips.title'.tr,
-      message,
-      backgroundColor: Colors.green,
-      colorText: Colors.white,
-      snackPosition: SnackPosition.TOP,
-
-      titleText: const SizedBox.shrink(),
-    );
+    AppSnackbar.success(message);
   }
 
   void _showErrorSnack(String message) {
-    Get.snackbar(
-      'app.system.tips.title'.tr,
-      message,
-      backgroundColor: Colors.red,
-      colorText: Colors.white,
-      snackPosition: SnackPosition.TOP,
-
-      titleText: const SizedBox.shrink(),
-    );
+    AppSnackbar.error(message);
   }
 
   @override

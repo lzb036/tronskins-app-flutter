@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:tronskins_app/common/utils/app_snackbar.dart';
 import 'package:intl/intl.dart';
 import 'package:tronskins_app/components/layout/list_end_tip.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
@@ -75,12 +76,7 @@ class _WalletWithdrawRecordPageState extends State<WalletWithdrawRecordPage> {
       final ok = await controller.cancelWithdraw(id);
       if (ok) {
         await controller.loadWithdrawRecords(reset: true);
-        Get.snackbar(
-          'app.system.tips.title'.tr,
-          'app.system.message.success'.tr,
-
-          titleText: const SizedBox.shrink(),
-        );
+        AppSnackbar.success('app.system.message.success'.tr);
       }
     }
   }

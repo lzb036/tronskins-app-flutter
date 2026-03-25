@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:tronskins_app/api/steam.dart';
 import 'package:tronskins_app/common/http/model/base_response.dart';
+import 'package:tronskins_app/common/utils/app_snackbar.dart';
 import 'package:tronskins_app/controllers/auth/steam_controller.dart';
 import 'package:tronskins_app/controllers/user/user_controller.dart';
 import 'package:tronskins_app/pages/steam/steam_session_injection.dart';
@@ -463,13 +464,7 @@ class _SteamSessionPageState extends State<SteamSessionPage> {
           'serverData': result.datas,
         },
       );
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.steam.message.verify_success'.tr,
-        backgroundColor: Colors.green,
-        colorText: Colors.white,
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.success('app.steam.message.verify_success'.tr);
     } catch (_) {
       _hasHandledToken = false;
       _hasPendingTokenPayload = false;
@@ -515,13 +510,7 @@ class _SteamSessionPageState extends State<SteamSessionPage> {
   }
 
   void _showError(String message) {
-    Get.snackbar(
-      'app.system.tips.title'.tr,
-      message,
-      backgroundColor: Colors.red,
-      colorText: Colors.white,
-      titleText: const SizedBox.shrink(),
-    );
+    AppSnackbar.error(message);
   }
 
   Future<void> _reload() async {

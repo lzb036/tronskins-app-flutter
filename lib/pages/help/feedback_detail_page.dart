@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:tronskins_app/common/utils/app_snackbar.dart';
 import 'package:intl/intl.dart';
 import 'package:tronskins_app/api/model/feedback/feedback_models.dart';
 import 'package:tronskins_app/components/layout/list_end_tip.dart';
@@ -87,12 +88,7 @@ class _FeedbackDetailPageState extends State<FeedbackDetailPage> {
     try {
       final res = await controller.solveFeedback(_ticketId);
       if (res.success) {
-        Get.snackbar(
-          'app.system.tips.title'.tr,
-          'app.user.feedback.message.solve_success'.tr,
-
-          titleText: const SizedBox.shrink(),
-        );
+        AppSnackbar.success('app.user.feedback.message.solve_success'.tr);
         controller.loadTickets(refresh: true);
         _backToList();
         return;
@@ -100,18 +96,9 @@ class _FeedbackDetailPageState extends State<FeedbackDetailPage> {
       final message = res.message.isNotEmpty
           ? res.message
           : 'app.system.message.not_open'.tr;
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        message,
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.info(message);
     } catch (_) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.user.login.message.error'.tr,
-
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.error('app.user.login.message.error'.tr);
     }
   }
 

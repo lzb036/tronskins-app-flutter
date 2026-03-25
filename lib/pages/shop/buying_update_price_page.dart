@@ -238,22 +238,12 @@ class _BuyingUpdatePricePageState extends State<BuyingUpdatePricePage> {
     final price = double.tryParse(_priceController.text) ?? 0;
     final nums = int.tryParse(_numController.text) ?? 0;
     if (price <= 0 || nums <= 0) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.market.filter.message.price_error'.tr,
-
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.error('app.market.filter.message.price_error'.tr);
       return;
     }
     final effectiveMinPrice = _minPrice > 0 ? _minPrice : _minTradePrice;
     if (price < effectiveMinPrice) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.trade.purchase.message.min_price_error'.tr,
-
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.error('app.trade.purchase.message.min_price_error'.tr);
       return;
     }
     final sellMin = _sellMin();
@@ -300,12 +290,7 @@ class _BuyingUpdatePricePageState extends State<BuyingUpdatePricePage> {
       FocusManager.instance.primaryFocus?.unfocus();
       Get.back(result: true);
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        Get.snackbar(
-          'app.system.tips.title'.tr,
-          'app.inventory.message.price_change_success'.tr,
-
-          titleText: const SizedBox.shrink(),
-        );
+        AppSnackbar.success('app.inventory.message.price_change_success'.tr);
       });
       return;
     } finally {

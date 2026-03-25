@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:tronskins_app/common/utils/app_snackbar.dart';
 import 'package:intl/intl.dart';
 import 'package:tronskins_app/common/widgets/login_required_prompt.dart';
 import 'package:tronskins_app/components/layout/list_end_tip.dart';
@@ -68,12 +69,7 @@ class _FeedbackListPageState extends State<FeedbackListPage> {
       return;
     }
     if (controller.hasUnfinishedFeedback) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.user.feedback.have_unfinished_feedback'.tr,
-
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.info('app.user.feedback.have_unfinished_feedback'.tr);
       return;
     }
     Get.toNamed(Routers.FEEDBACK_CREATE);

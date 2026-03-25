@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:tronskins_app/common/utils/app_snackbar.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:tronskins_app/common/storage/user_storage.dart';
 import 'package:tronskins_app/controllers/help/feedback_controller.dart';
@@ -67,19 +68,11 @@ class _FeedbackCreatePageState extends State<FeedbackCreatePage> {
           _imagePaths.add(file.path);
           _imageIds.add(id);
         });
-        Get.snackbar(
-          'app.system.tips.title'.tr,
+        AppSnackbar.success(
           'app.user.feedback.message.image_upload_success'.tr,
-
-          titleText: const SizedBox.shrink(),
         );
       } else {
-        Get.snackbar(
-          'app.system.tips.title'.tr,
-          'app.user.feedback.message.image_upload_failed'.tr,
-
-          titleText: const SizedBox.shrink(),
-        );
+        AppSnackbar.error('app.user.feedback.message.image_upload_failed'.tr);
       }
     } finally {
       if (mounted) {
@@ -101,21 +94,11 @@ class _FeedbackCreatePageState extends State<FeedbackCreatePage> {
   Future<void> _submit() async {
     final context = _contextController.text.trim();
     if (context.isEmpty) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.user.feedback.message.fill_feedback'.tr,
-
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.error('app.user.feedback.message.fill_feedback'.tr);
       return;
     }
     if (!_isAddFeedback && _titleController.text.trim().isEmpty) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.user.feedback.message.fill_feedback'.tr,
-
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.error('app.user.feedback.message.fill_feedback'.tr);
       return;
     }
     if (_submitting) return;
@@ -136,23 +119,15 @@ class _FeedbackCreatePageState extends State<FeedbackCreatePage> {
               ids: _imageIds,
             );
       if (ok) {
-        Get.snackbar(
-          'app.system.tips.title'.tr,
+        AppSnackbar.success(
           _isAddFeedback
               ? 'app.user.feedback.message.reply_success'.tr
               : 'app.user.feedback.message.submit_success'.tr,
-
-          titleText: const SizedBox.shrink(),
         );
         controller.loadTickets(refresh: true);
         _backToList();
       } else {
-        Get.snackbar(
-          'app.system.tips.title'.tr,
-          'app.system.message.not_open'.tr,
-
-          titleText: const SizedBox.shrink(),
-        );
+        AppSnackbar.info('app.system.message.not_open'.tr);
       }
     } finally {
       if (mounted) {

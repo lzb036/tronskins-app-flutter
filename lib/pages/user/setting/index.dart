@@ -1,6 +1,7 @@
 // lib/pages/user/setting/user_setting.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:tronskins_app/common/utils/app_snackbar.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
 import 'package:tronskins_app/common/hooks/locale/use_locale.dart';
 import 'package:tronskins_app/common/hooks/theme/use_theme.dart';
@@ -333,14 +334,7 @@ class UserSetting extends StatelessWidget {
     return ListTile(
       title: Text(title),
       trailing: trailing ?? const Icon(Icons.chevron_right),
-      onTap:
-          onTap ??
-          () => Get.snackbar(
-            'app.system.tips.title'.tr,
-            'app.system.message.not_open'.tr,
-
-            titleText: const SizedBox.shrink(),
-          ),
+      onTap: onTap ?? () => AppSnackbar.info('app.system.message.not_open'.tr),
     );
   }
 

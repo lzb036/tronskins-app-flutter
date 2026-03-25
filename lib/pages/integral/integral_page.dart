@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:tronskins_app/common/utils/app_snackbar.dart';
 import 'package:tronskins_app/api/model/wallet/wallet_models.dart';
 import 'package:tronskins_app/common/widgets/back_to_top_overlay.dart';
 import 'package:tronskins_app/common/widgets/login_required_prompt.dart';
@@ -56,11 +57,7 @@ class _IntegralPageState extends State<IntegralPage> {
   Future<void> _exchange(int type) async {
     final ok = await controller.exchangeCoupon(type);
     if (ok) {
-      Get.snackbar(
-        'app.system.tips.title'.tr,
-        'app.system.message.success'.tr,
-        titleText: const SizedBox.shrink(),
-      );
+      AppSnackbar.success('app.system.message.success'.tr);
     }
   }
 

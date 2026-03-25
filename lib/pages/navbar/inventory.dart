@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:tronskins_app/common/utils/app_snackbar.dart';
 import 'package:tronskins_app/api/model/shop/shop_models.dart';
 import 'package:tronskins_app/api/steam.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
@@ -590,8 +591,7 @@ class _InventoryPageState extends State<InventoryPage> {
                               return;
                             }
                             if (disabled) {
-                              Get.snackbar(
-                                'app.system.tips.title'.tr,
+                              AppSnackbar.info(
                                 !isTradable
                                     ? 'app.inventory.message.non_tradable'.tr
                                     : isCooling
@@ -599,8 +599,6 @@ class _InventoryPageState extends State<InventoryPage> {
                                     : isOnSale
                                     ? 'app.inventory.on_sale'.tr
                                     : 'app.inventory.in_supply'.tr,
-
-                                titleText: const SizedBox.shrink(),
                               );
                               return;
                             }
