@@ -5,6 +5,7 @@ import 'package:tronskins_app/common/device/device_id_helper.dart';
 import 'package:tronskins_app/common/http/http_helper.dart';
 import 'package:tronskins_app/common/http/interceptors/auth_interceptor.dart';
 import 'package:tronskins_app/common/utils/app_snackbar.dart';
+import 'package:tronskins_app/common/utils/steam_webview_english.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
@@ -16,6 +17,7 @@ class SteamLoginPage extends StatefulWidget {
 }
 
 class _SteamLoginPageState extends State<SteamLoginPage> {
+  final WebViewCookieManager _cookieManager = WebViewCookieManager();
   late final WebViewController _controller;
   bool _isPageLoading = true;
   bool _isSubmitting = false;
@@ -49,8 +51,12 @@ class _SteamLoginPageState extends State<SteamLoginPage> {
             return NavigationDecision.navigate;
           },
         ),
-      )
-      ..loadRequest(Uri.parse(_loginUrl));
+      );
+    Future.microtask(_loadLoginPage);
+  }
+
+  Future<void> _loadLoginPage() async {
+    await SteamWebViewEnglish.load(_controller, _cookieManager, _loginUrl);
   }
 
   void _handleCallback(String url) {

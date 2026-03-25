@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:tronskins_app/common/http/http_helper.dart';
+import 'package:tronskins_app/common/utils/steam_webview_english.dart';
 import 'package:tronskins_app/controllers/auth/steam_controller.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -13,6 +14,7 @@ class BindSteamPage extends StatefulWidget {
 }
 
 class _BindSteamPageState extends State<BindSteamPage> {
+  final WebViewCookieManager _cookieManager = WebViewCookieManager();
   late final WebViewController _controller;
   bool _isPageLoading = true;
   String? _token;
@@ -47,8 +49,12 @@ class _BindSteamPageState extends State<BindSteamPage> {
       );
 
     if (_token != null && _token!.isNotEmpty) {
-      _controller.loadRequest(Uri.parse(_bindUrl));
+      Future.microtask(_loadBindPage);
     }
+  }
+
+  Future<void> _loadBindPage() async {
+    await SteamWebViewEnglish.load(_controller, _cookieManager, _bindUrl);
   }
 
   Future<void> _reload() async {
@@ -56,7 +62,7 @@ class _BindSteamPageState extends State<BindSteamPage> {
       return;
     }
     setState(() => _isPageLoading = true);
-    await _controller.loadRequest(Uri.parse(_bindUrl));
+    await _loadBindPage();
   }
 
   @override

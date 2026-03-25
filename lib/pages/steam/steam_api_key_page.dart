@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:tronskins_app/common/utils/steam_webview_english.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 class SteamApiKeyPage extends StatefulWidget {
@@ -10,6 +11,7 @@ class SteamApiKeyPage extends StatefulWidget {
 }
 
 class _SteamApiKeyPageState extends State<SteamApiKeyPage> {
+  final WebViewCookieManager _cookieManager = WebViewCookieManager();
   late final WebViewController _controller;
   bool _isPageLoading = true;
 
@@ -31,8 +33,16 @@ class _SteamApiKeyPageState extends State<SteamApiKeyPage> {
             }
           },
         ),
-      )
-      ..loadRequest(Uri.parse('https://steamcommunity.com/dev/apikey'));
+      );
+    Future.microtask(_loadApiKeyPage);
+  }
+
+  Future<void> _loadApiKeyPage() async {
+    await SteamWebViewEnglish.load(
+      _controller,
+      _cookieManager,
+      'https://steamcommunity.com/dev/apikey',
+    );
   }
 
   @override

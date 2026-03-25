@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:tronskins_app/api/steam.dart';
 import 'package:tronskins_app/common/http/http_helper.dart';
+import 'package:tronskins_app/common/utils/steam_webview_english.dart';
 import 'package:tronskins_app/controllers/navbar/nav_controller.dart';
 import 'package:tronskins_app/controllers/auth/steam_controller.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
@@ -16,6 +17,7 @@ class UnbindSteamPage extends StatefulWidget {
 
 class _UnbindSteamPageState extends State<UnbindSteamPage> {
   final ApiSteamServer _steamApi = ApiSteamServer();
+  final WebViewCookieManager _cookieManager = WebViewCookieManager();
   late final WebViewController _controller;
   bool _isPageLoading = true;
   bool _tokenLoadFailed = false;
@@ -128,7 +130,7 @@ class _UnbindSteamPageState extends State<UnbindSteamPage> {
       } else {
         _token = res.datas;
       }
-      await _controller.loadRequest(Uri.parse(_unbindUrl));
+      await SteamWebViewEnglish.load(_controller, _cookieManager, _unbindUrl);
       return;
     }
     if (mounted) {
@@ -145,7 +147,7 @@ class _UnbindSteamPageState extends State<UnbindSteamPage> {
       return;
     }
     setState(() => _isPageLoading = true);
-    await _controller.loadRequest(Uri.parse(_unbindUrl));
+    await SteamWebViewEnglish.load(_controller, _cookieManager, _unbindUrl);
   }
 
   @override

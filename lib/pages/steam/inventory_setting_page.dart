@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:tronskins_app/common/utils/steam_webview_english.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 class InventorySettingPage extends StatefulWidget {
@@ -10,6 +11,7 @@ class InventorySettingPage extends StatefulWidget {
 }
 
 class _InventorySettingPageState extends State<InventorySettingPage> {
+  final WebViewCookieManager _cookieManager = WebViewCookieManager();
   late final WebViewController _controller;
   bool _isPageLoading = true;
   String? _steamId;
@@ -38,8 +40,12 @@ class _InventorySettingPageState extends State<InventorySettingPage> {
         ),
       );
     if (_steamId != null && _steamId!.isNotEmpty) {
-      _controller.loadRequest(Uri.parse(_inventoryUrl));
+      Future.microtask(_loadInventoryPage);
     }
+  }
+
+  Future<void> _loadInventoryPage() async {
+    await SteamWebViewEnglish.load(_controller, _cookieManager, _inventoryUrl);
   }
 
   Future<void> _reload() async {
@@ -47,7 +53,7 @@ class _InventorySettingPageState extends State<InventorySettingPage> {
       return;
     }
     setState(() => _isPageLoading = true);
-    await _controller.loadRequest(Uri.parse(_inventoryUrl));
+    await _loadInventoryPage();
   }
 
   @override

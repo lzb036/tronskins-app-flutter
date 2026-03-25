@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:tronskins_app/common/utils/steam_webview_english.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
 class SteamTradeUrlPage extends StatefulWidget {
@@ -10,6 +11,7 @@ class SteamTradeUrlPage extends StatefulWidget {
 }
 
 class _SteamTradeUrlPageState extends State<SteamTradeUrlPage> {
+  final WebViewCookieManager _cookieManager = WebViewCookieManager();
   late final WebViewController _controller;
   bool _isPageLoading = true;
   String? _steamId;
@@ -38,8 +40,12 @@ class _SteamTradeUrlPageState extends State<SteamTradeUrlPage> {
         ),
       );
     if (_steamId != null && _steamId!.isNotEmpty) {
-      _controller.loadRequest(Uri.parse(_tradeUrl));
+      Future.microtask(_loadTradeUrlPage);
     }
+  }
+
+  Future<void> _loadTradeUrlPage() async {
+    await SteamWebViewEnglish.load(_controller, _cookieManager, _tradeUrl);
   }
 
   @override

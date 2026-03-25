@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'package:tronskins_app/api/steam.dart';
 import 'package:tronskins_app/common/http/model/base_response.dart';
 import 'package:tronskins_app/common/utils/app_snackbar.dart';
+import 'package:tronskins_app/common/utils/steam_webview_english.dart';
 import 'package:tronskins_app/controllers/auth/steam_controller.dart';
 import 'package:tronskins_app/controllers/user/user_controller.dart';
 import 'package:tronskins_app/pages/steam/steam_session_injection.dart';
@@ -38,8 +39,7 @@ class _SteamSessionPageState extends State<SteamSessionPage> {
 
   late final String _boundSteamId;
 
-  String get _sessionUrl =>
-      'https://steamcommunity.com/login/home/?l=${_steamLanguageCode()}';
+  String get _sessionUrl => 'https://steamcommunity.com/login/home/?l=english';
 
   bool get _isChinese =>
       (Get.locale?.languageCode ?? '').toLowerCase().startsWith('zh');
@@ -125,49 +125,6 @@ class _SteamSessionPageState extends State<SteamSessionPage> {
       return (steamId ?? '').trim();
     }
     return '';
-  }
-
-  String _steamLanguageCode() {
-    final locale = Get.locale;
-    final language = (locale?.languageCode ?? '').toLowerCase();
-    final country = (locale?.countryCode ?? '').toUpperCase();
-
-    if (language == 'zh' && country == 'TW') {
-      return 'tchinese';
-    }
-
-    switch (language) {
-      case 'zh':
-        return 'schinese';
-      case 'ja':
-        return 'japanese';
-      case 'ko':
-        return 'koreana';
-      case 'fr':
-        return 'french';
-      case 'de':
-        return 'german';
-      case 'id':
-        return 'indonesian';
-      case 'it':
-        return 'italian';
-      case 'pl':
-        return 'polish';
-      case 'pt':
-        return 'portuguese';
-      case 'ru':
-        return 'russian';
-      case 'es':
-        return 'spanish';
-      case 'th':
-        return 'thai';
-      case 'tr':
-        return 'turkish';
-      case 'vi':
-        return 'vietnamese';
-      default:
-        return 'english';
-    }
   }
 
   void _startTitlePolling() {
@@ -283,7 +240,7 @@ class _SteamSessionPageState extends State<SteamSessionPage> {
     } catch (_) {}
 
     try {
-      await _controller.loadRequest(Uri.parse(_sessionUrl));
+      await SteamWebViewEnglish.load(_controller, _cookieManager, _sessionUrl);
     } catch (_) {
       if (mounted) {
         setState(() => _isPageLoading = false);
