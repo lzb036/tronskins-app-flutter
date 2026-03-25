@@ -63,8 +63,8 @@ class UserPage extends StatelessWidget {
                       ),
                     ),
                     Positioned(
-                      left: 6,
-                      right: 6,
+                      left: 0,
+                      right: 0,
                       bottom: -44,
                       child: Obx(
                         () => _BalanceSection(
@@ -372,6 +372,10 @@ class _TopRightButtons extends StatelessWidget {
 
 // ==================== 余额区 ====================
 class _BalanceSection extends StatelessWidget {
+  static const List<int> _metricFlexes = <int>[6, 4, 4, 6];
+  static const double _dividerSpacing = 3;
+  static const double _dividerWidth = 1;
+
   final String balance, gift, locked, unsettled;
   const _BalanceSection({
     required this.balance,
@@ -393,34 +397,20 @@ class _BalanceSection extends StatelessWidget {
           )
         : Colors.white.withValues(alpha: 0.97);
     final endColor = isDark ? const Color(0xFF111716) : const Color(0xFFFFFAF2);
-    final outlineColor = isDark
-        ? Colors.white.withValues(alpha: 0.08)
-        : colors.primary.withValues(alpha: 0.10);
-
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.zero,
         onTap: () => Get.toNamed(Routers.WALLET),
         child: Ink(
-          padding: const EdgeInsets.fromLTRB(12, 14, 12, 16),
+          padding: const EdgeInsets.fromLTRB(8, 14, 8, 16),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [startColor, endColor],
             ),
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: outlineColor),
-            boxShadow: [
-              BoxShadow(
-                color: isDark
-                    ? colors.primary.withValues(alpha: 0.10)
-                    : Colors.black.withValues(alpha: 0.08),
-                blurRadius: 24,
-                offset: const Offset(0, 12),
-              ),
-            ],
+            borderRadius: BorderRadius.zero,
           ),
           child: Column(
             children: [
@@ -467,45 +457,79 @@ class _BalanceSection extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    flex: 15,
-                    child: _buildBalanceItem(
-                      context,
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final itemWidths = _resolveMetricWidths(constraints.maxWidth);
+                  final valueFontSize = _resolveSharedFontSize(
+                    context,
+                    texts: <String>[balance, locked, gift, unsettled],
+                    widths: itemWidths,
+                    maxFontSize: 16,
+                    minFontSize: 10,
+                    fontWeight: FontWeight.w700,
+                  );
+                  final labelFontSize = _resolveSharedFontSize(
+                    context,
+                    texts: <String>[
                       'app.user.wallet.assets_total'.tr,
-                      balance,
-                      emphasize: true,
-                    ),
-                  ),
-                  _buildVerticalDivider(context),
-                  Expanded(
-                    flex: 10,
-                    child: _buildBalanceItem(
-                      context,
                       'app.user.wallet.lock_amount'.tr,
-                      locked,
-                    ),
-                  ),
-                  _buildVerticalDivider(context),
-                  Expanded(
-                    flex: 10,
-                    child: _buildBalanceItem(
-                      context,
                       'app.user.wallet.gift'.tr,
-                      gift,
-                    ),
-                  ),
-                  _buildVerticalDivider(context),
-                  Expanded(
-                    flex: 10,
-                    child: _buildBalanceItem(
-                      context,
                       'app.user.wallet.unsettled'.tr,
-                      unsettled,
-                    ),
-                  ),
-                ],
+                    ],
+                    widths: itemWidths,
+                    maxFontSize: 11,
+                    minFontSize: 9,
+                    fontWeight: FontWeight.w500,
+                  );
+                  return Row(
+                    children: [
+                      Expanded(
+                        flex: _metricFlexes[0],
+                        child: _buildBalanceItem(
+                          context,
+                          'app.user.wallet.assets_total'.tr,
+                          balance,
+                          valueFontSize: valueFontSize,
+                          labelFontSize: labelFontSize,
+                          emphasize: true,
+                        ),
+                      ),
+                      _buildVerticalDivider(context),
+                      Expanded(
+                        flex: _metricFlexes[1],
+                        child: _buildBalanceItem(
+                          context,
+                          'app.user.wallet.lock_amount'.tr,
+                          locked,
+                          valueFontSize: valueFontSize,
+                          labelFontSize: labelFontSize,
+                        ),
+                      ),
+                      _buildVerticalDivider(context),
+                      Expanded(
+                        flex: _metricFlexes[2],
+                        child: _buildBalanceItem(
+                          context,
+                          'app.user.wallet.gift'.tr,
+                          gift,
+                          valueFontSize: valueFontSize,
+                          labelFontSize: labelFontSize,
+                        ),
+                      ),
+                      _buildVerticalDivider(context),
+                      Expanded(
+                        flex: _metricFlexes[3],
+                        child: _buildBalanceItem(
+                          context,
+                          'app.user.wallet.unsettled'.tr,
+                          unsettled,
+                          valueFontSize: valueFontSize,
+                          labelFontSize: labelFontSize,
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ],
           ),
@@ -518,18 +542,76 @@ class _BalanceSection extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       height: 34,
-      width: 1,
-      margin: const EdgeInsets.symmetric(horizontal: 4),
+      width: _dividerWidth,
+      margin: const EdgeInsets.symmetric(horizontal: _dividerSpacing),
       color: Theme.of(
         context,
       ).dividerColor.withValues(alpha: isDark ? 0.22 : 0.55),
     );
   }
 
+  List<double> _resolveMetricWidths(double totalWidth) {
+    final totalFlex = _metricFlexes.reduce((sum, item) => sum + item);
+    final dividerFootprint = _metricFlexes.length > 1
+        ? (_metricFlexes.length - 1) * (_dividerWidth + (_dividerSpacing * 2))
+        : 0;
+    final usableWidth = (totalWidth - dividerFootprint).clamp(0.0, totalWidth);
+    return _metricFlexes
+        .map((flex) => usableWidth * flex / totalFlex)
+        .toList(growable: false);
+  }
+
+  double _resolveSharedFontSize(
+    BuildContext context, {
+    required List<String> texts,
+    required List<double> widths,
+    required double maxFontSize,
+    required double minFontSize,
+    required FontWeight fontWeight,
+  }) {
+    final direction = Directionality.of(context);
+    final textScaler = MediaQuery.textScalerOf(context);
+    final baseStyle =
+        Theme.of(context).textTheme.titleMedium?.copyWith(
+          fontWeight: fontWeight,
+          height: 1.0,
+        ) ??
+        TextStyle(fontWeight: fontWeight, height: 1.0);
+
+    for (
+      double fontSize = maxFontSize;
+      fontSize >= minFontSize;
+      fontSize -= 0.25
+    ) {
+      var fitsAll = true;
+      for (var index = 0; index < texts.length; index++) {
+        final painter = TextPainter(
+          text: TextSpan(
+            text: texts[index],
+            style: baseStyle.copyWith(fontSize: fontSize),
+          ),
+          textDirection: direction,
+          textScaler: textScaler,
+          maxLines: 1,
+        )..layout();
+        if (painter.width > widths[index]) {
+          fitsAll = false;
+          break;
+        }
+      }
+      if (fitsAll) {
+        return fontSize;
+      }
+    }
+    return minFontSize;
+  }
+
   Widget _buildBalanceItem(
     BuildContext context,
     String label,
     String value, {
+    required double valueFontSize,
+    required double labelFontSize,
     bool emphasize = false,
   }) {
     final colors = Theme.of(context).extension<AppColors>()!;
@@ -540,40 +622,29 @@ class _BalanceSection extends StatelessWidget {
 
     return Column(
       children: [
-        SizedBox(
-          width: double.infinity,
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.center,
-            child: Text(
-              value,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                color: valueColor,
-                fontWeight: emphasize ? FontWeight.w800 : FontWeight.w700,
-                fontSize: 16,
-                height: 1.1,
-              ),
-            ),
+        Text(
+          value,
+          maxLines: 1,
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            color: valueColor,
+            fontWeight: FontWeight.w700,
+            fontSize: valueFontSize,
+            height: 1.0,
           ),
         ),
         const SizedBox(height: 6),
-        SizedBox(
-          width: double.infinity,
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            alignment: Alignment.center,
-            child: Text(
-              label,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                fontSize: 11,
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.60)
-                    : colors.textSecondary.withValues(alpha: 0.88),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+        Text(
+          label,
+          maxLines: 1,
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            fontSize: labelFontSize,
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.60)
+                : colors.textSecondary.withValues(alpha: 0.88),
+            fontWeight: FontWeight.w500,
+            height: 1.0,
           ),
         ),
       ],

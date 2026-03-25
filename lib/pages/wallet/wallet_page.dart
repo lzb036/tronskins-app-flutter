@@ -152,12 +152,11 @@ class _WalletPageState extends State<WalletPage> {
     final gift = fund?.gift ?? 0;
     final settlement = fund?.settlement ?? 0;
     return Container(
-      margin: const EdgeInsets.fromLTRB(6, 16, 6, 0),
-      padding: const EdgeInsets.fromLTRB(10, 18, 10, 16),
+      margin: const EdgeInsets.fromLTRB(0, 16, 0, 0),
+      padding: const EdgeInsets.fromLTRB(6, 18, 6, 16),
       decoration: BoxDecoration(
         gradient: WalletUi.primaryGradient(context),
-        borderRadius: WalletUi.cardRadius,
-        boxShadow: WalletUi.gradientShadow(context),
+        borderRadius: BorderRadius.zero,
       ),
       child: Column(
         children: [
@@ -172,6 +171,7 @@ class _WalletPageState extends State<WalletPage> {
           Row(
             children: [
               Expanded(
+                flex: 6,
                 child: _buildSummaryItem(
                   context,
                   label: 'app.user.wallet.available'.tr,
@@ -180,6 +180,7 @@ class _WalletPageState extends State<WalletPage> {
                 ),
               ),
               Expanded(
+                flex: 4,
                 child: _buildSummaryItem(
                   context,
                   label: 'app.user.wallet.gift'.tr,
@@ -187,6 +188,7 @@ class _WalletPageState extends State<WalletPage> {
                 ),
               ),
               Expanded(
+                flex: 4,
                 child: _buildSummaryItem(
                   context,
                   label: 'app.user.wallet.lock_amount'.tr,
@@ -195,6 +197,7 @@ class _WalletPageState extends State<WalletPage> {
                 ),
               ),
               Expanded(
+                flex: 6,
                 child: _buildSummaryItem(
                   context,
                   label: 'app.user.wallet.unsettled'.tr,
@@ -227,7 +230,7 @@ class _WalletPageState extends State<WalletPage> {
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 color: Colors.white,
                 fontWeight: FontWeight.w700,
-                fontSize: 15,
+                fontSize: 14,
                 height: 1.0,
               ),
             ),
@@ -252,7 +255,7 @@ class _WalletPageState extends State<WalletPage> {
     );
     if (onTap == null) {
       return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 1),
         child: child,
       );
     }
@@ -260,7 +263,7 @@ class _WalletPageState extends State<WalletPage> {
       borderRadius: BorderRadius.circular(12),
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 1),
         child: child,
       ),
     );
