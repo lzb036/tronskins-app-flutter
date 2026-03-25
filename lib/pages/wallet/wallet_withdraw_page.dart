@@ -251,18 +251,9 @@ class _WalletWithdrawPageState extends State<WalletWithdrawPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Row(
-                  children: [
-                    Text(
-                      'app.user.withdraw.select_address'.tr,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close),
-                    ),
-                  ],
+                _buildSheetHeader(
+                  context,
+                  title: 'app.user.withdraw.select_address'.tr,
                 ),
                 const SizedBox(height: 12),
                 Obx(() {
@@ -363,18 +354,9 @@ class _WalletWithdrawPageState extends State<WalletWithdrawPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Row(
-                  children: [
-                    Text(
-                      'app.user.withdraw.add_address'.tr,
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.close),
-                    ),
-                  ],
+                _buildSheetHeader(
+                  context,
+                  title: 'app.user.withdraw.add_address'.tr,
                 ),
                 const SizedBox(height: 12),
                 TextField(
@@ -421,6 +403,32 @@ class _WalletWithdrawPageState extends State<WalletWithdrawPage> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildSheetHeader(BuildContext context, {required String title}) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text(
+              title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        IconButton(
+          onPressed: () => Navigator.pop(context),
+          icon: const Icon(Icons.close),
+          visualDensity: VisualDensity.compact,
+          tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+        ),
+      ],
     );
   }
 
@@ -481,15 +489,55 @@ class _WalletWithdrawPageState extends State<WalletWithdrawPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: Text('app.user.wallet.address'.tr),
-                      subtitle: Text(
-                        controller.selectedWithdrawAddress.value?.name ??
-                            'app.user.withdraw.select_address'.tr,
-                      ),
-                      trailing: const Icon(Icons.expand_more),
+                    InkWell(
                       onTap: _showAddressSheet,
+                      borderRadius: BorderRadius.circular(12),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('app.user.wallet.address'.tr),
+                                  const SizedBox(height: 4),
+                                  LayoutBuilder(
+                                    builder: (context, constraints) {
+                                      final addressText =
+                                          controller
+                                              .selectedWithdrawAddress
+                                              .value
+                                              ?.name ??
+                                          'app.user.withdraw.select_address'.tr;
+                                      return SizedBox(
+                                        width: constraints.maxWidth,
+                                        child: FittedBox(
+                                          alignment: Alignment.centerLeft,
+                                          fit: BoxFit.scaleDown,
+                                          child: Text(
+                                            addressText,
+                                            softWrap: false,
+                                            style: Theme.of(
+                                              context,
+                                            ).textTheme.bodyMedium,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            const Padding(
+                              padding: EdgeInsets.only(top: 10),
+                              child: Icon(Icons.expand_more),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Text('app.user.withdraw.amount'.tr),
