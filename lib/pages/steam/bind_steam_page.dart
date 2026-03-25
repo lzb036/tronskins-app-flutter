@@ -57,14 +57,6 @@ class _BindSteamPageState extends State<BindSteamPage> {
     await SteamWebViewEnglish.load(_controller, _cookieManager, _bindUrl);
   }
 
-  Future<void> _reload() async {
-    if (_token == null || _token!.isEmpty) {
-      return;
-    }
-    setState(() => _isPageLoading = true);
-    await _loadBindPage();
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -73,49 +65,13 @@ class _BindSteamPageState extends State<BindSteamPage> {
         backgroundColor: const Color(0xFF171A21),
         foregroundColor: Colors.white,
       ),
-      body: Column(
+      body: Stack(
         children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-            color: Colors.white,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '1.${'app.steam.message.load_error'.tr}',
-                  style: const TextStyle(fontSize: 14),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        '2.${'app.steam.message.load_error_2'.tr}',
-                        style: const TextStyle(fontSize: 14),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    TextButton(
-                      onPressed: _reload,
-                      child: Text('app.common.refresh'.tr),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: Stack(
-              children: [
-                if (_token != null && _token!.isNotEmpty)
-                  WebViewWidget(controller: _controller)
-                else
-                  Center(child: Text('app.user.login.message.error'.tr)),
-                if (_isPageLoading) const LinearProgressIndicator(minHeight: 2),
-              ],
-            ),
-          ),
+          if (_token != null && _token!.isNotEmpty)
+            WebViewWidget(controller: _controller)
+          else
+            Center(child: Text('app.user.login.message.error'.tr)),
+          if (_isPageLoading) const LinearProgressIndicator(minHeight: 2),
         ],
       ),
     );
