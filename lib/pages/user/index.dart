@@ -63,8 +63,8 @@ class UserPage extends StatelessWidget {
                       ),
                     ),
                     Positioned(
-                      left: 16,
-                      right: 16,
+                      left: 6,
+                      right: 6,
                       bottom: -44,
                       child: Obx(
                         () => _BalanceSection(
@@ -403,7 +403,7 @@ class _BalanceSection extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         onTap: () => Get.toNamed(Routers.WALLET),
         child: Ink(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+          padding: const EdgeInsets.fromLTRB(12, 14, 12, 16),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topLeft,
@@ -519,7 +519,7 @@ class _BalanceSection extends StatelessWidget {
     return Container(
       height: 34,
       width: 1,
-      margin: const EdgeInsets.symmetric(horizontal: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 4),
       color: Theme.of(
         context,
       ).dividerColor.withValues(alpha: isDark ? 0.22 : 0.55),
@@ -551,7 +551,7 @@ class _BalanceSection extends StatelessWidget {
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 color: valueColor,
                 fontWeight: emphasize ? FontWeight.w800 : FontWeight.w700,
-                fontSize: emphasize ? 17 : 15,
+                fontSize: 16,
                 height: 1.1,
               ),
             ),

@@ -152,8 +152,8 @@ class _WalletPageState extends State<WalletPage> {
     final gift = fund?.gift ?? 0;
     final settlement = fund?.settlement ?? 0;
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 18),
+      margin: const EdgeInsets.fromLTRB(6, 16, 6, 0),
+      padding: const EdgeInsets.fromLTRB(10, 18, 10, 16),
       decoration: BoxDecoration(
         gradient: WalletUi.primaryGradient(context),
         borderRadius: WalletUi.cardRadius,
@@ -168,32 +168,39 @@ class _WalletPageState extends State<WalletPage> {
               context,
             ).textTheme.titleMedium?.copyWith(color: Colors.white),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildSummaryItem(
-                context,
-                label: 'app.user.wallet.available'.tr,
-                value: currency.formatUsd(available),
-                onTap: () => Get.toNamed(Routers.WALLET_FLOW),
+              Expanded(
+                child: _buildSummaryItem(
+                  context,
+                  label: 'app.user.wallet.available'.tr,
+                  value: currency.formatUsd(available),
+                  onTap: () => Get.toNamed(Routers.WALLET_FLOW),
+                ),
               ),
-              _buildSummaryItem(
-                context,
-                label: 'app.user.wallet.gift'.tr,
-                value: currency.formatUsd(gift),
+              Expanded(
+                child: _buildSummaryItem(
+                  context,
+                  label: 'app.user.wallet.gift'.tr,
+                  value: currency.formatUsd(gift),
+                ),
               ),
-              _buildSummaryItem(
-                context,
-                label: 'app.user.wallet.lock_amount'.tr,
-                value: currency.formatUsd(locked),
-                onTap: () => Get.toNamed(Routers.WALLET_LOCKED),
+              Expanded(
+                child: _buildSummaryItem(
+                  context,
+                  label: 'app.user.wallet.lock_amount'.tr,
+                  value: currency.formatUsd(locked),
+                  onTap: () => Get.toNamed(Routers.WALLET_LOCKED),
+                ),
               ),
-              _buildSummaryItem(
-                context,
-                label: 'app.user.wallet.unsettled'.tr,
-                value: currency.formatUsd(settlement),
-                onTap: () => Get.toNamed(Routers.WALLET_SETTLEMENT),
+              Expanded(
+                child: _buildSummaryItem(
+                  context,
+                  label: 'app.user.wallet.unsettled'.tr,
+                  value: currency.formatUsd(settlement),
+                  onTap: () => Get.toNamed(Routers.WALLET_SETTLEMENT),
+                ),
               ),
             ],
           ),
@@ -210,26 +217,53 @@ class _WalletPageState extends State<WalletPage> {
   }) {
     final child = Column(
       children: [
-        Text(
-          value,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
+        SizedBox(
+          width: double.infinity,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              value,
+              maxLines: 1,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                fontSize: 15,
+                height: 1.0,
+              ),
+            ),
           ),
         ),
         const SizedBox(height: 4),
-        Text(
-          label,
-          style: Theme.of(
-            context,
-          ).textTheme.bodySmall?.copyWith(color: Colors.white70),
+        SizedBox(
+          width: double.infinity,
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              label,
+              maxLines: 1,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Colors.white70,
+                fontSize: 10,
+              ),
+            ),
+          ),
         ),
       ],
     );
     if (onTap == null) {
-      return child;
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 2),
+        child: child,
+      );
     }
-    return InkWell(onTap: onTap, child: child);
+    return InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 2),
+        child: child,
+      ),
+    );
   }
 
   Widget _buildActionTile({
