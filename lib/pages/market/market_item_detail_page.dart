@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -9,6 +11,7 @@ import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
 import 'package:tronskins_app/common/storage/user_storage.dart';
 import 'package:tronskins_app/common/utils/app_snackbar.dart';
 import 'package:tronskins_app/common/widgets/back_to_top_overlay.dart';
+import 'package:tronskins_app/common/widgets/glass_notice_dialog.dart';
 import 'package:tronskins_app/common/widgets/steam_style_confirm_dialog.dart';
 import 'package:tronskins_app/components/game_item/game_item_models.dart';
 import 'package:tronskins_app/components/game_item/game_item_utils.dart';
@@ -31,7 +34,7 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
   final ApiShopServer _shopServer = ApiShopServer();
   final ApiShopProductServer _shopApi = ApiShopProductServer();
 
-  late final MarketListItem _item;
+  late MarketListItem _item;
   MarketSchemaInfo? _schema;
   MarketUserInfo? _user;
   Map<String, MarketSchemaInfo> _schemas = {};
@@ -42,6 +45,7 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
   bool _isPurchasing = false;
   bool _favorited = false;
   bool _favoriteSubmitting = false;
+  bool _refreshingStickers = false;
 
   @override
   void initState() {
@@ -228,6 +232,244 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
     return list;
   }
 
+  List<GameItemSticker> _parseStickers(Map<String, dynamic>? asset) {
+    for (final candidate in _stickerCandidates(asset)) {
+      final parsed = parseStickerList(
+        _normalizeStickerEntries(candidate),
+        schemaMap: _schemas,
+        stickerMap: _stickers,
+      );
+      if (parsed.isNotEmpty) {
+        return parsed;
+      }
+    }
+    return const [];
+  }
+
+  List<_StickerDetailData> _resolveStickerDetailsFromItem(
+    Map<String, dynamic>? asset,
+  ) {
+    for (final candidate in _stickerCandidates(asset)) {
+      final details = _resolveStickerDetails(candidate);
+      if (details.isNotEmpty) {
+        return details;
+      }
+    }
+    return const [];
+  }
+
+  List<dynamic> _stickerCandidates(Map<String, dynamic>? asset) {
+    final rawAsset =
+        _asMap(_item.raw['asset']) ?? _asMap(_item.raw['itemAsset']);
+    final rawCsgoAsset =
+        _asMap(_item.raw['csgoAsset']) ?? _asMap(_item.raw['csgo_asset']);
+    final rawTf2Asset =
+        _asMap(_item.raw['tf2Asset']) ?? _asMap(_item.raw['tf2_asset']);
+    final rawDotaAsset =
+        _asMap(_item.raw['dota2Asset']) ?? _asMap(_item.raw['dota2_asset']);
+
+    return <dynamic>[
+      asset?['stickers'],
+      asset?['stickerList'],
+      asset?['sticker_list'],
+      asset?['sticker'],
+      rawAsset?['stickers'],
+      rawAsset?['stickerList'],
+      rawAsset?['sticker_list'],
+      rawAsset?['sticker'],
+      rawCsgoAsset?['stickers'],
+      rawCsgoAsset?['stickerList'],
+      rawCsgoAsset?['sticker_list'],
+      rawCsgoAsset?['sticker'],
+      rawTf2Asset?['stickers'],
+      rawTf2Asset?['stickerList'],
+      rawTf2Asset?['sticker_list'],
+      rawTf2Asset?['sticker'],
+      rawDotaAsset?['stickers'],
+      rawDotaAsset?['stickerList'],
+      rawDotaAsset?['sticker_list'],
+      rawDotaAsset?['sticker'],
+      _item.raw['stickers'],
+      _item.raw['stickerList'],
+      _item.raw['sticker_list'],
+      _item.raw['sticker'],
+    ];
+  }
+
+  List<_StickerDetailData> _resolveStickerDetails(dynamic raw) {
+    final entries = _normalizeStickerEntries(raw);
+    final details = <_StickerDetailData>[];
+    for (final entry in entries) {
+      final detail = _resolveStickerDetail(entry);
+      if (detail != null) {
+        details.add(detail);
+      }
+    }
+    return details;
+  }
+
+  List<dynamic> _normalizeStickerEntries(dynamic raw) {
+    if (raw is List) {
+      return raw;
+    }
+    if (raw is Iterable) {
+      return raw.toList(growable: false);
+    }
+    if (raw is Map) {
+      if (raw.containsKey('image_url') ||
+          raw.containsKey('imageUrl') ||
+          raw.containsKey('image') ||
+          raw.containsKey('id') ||
+          raw.containsKey('sticker_id') ||
+          raw.containsKey('schema_id')) {
+        return <dynamic>[raw];
+      }
+      return raw.values.toList(growable: false);
+    }
+    if (raw is String) {
+      final value = raw.trim();
+      if (value.isEmpty || value == 'null') {
+        return const [];
+      }
+      if (value.startsWith('[') && value.endsWith(']')) {
+        try {
+          final decoded = jsonDecode(value);
+          if (decoded is List) {
+            return decoded;
+          }
+        } catch (_) {}
+      }
+      if (value.contains(',')) {
+        final values = value
+            .split(',')
+            .map((entry) => entry.trim())
+            .where((entry) => entry.isNotEmpty)
+            .toList(growable: false);
+        if (values.isNotEmpty) {
+          return values;
+        }
+      }
+      return <dynamic>[value];
+    }
+    return const [];
+  }
+
+  Map<String, dynamic>? _asMap(dynamic value) {
+    if (value is Map<String, dynamic>) {
+      return value;
+    }
+    if (value is Map) {
+      return Map<String, dynamic>.from(value);
+    }
+    return null;
+  }
+
+  _StickerDetailData? _resolveStickerDetail(dynamic entry) {
+    String? imageUrl;
+    String? name;
+    double? price;
+    String? stickerId;
+
+    if (entry is Map) {
+      imageUrl = _extractText(entry, <String>[
+        'image_url',
+        'imageUrl',
+        'image',
+      ]);
+      name = _extractText(entry, <String>['market_name', 'marketName', 'name']);
+      price = _extractDouble(entry, <String>[
+        'market_price',
+        'marketPrice',
+        'price',
+      ]);
+      stickerId = _extractText(entry, <String>[
+        'sticker_id',
+        'stickerId',
+        'schema_id',
+        'schemaId',
+        'id',
+      ]);
+    } else if (entry is num || entry is String) {
+      final value = entry.toString().trim();
+      if (value.isEmpty) {
+        return null;
+      }
+      if (RegExp(r'^\d+$').hasMatch(value)) {
+        stickerId = value;
+      } else {
+        imageUrl = value;
+      }
+    }
+
+    final schema = stickerId == null ? null : _schemas[stickerId];
+    final stickerMeta = stickerId == null
+        ? null
+        : _resolveStickerMeta(stickerId);
+    imageUrl ??=
+        _extractText(stickerMeta, <String>['image_url', 'imageUrl', 'image']) ??
+        schema?.imageUrl;
+    name ??=
+        _extractText(stickerMeta, <String>[
+          'market_name',
+          'marketName',
+          'name',
+        ]) ??
+        schema?.marketName;
+    price ??=
+        _extractDouble(stickerMeta, <String>[
+          'market_price',
+          'marketPrice',
+          'price',
+        ]) ??
+        _extractDouble(schema?.raw, <String>[
+          'market_price',
+          'marketPrice',
+          'price',
+        ]);
+
+    if (imageUrl == null || imageUrl.isEmpty) {
+      return null;
+    }
+
+    return _StickerDetailData(
+      imageUrl: _normalizeSteamImageUrl(imageUrl),
+      name: name,
+      price: price,
+    );
+  }
+
+  Map<String, dynamic>? _resolveStickerMeta(String stickerId) {
+    dynamic value;
+    if (_stickers.containsKey(stickerId)) {
+      value = _stickers[stickerId];
+    }
+    if (value == null) {
+      for (final entry in _stickers.entries) {
+        if (entry.key.toString() == stickerId) {
+          value = entry.value;
+          break;
+        }
+      }
+    }
+    if (value is MarketSchemaInfo) {
+      return value.raw;
+    }
+    if (value is Map<String, dynamic>) {
+      return value;
+    }
+    if (value is Map) {
+      return Map<String, dynamic>.from(value);
+    }
+    return null;
+  }
+
+  String _normalizeSteamImageUrl(String url) {
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return url;
+    }
+    return 'https://community.steamstatic.com/economy/image/$url';
+  }
+
   Future<void> _purchase() async {
     if (_isPurchasing) {
       return;
@@ -395,6 +637,103 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
     }
   }
 
+  Future<void> _refreshStickerData() async {
+    if (_refreshingStickers) {
+      return;
+    }
+    final schemaId = _item.schemaId ?? _schema?.schemaId;
+    final sellerId = _item.userId;
+    final appId = _item.appId ?? _schema?.appId ?? 730;
+    if (schemaId == null || sellerId == null) {
+      await _showRefreshNotice(
+        message: 'app.trade.filter.failed'.tr,
+        icon: Icons.error_outline_rounded,
+      );
+      return;
+    }
+
+    setState(() => _refreshingStickers = true);
+    try {
+      final useAuth = UserStorage.getUserInfo() != null;
+      final res = await _marketServer.onSaleList(
+        appId: appId,
+        schemaId: schemaId,
+        userId: sellerId,
+        page: 1,
+        pageSize: 100,
+        useAuth: useAuth,
+        fallbackToPublicOnFail: true,
+      );
+      final data = res.datas;
+      if (!mounted) {
+        return;
+      }
+      if (!res.success || data == null) {
+        await _showRefreshNotice(
+          message: 'app.trade.filter.failed'.tr,
+          icon: Icons.error_outline_rounded,
+        );
+        return;
+      }
+
+      final refreshedItem = data.items
+          .where((item) => item.id == _item.id)
+          .cast<MarketListItem?>()
+          .firstWhere((item) => item != null, orElse: () => null);
+
+      setState(() {
+        if (refreshedItem != null) {
+          _item = refreshedItem;
+          _favorited = refreshedItem.favorited == true;
+        }
+        _schemas = <String, MarketSchemaInfo>{..._schemas, ...data.schemas};
+        _stickers = <String, dynamic>{..._stickers, ...data.stickers};
+
+        final schemaKey = (refreshedItem?.schemaId ?? schemaId).toString();
+        final hashKey = refreshedItem?.marketHashName;
+        _schema =
+            data.schemas[schemaKey] ??
+            ((hashKey != null && data.schemas.containsKey(hashKey))
+                ? data.schemas[hashKey]
+                : _schema);
+
+        final userKey = sellerId.toString();
+        _user = data.users[userKey] ?? _user;
+      });
+
+      await _showRefreshNotice(
+        message: 'app.steam.message.refresh_info_success'.tr,
+        icon: Icons.check_circle_outline_rounded,
+      );
+    } catch (_) {
+      if (mounted) {
+        await _showRefreshNotice(
+          message: 'app.trade.filter.failed'.tr,
+          icon: Icons.error_outline_rounded,
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _refreshingStickers = false);
+      }
+    }
+  }
+
+  Future<void> _showRefreshNotice({
+    required String message,
+    required IconData icon,
+  }) async {
+    if (!mounted) {
+      return;
+    }
+    await showGlassNoticeDialog(
+      context,
+      message: message,
+      icon: icon,
+      barrierLabel: 'market_item_detail_refresh_notice',
+    );
+  }
+
   int _shopMetricInt(String key) => _asInt(_shopInfo?[key]) ?? 0;
 
   double _shopMetricDouble(String key) =>
@@ -410,6 +749,15 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
 
   bool get _isEnglishLocale =>
       (Get.locale?.languageCode ?? '').toLowerCase().startsWith('en');
+
+  bool get _isChineseLocale =>
+      (Get.locale?.languageCode ?? '').toLowerCase().startsWith('zh');
+
+  String _stickerSectionTitle() =>
+      _isChineseLocale ? '包含印花' : 'Containing Stickers';
+
+  String _stickerFallbackName(int index) =>
+      _isChineseLocale ? '印花 ${index + 1}' : 'Sticker ${index + 1}';
 
   String _shopDaysLabel(int days) {
     if (_isEnglishLocale) {
@@ -815,6 +1163,211 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
     return null;
   }
 
+  Widget _buildStickerInfoCard({
+    required List<_StickerDetailData> stickers,
+    required bool isRefreshing,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+      decoration: BoxDecoration(
+        color: Color.alphaBlend(
+          colorScheme.secondary.withValues(alpha: 0.04),
+          theme.cardColor,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: colorScheme.outlineVariant.withValues(alpha: 0.6),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: colorScheme.secondary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(17),
+                ),
+                child: Icon(
+                  Icons.auto_awesome_outlined,
+                  size: 18,
+                  color: colorScheme.secondary,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  _stickerSectionTitle(),
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              IconButton(
+                onPressed: isRefreshing ? null : _refreshStickerData,
+                tooltip: 'app.common.refresh'.tr,
+                iconSize: 20,
+                splashRadius: 20,
+                padding: const EdgeInsets.all(6),
+                constraints: const BoxConstraints.tightFor(
+                  width: 36,
+                  height: 36,
+                ),
+                icon: isRefreshing
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Icon(
+                        Icons.refresh_rounded,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          if (isRefreshing)
+            Column(
+              children: List.generate(
+                3,
+                (index) => Padding(
+                  padding: EdgeInsets.only(top: index == 0 ? 0 : 8),
+                  child: _buildStickerLoadingRow(),
+                ),
+              ),
+            )
+          else
+            for (var i = 0; i < stickers.length; i++) ...[
+              if (i > 0) const SizedBox(height: 8),
+              _buildStickerDetailRow(sticker: stickers[i], index: i),
+            ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStickerDetailRow({
+    required _StickerDetailData sticker,
+    required int index,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final title = sticker.name?.trim();
+
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: colorScheme.surface.withValues(alpha: 0.7),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: CachedNetworkImage(
+              imageUrl: sticker.imageUrl,
+              fit: BoxFit.contain,
+              fadeInDuration: const Duration(milliseconds: 120),
+              placeholder: (context, _) => const SizedBox.expand(),
+              errorWidget: (context, _, __) => Icon(
+                Icons.image_not_supported_outlined,
+                size: 18,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  (title != null && title.isNotEmpty)
+                      ? title
+                      : _stickerFallbackName(index),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStickerLoadingRow() {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: colorScheme.surface.withValues(alpha: 0.75),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            alignment: Alignment.center,
+            child: const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  height: 12,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: colorScheme.surface.withValues(alpha: 0.85),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  height: 12,
+                  width: 160,
+                  decoration: BoxDecoration(
+                    color: colorScheme.surface.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildTopHeroImage({
     required String imageUrl,
     required TagInfo? rarity,
@@ -904,11 +1457,13 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
         _extractText(_item.raw, ['paint_wear', 'paintWear']) ??
         paintWearValue?.toString();
 
-    final stickers = parseStickerList(
-      asset?['stickers'] ?? _item.raw['stickers'],
-      schemaMap: _schemas,
-      stickerMap: _stickers,
-    );
+    final stickers = _parseStickers(asset);
+    final stickerDetails = _resolveStickerDetailsFromItem(asset);
+    final displayStickerDetails = stickerDetails.isNotEmpty
+        ? stickerDetails
+        : stickers
+              .map((sticker) => _StickerDetailData(imageUrl: sticker.imageUrl))
+              .toList(growable: false);
     final gems = parseGemList(
       asset?['gemList'] ??
           asset?['gems'] ??
@@ -959,9 +1514,8 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
               ),
             ),
           ),
-          actions: isOwnOnSale
-              ? const []
-              : [
+          actions: !isOwnOnSale
+              ? [
                   _buildAppBarIconButton(
                     onPressed: _favoriteSubmitting ? null : _toggleFavorite,
                     icon: _favoriteSubmitting
@@ -974,7 +1528,8 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
                             _favorited ? Icons.favorite : Icons.favorite_border,
                           ),
                   ),
-                ],
+                ]
+              : const [],
         ),
         body: ListView(
           padding: EdgeInsets.zero,
@@ -1035,10 +1590,6 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
                     const SizedBox(height: 6),
                     GemRow(gems: gems, size: 24),
                   ],
-                  if (stickers.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    StickerRow(stickers: stickers, size: 24),
-                  ],
                   if (keychains.isNotEmpty) ...[
                     const SizedBox(height: 8),
                     StickerRow(stickers: keychains, size: 24),
@@ -1071,6 +1622,14 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ],
+                  ],
+                  if (_refreshingStickers ||
+                      displayStickerDetails.isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    _buildStickerInfoCard(
+                      stickers: displayStickerDetails,
+                      isRefreshing: _refreshingStickers,
+                    ),
                   ],
                   if (_loadingShopInfo || (_shopInfo?.isNotEmpty ?? false)) ...[
                     const SizedBox(height: 16),
@@ -1150,4 +1709,12 @@ class _MarketItemDetailPageState extends State<MarketItemDetailPage> {
       ),
     );
   }
+}
+
+class _StickerDetailData {
+  const _StickerDetailData({required this.imageUrl, this.name, this.price});
+
+  final String imageUrl;
+  final String? name;
+  final double? price;
 }
