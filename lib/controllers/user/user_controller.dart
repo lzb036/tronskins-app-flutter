@@ -112,8 +112,13 @@ class UserController extends GetxController {
       if (error.dioError?.response?.statusCode == 401) {
         clearSession();
       }
-    } catch (e) {
-      // 缃戠粶閿欒鏃朵繚鐣欐湰鍦扮敤鎴蜂俊鎭?
+    } catch (e, stackTrace) {
+      debugPrint('UserController.fetchUserData failed: $e');
+      debugPrintStack(
+        label: 'UserController.fetchUserData stackTrace',
+        stackTrace: stackTrace,
+      );
+      // 网络异常或数据解析异常时，保留本地用户信息
     } finally {
       isLoading.value = false;
     }

@@ -1,5 +1,6 @@
 // lib/api/model/entity/user/user_steam_config_entity.dart
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'user_json_normalizers.dart';
 
 part 'user_steam_config_entity.freezed.dart';
 part 'user_steam_config_entity.g.dart';
@@ -29,5 +30,30 @@ class UserSteamConfigEntity with _$UserSteamConfigEntity {
   }) = _UserSteamConfigEntity;
 
   factory UserSteamConfigEntity.fromJson(Map<String, dynamic> json) =>
-      _$UserSteamConfigEntityFromJson(json);
+      _$UserSteamConfigEntityFromJson(
+        normalizeJsonFieldTypes(
+          json,
+          stringKeys: const <String>[
+            'id',
+            'avatar',
+            'createTime',
+            'lastLoginTime',
+            'nickname',
+            'partnerId',
+            'sensitiveAccessKey',
+            'steamId',
+            'tradableTime',
+            'tradeUrl',
+            'uuid',
+          ],
+          intKeys: const <String>['level', 'loginType', 'yearsLevel'],
+          boolKeys: const <String>[
+            'logged',
+            'privacy',
+            'tradeStatus',
+            'tradeUrlStatus',
+            'flag',
+          ],
+        ),
+      );
 }

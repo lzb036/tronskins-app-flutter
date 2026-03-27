@@ -1,5 +1,6 @@
 // lib/api/model/entity/user/user_shop_entity.dart
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'user_json_normalizers.dart';
 
 part 'user_shop_entity.freezed.dart';
 part 'user_shop_entity.g.dart';
@@ -30,5 +31,34 @@ class UserShopEntity with _$UserShopEntity {
   }) = _UserShopEntity;
 
   factory UserShopEntity.fromJson(Map<String, dynamic> json) =>
-      _$UserShopEntityFromJson(json);
+      _$UserShopEntityFromJson(
+        normalizeJsonFieldTypes(
+          json,
+          stringKeys: const <String>[
+            'id',
+            'shopName',
+            'name',
+            'uuid',
+            'avatar',
+            'nickname',
+          ],
+          intKeys: const <String>[
+            'last7daysNotSend',
+            'last7daysNums',
+            'last30daysNotSend',
+            'last30daysNums',
+            'hour',
+            'minute',
+            'level',
+            'sendType',
+          ],
+          doubleKeys: const <String>['last7daysAvg', 'last30daysAvg'],
+          boolKeys: const <String>[
+            'openAutoClose',
+            'isOnline',
+            'flag',
+            'signWanted',
+          ],
+        ),
+      );
 }

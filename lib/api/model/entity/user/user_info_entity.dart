@@ -1,6 +1,7 @@
 // lib/api/model/entity/user/user_info_entity.dart
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'user_fund_entity.dart';
+import 'user_json_normalizers.dart';
 import 'user_shop_entity.dart';
 import 'user_steam_config_entity.dart';
 import 'user_server_entity.dart';
@@ -57,5 +58,54 @@ class UserInfoEntity with _$UserInfoEntity {
   }) = _UserInfoEntity;
 
   factory UserInfoEntity.fromJson(Map<String, dynamic> json) =>
-      _$UserInfoEntityFromJson(json);
+      _$UserInfoEntityFromJson(
+        normalizeJsonFieldTypes(
+          json,
+          stringKeys: const <String>[
+            'id',
+            'uuid',
+            'avatar',
+            'appUse',
+            'account',
+            'nickname',
+            'showEmail',
+            'banReason',
+            'code',
+            'identityId',
+            'lastIp',
+            'lastLoginTime',
+            'loggerShowName',
+            'loginAddress',
+            'mobile',
+            'note',
+            'realNickname',
+            'registerTime',
+            'safeTokenName',
+          ],
+          intKeys: const <String>[
+            'assetTotalNum',
+            'errorCount',
+            'loginMode',
+            'memberLevel',
+            'memberType',
+            'sendType',
+          ],
+          boolKeys: const <String>[
+            'need2FA',
+            'isBan',
+            'isBlack',
+            'steamTokenUse',
+            'autoManage',
+            'autoReceive',
+            'commissionFreeUser',
+            'isEnableCommission',
+            'isManage',
+            'safeTokenStatus',
+            'selfOwned',
+            'flag',
+            'swindle',
+            'vip',
+          ],
+        ),
+      );
 }
