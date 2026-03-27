@@ -1,6 +1,6 @@
 // ignore: constant_identifier_names, non_constant_identifier_names
 final Map<String, String> en_US = {
-  "app.tabbar.home": "HPome",
+  "app.tabbar.home": "Home",
   "app.tabbar.inventory": "Inventory",
   "app.tabbar.market": "Market",
   "app.tabbar.sell": "Sell",

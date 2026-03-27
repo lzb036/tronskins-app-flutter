@@ -1,40 +1,19 @@
-import 'dart:async';
-
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
-import 'package:shorebird_code_push/shorebird_code_push.dart';
 import 'package:tronskins_app/common/hooks/currency/CurrencyController.dart';
 import 'package:tronskins_app/common/hooks/game/global_game_controller.dart';
-import 'package:tronskins_app/common/http/http_helper.dart';
 import 'package:tronskins_app/common/hooks/locale/use_locale.dart';
 import 'package:tronskins_app/common/hooks/theme/use_theme.dart';
+import 'package:tronskins_app/common/http/http_helper.dart';
 import 'package:tronskins_app/common/theme/dark_theme.dart';
 import 'package:tronskins_app/common/theme/light_theme.dart';
 import 'package:tronskins_app/common/widgets/back_to_top_overlay.dart';
 import 'package:tronskins_app/common/widgets/restart_widget.dart';
+import 'package:tronskins_app/common/widgets/shorebird_update_gate.dart';
 import 'package:tronskins_app/l10n/app_translations.dart';
 import 'package:tronskins_app/routes/app_routes.dart';
 import 'package:tronskins_app/routes/index.dart';
-
-Future<void> _checkForShorebirdUpdate() async {
-  if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
-    return;
-  }
-
-  final updater = ShorebirdUpdater();
-  try {
-    final status = await updater.checkForUpdate();
-    if (status == UpdateStatus.outdated) {
-      await updater.update();
-    }
-  } on UpdateException {
-    return;
-  } catch (_) {
-    return;
-  }
-}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -59,7 +38,6 @@ void main() async {
   }
 
   runApp(const RestartWidget(child: MyApp()));
-  unawaited(_checkForShorebirdUpdate());
 }
 
 class MyApp extends StatelessWidget {
@@ -83,7 +61,9 @@ class MyApp extends StatelessWidget {
         final media = MediaQuery.of(context);
         return MediaQuery(
           data: media.copyWith(textScaler: TextScaler.noScaling),
-          child: BackToTopOverlay(child: child ?? const SizedBox.shrink()),
+          child: ShorebirdUpdateGate(
+            child: BackToTopOverlay(child: child ?? const SizedBox.shrink()),
+          ),
         );
       },
       debugShowCheckedModeBanner: false,
